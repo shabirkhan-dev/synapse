@@ -5,8 +5,8 @@ type: feature
 from: pm
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-017]
@@ -47,4 +47,14 @@ A `JobQueue` contract in `core`, a pg-boss adapter in `adapters`, and `apps/work
 
 ## Resolution
 
-_Open._
+Done in commit `feat(worker): add pg-boss worker with checkpointed re-embedding and daily pruning`.
+
+- `@synapse/core/contracts`: `JobQueue`, `QueueJob`, `QueueOptions`, `JobHandler`.
+- `@synapse/adapters/queue`: `createPgBossJobQueue` on pg-boss **12.38.0** (pinned; 12.38.1 was two days old). Policies `exclusive`/`standard`, retries with backoff, expiry, UTC cron, graceful stop.
+- `@synapse/knowledge`: `createReembedder` (embed batch → write → checkpoint, resumes; dimension check before writing); 3 tests.
+- `@synapse/database`: `job_checkpoints` (migration `0006`).
+- `apps/worker`: modules `knowledge` (re-embed job, checkpoint + chunk repositories; optional `{ ownerId }`) and `maintenance` (daily prune of auth rate limits, auth links, sessions, abandoned checkpoints). Re-embedding is enqueued on every start; `exclusive` queues dedupe.
+- Architecture checks now cover `apps/worker` (env only in config, module isolation, drizzle only in repositories, no direct pg-boss/@ai-sdk/@opentelemetry); fixture test extended.
+- Compose `worker` service (after the api is healthy), `apps/worker/Dockerfile`, `bun run dev:worker`, CI steps: worker tests on Postgres + boot smoke.
+- **Validation:** a re-embed job that fails on its third batch leaves 4/5 chunks done and a checkpoint; the retry with the same job id makes one embedding call and finishes (Postgres integration test). Real pg-boss: delivery and the exclusive policy refusing a duplicate. Prune deletes only expired rows. Bundle boot: queues created (`exclusive`), prune scheduled `17 3 * * *`, SIGTERM stops cleanly.
+- **Not verified:** `docker build` for the worker (and api) image: the sandbox's build containers have no DNS, so `bun install` cannot download. Worker has logs but no tracing yet; re-embedding has no API trigger yet.

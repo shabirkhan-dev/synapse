@@ -8,6 +8,7 @@ Compose is split into **fragments** under `compose/` and merged by the root
 |------|------|
 | `compose/postgres.yml` | Postgres 18 + pgvector (`pgvector/pgvector:0.8.7-pg18-trixie`), volume, healthcheck |
 | `compose/api.yml` | Bun + Hono API (RAG on pgvector, streaming chat). Needs `AI_API_KEY` in `.env` |
+| `compose/worker.yml` | Background jobs (pg-boss). Starts after the api is healthy (migrations applied). Needs `AI_API_KEY` |
 | `compose/console.yml` | Next.js console image (standalone output) |
 
 **Env:** copy the repo root `.env.example` to `.env` (the one env file; host runs read it too).

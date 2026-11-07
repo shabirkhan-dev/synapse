@@ -7,7 +7,7 @@
 | App | Role | Status |
 | --- | --- | --- |
 | `apps/api` | Hono HTTP API on Bun | Live |
-| `apps/worker` | Background jobs and cron (pg-boss) | Planned |
+| `apps/worker` | Background jobs and cron (pg-boss): re-embedding, pruning | Live |
 | `apps/console` | Admin and playground (Next.js) | Live (bare) |
 
 ## Packages

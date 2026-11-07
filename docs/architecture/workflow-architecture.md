@@ -1,13 +1,18 @@
 # Workflow architecture
 
-> **Status:** Planned.
+> **Status:** Live (jobs) · Planned (agents, human in the loop).
 
-## Jobs (`apps/worker` + `adapters/queue`)
+## Jobs (`apps/worker` + `adapters/queue`) — live
 
-- pg-boss on Postgres; no Redis.
-- Each job type has an idempotency key and a checkpoint record (`ingestion/lifecycle`).
-- A failed job retries with backoff; after the limit it is parked for a human (`human-oversight`).
-- Reconciliation jobs re-sync sources and repair drift.
+- pg-boss 12 on Postgres (own `pgboss` schema); no Redis. Code depends on the `JobQueue` contract
+  (`@synapse/core/contracts`); only `@synapse/adapters/queue` imports pg-boss.
+- Queues are created on every start with a policy, retries with backoff, and an expiry. `exclusive`
+  queues hold at most one queued-or-running job, so restarts and schedules never stack duplicates.
+- **Checkpoints:** long jobs save progress in `job_checkpoints` keyed by the job id, which stays the
+  same across retries; a retry resumes after the last checkpoint and the row is removed on success.
+  Handlers are idempotent (re-embedding filters on the embedding model, pruning deletes by age).
+- Jobs today: `knowledge.reembed-chunks` (on worker start), `maintenance.prune` (daily, 03:17 UTC).
+- Planned: after the retry limit, park the job for a human (`human-oversight`); reconciliation jobs.
 
 ## Agents (`orchestration`)
 

@@ -39,6 +39,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | Path | What it is |
 | --- | --- |
 | `apps/api` | Bun + Hono API — RAG on pgvector, streaming tool-calling chat (AI SDK) |
+| `apps/worker` | Background jobs on pg-boss: re-embedding after a model change, daily pruning |
 | `apps/console` | Next.js 16 — admin and playground; a bare app, UI starts from zero |
 
 ### Packages
@@ -116,7 +117,7 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 ## Docs
 
 Start at [docs/README.md](docs/README.md). Also: [PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md),
-[apps/api/README.md](apps/api/README.md), [packages/ui/README.md](packages/ui/README.md).
+[apps/api/README.md](apps/api/README.md), [apps/worker/README.md](apps/worker/README.md), [packages/ui/README.md](packages/ui/README.md).
 
 ## License
 

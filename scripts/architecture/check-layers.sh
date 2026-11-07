@@ -8,6 +8,7 @@ ROOT_DIR="${1:-$(cd "$(dirname "$0")/../.." && pwd)}"
 cd "$ROOT_DIR"
 
 API_SRC="apps/api/src"
+WORKER_SRC="apps/worker/src"
 CONSOLE_SRC="apps/console/src"
 failed=0
 
@@ -95,6 +96,10 @@ while IFS= read -r hit; do
 done < <(search 'process\.env|Bun\.env|import\.meta\.env' "$API_SRC" | grep -v "^$API_SRC/config/" || true)
 
 while IFS= read -r hit; do
+    fail "$hit -> read env only in $WORKER_SRC/config/ (configuration rule)"
+done < <(search 'process\.env|Bun\.env|import\.meta\.env' "$WORKER_SRC" | grep -v "^$WORKER_SRC/config/" || true)
+
+while IFS= read -r hit; do
     fail "$hit -> read env only in $CONSOLE_SRC/config/ (configuration rule)"
 done < <(search 'process\.env|import\.meta\.env' "$CONSOLE_SRC" | grep -v "^$CONSOLE_SRC/config/" || true)
 
@@ -114,16 +119,22 @@ while IFS= read -r hit; do
 done < <(search 'from "@synapse/' packages/core/src || true)
 
 while IFS= read -r hit; do
-    fail "$hit -> apps reach model providers through @synapse/adapters, not @ai-sdk/* directly"
-done < <(search 'from "@ai-sdk/' apps/api/src apps/console/src || true)
+    fail "$hit -> apps reach vendors through @synapse/adapters, not @ai-sdk/* or pg-boss directly"
+done < <(search 'from "(@ai-sdk/[^"]+|pg-boss)(/[^"]*)?"' "$API_SRC" "$WORKER_SRC" "$CONSOLE_SRC" || true)
 
 while IFS= read -r hit; do
     fail "$hit -> tracing goes through @synapse/observability, not @opentelemetry/* directly"
-done < <(search 'from "@opentelemetry/' packages apps/api/src apps/console/src |
+done < <(search 'from "@opentelemetry/' packages "$API_SRC" "$WORKER_SRC" "$CONSOLE_SRC" |
     grep -vE '^packages/observability/' || true)
 
 # --- backend ---------------------------------------------------------------------------
 check_isolation "$API_SRC/modules" "@/modules" "$API_SRC" "module"
+check_isolation "$WORKER_SRC/modules" "@/modules" "$WORKER_SRC" "module"
+
+while IFS= read -r hit; do
+    fail "$hit -> worker: database drivers only in repositories"
+done < <(search 'from "(drizzle-orm|postgres)(/[^"]*)?"' "$WORKER_SRC" |
+    grep -vE "\.repository\.ts:|/repositories/" || true)
 
 while IFS= read -r file; do
     if grep -nE 'from "(hono|@hono/[^"]+)(/[^"]*)?"' "$file" >/dev/null; then

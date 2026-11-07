@@ -33,5 +33,6 @@ Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddi
 | `createChunkPreparer({ embedding, chunking, dimensions })`, `PreparedChunks` | `prepare(content)` → chunks + vectors + versions (one embedding batch); `embedQuery(query)` |
 | `chunkerVersion(options)`, `embeddingVersion(modelInfo)`, `TEXT_CHUNKER_ALGORITHM` | Version strings stored on every chunk: `text-v1;size=1000;overlap=150`, `openrouter:openai/text-embedding-3-small` |
 | `assertEmbeddingDimensions`, `KNOWLEDGE_ERROR_CODES` | Throws `KNOWLEDGE_EMBEDDING_DIMENSION_MISMATCH` (`SynapseError`) |
+| `createReembedder({ embedding, ports, dimensions, batchSize })`, `ReembedPorts`, `ReembedCheckpoint` | Re-embed chunks from another embedding model in id order: embed a batch → write it → checkpoint → next; resumes from the checkpoint. Storage is the caller's (`apps/worker`) |
 
 Used by `apps/api` (`RagService`); the API maps the dimension error to `502 RAG_EMBEDDING_DIMENSION_MISMATCH`.

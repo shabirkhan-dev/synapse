@@ -152,11 +152,18 @@ jobs:
           restore-keys: ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile --filter api
+        run: bun install --frozen-lockfile --filter api --filter worker
 
       # Unit tests mock the LLM and embeddings; the pgvector integration test uses the service above.
       - name: Test (with pgvector integration)
         working-directory: apps/api
+        run: bun test --coverage
+        env:
+          API_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
+
+      # Re-embed resume-after-crash, real pg-boss delivery, pruning.
+      - name: Worker test (with Postgres)
+        working-directory: apps/worker
         run: bun test --coverage
         env:
           API_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
@@ -177,6 +184,21 @@ jobs:
             curl -fsS http://127.0.0.1:8000/api/v1/health/ready && exit 0
             sleep 1
           done
+          exit 1
+
+      - name: Worker boot smoke test
+        working-directory: apps/worker
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
+          LOG_FORMAT: json
+        run: |
+          bun run build
+          bun dist/worker.js > worker.log 2>&1 &
+          for i in $(seq 1 20); do
+            grep -q "worker started" worker.log && kill -TERM $! && exit 0
+            sleep 1
+          done
+          cat worker.log
           exit 1
 
       # Real retrieval stack (pgvector + full-text + RRF) with offline hashing embeddings; fails when

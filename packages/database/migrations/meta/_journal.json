@@ -43,6 +43,13 @@
       "when": 1794088808512,
       "tag": "0005_auth_tokens_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794089724369,
+      "tag": "0006_job_checkpoints",
+      "breakpoints": true
     }
   ]
 }

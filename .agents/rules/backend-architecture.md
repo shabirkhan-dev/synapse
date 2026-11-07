@@ -1,6 +1,6 @@
 # Rule: backend architecture
 
-Applies to `apps/api` (and `apps/worker` when it exists). Full standard with examples:
+Applies to `apps/api` and `apps/worker` (jobs take the place of routes: job → repository). Full standard with examples:
 `docs/development/backend-architecture.md`.
 
 ## Layout

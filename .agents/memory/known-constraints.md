@@ -8,8 +8,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   organizations** yet: `sub` (user id) is the tenant. Unverified users can sign in
   (`emailVerifiedAt: null`). Emails are sent from `synapse@rabtx.dev` (rabtx.dev is verified in
   Resend; `synapse.rabtx.dev` is not, and the current key cannot send from it). Without `RESEND_API_KEY` emails go to the API log (development only;
-  production requires the key). `auth_rate_limits` and used `auth_tokens` rows are never pruned yet
-  (worker job, syn-024). Console pages `/verify-email` and `/reset-password` do not exist yet
+  production requires the key). Old auth rows are pruned daily by the worker. Console pages `/verify-email` and `/reset-password` do not exist yet
   (syn-018). Tests may still mint tokens (`signAccessToken`).
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
@@ -18,7 +17,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Chunk versions:** every new chunk stores `chunker_version` and `embedding_model`; rows from before
   migration `0002_chunk_versions` have nulls. Vector search only compares chunks with the current
   `embedding_model` (or null), so changing the embedding model hides old vectors until re-embedded
-  (re-embedding job not built yet). Keyword search still finds them.
+  (the worker's `knowledge.reembed-chunks` job re-embeds them on its next start). Keyword search still finds them.
 - **Embeddings are fixed at 1536 dimensions** (`vector(1536)`); the embedding model must match.
 - **Migrations journal table** is still `__drizzle_migrations_ai_api` (`MIGRATIONS_TABLE` in
   `@synapse/database`, kept so existing databases do not re-run migrations).
@@ -47,7 +46,11 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   (`dev:api`, `db:migrate`, `eval:retrieval`, api tests via `--env-file=../../.env`). The console
   does not read it yet.
 - **One global tracer provider per process:** tests that call `startTracing` must `shutdown()` after.
-- **Reranking, query rewriting, queues (pg-boss), LangGraph** are planned, not installed.
+- **Worker:** pg-boss creates and migrates its own `pgboss` schema on start; the api still applies
+  our migrations (the worker never does). Re-embedding runs on worker start only (no API trigger
+  yet); the worker has logs but no tracing yet. Docker images were not built in the agent sandbox
+  (no DNS inside build containers); the bundles build and boot.
+- **Reranking, query rewriting, LangGraph** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
 - **Console has no UI and no tests**; `@synapse/ui` is not wired into it yet.

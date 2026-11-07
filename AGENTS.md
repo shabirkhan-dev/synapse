@@ -72,6 +72,7 @@ Before any Next.js work, find and read the relevant doc in `node_modules/next/di
 synapse/
 ├── apps/
 │   ├── api/             # Bun + Hono API: RAG (pgvector) + streaming tool chat
+│   ├── worker/          # Background jobs on pg-boss: re-embedding, pruning
 │   └── console/         # Next.js console (bare; UI starts from zero)
 ├── packages/
 │   ├── typescript-config/ # Shared tsconfig bases (base.json, nextjs.json)

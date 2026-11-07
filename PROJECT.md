@@ -20,6 +20,7 @@ Monorepo managed by **Bun + Turborepo**, with:
 synapse/
 ├── apps/                     # Runnable applications
 │   ├── api/                  # Bun + Hono API (RAG on pgvector, streaming chat)
+│   ├── worker/               # Background jobs (pg-boss): re-embedding, pruning
 │   └── console/              # Next.js console (bare, UI starts from zero)
 ├── packages/
 │   ├── adapters/             # @synapse/adapters: model gateway
@@ -53,6 +54,7 @@ synapse/
 | App | Stack | Notes |
 | --- | --- | --- |
 | `apps/api` | Bun, Hono, @hono/zod-openapi, AI SDK, Drizzle + pgvector, bun test | RAG + streaming tool chat; verifies HS256 access tokens |
+| `apps/worker` | Bun, pg-boss (via `@synapse/adapters/queue`), Drizzle | Background jobs: re-embedding (checkpointed), daily pruning |
 | `apps/console` | Next.js 16, React 19 | Bare App Router app; no UI library yet |
 
 ## Shared packages
@@ -101,6 +103,7 @@ Examples:
 
 - `bun --cwd=apps/api run dev` (or `bun run dev:api`)
 - `bun --cwd=apps/console run dev` (or `bun run dev:console`)
+- `bun --cwd=apps/worker run dev` (or `bun run dev:worker`)
 
 ## Tooling and quality system
 

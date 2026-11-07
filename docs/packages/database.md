@@ -12,7 +12,7 @@ migration runner. Any app or package that needs Postgres depends on this package
 ## Owns
 
 - `createDatabase(options)` — postgres.js + Drizzle client (`Database` type), SSL for Neon
-- The Drizzle schema (today: `users`, `auth_sessions`, `auth_tokens`, `auth_rate_limits`, `rag_documents`, `rag_chunks`, `EMBEDDING_DIMENSIONS = 1536`)
+- The Drizzle schema (today: `users`, `auth_sessions`, `auth_tokens`, `auth_rate_limits`, `job_checkpoints`, `rag_documents`, `rag_chunks`, `EMBEDDING_DIMENSIONS = 1536`)
 - Generated, reviewed SQL migrations and the journal table (`MIGRATIONS_TABLE`)
 - `runMigrations(db, folder)` and the `bun run db:migrate` CLI
 

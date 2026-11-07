@@ -9,3 +9,4 @@ export type {
 	TokenUsage,
 } from "./model-gateway";
 export type { EmailMessage, EmailSender } from "./email-sender";
+export type { JobHandler, JobQueue, QueueJob, QueueOptions } from "./job-queue";

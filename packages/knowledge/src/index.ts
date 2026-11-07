@@ -8,3 +8,11 @@ export {
 	type PreparedChunks,
 } from "./embeddings/prepare-chunks";
 export { chunkerVersion, embeddingVersion, TEXT_CHUNKER_ALGORITHM } from "./versioning/versions";
+export {
+	createReembedder,
+	type ReembedCheckpoint,
+	type ReembedderOptions,
+	type ReembedPorts,
+	type ReembedResult,
+	type StaleChunk,
+} from "./reembedding/reembedder";

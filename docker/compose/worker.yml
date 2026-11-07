@@ -1,0 +1,25 @@
+# Background jobs (pg-boss on Postgres): re-embedding, daily pruning — included from root docker-compose.yml
+services:
+  worker:
+    build:
+      context: ../..
+      dockerfile: apps/worker/Dockerfile
+    image: synapse-worker:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: synapse-worker
+      DATABASE_URL: postgresql://${POSTGRES_USER:-synapse}:${POSTGRES_PASSWORD:-synapse}@postgres:5432/${POSTGRES_DB:-synapse}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-5}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_PROVIDER_NAME: ${AI_PROVIDER_NAME:-openrouter}
+      AI_API_KEY: ${AI_API_KEY:?Set AI_API_KEY in .env (embeddings for re-embedding)}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      AI_EMBEDDING_BASE_URL: ${AI_EMBEDDING_BASE_URL:-}
+      AI_EMBEDDING_API_KEY: ${AI_EMBEDDING_API_KEY:-}
+      WORKER_REEMBED_BATCH_SIZE: ${WORKER_REEMBED_BATCH_SIZE:-100}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+    depends_on:
+      # The api container applies migrations before it reports healthy.
+      api:
+        condition: service_healthy

@@ -27,6 +27,9 @@ put apps/api/src/server.ts 'import { createOpenAICompatibleModelGateway } from "
 put apps/api/src/shared/constants/error-codes.ts 'export const ERROR_CODES = { NOT_FOUND: "NOT_FOUND" };'
 put apps/api/src/modules/rag/constants/rag.constants.ts 'export const RAG_ERROR_CODES = { EMPTY: "RAG_EMPTY_DOCUMENT" };'
 put apps/api/src/modules/rag/services/rag-errors.service.ts 'throw new AppError({ statusCode: HTTP_STATUS.NOT_FOUND, code: RAG_ERROR_CODES.EMPTY });'
+put apps/worker/src/config/env.ts 'export const url = process.env.DATABASE_URL;'
+put apps/worker/src/modules/knowledge/repositories/chunk.repository.ts 'import { eq } from "drizzle-orm";'
+put apps/worker/src/worker.ts 'import { createPgBossJobQueue } from "@synapse/adapters/queue";'
 put apps/console/src/lib/api/client.ts 'export const api = () => fetch("/x");'
 put apps/console/src/config/env.ts 'export const url = process.env.NEXT_PUBLIC_API_URL;'
 put apps/console/src/features/users/services/user.service.ts 'import { api } from "@/lib/api/client";'
@@ -68,6 +71,10 @@ put apps/console/src/features/users/hooks/queries/users.ts 'export const x = 1;'
 put apps/console/src/features/users/hooks/mutations/create-user.ts 'export const x = 1;'
 put apps/console/src/app/page.tsx 'const r = fetch("/api");'
 put apps/console/src/app/env.ts 'const k = process.env.SECRET;'
+put apps/worker/src/jobs/reembed.job.ts 'const n = process.env.BATCH;'
+put apps/worker/src/modules/maintenance/jobs/prune.job.ts 'import { sql } from "drizzle-orm";'
+put apps/worker/src/modules/maintenance/jobs/cross.job.ts 'import { x } from "@/modules/knowledge/jobs/reembed-chunks.job";'
+put apps/worker/src/queue.ts 'import { PgBoss } from "pg-boss";'
 
 if out="$(bash "$CHECK" "$fixture" 2>&1)"; then
     echo "violating fixture should fail"
@@ -108,5 +115,9 @@ expect "hooks/queries/users.ts: query hooks are named"
 expect "hooks/mutations/create-user.ts: mutation hooks are named"
 expect "apps/console/src/app/page.tsx:1:"
 expect "apps/console/src/app/env.ts:1:"
+expect "apps/worker/src/jobs/reembed.job.ts:1:"
+expect "apps/worker/src/modules/maintenance/jobs/prune.job.ts:1:"
+expect "cross.job.ts imports module internals"
+expect "apps/worker/src/queue.ts:1:"
 
 echo "check-layers test passed"
