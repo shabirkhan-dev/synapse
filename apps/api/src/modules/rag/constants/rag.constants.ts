@@ -15,8 +15,6 @@ export const RAG_MESSAGES = {
 	DOCUMENT_NOT_FOUND: "Document not found",
 	DOCUMENT_TOO_LARGE: "Document body must be 2 MB or smaller",
 	NO_DOCUMENTS_TO_ANSWER_FROM: "I could not find any ingested documents to answer from.",
-	EMBEDDING_DIMENSION_MISMATCH: (actual: number, expected: number) =>
-		`Embedding model returned ${actual} dimensions; the database expects ${expected}`,
 } as const;
 
 /** Ingest body limit. */

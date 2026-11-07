@@ -46,6 +46,8 @@ export class DrizzleRagRepository implements RagRepository {
 						chunkIndex: chunk.chunkIndex,
 						content: chunk.content,
 						embedding: chunk.embedding,
+						chunkerVersion: chunk.chunkerVersion ?? null,
+						embeddingModel: chunk.embeddingModel ?? null,
 					})),
 				);
 			}

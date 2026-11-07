@@ -35,9 +35,17 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 				chunkIndex,
 				content,
 				embedding: fakeEmbedding(content),
+				chunkerVersion: "text-v1;size=1000;overlap=150",
+				embeddingModel: "test:embed-1",
 			})),
 		);
 		expect(document.chunkCount).toBe(2);
+		const versions = await database.db.execute(
+			sql`select distinct chunker_version, embedding_model from rag_chunks where document_id = ${document.id}`,
+		);
+		expect([...versions]).toEqual([
+			{ chunker_version: "text-v1;size=1000;overlap=150", embedding_model: "test:embed-1" },
+		]);
 
 		const matches = await repository.searchChunks(owner, fakeEmbedding("cat printer"), 2);
 		expect(matches.map((m) => m.chunkIndex)).toEqual([1, 0]);

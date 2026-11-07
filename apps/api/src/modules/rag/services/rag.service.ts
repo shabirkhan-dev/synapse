@@ -1,6 +1,17 @@
 import type { ModelGateway } from "@synapse/core/contracts";
-import { createIngestionPipeline, type IngestableDocument } from "@synapse/ingestion";
+import { isSynapseError } from "@synapse/core/errors";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
+import {
+	createIngestionPipeline,
+	type IngestableDocument,
+	type IngestionPipeline,
+} from "@synapse/ingestion";
+import {
+	type ChunkOptions,
+	type ChunkPreparer,
+	createChunkPreparer,
+	KNOWLEDGE_ERROR_CODES,
+} from "@synapse/knowledge";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
@@ -12,7 +23,6 @@ import {
 	RAG_MESSAGES,
 } from "../constants/rag.constants";
 import type { RagDocument, RagMatch, RagRepository } from "../types/rag.types";
-import { chunkText, type ChunkOptions } from "./text-chunker";
 
 export type RagServiceOptions = {
 	chunk: ChunkOptions;
@@ -38,17 +48,26 @@ export type RagAnswer = {
 };
 
 export class RagService {
+	/** chunk + embed with recorded versions, via `@synapse/knowledge`. */
+	private readonly knowledge: ChunkPreparer;
+	/** normalize → dedup (per owner) → chunk + embed + store, via `@synapse/ingestion`. */
+	private readonly ingestion: IngestionPipeline<RagDocument>;
+
 	constructor(
 		private readonly repository: RagRepository,
 		private readonly models: ModelGateway,
 		private readonly options: RagServiceOptions,
-	) {}
-
-	/** normalize → dedup (per owner) → chunk + embed + store, via `@synapse/ingestion`. */
-	private readonly ingestion = createIngestionPipeline<RagDocument>({
-		findByContentHash: (ownerId, hash) => this.repository.findByContentHash(ownerId, hash),
-		index: (document) => this.index(document),
-	});
+	) {
+		this.knowledge = createChunkPreparer({
+			embedding: models.embedding,
+			chunking: options.chunk,
+			dimensions: EMBEDDING_DIMENSIONS,
+		});
+		this.ingestion = createIngestionPipeline<RagDocument>({
+			findByContentHash: (ownerId, hash) => repository.findByContentHash(ownerId, hash),
+			index: (document) => this.index(document),
+		});
+	}
 
 	async ingest(ownerId: string, input: IngestInput): Promise<IngestOutcome> {
 		const result = await this.ingestion.ingest(ownerId, input);
@@ -59,12 +78,10 @@ export class RagService {
 	}
 
 	private async index(document: IngestableDocument): Promise<RagDocument> {
-		const pieces = chunkText(document.content, this.options.chunk);
-		if (pieces.length === 0) {
+		const prepared = await this.knowledge.prepare(document.content).catch(toAppError);
+		if (!prepared) {
 			throw emptyDocumentError();
 		}
-		const embeddings = await this.models.embedding.embedMany(pieces);
-		embeddings.forEach(assertDimensions);
 		return this.repository.createDocument(
 			{
 				ownerId: document.ownerId,
@@ -73,10 +90,12 @@ export class RagService {
 				metadata: document.metadata,
 				contentHash: document.contentHash,
 			},
-			pieces.map((content, chunkIndex) => ({
+			prepared.chunks.map(({ chunkIndex, content, embedding }) => ({
 				chunkIndex,
 				content,
-				embedding: embeddings[chunkIndex] ?? [],
+				embedding,
+				chunkerVersion: prepared.chunkerVersion,
+				embeddingModel: prepared.embeddingModel,
 			})),
 		);
 	}
@@ -86,8 +105,7 @@ export class RagService {
 		query: string,
 		topK = this.options.defaultTopK,
 	): Promise<RagMatch[]> {
-		const embedding = await this.models.embedding.embed(query);
-		assertDimensions(embedding);
+		const embedding = await this.knowledge.embedQuery(query).catch(toAppError);
 		return this.repository.searchChunks(ownerId, embedding, topK);
 	}
 
@@ -128,14 +146,18 @@ export function formatContext(matches: RagMatch[]): string {
 		.join("\n\n");
 }
 
-function assertDimensions(embedding: number[]): void {
-	if (embedding.length !== EMBEDDING_DIMENSIONS) {
+/** Map knowledge errors to API errors; anything else is rethrown unchanged. */
+function toAppError(error: unknown): never {
+	if (isSynapseError(error) && error.code === KNOWLEDGE_ERROR_CODES.EMBEDDING_DIMENSION_MISMATCH) {
 		throw new AppError({
 			statusCode: HTTP_STATUS.BAD_GATEWAY,
 			code: RAG_ERROR_CODES.EMBEDDING_DIMENSION_MISMATCH,
-			message: RAG_MESSAGES.EMBEDDING_DIMENSION_MISMATCH(embedding.length, EMBEDDING_DIMENSIONS),
+			message: error.message,
+			...(error.details ? { details: error.details } : {}),
+			cause: error,
 		});
 	}
+	throw error;
 }
 
 function emptyDocumentError(): AppError {

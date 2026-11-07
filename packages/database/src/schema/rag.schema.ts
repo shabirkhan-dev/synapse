@@ -48,6 +48,10 @@ export const ragChunks = pgTable(
 		chunkIndex: integer("chunk_index").notNull(),
 		content: text("content").notNull(),
 		embedding: vector("embedding", { dimensions: EMBEDDING_DIMENSIONS }).notNull(),
+		/** Chunker that produced this chunk (`@synapse/knowledge`, e.g. `text-v1;size=1000;overlap=150`). */
+		chunkerVersion: text("chunker_version"),
+		/** Embedding model that produced the vector (e.g. `openrouter:openai/text-embedding-3-small`). */
+		embeddingModel: text("embedding_model"),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => [

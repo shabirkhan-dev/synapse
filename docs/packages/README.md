@@ -14,6 +14,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | `@synapse/database` | Drizzle client, schema, migrations and runner for Postgres + pgvector — see [database.md](database.md) |
 | `@synapse/adapters` | Model gateway (AI SDK, OpenAI-compatible) implementing the `core` contract — see [adapters.md](adapters.md) |
 | `@synapse/ingestion` | Normalization, content-hash dedup, ingestion pipeline — see [ingestion.md](ingestion.md) |
+| `@synapse/knowledge` | Chunking, embedding preparation, chunk versions — see [knowledge.md](knowledge.md) |
 
 ## Platform packages (from the plan)
 
@@ -21,7 +22,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | --- | --- | --- |
 | [`core`](core.md) | Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on. | Live (errors, config, types, contracts) |
 | [`ingestion`](ingestion.md) | Bring content in from sources and turn it into normalized, deduplicated documents with their access rules. | Live (normalize, dedup, pipeline) |
-| [`knowledge`](knowledge.md) | Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes. | Planned |
+| [`knowledge`](knowledge.md) | Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes. | Live (chunking, embeddings, versions) |
 | [`retrieval`](retrieval.md) | Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and filter. | Partly live: top-k cosine vector search in `apps/api` |
 | [`generation`](generation.md) | Produce answers from context: providers, prompts, context assembly, completion, citations and structured output. | Planned (models via `@synapse/adapters`; prompts still in `apps/api`) |
 | [`orchestration`](orchestration.md) | Run multi-step agents and workflows with LangGraph JS — the only package that owns LangGraph. | Planned |

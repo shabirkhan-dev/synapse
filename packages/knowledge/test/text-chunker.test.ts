@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { chunkText } from "@/modules/rag";
+import { chunkText } from "../src";
 
 describe("chunkText", () => {
 	test("returns nothing for blank input", () => {

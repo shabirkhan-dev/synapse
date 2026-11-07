@@ -8,6 +8,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
   use `import.meta.url`.
+- **Chunk versions:** every new chunk stores `chunker_version` and `embedding_model`; rows from before
+  migration `0002_chunk_versions` have nulls. Search does not filter by `embedding_model` yet
+  (retrieval, syn-013) — changing the embedding model needs a re-embedding job first.
 - **Embeddings are fixed at 1536 dimensions** (`vector(1536)`); the embedding model must match.
 - **Migrations journal table** is still `__drizzle_migrations_ai_api` (`MIGRATIONS_TABLE` in
   `@synapse/database`, kept so existing databases do not re-run migrations).

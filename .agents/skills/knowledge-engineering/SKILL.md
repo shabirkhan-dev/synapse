@@ -5,7 +5,8 @@ description: Use when working on chunking, enrichment, embeddings, indexing, met
 
 # knowledge-engineering
 
-> Status: Planned. Today chunking + embedding live in `apps/api/src/modules/rag` (`text-chunker.ts`, `rag.service.ts`).
+> Status: Partly live. `@synapse/knowledge`: chunking, `createChunkPreparer` (embed + dimension check),
+> versions stored on `rag_chunks` (`chunker_version`, `embedding_model`). Enrichment and re-embedding are planned.
 
 ## When to use
 

@@ -2,7 +2,8 @@
 
 Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes.
 
-> **Status:** Planned. Seed: `text-chunker.ts` and embedding in `apps/api/src/modules/rag`.
+> **Status:** Live (chunking, embeddings, versioning) · Planned (enrichment, indexing, metadata,
+> re-embedding, deletion).
 
 ## Internal modules
 
@@ -26,4 +27,11 @@ Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddi
 
 ## Public API
 
-> Placeholder — defined when the package is created. Keep it to `src/index.ts` exports.
+| Export | What it does |
+| --- | --- |
+| `chunkText(text, { size, overlap })`, `ChunkOptions` | Deterministic recursive splitter (paragraph → line → sentence → word → hard split) |
+| `createChunkPreparer({ embedding, chunking, dimensions })`, `PreparedChunks` | `prepare(content)` → chunks + vectors + versions (one embedding batch); `embedQuery(query)` |
+| `chunkerVersion(options)`, `embeddingVersion(modelInfo)`, `TEXT_CHUNKER_ALGORITHM` | Version strings stored on every chunk: `text-v1;size=1000;overlap=150`, `openrouter:openai/text-embedding-3-small` |
+| `assertEmbeddingDimensions`, `KNOWLEDGE_ERROR_CODES` | Throws `KNOWLEDGE_EMBEDDING_DIMENSION_MISMATCH` (`SynapseError`) |
+
+Used by `apps/api` (`RagService`); the API maps the dimension error to `502 RAG_EMBEDDING_DIMENSION_MISMATCH`.

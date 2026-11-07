@@ -17,6 +17,7 @@ synapse/
 │   ├── database/        # @synapse/database (live: client, schema, migrations)
 │   ├── adapters/        # @synapse/adapters (live: model gateway)
 │   ├── ingestion/       # @synapse/ingestion (live: normalize, dedup, pipeline)
+│   ├── knowledge/       # @synapse/knowledge (live: chunking, embeddings, versions)
 │   └── ingestion, knowledge, … (planned — see docs/packages)
 ├── crates/              # Rust via napi-rs (planned)
 ├── deploy/              # docker, compose, migrations, backups, monitoring (planned)

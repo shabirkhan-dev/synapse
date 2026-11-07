@@ -9,7 +9,7 @@ PostgreSQL is the single store (ADR-0002).
 | Table | Key columns | Indexes |
 | --- | --- | --- |
 | `rag_documents` | `id` uuid, `owner_id`, `title`, `source`, `metadata` jsonb, `chunk_count`, `content_hash` (SHA-256, nullable for pre-dedup rows), timestamps | `(owner_id, created_at)`, unique `(owner_id, content_hash)` |
-| `rag_chunks` | `id`, `document_id` → documents, `owner_id`, `chunk_index`, `content`, `embedding vector(1536)` | unique `(document_id, chunk_index)`, `owner_id`, HNSW `vector_cosine_ops` |
+| `rag_chunks` | `id`, `document_id` → documents, `owner_id`, `chunk_index`, `content`, `embedding vector(1536)`, `chunker_version`, `embedding_model` (nullable for pre-versioning rows) | unique `(document_id, chunk_index)`, `owner_id`, HNSW `vector_cosine_ops` |
 
 Migrations: `packages/database/migrations` (`bun run db:generate`, `bun run db:migrate`), journal
 table `__drizzle_migrations_ai_api`. Owner: [`@synapse/database`](../packages/database.md).
@@ -19,7 +19,7 @@ table `__drizzle_migrations_ai_api`. Owner: [`@synapse/database`](../packages/da
 | Data | Owner | Notes |
 | --- | --- | --- |
 | Source ACLs, ingestion job state, checkpoints | `ingestion` | |
-| Chunk/embedding versions, enrichment | `knowledge` | add chunker + embedding version columns |
+| Enrichment | `knowledge` | chunk + embedding versions are live on `rag_chunks` |
 | Full-text index | `knowledge` / `retrieval` | `tsvector` + GIN |
 | Jobs | `adapters/queue` | pg-boss schema |
 | Agent checkpoints | `orchestration` | LangGraph Postgres checkpointer |

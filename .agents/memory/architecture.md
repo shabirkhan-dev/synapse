@@ -8,8 +8,9 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `apps/console` (bare Next.js 16), `packages/ui` (shadcn on Base UI, HugeIcons, Tailwind v4),
   `packages/typescript-config`, `packages/core` (errors, config, types, model-gateway contract),
   `packages/database` (Drizzle client, schema, migrations), `packages/adapters` (model gateway),
-  `packages/ingestion` (normalize, content-hash dedup, pipeline).
-- **Planned:** `apps/worker`; packages `knowledge`, `retrieval`,
+  `packages/ingestion` (normalize, content-hash dedup, pipeline), `packages/knowledge` (chunking,
+  embedding preparation, chunk versions).
+- **Planned:** `apps/worker`; packages `retrieval`,
   `generation`, `orchestration`, `human-oversight`, `audit`, `guardrails`, `memory`,
   `evaluation`, `observability`, `security`, `reliability`, `providers`, `native`; more adapters
   (vector-store, cache, queue, storage);

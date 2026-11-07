@@ -11,6 +11,9 @@ export type NewRagChunk = {
 	chunkIndex: number;
 	content: string;
 	embedding: number[];
+	/** Chunker and embedding model that produced this chunk (`@synapse/knowledge`). */
+	chunkerVersion?: string | null;
+	embeddingModel?: string | null;
 };
 
 export type RagDocument = {
