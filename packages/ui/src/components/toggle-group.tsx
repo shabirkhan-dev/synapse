@@ -2,8 +2,8 @@
 
 import { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
 import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
-import { toggleVariants } from "@starter/ui/components/toggle";
-import { cn } from "@starter/ui/lib/utils";
+import { toggleVariants } from "@synapse/ui/components/toggle";
+import { cn } from "@synapse/ui/lib/utils";
 import type { VariantProps } from "class-variance-authority";
 import * as React from "react";
 

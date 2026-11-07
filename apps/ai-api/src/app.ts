@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import type { Logger } from "@starter/logger";
+import type { Logger } from "@synapse/logger";
 import type { LanguageModel } from "ai";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
@@ -88,7 +88,7 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 	app.doc31(`/${env.API_PREFIX}/openapi.json`, {
 		openapi: "3.1.0",
 		info: {
-			title: "Starter AI API",
+			title: "Synapse AI API",
 			version: "0.1.0",
 			description: "RAG (pgvector) and streaming tool-calling chat. Bun + Hono + AI SDK.",
 		},

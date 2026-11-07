@@ -13,7 +13,7 @@ describe("auth (nest-api access tokens)", () => {
 		const body = await response.json();
 		expect(body).toMatchObject({
 			success: true,
-			data: { status: "ok", service: "starter-ai-api" },
+			data: { status: "ok", service: "synapse-ai-api" },
 		});
 		expect(response.headers.get("x-request-id")).toMatch(/^req_/);
 	});

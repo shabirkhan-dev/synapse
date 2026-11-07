@@ -2,8 +2,8 @@
 
 import { Menu01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@starter/ui/components/sheet";
-import { TooltipProvider } from "@starter/ui/components/tooltip";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@synapse/ui/components/sheet";
+import { TooltipProvider } from "@synapse/ui/components/tooltip";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";

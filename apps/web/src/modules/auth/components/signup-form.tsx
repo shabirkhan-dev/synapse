@@ -8,23 +8,23 @@ import {
 	ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Alert, AlertDescription, AlertTitle } from "@starter/ui/components/alert";
-import { Button } from "@starter/ui/components/button";
+import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Button } from "@synapse/ui/components/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@starter/ui/components/card";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@starter/ui/components/field";
+} from "@synapse/ui/components/card";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@synapse/ui/components/field";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupInput,
-} from "@starter/ui/components/input-group";
-import { Spinner } from "@starter/ui/components/spinner";
+} from "@synapse/ui/components/input-group";
+import { Spinner } from "@synapse/ui/components/spinner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

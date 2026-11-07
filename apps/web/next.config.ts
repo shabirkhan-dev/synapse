@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
 	output: "standalone",
 	outputFileTracingRoot: path.join(__dirname, "../.."),
-	transpilePackages: ["@starter/ui", "@rabtx/ui"],
+	transpilePackages: ["@synapse/ui", "@rabtx/ui"],
 	allowedDevOrigins: ["127.0.0.1"],
 	images: {
 		remotePatterns: [

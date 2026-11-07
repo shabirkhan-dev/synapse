@@ -6,9 +6,9 @@ services:
     image: pgvector/pgvector:0.8.7-pg18-trixie
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-starter}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-starter}
-      POSTGRES_DB: ${POSTGRES_DB:-starter}
+      POSTGRES_USER: ${POSTGRES_USER:-synapse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-synapse}
+      POSTGRES_DB: ${POSTGRES_DB:-synapse}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
@@ -20,7 +20,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-starter} -d ${POSTGRES_DB:-starter}",
+          "pg_isready -U ${POSTGRES_USER:-synapse} -d ${POSTGRES_DB:-synapse}",
         ]
       interval: 5s
       timeout: 5s

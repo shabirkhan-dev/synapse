@@ -10,10 +10,10 @@ import {
 	InboxIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Skeleton } from "@starter/ui/components/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableRow } from "@starter/ui/components/table";
-import { EASE_OUT, SPRING_PRESS, SPRING_SWAP } from "@starter/ui/lib/ease";
-import { cn } from "@starter/ui/lib/utils";
+import { Skeleton } from "@synapse/ui/components/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableRow } from "@synapse/ui/components/table";
+import { EASE_OUT, SPRING_PRESS, SPRING_SWAP } from "@synapse/ui/lib/ease";
+import { cn } from "@synapse/ui/lib/utils";
 import type { HTMLMotionProps } from "motion/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {

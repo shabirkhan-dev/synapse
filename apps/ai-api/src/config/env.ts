@@ -14,10 +14,10 @@ export const envSchema = z
 		PORT: z.coerce.number().int().positive().default(8000),
 		API_PREFIX: z.string().min(1).default("api"),
 		API_VERSION: z.string().regex(/^\d+$/).default("1"),
-		SERVICE_NAME: z.string().min(1).default("starter-ai-api"),
+		SERVICE_NAME: z.string().min(1).default("synapse-ai-api"),
 		LOG_LEVEL: z.enum(["DEBUG", "INFO", "WARN", "ERROR"]).default("INFO"),
 		/** Postgres with the pgvector extension (docker compose uses pgvector/pgvector:pg18). */
-		DATABASE_URL: z.url().default("postgresql://starter:starter@localhost:5433/starter"),
+		DATABASE_URL: z.url().default("postgresql://synapse:synapse@localhost:5433/synapse"),
 		DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
 		DATABASE_SSL: z.enum(["true", "false"]).optional(),
 		/** Shared with apps/nest-api: access tokens are HS256 JWTs signed with this secret. */

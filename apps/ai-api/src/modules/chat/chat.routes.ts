@@ -16,7 +16,7 @@ import type { RagService } from "@/modules/rag/rag.service";
 import { createChatTools } from "./chat.tools";
 
 export const chatSystemPrompt = [
-	"You are the Starter AI assistant.",
+	"You are the Synapse AI assistant.",
 	"Use the `searchDocuments` tool to ground answers about the user's documents and cite the document title.",
 	"Use the `currentTime` tool for anything that depends on today's date or time.",
 	"If the tools do not return the answer, say you do not know.",

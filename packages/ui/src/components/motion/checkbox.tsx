@@ -3,8 +3,8 @@
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 import { CheckIcon, Loading01Icon, Remove01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SPRING_PRESS, SPRING_SWAP } from "@starter/ui/lib/ease";
-import { cn } from "@starter/ui/lib/utils";
+import { SPRING_PRESS, SPRING_SWAP } from "@synapse/ui/lib/ease";
+import { cn } from "@synapse/ui/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ComponentPropsWithoutRef, forwardRef, useState } from "react";
 

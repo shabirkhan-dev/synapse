@@ -39,7 +39,7 @@ jobs:
       - name: Install lint runtime
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
-      - name: Lint, boundaries and registry up to date
+      - name: Lint and boundaries
         run: bun run ci:lint
 
   typecheck:
@@ -78,9 +78,6 @@ jobs:
         with:
           bun-version: 1.4.4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Cache Bun
         uses: actions/cache@v6
         with:
@@ -106,11 +103,6 @@ jobs:
         with:
           bun-version: 1.4.4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-
       - name: Cache Bun
         uses: actions/cache@v6
         with:
@@ -133,7 +125,6 @@ jobs:
           name: coverage-reports
           path: |
             apps/web/coverage
-            apps/nest-api/coverage
             packages/logger/coverage
           if-no-files-found: warn
 

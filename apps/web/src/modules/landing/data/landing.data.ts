@@ -144,7 +144,7 @@ export const AGENT_MESSAGES: ChatMessage[] = [
 	},
 	{
 		role: "agent",
-		text: "Shared @starter/ui and typescript-config keep stacks consistent.",
+		text: "Shared @synapse/ui and typescript-config keep stacks consistent.",
 	},
 	{
 		role: "agent",
@@ -170,7 +170,7 @@ export const CUSTOMER_LOGOS: CustomerLogo[] = [
 
 export const PRODUCT_BULLETS: string[] = [
 	"Five apps in one workspace — web, mobile, Nest, docs, Rust",
-	"Shared UI tokens and TypeScript configs via @starter/*",
+	"Shared UI tokens and TypeScript configs via @synapse/*",
 	"Hooks, CI, architecture boundaries, and Compose out of the box",
 ];
 
@@ -247,14 +247,14 @@ export const CAPABILITY_CARDS: CapabilityCard[] = [
 	{
 		title: "Add an app in one workspace",
 		description:
-			"Drop a package under apps/ or packages/, export as @starter/*, and wire it into turbo.json.",
+			"Drop a package under apps/ or packages/, export as @synapse/*, and wire it into turbo.json.",
 		span: 2,
 		kind: "tools",
 		palette: "blue",
 	},
 	{
 		title: "Shared UI that sticks",
-		description: "Design tokens and primitives live in @starter/ui for web.",
+		description: "Design tokens and primitives live in @synapse/ui for web.",
 		span: 2,
 		kind: "memory",
 		palette: "teal",
@@ -426,7 +426,7 @@ export const TESTIMONIALS_ROW_ONE: Testimonial[] = [
 export const TESTIMONIALS_ROW_TWO: Testimonial[] = [
 	{
 		quote:
-			"Adding a package under packages/ and exporting @starter/* took minutes. Turbo picked it up immediately.",
+			"Adding a package under packages/ and exporting @synapse/* took minutes. Turbo picked it up immediately.",
 		name: "Theo Park",
 		role: "Mobile engineer",
 		seed: "Theo",

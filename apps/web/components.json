@@ -16,8 +16,8 @@
   "menuAccent": "subtle",
   "aliases": {
     "components": "@/components",
-    "utils": "@starter/ui/lib/utils",
-    "ui": "@starter/ui/components",
+    "utils": "@synapse/ui/lib/utils",
+    "ui": "@synapse/ui/components",
     "lib": "@/lib",
     "hooks": "@/hooks"
   }

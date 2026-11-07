@@ -13,17 +13,15 @@ Each agent must load the universal contract and exactly one role charter before 
 
 ## Active roles
 
-- [Backend](backend.md) — the complete NestJS API and backend platform
-- [Rust](rust.md) — the Axum demo service and Rust tooling
+- [Backend](backend.md) — the Hono API (`apps/ai-api`) and backend platform
 - [Web](web.md) — Next.js web application
-- [Mobile](mobile.md) — Expo Router mobile application
 - [QA](qa.md) — behavior, regression, accessibility, and end-to-end verification
 - [Reviewer](reviewer.md) — independent code, scope, and contract review
 - [UI/UX](ui-ux.md) — design system, the Rabtx polished layer, and visual quality
 - [PM](pm.md) — planning, assignment, status collection, and delivery coordination
 
 Role charters define default ownership. A card may narrow a role's scope but may not silently
-widen it. Backend specializations such as auth, finance, or billing are focus areas on cards,
+widen it. Backend specializations such as auth, RAG, or migrations are focus areas on cards,
 not separate permanent agents.
 
 Security/bug-bounty becomes a separate role only when the product's threat surface and workload

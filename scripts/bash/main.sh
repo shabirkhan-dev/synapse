@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Starter scripts – bash
+# Synapse scripts – bash
 set -euo pipefail
 
-echo "Hello from Starter scripts (bash)"
+echo "Hello from Synapse scripts (bash)"

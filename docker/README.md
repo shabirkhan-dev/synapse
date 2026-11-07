@@ -7,10 +7,8 @@ Compose is split into **fragments** under `compose/` and merged by the root
 | File | Role |
 |------|------|
 | `compose/postgres.yml` | Postgres 18 + pgvector (`pgvector/pgvector:0.8.7-pg18-trixie`), volume, healthcheck |
-| `compose/nest-api.yml` | NestJS API image (Bun multi-stage build) |
 | `compose/ai-api.yml` | Bun + Hono AI API (RAG on pgvector, streaming chat). Needs `AI_API_KEY` in `.env` |
 | `compose/web.yml` | Next.js web image (standalone output) |
-| `compose/rust-api.yml` | Optional Rust API (`--profile rust`) |
 
 **Env:** copy `env.docker.example` from the repo root to `.env`.
 
@@ -22,12 +20,10 @@ docker compose up -d --build
 | Service | Host port (default) |
 |---------|---------------------|
 | Postgres | 5433 → 5432 |
-| Nest API | 4000 |
 | AI API | 8000 (`/api/docs` for the API reference) |
 | Web | 3000 |
-| Rust API (profile) | 3002 |
 
-`NEXT_PUBLIC_NEST_API_URL` must be a URL the **browser** can reach (usually `http://localhost:4000`), not the Docker service hostname.
+`NEXT_PUBLIC_*` URLs must be reachable from the **browser**, not Docker service hostnames.
 
 **Postgres only** (API/web on the host):
 
@@ -35,16 +31,10 @@ docker compose up -d --build
 docker compose up -d postgres
 ```
 
-**With Rust API:**
-
-```bash
-docker compose --profile rust up -d --build
-```
-
 **Manual fragment (no `include`):**
 
 ```bash
-docker compose -f docker/compose/postgres.yml --project-name starter up -d
+docker compose -f docker/compose/postgres.yml --project-name synapse up -d
 ```
 
 ## Upgrading from Postgres 16
@@ -59,10 +49,10 @@ new named volume, `postgres18_data`, mounted at `/var/lib/postgresql`. The old `
 
 ```bash
 # 1. On the old setup (postgres:16-alpine + postgres_data volume), while it is running:
-docker compose exec -T postgres pg_dumpall -U starter > starter-pg16.sql
+docker compose exec -T postgres pg_dumpall -U synapse > synapse-pg16.sql
 # 2. On this version: start the new server, then restore the dump.
 docker compose up -d postgres
-docker compose exec -T postgres psql -U starter -d postgres < starter-pg16.sql
+docker compose exec -T postgres psql -U synapse -d postgres < synapse-pg16.sql
 ```
 
 ## Switching to the pgvector image
@@ -76,8 +66,8 @@ Alpine (musl) and Debian (glibc) sort text differently, so rebuild text indexes 
 
 ```bash
 docker compose up -d postgres
-docker compose exec postgres psql -U starter -d starter -c 'REINDEX DATABASE starter;'
-docker compose exec postgres psql -U starter -d starter -c 'ALTER DATABASE starter REFRESH COLLATION VERSION;'
+docker compose exec postgres psql -U synapse -d synapse -c 'REINDEX DATABASE synapse;'
+docker compose exec postgres psql -U synapse -d synapse -c 'ALTER DATABASE synapse REFRESH COLLATION VERSION;'
 ```
 
 Hosted Postgres: Neon supports `vector` out of the box. Elsewhere, make sure the extension is installable

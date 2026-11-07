@@ -1,4 +1,4 @@
-import { Spinner } from "@starter/ui/components/spinner";
+import { Spinner } from "@synapse/ui/components/spinner";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { VerifyEmailForm } from "@/modules/auth/components";

@@ -1,7 +1,7 @@
-import { Button } from "@starter/ui/components/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@starter/ui/components/field";
-import { Input } from "@starter/ui/components/input";
-import { Spinner } from "@starter/ui/components/spinner";
+import { Button } from "@synapse/ui/components/button";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@synapse/ui/components/field";
+import { Input } from "@synapse/ui/components/input";
+import { Spinner } from "@synapse/ui/components/spinner";
 
 export function TwoFactorForm({
 	code,

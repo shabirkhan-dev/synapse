@@ -35,7 +35,7 @@ risks early, and keep delivery moving without becoming a second implementation o
 ## Owned paths
 
 - `.agents/board/**`
-- Product direction and coordination updates explicitly assigned in `apps/docs/content/docs/`
+- Product direction and coordination updates explicitly assigned in `docs/`
 - `.agents/agent-contract.md` and `.agents/roles/pm.md` for explicitly human-approved
   coordination-policy changes
 
@@ -72,7 +72,7 @@ The default team is intentionally small:
 
 - human product owner — direction, approvals, and final decisions;
 - PM — Codex delivery coordination;
-- backend, web, mobile — implementation owners;
+- backend, web — implementation owners;
 - UI/UX — specialist implementation/support role;
 - QA and reviewer — activated when the risk or change requires them.
 
@@ -86,7 +86,7 @@ For each working session I will:
 1. Inspect the board, active worktrees, recent commits, and team notes.
 2. Report what changed, what is blocked, what needs your decision, and the next actions.
 3. Convert approved outcomes into slices and scoped cards with one accountable owner each.
-4. Coordinate dependencies between backend, web, mobile, UI/UX, QA, and reviewer.
+4. Coordinate dependencies between backend, web, UI/UX, QA, and reviewer.
 5. Check completion evidence before recommending a card or agent as done.
 6. Keep staffing and role quality observable through review findings, regressions, scope violations,
    and validation evidence.

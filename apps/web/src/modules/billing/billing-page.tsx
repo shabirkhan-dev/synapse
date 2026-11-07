@@ -7,8 +7,8 @@ import {
 	Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Badge } from "@starter/ui/components/badge";
-import { Button, buttonVariants } from "@starter/ui/components/button";
+import { Badge } from "@synapse/ui/components/badge";
+import { Button, buttonVariants } from "@synapse/ui/components/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";

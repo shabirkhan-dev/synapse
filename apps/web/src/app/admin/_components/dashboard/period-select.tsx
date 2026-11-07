@@ -7,7 +7,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@starter/ui/components/dropdown-menu";
+} from "@synapse/ui/components/dropdown-menu";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 

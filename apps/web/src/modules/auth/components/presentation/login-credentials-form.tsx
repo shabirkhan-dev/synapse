@@ -1,14 +1,14 @@
 import { Mail01Icon, ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@starter/ui/components/button";
-import { Field, FieldGroup, FieldLabel } from "@starter/ui/components/field";
+import { Button } from "@synapse/ui/components/button";
+import { Field, FieldGroup, FieldLabel } from "@synapse/ui/components/field";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupInput,
-} from "@starter/ui/components/input-group";
-import { Spinner } from "@starter/ui/components/spinner";
+} from "@synapse/ui/components/input-group";
+import { Spinner } from "@synapse/ui/components/spinner";
 import Link from "next/link";
 
 interface LoginCredentialsFormProps {

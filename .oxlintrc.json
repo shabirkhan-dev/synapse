@@ -6,7 +6,7 @@
 		"suspicious": "warn",
 		"perf": "warn"
 	},
-	"ignorePatterns": ["apps/mobile/src/uniwind-types.d.ts", "**/.next", "**/dist"],
+	"ignorePatterns": ["**/.next", "**/dist"],
 	"rules": {
 		"react/exhaustive-deps": "warn",
 		"react/rules-of-hooks": "error",
@@ -26,50 +26,9 @@
 	},
 	"overrides": [
 		{
-			"files": ["apps/nest-api/**/*.ts"],
-			"rules": {
-				"typescript/consistent-type-imports": "off",
-				"typescript/no-explicit-any": "off",
-				"typescript/no-extraneous-class": ["warn", { "allowWithDecorator": true }],
-				"import/no-unassigned-import": "off",
-				"import/no-named-as-default": "off",
-				"unicorn/prefer-node-protocol": "error",
-				"react/exhaustive-deps": "off",
-				"react/rules-of-hooks": "off",
-				"nextjs/no-img-element": "off",
-				"nextjs/no-head-element": "off",
-				"nextjs/no-document-import-in-page": "off",
-				"nextjs/no-head-import-in-document": "off",
-				"nextjs/google-font-display": "off",
-				"nextjs/no-before-interactive-script-outside-document": "off",
-				"nextjs/no-assign-module-variable": "off"
-			}
-		},
-		{
-			"files": ["apps/web/**/*.ts", "apps/web/**/*.tsx", "apps/docs/**/*.ts", "apps/docs/**/*.tsx"],
+			"files": ["apps/web/**/*.ts", "apps/web/**/*.tsx"],
 			"rules": {
 				"nextjs/no-before-interactive-script-outside-document": "warn"
-			}
-		},
-		{
-			"files": [
-				"apps/mobile/**/*.ts",
-				"apps/mobile/**/*.tsx",
-				"packages/ui/src/components/mobile/**/*.tsx"
-			],
-			"rules": {
-				"react/no-array-index-key": "off",
-				"react/no-unstable-nested-components": ["warn", { "allowAsProps": true }],
-				"react/memo-dependencies": "off",
-				"react-hooks/exhaustive-deps": "off",
-				"react/exhaustive-deps": "off",
-				"import/no-unassigned-import": "off",
-				"nextjs/no-img-element": "off",
-				"nextjs/no-head-element": "off",
-				"nextjs/no-document-import-in-page": "off",
-				"nextjs/no-head-import-in-document": "off",
-				"nextjs/google-font-display": "off",
-				"nextjs/no-before-interactive-script-outside-document": "off"
 			}
 		}
 	]

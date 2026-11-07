@@ -1,4 +1,4 @@
-# Starter scripts
+# Synapse scripts
 
 Scripts live under **`scripts/`** at repo root, organized by purpose: **bash** utilities, **architecture** checks and **git-hooks**.
 

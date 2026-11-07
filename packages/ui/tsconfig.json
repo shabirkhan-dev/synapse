@@ -4,7 +4,7 @@
 		"types": ["react"],
 		"ignoreDeprecations": "6.0",
 		"paths": {
-			"@starter/ui/*": ["./src/*"]
+			"@synapse/ui/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],

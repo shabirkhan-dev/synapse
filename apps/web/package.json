@@ -20,7 +20,7 @@
     "@hugeicons/react": "^1.1.10",
     "@paper-design/shaders-react": "^0.0.82",
     "@rabtx/ui": "workspace:*",
-    "@starter/ui": "workspace:*",
+    "@synapse/ui": "workspace:*",
     "@simplewebauthn/browser": "^14.0.0",
     "@tanstack/react-query": "^5.105.0",
     "clsx": "^2.1.1",
@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
-    "@starter/typescript-config": "workspace:*",
+    "@synapse/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",

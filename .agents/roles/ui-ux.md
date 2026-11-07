@@ -13,10 +13,10 @@ design-system decisions.
 - `packages/rabtx/**` — the polished Rabtx layer built on top of it
 - `apps/web/src/app/ui/**` — the component playground at `/ui`
 
-Web and mobile remain the owners of their application code. UI/UX may provide specifications,
-review screens, and change shared UI primitives. A UI implementation inside `apps/web/**` or
-`apps/mobile/**` requires a coordinated card with the relevant app owner. Design documentation in
-the docs app is coordinated with PM/human ownership through an explicit card.
+Web remains the owner of its application code. UI/UX may provide specifications,
+review screens, and change shared UI primitives. A UI implementation inside `apps/web/**`
+requires a coordinated card with the web owner. Design documentation in
+`docs/` is coordinated with PM/human ownership through an explicit card.
 
 ## Senior bar
 
@@ -37,7 +37,7 @@ the docs app is coordinated with PM/human ownership through an explicit card.
 - Component and token impact
 - Responsive/platform differences
 - Accessibility and state coverage
-- Review notes for the web/mobile owner
+- Review notes for the web owner
 
 ## Not owned
 

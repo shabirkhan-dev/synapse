@@ -9,11 +9,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json bun.lock ./
 COPY apps/ai-api/package.json ./apps/ai-api/
-COPY apps/nest-api/package.json ./apps/nest-api/
 COPY apps/web/package.json ./apps/web/
-COPY apps/mobile/package.json ./apps/mobile/
-COPY apps/docs/package.json ./apps/docs/
-COPY apps/rust/package.json ./apps/rust/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/logger/package.json ./packages/logger/
 COPY packages/rabtx/package.json ./packages/rabtx/
@@ -39,13 +35,13 @@ ENV NODE_ENV=production
 ENV PORT=8000
 ENV RUN_MIGRATIONS=true
 
-RUN addgroup -S starter && adduser -S starter -G starter \
+RUN addgroup -S synapse && adduser -S synapse -G synapse \
 	&& apk add --no-cache wget
 
-COPY --from=build --chown=starter:starter /app/apps/ai-api/dist ./dist
+COPY --from=build --chown=synapse:synapse /app/apps/ai-api/dist ./dist
 COPY --chmod=755 apps/ai-api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-USER starter
+USER synapse
 
 EXPOSE 8000
 

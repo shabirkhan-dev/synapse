@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@starter/ui/lib/utils";
+import { cn } from "@synapse/ui/lib/utils";
 import * as React from "react";
 import type { TooltipValueType } from "recharts";
 import * as RechartsPrimitive from "recharts";

@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@starter/ui/lib/utils";
+import { cn } from "@synapse/ui/lib/utils";
 import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react";
 import {
 	forwardRef,

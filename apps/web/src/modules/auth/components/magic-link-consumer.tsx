@@ -1,15 +1,15 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@starter/ui/components/alert";
-import { Button } from "@starter/ui/components/button";
+import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Button } from "@synapse/ui/components/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@starter/ui/components/card";
-import { Spinner } from "@starter/ui/components/spinner";
+} from "@synapse/ui/components/card";
+import { Spinner } from "@synapse/ui/components/spinner";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";

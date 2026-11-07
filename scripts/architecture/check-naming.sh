@@ -16,10 +16,7 @@ checked=0
 
 SCOPES=(
     apps/web/src
-    apps/nest-api/src
     apps/ai-api/src
-    apps/mobile/src
-    apps/docs/src
     packages/ui/src
     packages/logger/src
 )

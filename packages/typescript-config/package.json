@@ -1,7 +1,7 @@
 {
-  "name": "@starter/typescript-config",
+  "name": "@synapse/typescript-config",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-	"files": ["base.json", "expo.json", "nextjs.json"]
+	"files": ["base.json", "nextjs.json"]
 }

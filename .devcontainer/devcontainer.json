@@ -1,5 +1,5 @@
 {
-	"name": "Starter",
+	"name": "Synapse",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": ".."
@@ -8,18 +8,14 @@
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
 
 	"postCreateCommand": "bun install && bun run prepare",
-	"forwardPorts": [3000, 3002, 4000],
+	"forwardPorts": [3000, 8000],
 	"portsAttributes": {
 		"3000": {
 			"label": "Web (Next.js)",
 			"onAutoForward": "notify"
 		},
-		"3002": {
-			"label": "Docs",
-			"onAutoForward": "silent"
-		},
-		"4000": {
-			"label": "Nest API",
+		"8000": {
+			"label": "AI API",
 			"onAutoForward": "silent"
 		}
 	},

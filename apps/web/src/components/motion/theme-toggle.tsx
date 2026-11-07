@@ -11,7 +11,7 @@ import {
 	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@starter/ui/components/dropdown-menu";
+} from "@synapse/ui/components/dropdown-menu";
 import { useReducedMotion } from "motion/react";
 import {
 	type ComponentPropsWithoutRef,

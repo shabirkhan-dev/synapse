@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@starter/ui/components/button";
-import { Input } from "@starter/ui/components/input";
-import { Textarea } from "@starter/ui/components/textarea";
-import { cn } from "@starter/ui/lib/utils";
+import { Button } from "@synapse/ui/components/button";
+import { Input } from "@synapse/ui/components/input";
+import { Textarea } from "@synapse/ui/components/textarea";
+import { cn } from "@synapse/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 

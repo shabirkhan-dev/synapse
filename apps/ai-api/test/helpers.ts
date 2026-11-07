@@ -1,5 +1,5 @@
 import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
-import { createLogger } from "@starter/logger";
+import { createLogger } from "@synapse/logger";
 import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import { SignJWT } from "jose";
 

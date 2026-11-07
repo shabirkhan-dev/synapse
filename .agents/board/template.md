@@ -2,8 +2,8 @@
 id: str-<stable-id>
 title: <one-line summary>
 type: feature | bug | chore | spike | decision | risk | announcement
-from: backend | web | mobile | qa | reviewer | ui-ux | pm | human
-to: backend | web | mobile | qa | reviewer | ui-ux | pm | all
+from: backend | web | qa | reviewer | ui-ux | pm | human
+to: backend | web | qa | reviewer | ui-ux | pm | all
 priority: low | normal | high
 status: open
 assignee: none
@@ -25,7 +25,7 @@ updated: YYYY-MM-DD
 ## Why / Context
 
 <Why it matters, what triggered it. Link to files or contract sections:
-e.g. `apps/docs/content/docs/backend-api.mdx#routines-api-ready`.>
+e.g. `apps/ai-api/src/modules/rag/rag.routes.ts`.>
 
 ## Proposal or Ask
 

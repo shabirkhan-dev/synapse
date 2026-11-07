@@ -1,4 +1,4 @@
-import { cn } from "@starter/ui/lib/utils";
+import { cn } from "@synapse/ui/lib/utils";
 import type * as React from "react";
 
 function Card({

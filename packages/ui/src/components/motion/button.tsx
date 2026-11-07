@@ -2,9 +2,9 @@
 
 import { Cancel01Icon, CheckIcon, Loading01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useHoverCapable } from "@starter/ui/hooks/use-hover-capable";
-import { EASE_OUT, SPRING_PRESS, SPRING_SWAP } from "@starter/ui/lib/ease";
-import { cn } from "@starter/ui/lib/utils";
+import { useHoverCapable } from "@synapse/ui/hooks/use-hover-capable";
+import { EASE_OUT, SPRING_PRESS, SPRING_SWAP } from "@synapse/ui/lib/ease";
+import { cn } from "@synapse/ui/lib/utils";
 import {
 	AnimatePresence,
 	type HTMLMotionProps,

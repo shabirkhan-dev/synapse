@@ -1,6 +1,6 @@
 # Dev Container
 
-Reproducible environment for Starter: **Bun**, **Rust**, and Bash lint/format helpers.
+Reproducible environment for Synapse: **Bun**, **Rust**, and Bash lint/format helpers.
 
 ## How to use
 
@@ -14,7 +14,7 @@ After start, `postCreateCommand` runs `bun install` and `bun run prepare` (git h
 | Tool | Why |
 |------|-----|
 | **Bun** `1.4.4` | Package manager + JS/TS runtime |
-| **Rust** (stable, rustfmt, clippy) | `apps/rust` and Rust logger bits |
+| **Rust** (stable, rustfmt, clippy) | Rust logger bits and future crates |
 | **ShellCheck** + **shfmt** | Bash script quality |
 
 C and Lua toolchains were removed — they are not part of the product stack.
@@ -24,5 +24,4 @@ C and Lua toolchains were removed — they are not part of the product stack.
 | Port | App |
 |------|-----|
 | 3000 | Web (Next.js) |
-| 3002 | Docs |
-| 4000 | Nest API |
+| 8000 | AI API |

@@ -1,6 +1,6 @@
-# `@starter/ui`
+# `@synapse/ui`
 
-Shared shadcn/ui primitives for the Starter monorepo.
+Shared shadcn/ui primitives for the Synapse monorepo.
 
 This package follows the [shadcn monorepo](https://ui.shadcn.com/docs/monorepo) layout:
 
@@ -31,15 +31,15 @@ Keep `style`, `iconLibrary`, and `baseColor` identical in:
 Preferred (deep imports — matches CLI aliases):
 
 ```tsx
-import { Button } from "@starter/ui/components/button";
-import { cn } from "@starter/ui/lib/utils";
-import { useIsMobile } from "@starter/ui/hooks/use-mobile";
+import { Button } from "@synapse/ui/components/button";
+import { cn } from "@synapse/ui/lib/utils";
+import { useIsMobile } from "@synapse/ui/hooks/use-mobile";
 ```
 
 Barrel import (still supported):
 
 ```tsx
-import { Button, Card, cn } from "@starter/ui";
+import { Button, Card, cn } from "@synapse/ui";
 ```
 
 ## Styles
@@ -48,7 +48,7 @@ Apps import shared tokens from this package:
 
 ```css
 @import "tailwindcss";
-@import "@starter/ui/globals.css";
+@import "@synapse/ui/globals.css";
 @source "../../../../packages/ui/src";
 ```
 

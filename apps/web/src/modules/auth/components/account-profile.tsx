@@ -7,9 +7,9 @@ import {
 	UserEdit01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Alert, AlertDescription, AlertTitle } from "@starter/ui/components/alert";
-import { Badge } from "@starter/ui/components/badge";
-import { Spinner } from "@starter/ui/components/spinner";
+import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Badge } from "@synapse/ui/components/badge";
+import { Spinner } from "@synapse/ui/components/spinner";
 import { useEffect, useState } from "react";
 import { ProfileForm } from "@/modules/users/components/profile-form";
 import {

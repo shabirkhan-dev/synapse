@@ -1,1 +1,1 @@
-export { cn } from "@starter/ui/lib/utils";
+export { cn } from "@synapse/ui/lib/utils";

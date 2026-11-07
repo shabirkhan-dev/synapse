@@ -1,10 +1,10 @@
 import { SaveIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@starter/ui/components/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@starter/ui/components/field";
-import { Input } from "@starter/ui/components/input";
-import { Spinner } from "@starter/ui/components/spinner";
-import { Textarea } from "@starter/ui/components/textarea";
+import { Button } from "@synapse/ui/components/button";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@synapse/ui/components/field";
+import { Input } from "@synapse/ui/components/input";
+import { Spinner } from "@synapse/ui/components/spinner";
+import { Textarea } from "@synapse/ui/components/textarea";
 import type { UpdateUserProfileInput } from "../types/user.types";
 import { AvatarPicker } from "./avatar-picker";
 

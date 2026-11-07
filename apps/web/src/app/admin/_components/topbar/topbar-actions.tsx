@@ -2,7 +2,7 @@
 
 import { Notification03Icon, PrinterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@starter/ui/components/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@synapse/ui/components/tooltip";
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { ThemeToggleControl } from "@/components/motion/theme-toggle";

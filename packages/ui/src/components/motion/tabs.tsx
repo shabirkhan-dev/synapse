@@ -1,7 +1,7 @@
 "use client";
 
-import { EASE_OUT } from "@starter/ui/lib/ease";
-import { cn } from "@starter/ui/lib/utils";
+import { EASE_OUT } from "@synapse/ui/lib/ease";
+import { cn } from "@synapse/ui/lib/utils";
 import { MotionConfig, motion, type Transition, useReducedMotion } from "motion/react";
 import {
 	createContext,

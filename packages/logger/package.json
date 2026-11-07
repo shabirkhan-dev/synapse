@@ -1,5 +1,5 @@
 {
-	"name": "@starter/logger",
+	"name": "@synapse/logger",
 	"version": "0.0.0",
 	"private": true,
 	"sideEffects": false,
@@ -21,7 +21,7 @@
 		"test:watch": "vitest"
 	},
 	"devDependencies": {
-		"@starter/typescript-config": "workspace:*",
+		"@synapse/typescript-config": "workspace:*",
 		"@types/node": "^26.6.6",
 		"typescript": "^7.0.2",
 		"@vitest/coverage-v8": "^5.0.5",

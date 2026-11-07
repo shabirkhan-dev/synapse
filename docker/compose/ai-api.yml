@@ -4,15 +4,15 @@ services:
     build:
       context: ../..
       dockerfile: apps/ai-api/Dockerfile
-    image: starter-ai-api:local
+    image: synapse-ai-api:local
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 8000
-      SERVICE_NAME: starter-ai-api
-      DATABASE_URL: postgresql://${POSTGRES_USER:-starter}:${POSTGRES_PASSWORD:-starter}@postgres:5432/${POSTGRES_DB:-starter}
+      SERVICE_NAME: synapse-ai-api
+      DATABASE_URL: postgresql://${POSTGRES_USER:-synapse}:${POSTGRES_PASSWORD:-synapse}@postgres:5432/${POSTGRES_DB:-synapse}
       DATABASE_POOL_MAX: ${AI_DATABASE_POOL_MAX:-5}
-      # Same secret as nest-api: ai-api verifies nest-issued access tokens.
+      # HS256 secret ai-api uses to verify access tokens.
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}

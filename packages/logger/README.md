@@ -1,13 +1,13 @@
-# @starter/logger
+# @synapse/logger
 
 Beautiful, injectable logger for TypeScript/JavaScript and Rust. Same design in both: levels, colors, timestamps, optional prefix, and child loggers.
 
 ## TypeScript / JavaScript
 
-**Install:** Add `@starter/logger` to your app (workspace dependency).
+**Install:** Add `@synapse/logger` to your app (workspace dependency).
 
 ```ts
-import { createLogger } from "@starter/logger";
+import { createLogger } from "@synapse/logger";
 
 const log = createLogger({ prefix: "app" });
 log.info("Server started");
@@ -26,11 +26,11 @@ httpLog.info("GET / 200");
 
 ```toml
 [dependencies]
-starter-logger = { path = "../../packages/logger/rust" }
+synapse-logger = { path = "../../packages/logger/rust" }
 ```
 
 ```rust
-use starter_logger::Logger;
+use synapse_logger::Logger;
 
 let log = Logger::new().with_prefix("app");
 log.info("Server started");

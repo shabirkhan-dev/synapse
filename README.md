@@ -1,10 +1,10 @@
-# Starter
+# Synapse
 
-A production-ready monorepo starter kit for modern SaaS applications, built on **Bun workspaces + Turborepo**.
+An AI platform monorepo — ingestion, knowledge, retrieval, generation and evaluation — built on
+**Bun workspaces + Turborepo**.
 
-Five apps — Next.js web, Expo mobile, NestJS API, Fumadocs docs and an optional Rust demo —
-sharing one UI layer, one logger, one TypeScript config, one CI pipeline and a slim
-Dev Container.
+Synapse started from the Rabtx starter and is being cleaned up step by step. Today it holds a
+Bun + Hono AI API, a Next.js web app, and the shared UI, logger and TypeScript config packages.
 
 Dual-licensed **MIT OR Apache-2.0**.
 
@@ -13,28 +13,24 @@ Dual-licensed **MIT OR Apache-2.0**.
 **Prerequisites**
 
 - [Bun](https://bun.sh) `1.4.4` (pinned via `packageManager`)
-- Optional: Docker Compose `v2.20+`, Rust toolchain (`apps/rust`)
+- Optional: Docker Compose `v2.20+`
 
 ```bash
-git clone https://github.com/rabtx/starter.git
-cd starter
+git clone https://github.com/shabirkhan-dev/synapse.git
+cd synapse
 bun install
 bun run prepare
 bun run dev
 ```
 
-`bun run dev` starts every workspace except Rust (the AI API included). Add Rust with
-`bun run dev:rust`, run only the AI API with `bun run dev:ai`, or run the lot with `bun run dev:all`.
+`bun run dev` starts every workspace. Run only the AI API with `bun run dev:ai`.
 
 | App | Dev URL |
 | --- | --- |
 | Web | http://localhost:3000 |
-| Nest API | http://localhost:4000 — `/api/v1/health`, `/api/docs` |
 | AI API | http://localhost:8000 — `/api/v1/health`, `/api/docs` |
-| Docs | http://localhost:3002/docs |
 
-To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for `mobile`,
-`nest-api`, `ai-api`, `docs`, `rust`).
+To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for `ai-api`).
 
 ## Layout
 
@@ -42,32 +38,24 @@ To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for 
 
 | Path | What it is |
 | --- | --- |
-| `apps/web` | Next.js 16 — admin, marketing, auth and billing; component playground at `/ui` |
-| `apps/mobile` | Expo SDK 58 — auth, billing via hosted checkout |
-| `apps/nest-api` | NestJS API spine, Drizzle over Postgres/Neon |
 | `apps/ai-api` | Bun + Hono AI API — RAG on pgvector, streaming tool-calling chat (AI SDK) |
-| `apps/docs` | Fumadocs site — project docs at `/docs` |
-| `apps/rust` | Optional Rust/Axum demo |
+| `apps/web` | Next.js 16 — admin, marketing and chat screens; component playground at `/ui` |
 
 ### Packages
 
 | Package | Path | Role |
 | --- | --- | --- |
-| `@starter/ui` | `packages/ui` | shadcn base — the unopinionated primitives |
-| `@rabtx/ui` | `packages/rabtx` | The component library, rebuilt from scratch for web and native |
-| `@starter/logger` | `packages/logger` | Shared structured logging |
-| `@starter/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |
-
-`@rabtx/ui` is being rebuilt one component at a time: CSS-only motion, no animation library,
-HugeIcons, Flat and Floating depth. The design rules live in [DESIGN.md](DESIGN.md). Components are
-shown in the playground at `/ui` in `apps/web`.
+| `@synapse/ui` | `packages/ui` | shadcn base — the unopinionated primitives |
+| `@rabtx/ui` | `packages/rabtx` | Polished component layer used by the web app (see [DESIGN.md](DESIGN.md)) |
+| `@synapse/logger` | `packages/logger` | Shared structured logging |
+| `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |
 
 ### Everything else
 
 | Path | Purpose |
 | --- | --- |
-| `.agents/` | Agent rules, skills and plans — the single source; there is no second copy |
-| `docker/` | Compose fragments: Postgres, Nest, web, optional profiles |
+| `.agents/` | Agent rules, roles, skills and the coordination board |
+| `docker/` | Compose fragments: Postgres (pgvector), AI API, web |
 | `scripts/` | Bash utilities, plus architecture and naming checks |
 | `.github/workflows/` | `ci.yml`, `cd.yml`, `security.yml` |
 | `.devcontainer/` | Bun + Rust + Bash tooling |
@@ -76,11 +64,10 @@ shown in the playground at `/ui` in `apps/web`.
 
 | Command | Does |
 | --- | --- |
-| `bun run dev` | All dev servers except Rust |
-| `bun run dev:all` / `dev:rust` / `dev:ai` | Everything / Rust only / AI API only |
+| `bun run dev` / `dev:ai` | All dev servers / AI API only |
 | `bun run build` | Build every app |
 | `bun run lint` / `lint:fix` | oxlint, plus ShellCheck over `scripts/` |
-| `bun run format` | Format TS/JS, shell and Rust |
+| `bun run format` | Format TS/JS and shell |
 | `bun run typecheck` | TypeScript across workspaces |
 | `bun run test` / `test:coverage` | Unit tests / coverage gates |
 | `bun run test:e2e:web` | Playwright e2e for web |
@@ -93,7 +80,7 @@ shown in the playground at `/ui` in `apps/web`.
 - **Bun** workspaces and **Turborepo** for the task graph
 - **oxlint** for linting and **oxfmt** for formatting TS/JS — tabs, line width 100
 - **Lefthook** pre-commit and commit-msg, enforcing Conventional Commits
-- Bash: ShellCheck + shfmt · Rust: rustfmt + clippy
+- Bash: ShellCheck + shfmt
 
 ## Docker
 
@@ -102,25 +89,12 @@ cp env.docker.example .env
 docker compose up -d --build
 ```
 
-Web `:3000`, Nest `:4000`, AI API `:8000`, Postgres (pgvector) on host `:5433`. Optional Rust profile:
-`docker compose --profile rust up -d --build`.
-
-More in [docker/README.md](docker/README.md) and `/docs/docker`.
-
-## Deploy
-
-| Piece | Host | Config |
-| --- | --- | --- |
-| Web + docs | [Vercel](https://vercel.com) | `apps/*/vercel.json` |
-| Nest API + AI API | [Render](https://render.com) | `render.yaml` |
-| Database | [Neon](https://neon.tech) | `DATABASE_URL` |
-
-Walkthrough: `/docs/deploy` — [apps/docs/content/docs/deploy.mdx](apps/docs/content/docs/deploy.mdx).
+Web `:3000`, AI API `:8000`, Postgres (pgvector) on host `:5433`. More in
+[docker/README.md](docker/README.md).
 
 ## Dev Container
 
-`.devcontainer/` installs **Bun**, **Rust** and the Bash lint tools. C and Lua are
-deliberately excluded.
+`.devcontainer/` installs **Bun**, **Rust** and the Bash lint tools.
 
 ```text
 Reopen in Container → bun run prepare → bun run dev
@@ -130,19 +104,7 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 
 ## Docs
 
-```bash
-bun --cwd=apps/docs run dev
-```
-
-- [/docs/quick-start](http://localhost:3002/docs/quick-start)
-- [/docs/architecture](http://localhost:3002/docs/architecture)
-- [/docs/deploy](http://localhost:3002/docs/deploy)
-- [/docs/docker](http://localhost:3002/docs/docker)
-- [/docs/production-roadmap](http://localhost:3002/docs/production-roadmap)
-- [/ui](http://localhost:3000/ui) — `@rabtx/ui` playground (in `apps/web`)
-
-Also in the repo: [PROJECT.md](PROJECT.md), [DESIGN.md](DESIGN.md), [AGENTS.md](AGENTS.md),
-[CHANGELOG.md](CHANGELOG.md).
+[PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md), [apps/ai-api/README.md](apps/ai-api/README.md).
 
 ## License
 

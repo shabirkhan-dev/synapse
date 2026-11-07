@@ -85,7 +85,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Textarea,
-} from "@starter/ui";
+} from "@synapse/ui";
 import Image from "next/image";
 import * as React from "react";
 

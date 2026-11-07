@@ -7,11 +7,7 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json bun.lock ./
-COPY apps/nest-api/package.json ./apps/nest-api/
 COPY apps/web/package.json ./apps/web/
-COPY apps/mobile/package.json ./apps/mobile/
-COPY apps/docs/package.json ./apps/docs/
-COPY apps/rust/package.json ./apps/rust/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/logger/package.json ./packages/logger/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
@@ -39,14 +35,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-RUN addgroup -S starter && adduser -S starter -G starter \
+RUN addgroup -S synapse && adduser -S synapse -G synapse \
 	&& apk add --no-cache wget
 
 COPY --from=build /app/apps/web/public ./apps/web/public
-COPY --from=build --chown=starter:starter /app/apps/web/.next/standalone ./
-COPY --from=build --chown=starter:starter /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=synapse:synapse /app/apps/web/.next/standalone ./
+COPY --from=build --chown=synapse:synapse /app/apps/web/.next/static ./apps/web/.next/static
 
-USER starter
+USER synapse
 
 EXPOSE 3000
 

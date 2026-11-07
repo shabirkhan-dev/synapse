@@ -8,7 +8,7 @@ description: >-
   e2e, hydrate, overlay, Base UI menu
 ---
 
-# Browser UI test (Starter web)
+# Browser UI test (Synapse web)
 
 ## When to use
 

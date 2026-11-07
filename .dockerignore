@@ -21,10 +21,7 @@
 !.env.example
 env.docker.example
 
-# Host-only / unused for Nest + web images
-apps/mobile
-apps/docs
-apps/c
+# Host-only / unused for the API + web images
 scripts
 *.log
 .DS_Store

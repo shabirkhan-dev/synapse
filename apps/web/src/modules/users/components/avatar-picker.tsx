@@ -2,9 +2,9 @@
 
 import { ImageUploadIcon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@starter/ui/components/button";
-import { Field, FieldDescription, FieldLabel } from "@starter/ui/components/field";
-import { Spinner } from "@starter/ui/components/spinner";
+import { Button } from "@synapse/ui/components/button";
+import { Field, FieldDescription, FieldLabel } from "@synapse/ui/components/field";
+import { Spinner } from "@synapse/ui/components/spinner";
 import { useId, useRef, useState } from "react";
 import { buildAvatarTemplates } from "../lib/avatar-templates";
 

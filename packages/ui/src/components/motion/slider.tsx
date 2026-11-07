@@ -2,8 +2,8 @@
 "use client";
 
 import { Slider as SliderPrimitive } from "@base-ui/react/slider";
-import { SPRING_PRESS, SPRING_SWAP } from "@starter/ui/lib/ease";
-import { cn } from "@starter/ui/lib/utils";
+import { SPRING_PRESS, SPRING_SWAP } from "@synapse/ui/lib/ease";
+import { cn } from "@synapse/ui/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import React, { type ComponentPropsWithoutRef, useState } from "react";
 

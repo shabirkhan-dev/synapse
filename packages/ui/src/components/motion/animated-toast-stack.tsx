@@ -9,8 +9,8 @@ import {
 	Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { EASE_OUT } from "@starter/ui/lib/ease";
-import { cn } from "@starter/ui/lib/utils";
+import { EASE_OUT } from "@synapse/ui/lib/ease";
+import { cn } from "@synapse/ui/lib/utils";
 import { AnimatePresence, motion, type Transition, useReducedMotion } from "motion/react";
 import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";

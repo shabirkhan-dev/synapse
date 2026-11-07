@@ -1,6 +1,6 @@
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { buttonVariants } from "@starter/ui/components/button";
+import { buttonVariants } from "@synapse/ui/components/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 

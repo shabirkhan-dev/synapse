@@ -9,4 +9,4 @@
 - **Status lives in the folder AND the frontmatter** — keep both in sync so
   grep stays reliable.
 - Cards are small tickets. Long-form design thinking goes in your team's notes
-  file or the docs app, linked from the card.
+  file or `docs/`, linked from the card.

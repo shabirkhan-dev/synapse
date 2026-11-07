@@ -1,4 +1,4 @@
-import { createLogger } from "@starter/logger";
+import { createLogger } from "@synapse/logger";
 
 import { createApp } from "./app";
 import { parseEnv } from "./config/env";
