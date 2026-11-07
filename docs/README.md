@@ -17,5 +17,5 @@ Every page carries a **Status**: `Live` (matches the code), `Planned` (designed,
 | [runbooks/](runbooks/README.md) | Operating the system: local dev, deploy, backups, monitoring, incidents |
 | [guides/](guides/README.md) | How-to guides for ingestion, RAG, retrieval, agents and evaluation |
 
-Agent-facing rules and memory live in [`.agent/`](../.agent/README.md); this folder is for humans
+Agent-facing rules and memory live in [`.agents/`](../.agents/README.md); this folder is for humans
 and agents alike.

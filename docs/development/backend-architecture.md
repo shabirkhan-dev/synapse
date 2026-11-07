@@ -2,8 +2,8 @@
 
 > **Status:** Live. `apps/api` follows this standard; reference module: `apps/api/src/modules/rag/`.
 
-Agent rules: `.agent/rules/backend-architecture.md`, `.agent/rules/configuration.md`.
-Playbook: `.agent/skills/backend-module-development/`.
+Agent rules: `.agents/rules/backend-architecture.md`, `.agents/rules/configuration.md`.
+Playbook: `.agents/skills/backend-module-development/`.
 
 ## Principles
 

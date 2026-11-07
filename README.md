@@ -54,7 +54,8 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 
 | Path | Purpose |
 | --- | --- |
-| `.agent/` | Agent rules, skills, memory, roles and the coordination board |
+| `.agents/` | Agent rules, skills, memory, roles and the coordination board |
+| `AGENTS.md`, `CLAUDE.md`, `opencode.json` | Agent entry points (see `docs/agents/tool-compatibility.md`) |
 | `docs/` | Architecture, packages, ADRs, development, API, runbooks, guides |
 | `docker/` | Compose fragments: Postgres (pgvector), API, console |
 | `scripts/` | Bash utilities, plus architecture and naming checks |

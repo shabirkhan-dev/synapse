@@ -9,7 +9,9 @@ node_modules
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-.claude/
+# Claude Code: keep personal settings local, share the skills link
+.claude/*
+!.claude/skills
 .codex/
 # testing
 /coverage

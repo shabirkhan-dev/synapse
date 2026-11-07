@@ -24,4 +24,4 @@ packages/<name>/
 3. `docs/packages/<name>.md` written or updated.
 4. `bun run lint && bun run typecheck && bun run test && bun run architecture:check` pass.
 
-Agent version: `.agent/skills/package-development/SKILL.md`.
+Agent version: `.agents/skills/package-development/SKILL.md`.

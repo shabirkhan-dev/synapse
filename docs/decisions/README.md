@@ -1,7 +1,7 @@
 # Decisions
 
 Architecture decision records live in [`adr/`](adr/). Write one for any decision that is costly to
-reverse. Agents keep a short summary in `.agent/memory/decisions.md`.
+reverse. Agents keep a short summary in `.agents/memory/decisions.md`.
 
 | ADR | Title | Status |
 | --- | --- | --- |

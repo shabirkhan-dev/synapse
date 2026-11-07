@@ -2,7 +2,7 @@
 
 > **Status:** Live.
 
-1. Pick or raise a card (`.agent/board/`), or open an issue (`.github/ISSUE_TEMPLATE/`).
+1. Pick or raise a card (`.agents/board/`), or open an issue (`.github/ISSUE_TEMPLATE/`).
 2. Branch from `main`.
 3. Make the smallest complete change; update docs in the same change.
 4. Run `bun run preflight` and `bun run architecture:check`.

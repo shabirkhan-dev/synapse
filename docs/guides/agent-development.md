@@ -11,4 +11,4 @@ Target approach (`packages/orchestration`, LangGraph JS):
 4. Bound steps and cost; emit audit events per step.
 5. Add agent evals (`evaluation/agents`).
 
-See `.agent/skills/agent-orchestration/SKILL.md`.
+See `.agents/skills/agent-orchestration/SKILL.md`.

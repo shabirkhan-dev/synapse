@@ -3,7 +3,7 @@
 .github
 .devcontainer
 .cursor
-.agent
+.agents
 .vscode
 .idea
 .turbo

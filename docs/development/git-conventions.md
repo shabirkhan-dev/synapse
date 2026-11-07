@@ -10,5 +10,5 @@
     guard (2 MB), secret scan
   - commit-msg: the rules above
 - **Branches:** short-lived feature branches off `main`; agents use `agent/<role>/<card-slug>`
-  worktrees (`.agent/worktrees.md`).
+  worktrees (`.agents/worktrees.md`).
 - Keep formatting-only changes in their own commit.

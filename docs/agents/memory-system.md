@@ -2,7 +2,7 @@
 
 > **Status:** Live.
 
-`.agent/memory/` holds durable facts agents should know without rediscovering them:
+`.agents/memory/` holds durable facts agents should know without rediscovering them:
 
 | File | Holds |
 | --- | --- |

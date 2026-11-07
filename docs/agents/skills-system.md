@@ -2,7 +2,7 @@
 
 > **Status:** Live.
 
-`.agent/skills/<name>/SKILL.md` is a playbook for one kind of task. Each has YAML frontmatter
+`.agents/skills/<name>/SKILL.md` is a playbook for one kind of task. Each has YAML frontmatter
 (`name`, `description` — when to use it), then: Status, When to use, Workflow, Done when, References.
 
 | Project skills | Vendored skills (upstream, reference only) |

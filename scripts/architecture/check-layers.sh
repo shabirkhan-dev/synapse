@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Enforces the layering rules in .agent/rules/backend-architecture.md,
-# .agent/rules/frontend-architecture.md and .agent/rules/configuration.md.
+# Enforces the layering rules in .agents/rules/backend-architecture.md,
+# .agents/rules/frontend-architecture.md and .agents/rules/configuration.md.
 # Usage: check-layers.sh [repo-root]   (defaults to this repository)
 set -euo pipefail
 
@@ -177,7 +177,7 @@ while IFS= read -r file; do
 done < <(ts_files "$CONSOLE_SRC/features")
 
 if [[ "$failed" -ne 0 ]]; then
-    echo "Layering checks failed. Rules: .agent/rules/backend-architecture.md, frontend-architecture.md, configuration.md"
+    echo "Layering checks failed. Rules: .agents/rules/backend-architecture.md, frontend-architecture.md, configuration.md"
     exit 1
 fi
 echo "Layering checks passed."

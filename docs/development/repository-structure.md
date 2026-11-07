@@ -5,7 +5,7 @@
 ```text
 synapse/
 ├── AGENTS.md            # entry point for AI agents
-├── .agent/              # agent rules, skills, memory, roles, board
+├── .agents/              # agent rules, skills, memory, roles, board
 ├── apps/
 │   ├── api/             # Hono HTTP API (live)
 │   ├── console/         # Next.js admin + playground (live, bare)

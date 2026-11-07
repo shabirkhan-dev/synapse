@@ -1,7 +1,7 @@
 # Packages
 
 Each folder directly under `packages/` is one workspace package (`@synapse/<name>`); folders inside
-it are internal modules. Rules: `.agent/rules/architecture.md`. How to add one:
+it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 `docs/development/package-development.md`.
 
 ## Existing today

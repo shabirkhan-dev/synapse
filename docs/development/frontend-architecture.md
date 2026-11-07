@@ -3,8 +3,8 @@
 > **Status:** Live standard. `apps/console` is bare; this structure is created with the first
 > feature (TanStack Query, `lib/api`, `lib/query` are not installed yet).
 
-Agent rules: `.agent/rules/frontend-architecture.md`, `.agent/rules/configuration.md`.
-Playbook: `.agent/skills/frontend-feature-development/`.
+Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
+Playbook: `.agents/skills/frontend-feature-development/`.
 
 Backend and frontend are modular in the same spirit but do not share internal structure.
 

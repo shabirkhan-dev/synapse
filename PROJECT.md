@@ -36,7 +36,7 @@ synapse/
 ├── turbo.json                # Turborepo pipeline
 ├── package.json              # Root scripts + workspaces
 ├── docs/                     # Architecture, packages, ADRs, development, API, runbooks, guides
-├── .agent/                   # Agent rules, skills, memory, roles, board
+├── .agents/                   # Agent rules, skills, memory, roles, board
 └── AGENTS.md                 # Universal AI agent guidance
 ```
 
@@ -151,7 +151,7 @@ Defaults: console `3000`, API `8000`, Postgres host `5433`. More details: `docke
 ## Conventions and development rules
 
 - Primary repository guidance: `AGENTS.md`
-- Agent rules, skills and memory: `.agent/` (see `docs/agents/`)
+- Agent rules, skills and memory: `.agents/` (see `docs/agents/`)
 - Use workspace imports as `@synapse/<package>`
 
 ## Related docs
