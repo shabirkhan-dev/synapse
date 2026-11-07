@@ -17,7 +17,7 @@ Each agent must load the universal contract and exactly one role charter before 
 - [Web](web.md) — Next.js console (`apps/console`)
 - [QA](qa.md) — behavior, regression, accessibility, and end-to-end verification
 - [Reviewer](reviewer.md) — independent code, scope, and contract review
-- [UI/UX](ui-ux.md) — design system, the Rabtx polished layer, and visual quality
+- [UI/UX](ui-ux.md) — design system (`packages/ui`) and visual quality
 - [PM](pm.md) — planning, assignment, status collection, and delivery coordination
 
 Role charters define default ownership. A card may narrow a role's scope but may not silently

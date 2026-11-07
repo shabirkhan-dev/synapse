@@ -1,24 +1,23 @@
 {
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "base-nova",
-  "rsc": true,
-  "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/styles/globals.css",
-    "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "iconLibrary": "hugeicons",
-  "rtl": true,
-  "menuColor": "inverted",
-  "menuAccent": "subtle",
-  "aliases": {
-    "components": "@synapse/ui/components",
-    "utils": "@synapse/ui/lib/utils",
-    "ui": "@synapse/ui/components",
-    "lib": "@synapse/ui/lib",
-    "hooks": "@synapse/ui/hooks"
-  }
+	"$schema": "https://ui.shadcn.com/schema.json",
+	"style": "base-mira",
+	"rsc": true,
+	"tsx": true,
+	"tailwind": {
+		"config": "",
+		"css": "src/styles/globals.css",
+		"baseColor": "neutral",
+		"cssVariables": true
+	},
+	"iconLibrary": "hugeicons",
+	"aliases": {
+		"components": "@synapse/ui/components",
+		"utils": "@synapse/ui/lib/utils",
+		"hooks": "@synapse/ui/hooks",
+		"lib": "@synapse/ui/lib",
+		"ui": "@synapse/ui/components"
+	},
+	"rtl": false,
+	"menuColor": "default",
+	"menuAccent": "subtle"
 }

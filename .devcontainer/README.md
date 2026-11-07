@@ -14,7 +14,7 @@ After start, `postCreateCommand` runs `bun install` and `bun run prepare` (git h
 | Tool | Why |
 |------|-----|
 | **Bun** `1.4.4` | Package manager + JS/TS runtime |
-| **Rust** (stable, rustfmt, clippy) | Rust logger bits and future crates |
+| **Rust** (stable, rustfmt, clippy) | Future `crates/` (napi-rs) |
 | **ShellCheck** + **shfmt** | Bash script quality |
 
 C and Lua toolchains were removed — they are not part of the product stack.

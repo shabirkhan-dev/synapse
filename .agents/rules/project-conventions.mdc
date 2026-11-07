@@ -9,9 +9,9 @@ alwaysApply: true
 - **Package manager**: Bun only. Use `bun` for install/run — never npm, yarn, or pnpm.
 - **Lint/format**: oxlint and oxfmt only (no ESLint/Prettier). Config: root `.oxlintrc.json` and `.oxfmtrc.json`. Pre-commit hook (lefthook) runs `oxlint --fix`.
 - **Style**: Tabs, line width 100. oxlint and oxfmt apply to `apps/**/*.ts(x)`, `packages/**/*.ts(x)`, `*.config.ts`, `*.config.mjs`.
-- **Shared packages**: `packages/rabtx` (`@rabtx/ui`, the component library being rebuilt; see `DESIGN.md`), `packages/ui` (legacy shadcn-style components + design tokens in `src/styles/globals.css`), `packages/typescript-config` (tsconfig bases), `packages/logger` (TS logger).
+- **Shared packages**: `packages/ui` (`@synapse/ui`: shadcn/ui on Base UI, HugeIcons, Tailwind v4 tokens in `src/styles/globals.css`), `packages/typescript-config` (tsconfig bases).
 - **Apps**: `apps/api` (Hono API), `apps/console` (Next.js). Add new apps under `apps/` and wire in `turbo.json`.
-- **Workspace imports**: Use `@synapse/<package>` (e.g. `@synapse/ui`, `@synapse/logger`). Prefer shared packages over duplicating code across apps.
+- **Workspace imports**: Use `@synapse/<package>` (e.g. `@synapse/ui`). Prefer shared packages over duplicating code across apps.
 - **Git hooks**: Lefthook handles format, lint, typecheck, large-file guard (2 MB), secret scan, and commit-msg checks. Install with `bun run prepare`.
 - **Before finishing**: Run `bun run lint` and `bun run format` from root. Don't leave errors. Separate lint/format fixes from feature commits.
 - **Full reference**: See `AGENTS.md` at repo root for universal agent instructions.

@@ -1,4 +1,4 @@
-# CI: split quality gates with coverage artifacts.
+# CI: split quality gates (lint, typecheck, build, test, API + pgvector).
 name: CI
 
 on:
@@ -117,15 +117,6 @@ jobs:
         run: bun run ci:test
         env:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
-
-      - name: Upload coverage artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-reports
-          path: |
-            packages/logger/coverage
-          if-no-files-found: warn
 
   api:
     needs: [lint, typecheck]

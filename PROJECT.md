@@ -8,7 +8,7 @@ For quick setup/use, start with `README.md`.
 Monorepo managed by **Bun + Turborepo**, with:
 
 - A Bun + Hono API and a bare Next.js console
-- Shared workspace packages (`@synapse/*`, plus `@rabtx/ui`)
+- Shared workspace packages (`@synapse/*`)
 - Bash scripts and quality tooling
 - Architecture boundary checks
 - Git hooks and CI/CD/security pipelines
@@ -22,10 +22,8 @@ synapse/
 │   ├── api/                  # Bun + Hono API (RAG on pgvector, streaming chat)
 │   └── console/              # Next.js console (bare, UI starts from zero)
 ├── packages/
-│   ├── logger/               # Shared logger (TypeScript + Rust)
-│   ├── rabtx/                # @rabtx/ui component layer (no app uses it now)
 │   ├── typescript-config/    # Shared TS config bases
-│   └── ui/                   # Shared web UI primitives + design tokens
+│   └── ui/                   # shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/                  # Bash scripts, architecture checks and tests
 ├── docker/                   # Docker Compose fragments
 ├── .github/workflows/        # CI/CD/security workflows
@@ -49,9 +47,7 @@ synapse/
 
 | Package | Workspace import | Purpose |
 | --- | --- | --- |
-| `packages/ui` | `@synapse/ui` | Shared web UI primitives + design tokens |
-| `packages/rabtx` | `@rabtx/ui` | Component layer from the starter (no app uses it now) |
-| `packages/logger` | `@synapse/logger` | Shared structured logger for TypeScript and Rust |
+| `packages/ui` | `@synapse/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `packages/typescript-config` | `@synapse/typescript-config` | Reusable TypeScript config presets |
 
 ## Root command surface

@@ -1,4 +1,3 @@
-import type { Logger } from "@synapse/logger";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -6,6 +5,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { errorBody } from "./api-response";
 import { AppError } from "./app-error";
 import type { AppBindings } from "./app-types";
+import type { Logger } from "./logger";
 
 export function createErrorHandler(logger: Logger) {
 	return (error: Error, c: Context<AppBindings>) => {

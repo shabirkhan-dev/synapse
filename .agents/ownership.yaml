@@ -38,9 +38,7 @@ roles:
   ui-ux:
     team: design
     paths:
-      - DESIGN.md
       - packages/ui/**
-      - packages/rabtx/**
     reviewers:
       - reviewer
       - web

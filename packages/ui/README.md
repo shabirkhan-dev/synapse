@@ -1,57 +1,25 @@
-# `@synapse/ui`
+# @synapse/ui
 
-Shared shadcn/ui primitives for the Synapse monorepo.
+Shared UI primitives: [shadcn/ui](https://ui.shadcn.com) on [Base UI](https://base-ui.com), style
+`base-mira`, icons from [HugeIcons](https://hugeicons.com), Tailwind CSS v4.
 
-This package follows the [shadcn monorepo](https://ui.shadcn.com/docs/monorepo) layout:
+## Add a component
 
-- UI primitives live in `src/components`
-- Shared helpers in `src/lib`
-- Shared hooks in `src/hooks`
-- Design tokens + theme in `src/styles/globals.css`
-- CLI config in `components.json`
-
-## Add components
-
-Run the CLI **from the app workspace** (not the package):
+Run the shadcn CLI from this package:
 
 ```bash
-cd apps/console
-bunx --bun shadcn@latest add button
+cd packages/ui
+bunx --bun shadcn@latest add dialog
 ```
 
-The CLI installs primitives into `packages/ui` and app-only blocks into `apps/console`.
+Components land in `src/components/` and import `cn` from `@synapse/ui/lib/utils`.
 
-Keep `style`, `iconLibrary`, and `baseColor` identical in:
+## Use it in an app
 
-- `apps/console/components.json`
-- `packages/ui/components.json`
-
-## Importing
-
-Preferred (deep imports — matches CLI aliases):
-
-```tsx
+```ts
+import "@synapse/ui/globals.css";
 import { Button } from "@synapse/ui/components/button";
-import { cn } from "@synapse/ui/lib/utils";
-import { useIsMobile } from "@synapse/ui/hooks/use-mobile";
 ```
 
-Barrel import (still supported):
-
-```tsx
-import { Button, Card, cn } from "@synapse/ui";
-```
-
-## Styles
-
-Apps import shared tokens from this package:
-
-```css
-@import "tailwindcss";
-@import "@synapse/ui/globals.css";
-@source "../../../../packages/ui/src";
-```
-
-## Migration rule
-
-Keep product-specific composed UI in `apps/console/src/components`. Move a component here only when it is a reusable primitive with no app routing/auth/data coupling.
+The app needs Tailwind's PostCSS plugin (`export { default } from "@synapse/ui/postcss.config";`)
+and `transpilePackages: ["@synapse/ui"]` in `next.config.ts`.

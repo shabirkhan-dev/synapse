@@ -1,6 +1,5 @@
-import { createLogger } from "@synapse/logger";
-
 import { createApp } from "./app";
+import { createLogger } from "./common/logger";
 import { parseEnv } from "./config/env";
 import { createDatabase } from "./database/database";
 import { createAiModels } from "./modules/ai/ai.provider";
@@ -11,8 +10,6 @@ const env = parseEnv();
 const logger = createLogger({
 	prefix: env.SERVICE_NAME,
 	minLevel: env.LOG_LEVEL,
-	useColors: env.NODE_ENV !== "production",
-	isoTime: env.NODE_ENV === "production",
 });
 
 if (!env.AI_API_KEY) {

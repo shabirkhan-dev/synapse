@@ -1,9 +1,9 @@
 import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
-import { createLogger } from "@synapse/logger";
 import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import { SignJWT } from "jose";
 
 import { createApp } from "@/app";
+import { createLogger } from "@/common/logger";
 import { developmentJwtSecret, parseEnv } from "@/config/env";
 import { EMBEDDING_DIMENSIONS } from "@/database/schema";
 import { RagService } from "@/modules/rag/rag.service";
@@ -191,7 +191,7 @@ export function buildTestApp({
 	);
 	const app = createApp({
 		env: testEnv,
-		logger: createLogger({ minLevel: "ERROR", useColors: false }),
+		logger: createLogger({ minLevel: "ERROR" }),
 		rag,
 		chatModel,
 		pingDatabase,

@@ -4,7 +4,7 @@ An AI platform monorepo — ingestion, knowledge, retrieval, generation and eval
 **Bun workspaces + Turborepo**.
 
 Synapse started from the Rabtx starter and is being cleaned up step by step. Today it holds a
-Bun + Hono API, a bare Next.js console, and the shared UI, logger and TypeScript config packages.
+Bun + Hono API, a bare Next.js console, and the shared UI and TypeScript config packages.
 
 Dual-licensed **MIT OR Apache-2.0**.
 
@@ -45,9 +45,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 
 | Package | Path | Role |
 | --- | --- | --- |
-| `@synapse/ui` | `packages/ui` | shadcn base — the unopinionated primitives |
-| `@rabtx/ui` | `packages/rabtx` | Starter component layer, not used by any app now (see [DESIGN.md](DESIGN.md)) |
-| `@synapse/logger` | `packages/logger` | Shared structured logging |
+| `@synapse/ui` | `packages/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |
 
 ### Everything else

@@ -1,6 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import type { Logger } from "@synapse/logger";
 import type { LanguageModel } from "ai";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
@@ -8,6 +7,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { errorBody } from "@/common/api-response";
 import type { AppBindings } from "@/common/app-types";
 import { createErrorHandler, notFoundHandler } from "@/common/error-handler";
+import type { Logger } from "@/common/logger";
 import { requestId } from "@/common/request-id";
 import { type Env, parseCorsOrigins } from "@/config/env";
 import { createAuthMiddleware } from "@/modules/auth/auth.middleware";
