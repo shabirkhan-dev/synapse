@@ -1,0 +1,197 @@
+/*
+ * The Switch: a native checkbox with `appearance: none`. The input is the track and `::before` is
+ * the thumb, so there is no extra markup to keep in sync with the checked state.
+ *
+ * Motion is CSS only. The thumb's position, width and scale are private variables; `:checked` and
+ * `:active` change them and the thumb follows on the `switch` spring (800 / 80 / 4, a heavy thumb
+ * that settles in about half a second). Pressing stretches the thumb toward where it is going (the
+ * near edge stays put) and squishes it to 0.9; releasing toggles and springs it across. The track
+ * color fades on the state ease. A disabled switch never moves.
+ *
+ * Colors come only from the theme: the track is --muted-foreground (off) or --primary (on), the
+ * thumb --background (off) or --primary-foreground (on), focus --ring, error --destructive. Depth
+ * Floating recesses the track (field edge and shade) and raises the thumb (surface ring, sheen and
+ * shade); Flat drops both. Corners follow --radius-button: a capsule, square-ish in Sharp.
+ */
+@layer components {
+	.rx-switch {
+		/* Size (md). */
+		--_w: 3rem;
+		--_h: 1.75rem;
+		--_pad: 4px;
+		--_stretch: 4px;
+		/* Geometry, derived. */
+		--_thumb: calc(var(--_h) - var(--_pad) * 2);
+		--_travel: calc(var(--_w) - var(--_h));
+		/* State: where the thumb sits, how much it has grown, its scale. */
+		--_x: 0px;
+		--_grow: 0px;
+		--_squish: 1;
+		/* Color and depth. --_fill, --_edge-* and --_sheen are registered in control.css. */
+		--_fill: color-mix(in oklab, var(--muted-foreground) 70%, var(--background));
+		--_edge-a: var(--field-edge-top);
+		--_edge-b: var(--field-edge-bottom);
+		--_sheen: var(--field-shade);
+		--_knob: var(--background);
+		--_knob-ring: var(--surface-ring);
+		--_knob-sheen: var(--surface-sheen);
+		--_knob-shade: var(--surface-shade);
+
+		position: relative;
+		display: inline-block;
+		flex-shrink: 0;
+		box-sizing: border-box;
+		width: var(--_w);
+		height: var(--_h);
+		margin: 0;
+		appearance: none;
+		vertical-align: middle;
+		border: 1px solid transparent;
+		border-radius: var(--radius-button);
+		/* The edge is a real border painted over the fill, so it follows the radius exactly. */
+		background:
+			linear-gradient(180deg, var(--_sheen), transparent 60%) padding-box,
+			linear-gradient(var(--_fill), var(--_fill)) padding-box,
+			linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box,
+			linear-gradient(var(--_fill), var(--_fill)) border-box;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			--_fill 200ms var(--motion-ease),
+			box-shadow 150ms var(--motion-ease),
+			opacity 150ms var(--motion-ease);
+
+		/* The thumb. */
+		&::before {
+			content: "";
+			position: absolute;
+			top: calc(var(--_pad) - 1px);
+			/* Logical, so the thumb starts and travels from the inline start in any direction. */
+			inset-inline-start: calc(var(--_pad) - 1px + var(--_x));
+			width: calc(var(--_thumb) + var(--_grow));
+			height: var(--_thumb);
+			border-radius: max(1px, calc(var(--radius-button) - var(--_pad)));
+			background-color: var(--_knob);
+			background-image: linear-gradient(
+				180deg,
+				var(--_knob-sheen),
+				transparent 40%,
+				transparent 60%,
+				var(--_knob-shade)
+			);
+			box-shadow: 0 0 0 1px var(--_knob-ring);
+			scale: var(--_squish);
+			transition:
+				inset-inline-start var(--spring-switch-duration) var(--spring-switch),
+				width var(--spring-switch-duration) var(--spring-switch),
+				scale var(--spring-switch-duration) var(--spring-switch),
+				background-color 200ms var(--motion-ease);
+		}
+
+		/* A 24px target for the small size; md and lg are already taller. */
+		&::after {
+			content: "";
+			position: absolute;
+			inset: calc(min(0px, (var(--_h) - 24px) / 2) - 1px);
+		}
+
+		&:checked {
+			--_fill: var(--primary);
+			--_knob: var(--primary-foreground);
+			--_x: var(--_travel);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+
+	/* Hover deepens the track a touch, only where hover is real. */
+	@media (hover: hover) and (pointer: fine) {
+		:is(.rx-switch:hover, .rx-switch-label:hover > .rx-switch):not(:disabled) {
+			--_fill: color-mix(in oklab, var(--muted-foreground) 82%, var(--background));
+		}
+		:is(.rx-switch:hover, .rx-switch-label:hover > .rx-switch):checked:not(:disabled) {
+			--_fill: color-mix(in oklab, var(--primary) 88%, var(--foreground));
+		}
+	}
+
+	/* Press: stretch toward the destination and squish. Pressing the label counts too. */
+	:is(.rx-switch:active, .rx-switch-label:active > .rx-switch):not(:disabled) {
+		--_grow: var(--_stretch);
+		--_squish: 0.9;
+	}
+	:is(.rx-switch:active, .rx-switch-label:active > .rx-switch):checked:not(:disabled) {
+		--_x: calc(var(--_travel) - var(--_stretch));
+	}
+
+	/* Sizes. */
+	.rx-switch-sm {
+		--_w: 2.25rem;
+		--_h: 1.25rem;
+		--_pad: 3px;
+		--_stretch: 3px;
+	}
+	.rx-switch-lg {
+		--_w: 3.5rem;
+		--_h: 2rem;
+		--_pad: 4px;
+		--_stretch: 5px;
+	}
+
+	/* Flat: no recess on the track, no ring or sheen on the thumb. */
+	[data-depth="flat"] .rx-switch {
+		--_edge-a: transparent;
+		--_edge-b: transparent;
+		--_sheen: transparent;
+		--_knob-ring: transparent;
+		--_knob-sheen: transparent;
+		--_knob-shade: transparent;
+	}
+
+	/* Error, from a Field: a red edge and a soft halo, in either depth. */
+	.rx-switch[aria-invalid="true"] {
+		--_edge-a: var(--destructive);
+		--_edge-b: var(--destructive);
+		box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 15%, transparent);
+	}
+
+	/* The label row. */
+	.rx-switch-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+		color: var(--foreground);
+		cursor: pointer;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+
+		&:has(> .rx-switch:disabled) {
+			color: var(--disabled-foreground);
+			cursor: not-allowed;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-switch,
+		.rx-switch::before {
+			transition: none;
+		}
+	}
+	/* Motion off, or the OS asks for less: the state still changes, nothing travels. */
+	[data-motion="off"] .rx-switch,
+	[data-motion="off"] .rx-switch::before {
+		transition: none;
+	}
+}

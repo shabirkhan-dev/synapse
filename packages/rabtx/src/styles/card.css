@@ -1,0 +1,454 @@
+/*
+ * The Card. The surface (fill, gradient edge, ring, Flat and Floating) is `.rx-surface.rx-card` in
+ * control.css; this file lays out the parts and draws the interactive and animated cards.
+ *
+ * Every animation is CSS: transitions on the spring tokens in theme.css, `interpolate-size` for
+ * heights that grow to `auto`, and `::details-content` for the expandable card. JavaScript only
+ * writes the pointer position (`--_px`, `--_py`, `--_tilt-x`, `--_tilt-y`) and `data-pointer`.
+ *
+ * Colors come only from the theme: the card is --card / --card-foreground, descriptions
+ * --muted-foreground, selection --primary, focus --ring, light --primary and --card-foreground.
+ */
+@layer components {
+	.rx-card {
+		--_pad: 15px;
+		--_gap: 12px;
+
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: var(--_gap);
+		padding-block: var(--_pad);
+		border-radius: var(--radius-box);
+		transition:
+			--_fill 150ms var(--motion-ease),
+			color 150ms var(--motion-ease),
+			box-shadow 150ms var(--motion-ease),
+			scale var(--spring-press-duration) var(--spring-press),
+			transform var(--spring-magnetic-duration) var(--spring-magnetic);
+
+		/* The parts pad themselves, so a part can be left out and media can run edge to edge. */
+		& > * {
+			padding-inline: var(--_pad);
+		}
+		& > :is(img, video, picture, iframe, [data-slot="card-media"]) {
+			padding-inline: 0;
+			&:first-child {
+				margin-block-start: calc(var(--_pad) * -1);
+				border-start-start-radius: calc(var(--radius-box) - 1px);
+				border-start-end-radius: calc(var(--radius-box) - 1px);
+			}
+			&:last-child {
+				margin-block-end: calc(var(--_pad) * -1);
+				border-end-start-radius: calc(var(--radius-box) - 1px);
+				border-end-end-radius: calc(var(--radius-box) - 1px);
+			}
+		}
+	}
+	/* One pixel under Figma's 12, 16 and 20, because the 1px edge is a real border. */
+	.rx-card-sm {
+		--_pad: 11px;
+		--_gap: 10px;
+	}
+	.rx-card-lg {
+		--_pad: 19px;
+		--_gap: 16px;
+	}
+
+	/* The header is a container, so a narrow card drops its action under the title. */
+	.rx-card-header {
+		container: rx-card-header / inline-size;
+		display: grid;
+		grid-auto-rows: min-content;
+		align-items: start;
+		row-gap: 2px;
+
+		&:has(> .rx-card-action) {
+			grid-template-columns: minmax(0, 1fr) auto;
+		}
+		& > :not(.rx-card-action) {
+			grid-column: 1;
+		}
+	}
+	.rx-card-title {
+		margin: 0;
+		font-size: 13px;
+		line-height: 20px;
+		font-weight: 510;
+		letter-spacing: -0.15px;
+		color: var(--card-foreground);
+		text-wrap: balance;
+	}
+	.rx-card-description {
+		margin: 0;
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+		color: var(--muted-foreground);
+		text-wrap: pretty;
+	}
+	.rx-card-action {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		align-self: start;
+		justify-self: end;
+		display: flex;
+		align-items: center;
+		margin-inline-start: 12px;
+	}
+	@container rx-card-header (width < 15rem) {
+		.rx-card-action {
+			grid-column: 1;
+			grid-row: auto;
+			justify-self: start;
+			margin-block-start: 6px;
+			margin-inline-start: 0;
+		}
+	}
+	.rx-card-content {
+		font-size: 13px;
+		line-height: 20px;
+	}
+	.rx-card-footer {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+
+	/*
+	 * Interactive: the card answers for the one link, button or label marked as its target. The
+	 * target's hit area stretches over the card; every other control stays above it.
+	 */
+	.rx-card-target {
+		color: inherit;
+		text-decoration: none;
+		cursor: pointer;
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset: -1px;
+			border-radius: var(--radius-box);
+		}
+		&:focus-visible {
+			outline: none;
+		}
+	}
+	/* Zero specificity, so a control's own position wins. Wrap anything else in `relative z-1`. */
+	:where(.rx-card:has(.rx-card-target) :is(a, button, summary, input, textarea, [tabindex]):not(.rx-card-target, .rx-card-target *)) {
+		position: relative;
+		z-index: 1;
+	}
+	.rx-card:has(.rx-card-target) {
+		&:not(:has(.rx-card-target:is(:disabled, [aria-disabled="true"]), .rx-card-target :disabled)) {
+			@media (hover: hover) and (pointer: fine) {
+				&:hover {
+					--_flat: var(--input);
+					--_ring: color-mix(in oklab, var(--surface-ring), var(--card-foreground) 12%);
+				}
+			}
+			&:has(.rx-card-target:active) {
+				scale: 0.985;
+			}
+		}
+		&:has(.rx-card-target:focus-visible) {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+		&:has(.rx-card-target:is(:disabled, [aria-disabled="true"]), .rx-card-target :disabled) {
+			color: var(--disabled-foreground);
+			& :is(.rx-card-title, .rx-card-description) {
+				color: inherit;
+			}
+			& .rx-card-target {
+				cursor: not-allowed;
+			}
+		}
+	}
+	/* Selected: a checked input in the target, a pressed or current target, or `data-selected`. */
+	.rx-card[data-selected],
+	.rx-card:has(.rx-card-target :checked),
+	.rx-card:has(.rx-card-target:is(:checked, [aria-pressed="true"], [aria-selected="true"])),
+	.rx-card:has(.rx-card-target[aria-current]:not([aria-current="false"])) {
+		--_flat: var(--primary);
+		--_edge-a: var(--primary);
+		--_edge-b: var(--primary);
+		--_ring: var(--primary);
+	}
+
+	/* Tilt: leans toward the pointer. The glare sits under the content, so text stays crisp. */
+	.rx-card-tilt {
+		isolation: isolate;
+		transform: perspective(800px) rotateX(var(--_tilt-x, 0deg)) rotateY(var(--_tilt-y, 0deg));
+
+		&[data-pointer] {
+			will-change: transform;
+		}
+		&[data-glare]::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			z-index: -1;
+			border-radius: calc(var(--radius-box) - 1px);
+			background: radial-gradient(
+				circle at var(--_px, 50%) var(--_py, 50%),
+				color-mix(in oklab, var(--card-foreground) 10%, transparent),
+				transparent 55%
+			);
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 300ms var(--motion-ease);
+		}
+		&[data-glare][data-pointer]::before {
+			opacity: 1;
+		}
+	}
+
+	/*
+	 * Spotlight: a wide soft light inside, and a narrower one painted only on the 1px edge (a padded
+	 * pseudo-element whose content box is masked out). Keyboard focus inside lights it from the top.
+	 */
+	.rx-card-spotlight {
+		--_spot: 22rem;
+		isolation: isolate;
+
+		&::before,
+		&::after {
+			content: "";
+			position: absolute;
+			pointer-events: none;
+			opacity: 0;
+			transition: opacity 300ms var(--motion-ease);
+		}
+		&::before {
+			inset: 0;
+			z-index: -1;
+			border-radius: calc(var(--radius-box) - 1px);
+			background: radial-gradient(
+				var(--_spot) circle at var(--_px, 50%) var(--_py, 0%),
+				color-mix(in oklab, var(--primary) 12%, transparent),
+				transparent 70%
+			);
+		}
+		&::after {
+			inset: -1px;
+			padding: 1px;
+			border-radius: var(--radius-box);
+			background: radial-gradient(
+				calc(var(--_spot) * 0.6) circle at var(--_px, 50%) var(--_py, 0%),
+				var(--primary),
+				transparent 70%
+			);
+			mask:
+				linear-gradient(#000 0 0) content-box exclude,
+				linear-gradient(#000 0 0);
+		}
+		&:is([data-pointer], :has(:focus-visible))::before,
+		&:is([data-pointer], :has(:focus-visible))::after {
+			opacity: 1;
+		}
+	}
+
+	/* Expandable: a <details> whose content grows to its own height on the panel spring. */
+	.rx-card-expandable {
+		display: block;
+		padding-block: 0;
+		interpolate-size: allow-keywords;
+
+		&::details-content {
+			block-size: 0;
+			overflow: clip;
+			opacity: 0;
+			transition:
+				block-size var(--spring-panel-duration) var(--spring-panel),
+				opacity 200ms var(--motion-ease),
+				content-visibility var(--spring-panel-duration) allow-discrete;
+		}
+		&[open]::details-content {
+			block-size: auto;
+			opacity: 1;
+		}
+		& > .rx-card-content {
+			padding-block-end: var(--_pad);
+		}
+		&:has(> .rx-card-summary:focus-visible) {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+		@media (hover: hover) and (pointer: fine) {
+			&:has(> .rx-card-summary:hover) {
+				--_flat: var(--input);
+				--_ring: color-mix(in oklab, var(--surface-ring), var(--card-foreground) 12%);
+			}
+		}
+	}
+	.rx-card-summary {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		padding-block: var(--_pad);
+		list-style: none;
+		cursor: pointer;
+		outline: none;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+		& > .rx-card-header {
+			flex: 1;
+			min-width: 0;
+		}
+		& > .rx-card-chevron {
+			margin-block-start: 2px;
+		}
+	}
+	.rx-card-chevron {
+		flex: none;
+		width: 16px;
+		height: 16px;
+		background: currentColor;
+		color: var(--muted-foreground);
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 9L12 15L6 9'/%3E%3C/svg%3E")
+			center / 16px no-repeat;
+		transition: rotate var(--spring-swap-duration) var(--spring-swap);
+	}
+	.rx-card-expandable[open] > .rx-card-summary > .rx-card-chevron,
+	.rx-card-stack-toggle[aria-expanded="true"] > .rx-card-chevron {
+		rotate: 180deg;
+	}
+
+	/*
+	 * Stack: every item is a one-row grid whose card is aligned to its bottom edge. Collapsed, an
+	 * item is only `--_peek` tall, so its card overflows upward behind the one before it and a strip
+	 * peeks out below; open, the item grows to `auto`. Height and scale ride the panel and press
+	 * springs.
+	 */
+	.rx-card-stack {
+		--_peek: 10px;
+		position: relative;
+		isolation: isolate;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.rx-card-stack-list {
+		display: flex;
+		flex-direction: column;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		interpolate-size: allow-keywords;
+	}
+	.rx-card-stack-item {
+		position: relative;
+		z-index: calc(var(--_count, 1) - var(--_i, 0));
+		display: grid;
+		grid-template-rows: minmax(0, 1fr);
+		align-items: unsafe end;
+		block-size: auto;
+		transition:
+			block-size var(--spring-panel-duration) var(--spring-panel),
+			margin-block-start var(--spring-panel-duration) var(--spring-panel),
+			opacity 200ms var(--motion-ease);
+
+		& + & {
+			margin-block-start: 12px;
+		}
+		& > * {
+			transform-origin: 50% 100%;
+		}
+	}
+	.rx-card-stack:not([data-expanded]) .rx-card-stack-item + .rx-card-stack-item {
+		block-size: var(--_peek);
+		margin-block-start: 0;
+	}
+	.rx-card-stack:not([data-expanded]) .rx-card-stack-item {
+		& > * {
+			scale: calc(1 - var(--_i, 0) * 0.05);
+		}
+		&[data-hidden] {
+			block-size: 0;
+			opacity: 0;
+		}
+	}
+	@media (hover: hover) and (pointer: fine) {
+		.rx-card-stack:not([data-expanded]):hover {
+			--_peek: 14px;
+		}
+	}
+	.rx-card-stack-toggle {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 2px 4px;
+		margin-inline-start: -4px;
+		border: 0;
+		border-radius: var(--radius-item);
+		background: none;
+		font: inherit;
+		font-size: 13px;
+		line-height: 20px;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		transition: color 150ms var(--motion-ease);
+
+		@media (hover: hover) {
+			&:hover {
+				color: var(--foreground);
+			}
+		}
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+	}
+	/* Collapsed, the toggle's hit area covers the pile. */
+	.rx-card-stack:not([data-expanded]) .rx-card-stack-toggle::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: calc(var(--_count, 1) + 1);
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-card,
+		.rx-card *,
+		.rx-card::before,
+		.rx-card::after,
+		.rx-card-expandable::details-content,
+		.rx-card-stack * {
+			transition-duration: 0ms;
+		}
+		.rx-card-tilt {
+			transform: none;
+			&::before {
+				display: none;
+			}
+		}
+	}
+	/* Motion off, or the OS asks for less: no tilt, no glare, every state still visible at once. */
+	[data-motion="off"] :is(.rx-card-tilt, .rx-card-stack) {
+		&,
+		& * {
+			transition-duration: 0ms;
+		}
+	}
+	[data-motion="off"] :is(.rx-card, .rx-card *, .rx-card::before, .rx-card::after) {
+		transition-duration: 0ms;
+	}
+	[data-motion="off"] .rx-card-expandable::details-content {
+		transition-duration: 0ms;
+	}
+	[data-motion="off"] .rx-card-tilt {
+		transform: none;
+		&::before {
+			display: none;
+		}
+	}
+}

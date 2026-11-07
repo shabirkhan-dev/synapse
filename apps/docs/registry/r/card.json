@@ -1,0 +1,403 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card",
+  "title": "Card",
+  "description": "A raised surface with header, title, description, action, content and footer parts, plus tilt, spotlight, expandable and stacked cards. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/card-stack.tsx",
+      "content": "\"use client\";\n\nimport {\n\tChildren,\n\tisValidElement,\n\ttype CSSProperties,\n\ttype HTMLAttributes,\n\ttype ReactNode,\n\tuseId,\n\tuseState,\n} from \"react\";\nimport { cardParts } from \"./card.styles\";\nimport { cn } from \"@/lib/utils\";\n\nexport type CardStackProps = Omit<HTMLAttributes<HTMLElement>, \"children\"> & {\n\t/** The cards, newest first. Each child becomes a list item. */\n\tchildren: ReactNode;\n\t/** What the cards are, for the toggle (\"Show all 4 notifications\"). Default \"cards\". */\n\tnoun?: string;\n\t/** How many cards peek out behind the first while collapsed. Default 2. */\n\tpeek?: number;\n\t/** Controlled state. Pair with `onExpandedChange`. */\n\texpanded?: boolean;\n\tdefaultExpanded?: boolean;\n\tonExpandedChange?: (expanded: boolean) => void;\n\t/** The toggle's text. Defaults to \"Show all N {noun}\" and \"Show less\". */\n\tshowLabel?: string;\n\thideLabel?: string;\n};\n\n/**\n * Cards piled behind the first, each a little smaller, that spread into a list. The toggle is a\n * real button with `aria-expanded`; while collapsed its hit area covers the whole pile, so a click\n * or tap anywhere on it opens the list. The cards behind are `inert` while collapsed, so neither\n * Tab nor a screen reader lands on what you cannot see. Keep links and buttons out of the first\n * card, or they sit under the toggle until the stack is open.\n *\n * The motion is CSS: each item's height animates between its peek and `auto` with\n * `interpolate-size`, and the cards scale back to full size, on the panel spring. Cards of similar\n * height stack best.\n */\nexport function CardStack({\n\tchildren,\n\tnoun = \"cards\",\n\tpeek = 2,\n\texpanded,\n\tdefaultExpanded = false,\n\tonExpandedChange,\n\tshowLabel,\n\thideLabel = \"Show less\",\n\tclassName,\n\tstyle,\n\t...rest\n}: CardStackProps) {\n\tconst [own, setOwn] = useState(defaultExpanded);\n\tconst open = expanded ?? own;\n\tconst listId = useId();\n\tconst items = Children.toArray(children);\n\n\tconst set = (next: boolean) => {\n\t\tif (expanded === undefined) setOwn(next);\n\t\tonExpandedChange?.(next);\n\t};\n\n\treturn (\n\t\t<section\n\t\t\t{...rest}\n\t\t\tdata-expanded={open ? \"\" : undefined}\n\t\t\tclassName={cn(cardParts.stack, className)}\n\t\t\tstyle={{ ...style, \"--_count\": items.length, \"--_peeks\": peek } as CSSProperties}\n\t\t>\n\t\t\t<ol id={listId} className={cardParts.stackList}>\n\t\t\t\t{items.map((child, index) => (\n\t\t\t\t\t<li\n\t\t\t\t\t\tkey={childKey(child, index)}\n\t\t\t\t\t\tclassName={cardParts.stackItem}\n\t\t\t\t\t\tstyle={{ \"--_i\": index } as CSSProperties}\n\t\t\t\t\t\tdata-hidden={!open && index > peek ? \"\" : undefined}\n\t\t\t\t\t\tinert={!open && index > 0}\n\t\t\t\t\t>\n\t\t\t\t\t\t{child}\n\t\t\t\t\t</li>\n\t\t\t\t))}\n\t\t\t</ol>\n\t\t\t{items.length > 1 ? (\n\t\t\t\t<button\n\t\t\t\t\ttype=\"button\"\n\t\t\t\t\tclassName={cardParts.stackToggle}\n\t\t\t\t\taria-expanded={open}\n\t\t\t\t\taria-controls={listId}\n\t\t\t\t\tonClick={() => set(!open)}\n\t\t\t\t>\n\t\t\t\t\t{open ? hideLabel : (showLabel ?? `Show all ${items.length} ${noun}`)}\n\t\t\t\t\t<span className={cardParts.chevron} aria-hidden=\"true\" />\n\t\t\t\t</button>\n\t\t\t) : null}\n\t\t</section>\n\t);\n}\n\n/** A child's own key when it has one, so reordering keeps each card's state with it. */\nfunction childKey(child: ReturnType<typeof Children.toArray>[number], index: number) {\n\treturn isValidElement(child) && child.key !== null ? child.key : index;\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/card.styles.ts",
+      "content": "export type CardSize = \"sm\" | \"default\" | \"lg\";\n\nexport const cardSizes = [\"sm\", \"default\", \"lg\"] as const satisfies readonly CardSize[];\n\n/**\n * The class list for a Card. The look lives in `card.css` (your global CSS, when installed from the\n * registry) on top of the shared surface in `control.css`, so React, Solid and plain HTML all get the\n * same card from these names:\n *\n *   <div class=\"rx-surface rx-card\"><div class=\"rx-card-header\">...</div></div>\n *\n * Padding is 12, 16 or 20px including the 1px edge (Figma's Kanban, Option and Stat cards).\n */\nexport function cardClass(size: CardSize = \"default\") {\n\treturn `rx-surface rx-card${size === \"default\" ? \"\" : ` rx-card-${size}`}`;\n}\n\n/** Class names for the parts of a Card and its animated variants, for markup written by hand. */\nexport const cardParts = {\n\theader: \"rx-card-header\",\n\ttitle: \"rx-card-title\",\n\tdescription: \"rx-card-description\",\n\taction: \"rx-card-action\",\n\tcontent: \"rx-card-content\",\n\tfooter: \"rx-card-footer\",\n\t/**\n\t * Put it on the one link, button or label that owns the card: its hit area stretches over the\n\t * whole card, the card gets hover, press and focus feedback, and a checked input inside it marks\n\t * the card selected. Other controls in the card stay on top and keep working.\n\t */\n\ttarget: \"rx-card-target\",\n\t/** TiltCard: leans toward the pointer in 3D, with a glare that follows it. */\n\ttilt: \"rx-card-tilt\",\n\t/** SpotlightCard: a soft light and a lit edge follow the pointer. */\n\tspotlight: \"rx-card-spotlight\",\n\t/** ExpandableCard: a `<details>` card whose content grows open. */\n\texpandable: \"rx-card-expandable\",\n\tsummary: \"rx-card-summary\",\n\tchevron: \"rx-card-chevron\",\n\t/** CardStack: cards piled behind the first that spread into a list. */\n\tstack: \"rx-card-stack\",\n\tstackList: \"rx-card-stack-list\",\n\tstackItem: \"rx-card-stack-item\",\n\tstackToggle: \"rx-card-stack-toggle\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/card.tsx",
+      "content": "import type { HTMLAttributes, Ref } from \"react\";\nimport { type CardSize, cardClass, cardParts } from \"./card.styles\";\nimport { cn } from \"@/lib/utils\";\n\ntype Part<T extends string> = HTMLAttributes<HTMLElement> & {\n\t/** The element to render. */\n\tas?: T;\n\tref?: Ref<HTMLElement>;\n};\n\nexport type CardProps = Part<\"div\" | \"article\" | \"section\" | \"aside\" | \"li\"> & {\n\t/** Padding and spacing for every part: 12, 16 (default) or 20px. */\n\tsize?: CardSize;\n};\n\n/**\n * A surface that holds one subject. The parts pad themselves on the inline axis, so a part can be\n * left out and an image placed directly inside runs edge to edge. Depth and radius follow the page\n * modes (`data-depth`, `data-radius`), not props.\n *\n * A card never takes focus itself. To make one clickable or selectable, put a link, button or label\n * inside with `cardParts.target`: it stretches over the card and the card answers hover, press,\n * focus and a checked input, all from CSS.\n */\nexport function Card({ as = \"div\", size = \"default\", className, ref, ...rest }: CardProps) {\n\t// One element type for the checker; the tag still renders as given.\n\tconst Tag = as as \"div\";\n\treturn (\n\t\t<Tag\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLDivElement>}\n\t\t\tdata-slot=\"card\"\n\t\t\tdata-size={size}\n\t\t\tclassName={cn(cardClass(size), className)}\n\t\t/>\n\t);\n}\n\n/** Title and description, with an optional CardAction pinned to the top right. */\nexport function CardHeader({ as: Tag = \"div\", className, ref, ...rest }: Part<\"div\" | \"header\">) {\n\treturn (\n\t\t<Tag\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLDivElement>}\n\t\t\tdata-slot=\"card-header\"\n\t\t\tclassName={cn(cardParts.header, className)}\n\t\t/>\n\t);\n}\n\nexport function CardTitle({\n\tas: Tag = \"div\",\n\tclassName,\n\tref,\n\t...rest\n}: Part<\"div\" | \"h2\" | \"h3\" | \"h4\" | \"h5\" | \"h6\">) {\n\treturn (\n\t\t<Tag\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLDivElement>}\n\t\t\tdata-slot=\"card-title\"\n\t\t\tclassName={cn(cardParts.title, className)}\n\t\t/>\n\t);\n}\n\nexport function CardDescription({ as: Tag = \"p\", className, ref, ...rest }: Part<\"p\" | \"div\">) {\n\treturn (\n\t\t<Tag\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLParagraphElement>}\n\t\t\tdata-slot=\"card-description\"\n\t\t\tclassName={cn(cardParts.description, className)}\n\t\t/>\n\t);\n}\n\n/** Sits beside the title and description inside CardHeader, such as a button or a badge. */\nexport function CardAction({ className, ref, ...rest }: Omit<Part<\"div\">, \"as\">) {\n\treturn (\n\t\t<div\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLDivElement>}\n\t\t\tdata-slot=\"card-action\"\n\t\t\tclassName={cn(cardParts.action, className)}\n\t\t/>\n\t);\n}\n\nexport function CardContent({ className, ref, ...rest }: Omit<Part<\"div\">, \"as\">) {\n\treturn (\n\t\t<div\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLDivElement>}\n\t\t\tdata-slot=\"card-content\"\n\t\t\tclassName={cn(cardParts.content, className)}\n\t\t/>\n\t);\n}\n\nexport function CardFooter({ as: Tag = \"div\", className, ref, ...rest }: Part<\"div\" | \"footer\">) {\n\treturn (\n\t\t<Tag\n\t\t\t{...rest}\n\t\t\tref={ref as Ref<HTMLDivElement>}\n\t\t\tdata-slot=\"card-footer\"\n\t\t\tclassName={cn(cardParts.footer, className)}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/expandable-card.tsx",
+      "content": "\"use client\";\n\nimport type { DetailsHTMLAttributes, ReactNode, Ref, SyntheticEvent } from \"react\";\nimport { type CardSize, cardClass, cardParts } from \"./card.styles\";\nimport { cn } from \"@/lib/utils\";\n\nexport type ExpandableCardProps = Omit<DetailsHTMLAttributes<HTMLDetailsElement>, \"title\"> & {\n\t/** The always-visible heading. It is the toggle's accessible name. */\n\ttitle: ReactNode;\n\t/** A line under the title, also always visible. */\n\tdescription?: ReactNode;\n\t/** Padding and spacing, as on Card. */\n\tsize?: CardSize;\n\t/** Starts open (uncontrolled). Pass `open` with `onOpenChange` to control it instead. */\n\tdefaultOpen?: boolean;\n\t/** Called with the new state after the user (or `name` grouping) opens or closes it. */\n\tonOpenChange?: (open: boolean) => void;\n\tref?: Ref<HTMLDetailsElement>;\n};\n\n/**\n * A card built on `<details>`: the summary row is the toggle, so the browser provides the button\n * role, the expanded state, Enter and Space, find-in-page opening and `name` grouping (only one of\n * a group open at a time). The content grows to its height on the panel spring with\n * `interpolate-size` and `::details-content`; browsers without them open it at once.\n */\nexport function ExpandableCard({\n\ttitle,\n\tdescription,\n\tsize = \"default\",\n\topen,\n\tdefaultOpen,\n\tonOpenChange,\n\tonToggle,\n\tclassName,\n\tchildren,\n\tref,\n\t...rest\n}: ExpandableCardProps) {\n\tconst toggle = (event: SyntheticEvent<HTMLDetailsElement>) => {\n\t\tonToggle?.(event as Parameters<NonNullable<typeof onToggle>>[0]);\n\t\tonOpenChange?.(event.currentTarget.open);\n\t};\n\n\treturn (\n\t\t<details\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\topen={open ?? defaultOpen}\n\t\t\tonToggle={toggle}\n\t\t\tdata-slot=\"card\"\n\t\t\tdata-size={size}\n\t\t\tclassName={cn(cardClass(size), cardParts.expandable, className)}\n\t\t>\n\t\t\t<summary className={cardParts.summary}>\n\t\t\t\t<span className={cardParts.header}>\n\t\t\t\t\t<span className={cardParts.title}>{title}</span>\n\t\t\t\t\t{description ? <span className={cardParts.description}>{description}</span> : null}\n\t\t\t\t</span>\n\t\t\t\t<span className={cardParts.chevron} aria-hidden=\"true\" />\n\t\t\t</summary>\n\t\t\t<div className={cardParts.content}>{children}</div>\n\t\t</details>\n\t);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/pointer.ts",
+      "content": "/** Where the pointer is over a box, from 0 (left or top edge) to 1 (right or bottom edge). */\nexport function pointerRatio(\n\trect: { left: number; top: number; width: number; height: number },\n\tclientX: number,\n\tclientY: number,\n) {\n\treturn {\n\t\tx: rect.width ? clamp((clientX - rect.left) / rect.width) : 0.5,\n\t\ty: rect.height ? clamp((clientY - rect.top) / rect.height) : 0.5,\n\t};\n}\n\n/**\n * How far a TiltCard turns, in degrees, so the side under the pointer dips toward it. The centre is\n * flat; an edge turns by half of `max`, a corner on both axes.\n */\nexport function tiltAngles(ratio: { x: number; y: number }, max: number) {\n\treturn { x: round((0.5 - ratio.y) * max), y: round((ratio.x - 0.5) * max) };\n}\n\nconst clamp = (value: number) => Math.min(1, Math.max(0, value));\nconst round = (value: number) => Math.round(value * 100) / 100 || 0;\n\n/** Writes the pointer's position over the element as `--_px` / `--_py` percentages. */\nexport function setPointerVars(node: HTMLElement, ratio: { x: number; y: number }) {\n\tnode.style.setProperty(\"--_px\", `${round(ratio.x * 100)}%`);\n\tnode.style.setProperty(\"--_py\", `${round(ratio.y * 100)}%`);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/spotlight-card.tsx",
+      "content": "\"use client\";\n\nimport type { PointerEvent } from \"react\";\nimport { Card, type CardProps } from \"./card\";\nimport { cardParts } from \"./card.styles\";\nimport { pointerRatio, setPointerVars } from \"./pointer\";\nimport { cn } from \"@/lib/utils\";\n\nexport type SpotlightCardProps = CardProps;\n\n/**\n * A Card with a soft light that follows a mouse or pen across it and lights up the edge nearest the\n * pointer. The pointer writes the position as CSS variables; the light, its fade and its color\n * (`--primary`, so `[--primary:var(--violet)]` recolors one card) are CSS. When a link or button\n * inside has keyboard focus, the light rests at the top so focus gets the same highlight.\n */\nexport function SpotlightCard({\n\tonPointerMove,\n\tonPointerLeave,\n\tclassName,\n\t...rest\n}: SpotlightCardProps) {\n\tconst follow = (event: PointerEvent<HTMLElement>) => {\n\t\tonPointerMove?.(event);\n\t\tif (event.pointerType === \"touch\") return;\n\t\tconst node = event.currentTarget;\n\t\tsetPointerVars(node, pointerRatio(node.getBoundingClientRect(), event.clientX, event.clientY));\n\t\tnode.dataset.pointer = \"\";\n\t};\n\n\tconst release = (event: PointerEvent<HTMLElement>) => {\n\t\tonPointerLeave?.(event);\n\t\tdelete event.currentTarget.dataset.pointer;\n\t};\n\n\treturn (\n\t\t<Card\n\t\t\t{...rest}\n\t\t\tclassName={cn(cardParts.spotlight, className)}\n\t\t\tonPointerMove={follow}\n\t\t\tonPointerLeave={release}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/tilt-card.tsx",
+      "content": "\"use client\";\n\nimport type { PointerEvent } from \"react\";\nimport { Card, type CardProps } from \"./card\";\nimport { cardParts } from \"./card.styles\";\nimport { pointerRatio, setPointerVars, tiltAngles } from \"./pointer\";\nimport { cn } from \"@/lib/utils\";\n\nexport type TiltCardProps = CardProps & {\n\t/** The most the card turns at a corner, in degrees. Default 10. */\n\tmax?: number;\n\t/** A soft highlight under the pointer. Default true. */\n\tglare?: boolean;\n};\n\n/**\n * A Card that leans toward a mouse or pen in 3D, with a glare that follows it, and springs back\n * flat when the pointer leaves. The pointer only writes CSS variables; the `transform` transition on\n * the magnetic spring does the motion and is off for touch, reduced motion and `data-motion=\"off\"`.\n * It is decoration: it adds no focus stop and no role.\n */\nexport function TiltCard({\n\tmax = 10,\n\tglare = true,\n\tonPointerMove,\n\tonPointerLeave,\n\tclassName,\n\t...rest\n}: TiltCardProps) {\n\tconst follow = (event: PointerEvent<HTMLElement>) => {\n\t\tonPointerMove?.(event);\n\t\tif (event.pointerType === \"touch\") return;\n\t\tconst node = event.currentTarget;\n\t\t// offsetWidth/Height are the untransformed size, so the tilt does not skew the measurement.\n\t\tconst rect = node.getBoundingClientRect();\n\t\tconst ratio = pointerRatio(\n\t\t\t{\n\t\t\t\tleft: rect.left + (rect.width - node.offsetWidth) / 2,\n\t\t\t\ttop: rect.top + (rect.height - node.offsetHeight) / 2,\n\t\t\t\twidth: node.offsetWidth,\n\t\t\t\theight: node.offsetHeight,\n\t\t\t},\n\t\t\tevent.clientX,\n\t\t\tevent.clientY,\n\t\t);\n\t\tconst { x, y } = tiltAngles(ratio, max);\n\t\tnode.style.setProperty(\"--_tilt-x\", `${x}deg`);\n\t\tnode.style.setProperty(\"--_tilt-y\", `${y}deg`);\n\t\tsetPointerVars(node, ratio);\n\t\tnode.dataset.pointer = \"\";\n\t};\n\n\tconst release = (event: PointerEvent<HTMLElement>) => {\n\t\tonPointerLeave?.(event);\n\t\tconst node = event.currentTarget;\n\t\tnode.style.removeProperty(\"--_tilt-x\");\n\t\tnode.style.removeProperty(\"--_tilt-y\");\n\t\tdelete node.dataset.pointer;\n\t};\n\n\treturn (\n\t\t<Card\n\t\t\t{...rest}\n\t\t\tdata-glare={glare ? \"\" : undefined}\n\t\t\tclassName={cn(cardParts.tilt, className)}\n\t\t\tonPointerMove={follow}\n\t\t\tonPointerLeave={release}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-card": {
+        "--_pad": "15px",
+        "--_gap": "12px",
+        "position": "relative",
+        "display": "flex",
+        "flex-direction": "column",
+        "gap": "var(--_gap)",
+        "padding-block": "var(--_pad)",
+        "border-radius": "var(--radius-box)",
+        "transition": "--_fill 150ms var(--motion-ease), color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press), transform var(--spring-magnetic-duration) var(--spring-magnetic)"
+      },
+      ".rx-card > *": {
+        "padding-inline": "var(--_pad)"
+      },
+      ".rx-card > :is(img, video, picture, iframe, [data-slot=\"card-media\"])": {
+        "padding-inline": "0"
+      },
+      ".rx-card > :is(img, video, picture, iframe, [data-slot=\"card-media\"]):first-child": {
+        "margin-block-start": "calc(var(--_pad) * -1)",
+        "border-start-start-radius": "calc(var(--radius-box) - 1px)",
+        "border-start-end-radius": "calc(var(--radius-box) - 1px)"
+      },
+      ".rx-card > :is(img, video, picture, iframe, [data-slot=\"card-media\"]):last-child": {
+        "margin-block-end": "calc(var(--_pad) * -1)",
+        "border-end-start-radius": "calc(var(--radius-box) - 1px)",
+        "border-end-end-radius": "calc(var(--radius-box) - 1px)"
+      },
+      ".rx-card-sm": {
+        "--_pad": "11px",
+        "--_gap": "10px"
+      },
+      ".rx-card-lg": {
+        "--_pad": "19px",
+        "--_gap": "16px"
+      },
+      ".rx-card-header": {
+        "container": "rx-card-header / inline-size",
+        "display": "grid",
+        "grid-auto-rows": "min-content",
+        "align-items": "start",
+        "row-gap": "2px"
+      },
+      ".rx-card-header:has(> .rx-card-action)": {
+        "grid-template-columns": "minmax(0, 1fr) auto"
+      },
+      ".rx-card-header > :not(.rx-card-action)": {
+        "grid-column": "1"
+      },
+      ".rx-card-title": {
+        "margin": "0",
+        "font-size": "13px",
+        "line-height": "20px",
+        "font-weight": "510",
+        "letter-spacing": "-0.15px",
+        "color": "var(--card-foreground)",
+        "text-wrap": "balance"
+      },
+      ".rx-card-description": {
+        "margin": "0",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px",
+        "color": "var(--muted-foreground)",
+        "text-wrap": "pretty"
+      },
+      ".rx-card-action": {
+        "grid-column": "2",
+        "grid-row": "1 / span 2",
+        "align-self": "start",
+        "justify-self": "end",
+        "display": "flex",
+        "align-items": "center",
+        "margin-inline-start": "12px"
+      },
+      "@container rx-card-header (width < 15rem)": {
+        ".rx-card-action": {
+          "grid-column": "1",
+          "grid-row": "auto",
+          "justify-self": "start",
+          "margin-block-start": "6px",
+          "margin-inline-start": "0"
+        }
+      },
+      ".rx-card-content": {
+        "font-size": "13px",
+        "line-height": "20px"
+      },
+      ".rx-card-footer": {
+        "display": "flex",
+        "flex-wrap": "wrap",
+        "align-items": "center",
+        "gap": "8px"
+      },
+      ".rx-card-target": {
+        "color": "inherit",
+        "text-decoration": "none",
+        "cursor": "pointer"
+      },
+      ".rx-card-target::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset": "-1px",
+        "border-radius": "var(--radius-box)"
+      },
+      ".rx-card-target:focus-visible": {
+        "outline": "none"
+      },
+      ":where(.rx-card:has(.rx-card-target) :is(a, button, summary, input, textarea, [tabindex]):not(.rx-card-target, .rx-card-target *))": {
+        "position": "relative",
+        "z-index": "1"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-card:has(.rx-card-target):not(:has(.rx-card-target:is(:disabled, [aria-disabled=\"true\"]), .rx-card-target :disabled)):hover": {
+          "--_flat": "var(--input)",
+          "--_ring": "color-mix(in oklab, var(--surface-ring), var(--card-foreground) 12%)"
+        },
+        ".rx-card-expandable:has(> .rx-card-summary:hover)": {
+          "--_flat": "var(--input)",
+          "--_ring": "color-mix(in oklab, var(--surface-ring), var(--card-foreground) 12%)"
+        },
+        ".rx-card-stack:not([data-expanded]):hover": {
+          "--_peek": "14px"
+        }
+      },
+      ".rx-card:has(.rx-card-target):not(:has(.rx-card-target:is(:disabled, [aria-disabled=\"true\"]), .rx-card-target :disabled)):has(.rx-card-target:active)": {
+        "scale": "0.985"
+      },
+      ".rx-card:has(.rx-card-target):has(.rx-card-target:focus-visible)": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-card:has(.rx-card-target):has(.rx-card-target:is(:disabled, [aria-disabled=\"true\"]), .rx-card-target :disabled)": {
+        "color": "var(--disabled-foreground)"
+      },
+      ".rx-card:has(.rx-card-target):has(.rx-card-target:is(:disabled, [aria-disabled=\"true\"]), .rx-card-target :disabled) :is(.rx-card-title, .rx-card-description)": {
+        "color": "inherit"
+      },
+      ".rx-card:has(.rx-card-target):has(.rx-card-target:is(:disabled, [aria-disabled=\"true\"]), .rx-card-target :disabled) .rx-card-target": {
+        "cursor": "not-allowed"
+      },
+      ".rx-card[data-selected], .rx-card:has(.rx-card-target :checked), .rx-card:has(.rx-card-target:is(:checked, [aria-pressed=\"true\"], [aria-selected=\"true\"])), .rx-card:has(.rx-card-target[aria-current]:not([aria-current=\"false\"]))": {
+        "--_flat": "var(--primary)",
+        "--_edge-a": "var(--primary)",
+        "--_edge-b": "var(--primary)",
+        "--_ring": "var(--primary)"
+      },
+      ".rx-card-tilt": {
+        "isolation": "isolate",
+        "transform": "perspective(800px) rotateX(var(--_tilt-x, 0deg)) rotateY(var(--_tilt-y, 0deg))"
+      },
+      ".rx-card-tilt[data-pointer]": {
+        "will-change": "transform"
+      },
+      ".rx-card-tilt[data-glare]::before": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset": "0",
+        "z-index": "-1",
+        "border-radius": "calc(var(--radius-box) - 1px)",
+        "background": "radial-gradient( circle at var(--_px, 50%) var(--_py, 50%), color-mix(in oklab, var(--card-foreground) 10%, transparent), transparent 55% )",
+        "opacity": "0",
+        "pointer-events": "none",
+        "transition": "opacity 300ms var(--motion-ease)"
+      },
+      ".rx-card-tilt[data-glare][data-pointer]::before": {
+        "opacity": "1"
+      },
+      ".rx-card-spotlight": {
+        "--_spot": "22rem",
+        "isolation": "isolate"
+      },
+      ".rx-card-spotlight::before, .rx-card-spotlight::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "pointer-events": "none",
+        "opacity": "0",
+        "transition": "opacity 300ms var(--motion-ease)"
+      },
+      ".rx-card-spotlight::before": {
+        "inset": "0",
+        "z-index": "-1",
+        "border-radius": "calc(var(--radius-box) - 1px)",
+        "background": "radial-gradient( var(--_spot) circle at var(--_px, 50%) var(--_py, 0%), color-mix(in oklab, var(--primary) 12%, transparent), transparent 70% )"
+      },
+      ".rx-card-spotlight::after": {
+        "inset": "-1px",
+        "padding": "1px",
+        "border-radius": "var(--radius-box)",
+        "background": "radial-gradient( calc(var(--_spot) * 0.6) circle at var(--_px, 50%) var(--_py, 0%), var(--primary), transparent 70% )",
+        "mask": "linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)"
+      },
+      ".rx-card-spotlight:is([data-pointer], :has(:focus-visible))::before, .rx-card-spotlight:is([data-pointer], :has(:focus-visible))::after": {
+        "opacity": "1"
+      },
+      ".rx-card-expandable": {
+        "display": "block",
+        "padding-block": "0",
+        "interpolate-size": "allow-keywords"
+      },
+      ".rx-card-expandable::details-content": {
+        "block-size": "0",
+        "overflow": "clip",
+        "opacity": "0",
+        "transition": "block-size var(--spring-panel-duration) var(--spring-panel), opacity 200ms var(--motion-ease), content-visibility var(--spring-panel-duration) allow-discrete"
+      },
+      ".rx-card-expandable[open]::details-content": {
+        "block-size": "auto",
+        "opacity": "1"
+      },
+      ".rx-card-expandable > .rx-card-content": {
+        "padding-block-end": "var(--_pad)"
+      },
+      ".rx-card-expandable:has(> .rx-card-summary:focus-visible)": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-card-summary": {
+        "display": "flex",
+        "align-items": "flex-start",
+        "gap": "12px",
+        "padding-block": "var(--_pad)",
+        "list-style": "none",
+        "cursor": "pointer",
+        "outline": "none",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent"
+      },
+      ".rx-card-summary::-webkit-details-marker": {
+        "display": "none"
+      },
+      ".rx-card-summary > .rx-card-header": {
+        "flex": "1",
+        "min-width": "0"
+      },
+      ".rx-card-summary > .rx-card-chevron": {
+        "margin-block-start": "2px"
+      },
+      ".rx-card-chevron": {
+        "flex": "none",
+        "width": "16px",
+        "height": "16px",
+        "background": "currentColor",
+        "color": "var(--muted-foreground)",
+        "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 9L12 15L6 9'/%3E%3C/svg%3E\") center / 16px no-repeat",
+        "transition": "rotate var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-card-expandable[open] > .rx-card-summary > .rx-card-chevron, .rx-card-stack-toggle[aria-expanded=\"true\"] > .rx-card-chevron": {
+        "rotate": "180deg"
+      },
+      ".rx-card-stack": {
+        "--_peek": "10px",
+        "position": "relative",
+        "isolation": "isolate",
+        "display": "flex",
+        "flex-direction": "column",
+        "gap": "8px"
+      },
+      ".rx-card-stack-list": {
+        "display": "flex",
+        "flex-direction": "column",
+        "margin": "0",
+        "padding": "0",
+        "list-style": "none",
+        "interpolate-size": "allow-keywords"
+      },
+      ".rx-card-stack-item": {
+        "position": "relative",
+        "z-index": "calc(var(--_count, 1) - var(--_i, 0))",
+        "display": "grid",
+        "grid-template-rows": "minmax(0, 1fr)",
+        "align-items": "unsafe end",
+        "block-size": "auto",
+        "transition": "block-size var(--spring-panel-duration) var(--spring-panel), margin-block-start var(--spring-panel-duration) var(--spring-panel), opacity 200ms var(--motion-ease)"
+      },
+      ".rx-card-stack-item + .rx-card-stack-item": {
+        "margin-block-start": "12px"
+      },
+      ".rx-card-stack-item > *": {
+        "transform-origin": "50% 100%"
+      },
+      ".rx-card-stack:not([data-expanded]) .rx-card-stack-item + .rx-card-stack-item": {
+        "block-size": "var(--_peek)",
+        "margin-block-start": "0"
+      },
+      ".rx-card-stack:not([data-expanded]) .rx-card-stack-item > *": {
+        "scale": "calc(1 - var(--_i, 0) * 0.05)"
+      },
+      ".rx-card-stack:not([data-expanded]) .rx-card-stack-item[data-hidden]": {
+        "block-size": "0",
+        "opacity": "0"
+      },
+      ".rx-card-stack-toggle": {
+        "align-self": "flex-start",
+        "display": "inline-flex",
+        "align-items": "center",
+        "gap": "4px",
+        "padding": "2px 4px",
+        "margin-inline-start": "-4px",
+        "border": "0",
+        "border-radius": "var(--radius-item)",
+        "background": "none",
+        "font": "inherit",
+        "font-size": "13px",
+        "line-height": "20px",
+        "color": "var(--muted-foreground)",
+        "cursor": "pointer",
+        "transition": "color 150ms var(--motion-ease)"
+      },
+      "@media (hover: hover)": {
+        ".rx-card-stack-toggle:hover": {
+          "color": "var(--foreground)"
+        }
+      },
+      ".rx-card-stack-toggle:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-card-stack:not([data-expanded]) .rx-card-stack-toggle::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset": "0",
+        "z-index": "calc(var(--_count, 1) + 1)"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-card, .rx-card *, .rx-card::before, .rx-card::after, .rx-card-expandable::details-content, .rx-card-stack *": {
+          "transition-duration": "0ms"
+        },
+        ".rx-card-tilt": {
+          "transform": "none"
+        },
+        ".rx-card-tilt::before": {
+          "display": "none"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-card-tilt, .rx-card-stack), [data-motion=\"off\"] :is(.rx-card-tilt, .rx-card-stack) *": {
+        "transition-duration": "0ms"
+      },
+      "[data-motion=\"off\"] :is(.rx-card, .rx-card *, .rx-card::before, .rx-card::after)": {
+        "transition-duration": "0ms"
+      },
+      "[data-motion=\"off\"] .rx-card-expandable::details-content": {
+        "transition-duration": "0ms"
+      },
+      "[data-motion=\"off\"] .rx-card-tilt": {
+        "transform": "none"
+      },
+      "[data-motion=\"off\"] .rx-card-tilt::before": {
+        "display": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

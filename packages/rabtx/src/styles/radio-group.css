@@ -1,0 +1,379 @@
+/*
+ * The RadioGroup: native <input type="radio">s sharing one name inside a <fieldset
+ * role="radiogroup">. Each input is invisible and laid over the circle it controls; the circle reads
+ * its state with :has() (:checked, :disabled, :focus-visible, :active) and the group reads its error
+ * from aria-invalid, so there is no state in JavaScript at all.
+ *
+ *   - choosing an option turns its edge --primary and its dot glides over from the last choice:
+ *     where anchor positioning exists, the dot is the group's own ::after, anchored to the checked
+ *     circle, and its top and left travel on the glide spring (360 / 32 / 0.6, no overshoot); the
+ *     first choice glides in from the first option while it grows;
+ *   - elsewhere each circle has its own dot (::after) that pops in on the swap spring and shrinks
+ *     out in 160ms, so the choice still reads as motion;
+ *   - pressing a circle or its label springs the circle down to 0.92 on the press spring.
+ *
+ * The `card` variant draws every option as a bordered choice card with the circle at the end: the
+ * chosen card takes a --primary edge and a faint --primary tint, and the whole card presses.
+ *
+ * Colors come only from the theme: the circle is --background with a --muted-foreground edge (50%,
+ * full on hover), chosen is a --primary edge and dot, focus is --ring and an error is --destructive.
+ * Cards are --card on an --input edge with --radius-control corners. Text is --foreground and the
+ * description --muted-foreground.
+ */
+@layer components {
+	.rx-radio-group {
+		/* Size (md). The group sets it so the circles and the gliding dot agree. */
+		--_size: 1.25rem;
+		--_dot: 0.5rem;
+		--_edge-w: 2px;
+
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		min-inline-size: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+
+		&[data-orientation="horizontal"] {
+			flex-flow: row wrap;
+			gap: 0.75rem 1.5rem;
+		}
+	}
+
+	.rx-radio-group-sm {
+		--_size: 1rem;
+		--_dot: 0.375rem;
+		--_edge-w: 1.5px;
+
+		gap: 0.5rem;
+	}
+	.rx-radio-group-lg {
+		--_size: 1.5rem;
+		--_dot: 0.625rem;
+	}
+
+	/* The circle. */
+	.rx-radio {
+		--_edge: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+		--_halo: transparent;
+
+		position: relative;
+		display: inline-grid;
+		flex: none;
+		place-items: center;
+		box-sizing: border-box;
+		width: var(--_size);
+		height: var(--_size);
+		border: var(--_edge-w) solid var(--_edge);
+		border-radius: 50%;
+		background-color: var(--background);
+		box-shadow: 0 0 0 3px var(--_halo);
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			border-color 200ms var(--motion-ease),
+			box-shadow 200ms var(--motion-ease),
+			scale var(--spring-press-duration) var(--spring-press);
+
+		/* Its own dot, used where the gliding dot is not available. */
+		&::after {
+			content: "";
+			grid-area: 1 / 1;
+			width: var(--_dot);
+			height: var(--_dot);
+			border-radius: 50%;
+			background-color: var(--primary);
+			pointer-events: none;
+			opacity: 0;
+			scale: 0;
+			transition:
+				opacity 160ms var(--motion-ease),
+				scale 160ms var(--motion-ease);
+		}
+
+		&:has(> :checked) {
+			--_edge: var(--primary);
+
+			&::after {
+				opacity: 1;
+				scale: 1;
+				transition:
+					opacity calc(var(--spring-swap-duration) * 0.5) var(--motion-ease),
+					scale var(--spring-swap-duration) var(--spring-swap);
+			}
+		}
+
+		&:has(> :focus-visible) {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+
+		&:has(> :active:not(:disabled)) {
+			scale: 0.92;
+		}
+
+		&:has(> :disabled) {
+			opacity: 0.5;
+		}
+	}
+
+	@media (hover: hover) {
+		.rx-radio-item:hover > .rx-radio:not(:has(> :disabled, > :checked)) {
+			--_edge: var(--muted-foreground);
+		}
+	}
+
+	/* An error (Field or aria-invalid) while nothing is chosen: red edges and a soft halo. */
+	.rx-radio-group[aria-invalid="true"]:not(:has(:checked)) .rx-radio {
+		--_edge: var(--destructive);
+		--_halo: color-mix(in oklab, var(--destructive) 15%, transparent);
+		outline-color: var(--destructive);
+	}
+
+	/* The real control: invisible, over the circle, and at least 24px so it is easy to hit. */
+	.rx-radio-input {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: max(24px, var(--_size));
+		height: max(24px, var(--_size));
+		translate: -50% -50%;
+		z-index: 1;
+		margin: 0;
+		appearance: none;
+		opacity: 0;
+		cursor: pointer;
+
+		&:disabled {
+			cursor: not-allowed;
+		}
+	}
+
+	/* One option: the circle, then its label and an optional description. */
+	.rx-radio-item {
+		display: inline-flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		color: var(--foreground);
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		cursor: pointer;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+
+		/* Centre the circle on the first line of text, whatever the size. */
+		& > .rx-radio {
+			margin-block: calc((1lh - var(--_size)) / 2);
+		}
+
+		.rx-radio-group-sm > & {
+			gap: 0.5rem;
+			font-size: 0.8125rem;
+			letter-spacing: -0.15px;
+		}
+		.rx-radio-group-lg > & {
+			font-size: 1rem;
+			line-height: 1.5rem;
+		}
+
+		/* Pressing the text presses the circle too. */
+		&:active:not(:has(:disabled)) > .rx-radio {
+			scale: 0.92;
+		}
+
+		&:has(:disabled) {
+			cursor: not-allowed;
+
+			& > .rx-radio-text {
+				opacity: 0.5;
+			}
+		}
+	}
+
+	.rx-radio-text {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.rx-radio-description {
+		color: var(--muted-foreground);
+		font-size: 0.75rem;
+		line-height: 1rem;
+		letter-spacing: 0;
+	}
+
+	/* Choice cards: the whole card is the label; the circle sits at the end. */
+	.rx-radio-group-card {
+		gap: 0.5rem;
+
+		&[data-orientation="horizontal"] {
+			gap: 0.5rem;
+
+			& > .rx-radio-item {
+				flex: 1 1 10rem;
+			}
+		}
+
+		& > .rx-radio-item {
+			--_card-edge: var(--input);
+			--_card-fill: var(--card);
+
+			position: relative;
+			display: flex;
+			padding: 0.75rem 1rem;
+			border: 1px solid var(--_card-edge);
+			border-radius: var(--radius-control);
+			background-color: var(--_card-fill);
+			box-shadow: 0 0 0 1px transparent;
+			transition:
+				border-color 150ms var(--motion-ease),
+				background-color 150ms var(--motion-ease),
+				box-shadow 150ms var(--motion-ease),
+				scale var(--spring-press-duration) var(--spring-press);
+
+			& > .rx-radio {
+				order: 1;
+			}
+			& > .rx-radio-text {
+				flex: 1;
+			}
+
+			&:has(:checked) {
+				--_card-edge: var(--primary);
+				--_card-fill: color-mix(in oklab, var(--primary) 6%, var(--card));
+				box-shadow: 0 0 0 1px var(--primary);
+			}
+
+			/* The card shows the focus ring, not the circle. */
+			&:has(:focus-visible) {
+				outline: 2px solid var(--ring);
+				outline-offset: 2px;
+
+				& > .rx-radio {
+					outline: none;
+				}
+			}
+
+			/* The whole card presses; the circle inside stays still. */
+			&:active:not(:has(:disabled)) {
+				scale: 0.985;
+
+				& > .rx-radio {
+					scale: none;
+				}
+			}
+
+			&:has(:disabled) {
+				opacity: 0.5;
+
+				& > .rx-radio,
+				& > .rx-radio-text {
+					opacity: 1;
+				}
+			}
+		}
+
+		&.rx-radio-group-sm > .rx-radio-item {
+			padding: 0.5rem 0.75rem;
+		}
+		&.rx-radio-group-lg > .rx-radio-item {
+			padding: 1rem 1.25rem;
+		}
+
+		&[aria-invalid="true"]:not(:has(:checked)) > .rx-radio-item {
+			--_card-edge: var(--destructive);
+		}
+	}
+
+	@media (hover: hover) {
+		.rx-radio-group-card > .rx-radio-item:hover:not(:has(:disabled, :checked)) {
+			--_card-edge: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+		}
+	}
+
+	/*
+	 * The gliding dot. One dot per group, anchored to the checked circle (or to the first circle
+	 * while none is checked, hidden), so choosing another option moves it there. `anchor-scope`
+	 * keeps every group's anchor to itself.
+	 */
+	@supports (anchor-name: --a) and (anchor-scope: all) {
+		.rx-radio-group {
+			anchor-scope: --_radio-chosen;
+
+			&::after {
+				content: "";
+				position: absolute;
+				position-anchor: --_radio-chosen;
+				top: anchor(center);
+				left: anchor(center);
+				z-index: 2;
+				width: var(--_dot);
+				height: var(--_dot);
+				border-radius: 50%;
+				background-color: var(--primary);
+				pointer-events: none;
+				translate: -50% -50%;
+				transition:
+					top var(--spring-glide-duration) var(--spring-glide),
+					left var(--spring-glide-duration) var(--spring-glide),
+					opacity calc(var(--spring-swap-duration) * 0.5) var(--motion-ease),
+					scale var(--spring-swap-duration) var(--spring-swap);
+			}
+
+			&:not(:has(.rx-radio-input:checked))::after {
+				opacity: 0;
+				scale: 0;
+				transition:
+					opacity 160ms var(--motion-ease),
+					scale 160ms var(--motion-ease);
+			}
+
+			&:has(.rx-radio-input:checked:disabled)::after {
+				opacity: 0.5;
+			}
+
+			&:has(.rx-radio-item:active .rx-radio-input:checked:not(:disabled))::after {
+				scale: 0.92;
+			}
+		}
+
+		.rx-radio:has(> :checked),
+		.rx-radio-group:not(:has(.rx-radio-input:checked)) > .rx-radio-item:first-of-type > .rx-radio {
+			anchor-name: --_radio-chosen;
+		}
+
+		/* The circles' own dots step aside for the gliding one. */
+		.rx-radio::after {
+			visibility: hidden;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/*
+	 * Less motion: no press, no pop and no glide; the dot just fades. Motion off: every state still
+	 * shows, at once.
+	 */
+	@media (prefers-reduced-motion: reduce) {
+		.rx-radio,
+		.rx-radio-group-card > .rx-radio-item {
+			scale: none;
+		}
+		.rx-radio::after,
+		.rx-radio-group::after {
+			scale: none;
+			transition: opacity 100ms var(--motion-ease);
+		}
+	}
+	[data-motion="off"] {
+		& .rx-radio,
+		& .rx-radio::after,
+		& .rx-radio-group::after,
+		& .rx-radio-group-card > .rx-radio-item {
+			transition: none;
+		}
+	}
+}

@@ -1,0 +1,142 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "collapsible",
+  "title": "Collapsible",
+  "description": "A native details element whose content grows to its height, fades in out of a blur and turns its chevron over. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/collapsible.styles.ts",
+      "content": "/**\n * Class names for the parts of Collapsible, for markup written by hand. The look and the motion live\n * in `collapsible.css` (your global CSS, when installed from the registry). It is a `<details>`, so it\n * opens and closes with no script at all:\n *\n *   <details class=\"rx-collapsible\">\n *     <summary class=\"rx-collapsible-trigger\">\n *       More details <span class=\"rx-collapsible-chevron\" aria-hidden=\"true\"></span>\n *     </summary>\n *     <div class=\"rx-collapsible-content\">…</div>\n *   </details>\n */\nexport const collapsibleParts = {\n\t/** The `<details>`. Its content grows to its own height when it opens. */\n\troot: \"rx-collapsible\",\n\t/** The `<summary>`: the toggle, a button to assistive tech. */\n\ttrigger: \"rx-collapsible-trigger\",\n\t/** The chevron that turns over as it opens. Decorative. */\n\tchevron: \"rx-collapsible-chevron\",\n\t/** Everything after the summary. Fades in out of a small blur. */\n\tcontent: \"rx-collapsible-content\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/collapsible.tsx",
+      "content": "\"use client\";\n\nimport {\n\tcreateContext,\n\ttype DetailsHTMLAttributes,\n\ttype HTMLAttributes,\n\ttype MouseEvent,\n\ttype Ref,\n\ttype SyntheticEvent,\n\tuseCallback,\n\tuseContext,\n\tuseId,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseReducer,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { collapsibleParts } from \"./collapsible.styles\";\n\ntype CollapsibleContextValue = {\n\topen: boolean;\n\tdisabled: boolean;\n\t/** Asks for the opposite state; the owner decides (controlled) or takes it (uncontrolled). */\n\ttoggle: () => void;\n\ttriggerId: string;\n\tcontentId: string;\n};\n\nconst CollapsibleContext = createContext<CollapsibleContextValue | null>(null);\n\nfunction useCollapsibleContext(part: string) {\n\tconst context = useContext(CollapsibleContext);\n\tif (!context) throw new Error(`${part} must be inside <Collapsible>`);\n\treturn context;\n}\n\n/** The open state and a toggle, for custom parts inside a Collapsible (or an AccordionItem). */\nexport function useCollapsible() {\n\tconst { open, disabled, toggle, triggerId, contentId } = useCollapsibleContext(\"useCollapsible\");\n\treturn { open, disabled, toggle, triggerId, contentId };\n}\n\nfunction setRef<T>(ref: Ref<T> | undefined, node: T | null) {\n\tif (typeof ref === \"function\") ref(node);\n\telse if (ref) ref.current = node;\n}\n\nexport type CollapsibleProps = Omit<DetailsHTMLAttributes<HTMLDetailsElement>, \"open\"> & {\n\t/** Open (controlled). Pair with `onOpenChange`. */\n\topen?: boolean;\n\t/** Starts open (uncontrolled). */\n\tdefaultOpen?: boolean;\n\t/**\n\t * The state the user asked for: a trigger press, find-in-page or a link to text inside it.\n\t * In controlled mode the element stays as `open` says until you pass the new value.\n\t */\n\tonOpenChange?: (open: boolean) => void;\n\t/** The trigger stops toggling and is dimmed; it leaves the Tab order. */\n\tdisabled?: boolean;\n\tref?: Ref<HTMLDetailsElement>;\n};\n\n/**\n * A `<details>`: the browser supplies the button role, the expanded state, Enter and Space, `name`\n * groups (one open at a time) and opening when find-in-page or a text fragment lands inside it,\n * and it works before hydration. React holds the state so `open` can be controlled; every request\n * (a press, or the browser opening it) goes through `onOpenChange`, and the element is put back if\n * the owner says no.\n *\n * The content grows to its own height with `interpolate-size` and `::details-content` (a grid\n * `0fr` to `1fr` fallback elsewhere) and fades in; the chevron turns over. Every animation is CSS.\n */\nexport function Collapsible({\n\topen: openProp,\n\tdefaultOpen = false,\n\tonOpenChange,\n\tdisabled = false,\n\tonToggle,\n\tclassName,\n\tchildren,\n\tref,\n\t...rest\n}: CollapsibleProps) {\n\tconst [internal, setInternal] = useState(defaultOpen);\n\tconst controlled = openProp !== undefined;\n\tconst open = controlled ? openProp : internal;\n\tconst details = useRef<HTMLDetailsElement>(null);\n\tconst latest = useRef({ open, disabled, controlled, onOpenChange });\n\t// A re-render after every request, so a refused one is put back by the effect below.\n\tconst [, rerender] = useReducer((count: number) => count + 1, 0);\n\tconst id = useId();\n\n\tconst request = useCallback((next: boolean) => {\n\t\tconst state = latest.current;\n\t\tif (!state.disabled && next !== state.open) {\n\t\t\tif (!state.controlled) setInternal(next);\n\t\t\tstate.onOpenChange?.(next);\n\t\t}\n\t\trerender();\n\t}, []);\n\n\tconst hydrated = useRef(false);\n\n\t// The element follows the state on every render: React leaves an unchanged `open` prop alone,\n\t// so the browser opening it (find-in-page, a `name` sibling) would otherwise stick. On the first\n\t// pass a difference is the browser's doing before hydration (a link to text or an id inside it),\n\t// so it is taken as a request instead of being undone.\n\tuseLayoutEffect(() => {\n\t\tlatest.current = { open, disabled, controlled, onOpenChange };\n\t\tconst node = details.current;\n\t\tif (!node || node.open === open) {\n\t\t\thydrated.current = true;\n\t\t\treturn;\n\t\t}\n\t\tif (hydrated.current) node.open = open;\n\t\telse {\n\t\t\thydrated.current = true;\n\t\t\trequest(node.open);\n\t\t}\n\t});\n\n\tconst context = useMemo<CollapsibleContextValue>(\n\t\t() => ({\n\t\t\topen,\n\t\t\tdisabled,\n\t\t\ttoggle: () => request(!latest.current.open),\n\t\t\ttriggerId: `${id}-trigger`,\n\t\t\tcontentId: `${id}-content`,\n\t\t}),\n\t\t[open, disabled, request, id],\n\t);\n\n\treturn (\n\t\t<CollapsibleContext.Provider value={context}>\n\t\t\t<details\n\t\t\t\tdata-slot=\"collapsible\"\n\t\t\t\t{...rest}\n\t\t\t\tref={(node) => {\n\t\t\t\t\tdetails.current = node;\n\t\t\t\t\tsetRef(ref, node);\n\t\t\t\t}}\n\t\t\t\topen={open}\n\t\t\t\t// The browser may open it before hydration; the first effect takes that up.\n\t\t\t\tsuppressHydrationWarning\n\t\t\t\tdata-state={open ? \"open\" : \"closed\"}\n\t\t\t\tdata-disabled={disabled ? \"\" : undefined}\n\t\t\t\tclassName={cn(collapsibleParts.root, className)}\n\t\t\t\tonToggle={(event: SyntheticEvent<HTMLDetailsElement>) => {\n\t\t\t\t\tonToggle?.(event as Parameters<NonNullable<typeof onToggle>>[0]);\n\t\t\t\t\t// Only toggles the state did not cause: our own changes already match it.\n\t\t\t\t\tif (event.currentTarget.open !== latest.current.open) request(event.currentTarget.open);\n\t\t\t\t}}\n\t\t\t>\n\t\t\t\t{children}\n\t\t\t</details>\n\t\t</CollapsibleContext.Provider>\n\t);\n}\n\nexport type CollapsibleTriggerProps = HTMLAttributes<HTMLElement> & {\n\t/** Draws the chevron after the label. On by default. */\n\tchevron?: boolean;\n\tref?: Ref<HTMLElement>;\n};\n\n/**\n * The `<summary>`, which must be the Collapsible's first child. A press asks the Collapsible to\n * toggle instead of letting the element flip itself, so a controlled one stays in charge.\n */\nexport function CollapsibleTrigger({\n\tchevron = true,\n\tclassName,\n\tchildren,\n\tonClick,\n\tref,\n\t...rest\n}: CollapsibleTriggerProps) {\n\tconst collapsible = useCollapsibleContext(\"CollapsibleTrigger\");\n\treturn (\n\t\t<summary\n\t\t\tid={collapsible.triggerId}\n\t\t\tdata-slot=\"collapsible-trigger\"\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\taria-disabled={collapsible.disabled || rest[\"aria-disabled\"] || undefined}\n\t\t\ttabIndex={collapsible.disabled ? -1 : rest.tabIndex}\n\t\t\tdata-state={collapsible.open ? \"open\" : \"closed\"}\n\t\t\tdata-disabled={collapsible.disabled ? \"\" : undefined}\n\t\t\tclassName={cn(collapsibleParts.trigger, className)}\n\t\t\tonClick={(event: MouseEvent<HTMLElement>) => {\n\t\t\t\tonClick?.(event);\n\t\t\t\tif (event.defaultPrevented) return;\n\t\t\t\t// The press (or Enter / Space) would flip `open` itself; the state does it instead.\n\t\t\t\tevent.preventDefault();\n\t\t\t\tcollapsible.toggle();\n\t\t\t}}\n\t\t>\n\t\t\t{children}\n\t\t\t{chevron ? <span className={collapsibleParts.chevron} aria-hidden=\"true\" /> : null}\n\t\t</summary>\n\t);\n}\n\nexport type CollapsibleContentProps = HTMLAttributes<HTMLDivElement> & {\n\tref?: Ref<HTMLDivElement>;\n};\n\n/** Everything that opens. The browser keeps it out of the accessibility tree while closed. */\nexport function CollapsibleContent({ className, ref, ...rest }: CollapsibleContentProps) {\n\tconst collapsible = useCollapsibleContext(\"CollapsibleContent\");\n\treturn (\n\t\t<div\n\t\t\tid={collapsible.contentId}\n\t\t\tdata-slot=\"collapsible-content\"\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\tdata-state={collapsible.open ? \"open\" : \"closed\"}\n\t\t\tclassName={cn(collapsibleParts.content, className)}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-collapsible": {
+        "--_open-ease": "var(--spring-glide)",
+        "--_open-time": "var(--spring-glide-duration)",
+        "--_close-ease": "var(--spring-glide)",
+        "--_close-time": "var(--spring-glide-duration)",
+        "display": "block",
+        "interpolate-size": "allow-keywords"
+      },
+      ".rx-collapsible::details-content": {
+        "block-size": "0",
+        "overflow": "clip",
+        "transition": "block-size var(--_close-time) var(--_close-ease), content-visibility var(--_close-time) allow-discrete"
+      },
+      ".rx-collapsible[open]::details-content": {
+        "block-size": "auto",
+        "transition": "block-size var(--_open-time) var(--_open-ease), content-visibility var(--_open-time) allow-discrete"
+      },
+      "@supports not (interpolate-size: allow-keywords)": {
+        ".rx-collapsible::details-content": {
+          "display": "grid",
+          "grid-template-rows": "0fr",
+          "block-size": "auto",
+          "transition": "grid-template-rows var(--_close-time) var(--_close-ease), content-visibility var(--_close-time) allow-discrete"
+        },
+        ".rx-collapsible[open]::details-content": {
+          "grid-template-rows": "1fr",
+          "transition": "grid-template-rows var(--_open-time) var(--_open-ease), content-visibility var(--_open-time) allow-discrete"
+        },
+        ".rx-collapsible > .rx-collapsible-content": {
+          "min-block-size": "0",
+          "overflow": "hidden"
+        }
+      },
+      ".rx-collapsible-trigger": {
+        "display": "flex",
+        "align-items": "center",
+        "gap": "0.5rem",
+        "box-sizing": "border-box",
+        "min-block-size": "2.5rem",
+        "padding": "0.5rem 0.75rem",
+        "border-radius": "var(--radius-control)",
+        "color": "var(--foreground)",
+        "font-size": "0.875rem",
+        "line-height": "1.25rem",
+        "font-weight": "500",
+        "letter-spacing": "-0.15px",
+        "list-style": "none",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "background-color 150ms var(--motion-ease)"
+      },
+      ".rx-collapsible-trigger::-webkit-details-marker": {
+        "display": "none"
+      },
+      ".rx-collapsible-trigger:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-collapsible-trigger[data-disabled]": {
+        "opacity": "0.5",
+        "cursor": "not-allowed"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-collapsible-trigger:hover:not([data-disabled])": {
+          "background-color": "color-mix(in oklab, var(--foreground) 5%, transparent)"
+        }
+      },
+      ".rx-collapsible-chevron": {
+        "flex": "none",
+        "inline-size": "16px",
+        "block-size": "16px",
+        "margin-inline-start": "auto",
+        "background": "currentColor",
+        "color": "var(--muted-foreground)",
+        "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 9L12 15L6 9'/%3E%3C/svg%3E\") center / 16px no-repeat",
+        "transition": "rotate var(--spring-swap-duration) var(--spring-swap)"
+      },
+      "[open] > .rx-collapsible-trigger > .rx-collapsible-chevron": {
+        "rotate": "180deg"
+      },
+      ".rx-collapsible-content": {
+        "opacity": "0",
+        "filter": "blur(4px)",
+        "translate": "0 -4px",
+        "transition": "opacity 120ms var(--motion-ease), filter 120ms var(--motion-ease), translate 120ms var(--motion-ease)"
+      },
+      "[open] > .rx-collapsible-content": {
+        "opacity": "1",
+        "filter": "blur(0)",
+        "translate": "0 0",
+        "transition": "opacity 220ms var(--motion-ease) 50ms, filter 220ms var(--motion-ease) 50ms, translate var(--_open-time) var(--_open-ease)"
+      },
+      "@starting-style ": {
+        "[open] > .rx-collapsible-content": {
+          "opacity": "0",
+          "filter": "blur(4px)",
+          "translate": "0 -4px"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-collapsible::details-content, .rx-collapsible[open]::details-content, .rx-collapsible-chevron": {
+          "transition-duration": "0ms"
+        },
+        ".rx-collapsible-content, [open] > .rx-collapsible-content": {
+          "filter": "none",
+          "translate": "none",
+          "transition": "opacity 100ms var(--motion-ease)"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-collapsible-chevron, .rx-collapsible-content), [data-motion=\"off\"] .rx-collapsible::details-content, [data-motion=\"off\"] .rx-collapsible[open]::details-content": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

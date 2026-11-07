@@ -1,0 +1,442 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "slider",
+  "title": "Slider",
+  "description": "Native range inputs as a slider or a multi-thumb range, with a value bubble, marks, three sizes, vertical and a ruler variant. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/slider.styles.ts",
+      "content": "export type SliderSize = \"sm\" | \"md\" | \"lg\";\nexport type SliderVariant = \"default\" | \"ruler\";\nexport type SliderOrientation = \"horizontal\" | \"vertical\";\n\nexport const sliderSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly SliderSize[];\nexport const sliderVariants = [\"default\", \"ruler\"] as const satisfies readonly SliderVariant[];\n\n/**\n * The class list for a Slider. The look and the motion live in `slider.css` (your global CSS, when\n * installed from the registry), so React and plain HTML get the same slider from these names. The\n * fill and the bubbles read `--_lo`, `--_hi` and `--_p` (numbers from 0 to 1) from inline styles:\n *\n *   <div class=\"rx-slider rx-slider-md\" data-orientation=\"horizontal\" style=\"--_lo: 0; --_hi: 0.4\">\n *     <div class=\"rx-slider-control\">\n *       <input type=\"range\" class=\"rx-slider-input\" value=\"40\" aria-label=\"Volume\" />\n *     </div>\n *   </div>\n */\nexport function sliderClass(size: SliderSize = \"md\", variant: SliderVariant = \"default\") {\n\treturn variant === \"ruler\"\n\t\t? `rx-slider rx-slider-${size} rx-slider-ruler`\n\t\t: `rx-slider rx-slider-${size}`;\n}\n\n/** Class names for the parts of a Slider, for markup written by hand. */\nexport const sliderParts = {\n\t/** Holds the overlaid native ranges, the bubbles and the scale; it is what the thumbs travel. */\n\tcontrol: \"rx-slider-control\",\n\t/** A native `<input type=\"range\">`: its track draws the fill, its thumb is the handle. */\n\tinput: \"rx-slider-input\",\n\t/** The value over a thumb (`--_p`), on hover, focus and drag, or always. Decorative. */\n\tbubble: \"rx-slider-bubble\",\n\t/** The ruler variant's tick scale under the needle. Decorative. */\n\tscale: \"rx-slider-scale\",\n\t/** The row of marks and their labels under the track. Decorative; the datalist is the data. */\n\tmarks: \"rx-slider-marks\",\n\t/** One mark at `--_p`; `data-in` when it sits inside the filled part. */\n\tmark: \"rx-slider-mark\",\n\t/** The ruler variant's large readout above the scale. */\n\treadout: \"rx-slider-readout\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/slider.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ChangeEvent,\n\ttype CSSProperties,\n\ttype HTMLAttributes,\n\ttype PointerEvent,\n\ttype ReactNode,\n\ttype Ref,\n\tuseContext,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\ttype SliderOrientation,\n\ttype SliderSize,\n\ttype SliderVariant,\n\tsliderClass,\n\tsliderParts,\n} from \"./slider.styles\";\n\n/** A mark on the scale: a value, or a value with a label drawn under it. */\nexport type SliderMark = number | { value: number; label?: ReactNode };\n\nexport type SliderProps = Omit<HTMLAttributes<HTMLDivElement>, \"defaultValue\" | \"onChange\"> & {\n\t/** The thumbs' values, controlled. One number is a slider, two (or more) a range. */\n\tvalue?: number[];\n\t/** The values at first, uncontrolled. Defaults to `[min]`. */\n\tdefaultValue?: number[];\n\t/** Every value change, by drag, click or key. */\n\tonValueChange?: (value: number[]) => void;\n\t/** The values when a drag or a key press ends (the native `change` event). */\n\tonValueCommit?: (value: number[]) => void;\n\tmin?: number;\n\tmax?: number;\n\tstep?: number;\n\t/** How many steps two thumbs keep between them. Defaults to 0: they can meet but never cross. */\n\tminStepsBetweenThumbs?: number;\n\t/** `vertical` stands the slider up (minimum at the bottom). Give it a height. */\n\torientation?: SliderOrientation;\n\t/** Track 4, 6 (default) or 8px; thumb 16, 20 or 24px. */\n\tsize?: SliderSize;\n\t/** `ruler` draws a tick scale under a needle, with a large readout above. */\n\tvariant?: SliderVariant;\n\tdisabled?: boolean;\n\t/** The form field name. A range submits one entry per thumb under it. */\n\tname?: string;\n\tform?: string;\n\t/** A bubble with the value over each thumb: `true` on hover, focus and drag, or `\"always\"`. */\n\tshowValue?: boolean | \"always\";\n\t/** Formats the bubble, the readout, the mark labels and the value read to screen readers. */\n\tformatValue?: (value: number) => string;\n\t/** Marks under the track: `true` for every step, or a list of values (with optional labels). */\n\tmarks?: boolean | readonly SliderMark[];\n\t/** Each thumb's name in a range. Defaults to \"Minimum\" and \"Maximum\". */\n\tthumbLabels?: readonly string[];\n\tref?: Ref<HTMLDivElement>;\n};\n\n/** Decimal places a step implies, so 0.1 + 0.2 lands on 0.3. */\nconst decimalsOf = (n: number) => String(n).split(\".\")[1]?.length ?? 0;\nconst clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));\n/** The most every-step marks drawn before `marks` stops drawing one per step. */\nconst MAX_STEP_MARKS = 100;\n\nfunction resolveMarks(marks: SliderProps[\"marks\"], min: number, max: number, step: number) {\n\tif (!marks) return [];\n\tif (marks === true) {\n\t\tconst count = Math.floor(Number(((max - min) / step).toFixed(6)));\n\t\tif (count < 1 || count > MAX_STEP_MARKS) return [];\n\t\tconst places = decimalsOf(step);\n\t\treturn Array.from({ length: count + 1 }, (_, i) => ({\n\t\t\tvalue: Number((min + i * step).toFixed(places)),\n\t\t\tlabel: undefined as ReactNode,\n\t\t}));\n\t}\n\treturn marks\n\t\t.map((mark) => (typeof mark === \"number\" ? { value: mark, label: undefined } : mark))\n\t\t.filter((mark) => mark.value >= min && mark.value <= max);\n}\n\n/**\n * A slider on native `<input type=\"range\">`s, so arrow keys, Page Up and Down, Home and End,\n * form submission and the slider role come from the browser. One value draws one range whose own\n * track paints the fill; two or more values overlay one range per thumb on a shared track, and\n * each thumb is clamped between its neighbours (`minStepsBetweenThumbs` apart).\n *\n * JavaScript only keeps the values and writes them as CSS variables (`--_lo`, `--_hi`, `--_p`):\n * the fill, the value bubbles and the marks are placed by CSS, and the thumb's press and the\n * bubble's pop are CSS springs.\n */\nexport function Slider({\n\tvalue: valueProp,\n\tdefaultValue,\n\tonValueChange,\n\tonValueCommit,\n\tmin = 0,\n\tmax = 100,\n\tstep = 1,\n\tminStepsBetweenThumbs = 0,\n\torientation = \"horizontal\",\n\tsize,\n\tvariant = \"default\",\n\tdisabled,\n\tname,\n\tform,\n\tshowValue = false,\n\tformatValue,\n\tmarks,\n\tthumbLabels,\n\tclassName,\n\tstyle,\n\tid: idProp,\n\t\"aria-label\": ariaLabel,\n\t\"aria-labelledby\": labelledByProp,\n\t\"aria-describedby\": describedByProp,\n\t\"aria-invalid\": invalidProp,\n\tref,\n\t...rest\n}: SliderProps) {\n\tconst field = useContext(FieldContext);\n\tconst autoId = useId();\n\tconst baseId = idProp ?? field?.id ?? autoId;\n\tconst listId = `${autoId}-marks`;\n\tconst [inner, setInner] = useState(() => defaultValue ?? [min]);\n\tconst values = valueProp ?? inner;\n\tconst [active, setActive] = useState<number | null>(null);\n\tconst [dragging, setDragging] = useState<number | null>(null);\n\t// The values and the commit callback as of the last render, for the event handlers. `update`\n\t// also writes `latest` at once, so two events in one frame clamp against each other.\n\tconst latest = useRef(values);\n\tconst commitRef = useRef(onValueCommit);\n\tuseLayoutEffect(() => {\n\t\tlatest.current = values;\n\t\tcommitRef.current = onValueCommit;\n\t});\n\tconst controlRef = useRef<HTMLDivElement>(null);\n\n\tconst range = values.length > 1;\n\tconst span = max - min || 1;\n\tconst places = decimalsOf(step);\n\tconst gap = minStepsBetweenThumbs * step;\n\tconst format = (v: number) => (formatValue ? formatValue(v) : String(v));\n\tconst percent = (v: number) => clamp((v - min) / span, 0, 1);\n\tconst lo = range ? percent(values[0]) : 0;\n\tconst hi = percent(values[values.length - 1]);\n\tconst items = resolveMarks(marks, min, max, step);\n\t// The ruler draws a tick every step, or every few steps so there are at most 100.\n\tconst steps = Math.max(1, Math.round(span / step));\n\tconst ticks = steps / Math.ceil(steps / MAX_STEP_MARKS);\n\tconst labelled = items.some((mark) => mark.label !== undefined);\n\tconst describedBy = [field?.describedBy, describedByProp].filter(Boolean).join(\" \") || undefined;\n\tconst invalid = invalidProp ?? (field?.invalid || undefined);\n\tconst outerLabel = labelledByProp ?? (field && !ariaLabel ? `${field.id}-label` : undefined);\n\tconst names =\n\t\tthumbLabels ??\n\t\t(values.length === 2\n\t\t\t? [\"Minimum\", \"Maximum\"]\n\t\t\t: values.map((_, i) => `${i + 1} of ${values.length}`));\n\n\t/** Snaps, clamps between the neighbours, and reports a new value for thumb `index`. */\n\tconst update = (index: number, raw: number) => {\n\t\tconst current = latest.current;\n\t\tlet next = Number((Math.round((raw - min) / step) * step + min).toFixed(places));\n\t\tnext = clamp(next, min, max);\n\t\tif (index > 0) next = Math.max(next, current[index - 1] + gap);\n\t\tif (index < current.length - 1) next = Math.min(next, current[index + 1] - gap);\n\t\tif (next === current[index]) return;\n\t\tconst updated = current.map((v, i) => (i === index ? next : v));\n\t\tlatest.current = updated;\n\t\tif (valueProp === undefined) setInner(updated);\n\t\tonValueChange?.(updated);\n\t};\n\n\t// The native `change` event fires once a drag or a key press is done: that is the commit.\n\tuseEffect(() => {\n\t\tconst control = controlRef.current;\n\t\tif (!control) return;\n\t\tconst commit = () => commitRef.current?.(latest.current);\n\t\tcontrol.addEventListener(\"change\", commit);\n\t\treturn () => control.removeEventListener(\"change\", commit);\n\t}, []);\n\n\t/** The value under the pointer, from the control's box (mirrored in RTL, bottom-up if vertical). */\n\tconst valueAt = (event: PointerEvent<HTMLDivElement>) => {\n\t\tconst box = event.currentTarget.getBoundingClientRect();\n\t\tconst rtl = getComputedStyle(event.currentTarget).direction === \"rtl\";\n\t\tconst t =\n\t\t\torientation === \"vertical\"\n\t\t\t\t? (box.bottom - event.clientY) / box.height\n\t\t\t\t: rtl\n\t\t\t\t\t? (box.right - event.clientX) / box.width\n\t\t\t\t\t: (event.clientX - box.left) / box.width;\n\t\treturn min + clamp(t, 0, 1) * span;\n\t};\n\n\t// A range's inputs only take the pointer on their thumbs, so a press on the bare track moves\n\t// the nearest thumb there and keeps following the pointer until it is released.\n\tconst onTrackDown = (event: PointerEvent<HTMLDivElement>) => {\n\t\tif (!range || disabled || event.button !== 0) return;\n\t\tif ((event.target as HTMLElement).closest(`.${sliderParts.input}`)) return;\n\t\tevent.preventDefault();\n\t\tconst target = valueAt(event);\n\t\tconst current = latest.current;\n\t\tlet index = 0;\n\t\tfor (let i = 1; i < current.length; i++) {\n\t\t\tconst d = Math.abs(current[i] - target);\n\t\t\tconst best = Math.abs(current[index] - target);\n\t\t\tif (d < best || (d === best && target > current[i])) index = i;\n\t\t}\n\t\tevent.currentTarget.setPointerCapture(event.pointerId);\n\t\tsetDragging(index);\n\t\tsetActive(index);\n\t\tupdate(index, target);\n\t\tevent.currentTarget.querySelectorAll<HTMLInputElement>(`.${sliderParts.input}`)[index]?.focus();\n\t};\n\tconst onTrackMove = (event: PointerEvent<HTMLDivElement>) => {\n\t\tif (dragging !== null) update(dragging, valueAt(event));\n\t};\n\tconst onTrackUp = () => {\n\t\tif (dragging === null) return;\n\t\tsetDragging(null);\n\t\tcommitRef.current?.(latest.current);\n\t};\n\n\t// Which thumb sits on top where they overlap: the one last used, except that thumbs meeting at\n\t// the maximum put the lowest on top, the only one that can still move.\n\tconst pinned = values.findIndex((v) => v >= max);\n\tconst top =\n\t\trange && pinned >= 0 && values[pinned] === values[values.length - 1] ? pinned : active;\n\n\treturn (\n\t\t<div\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\tdata-slot=\"slider\"\n\t\t\tdata-orientation={orientation}\n\t\t\tdata-range={range ? \"\" : undefined}\n\t\t\tdata-disabled={disabled ? \"\" : undefined}\n\t\t\tdata-show-value={showValue === \"always\" ? \"always\" : showValue ? \"\" : undefined}\n\t\t\tdata-labels={labelled ? \"\" : undefined}\n\t\t\tclassName={cn(sliderClass(size, variant), className)}\n\t\t\tstyle={{ \"--_lo\": lo, \"--_hi\": hi, ...style } as CSSProperties}\n\t\t>\n\t\t\t{variant === \"ruler\" && (\n\t\t\t\t<div className={sliderParts.readout} aria-hidden=\"true\">\n\t\t\t\t\t{values.map(format).join(\" – \")}\n\t\t\t\t</div>\n\t\t\t)}\n\t\t\t<div\n\t\t\t\tref={controlRef}\n\t\t\t\tclassName={sliderParts.control}\n\t\t\t\tonPointerDown={onTrackDown}\n\t\t\t\tonPointerMove={onTrackMove}\n\t\t\t\tonPointerUp={onTrackUp}\n\t\t\t\tonPointerCancel={onTrackUp}\n\t\t\t>\n\t\t\t\t{range && <div className=\"rx-slider-track\" aria-hidden=\"true\" />}\n\t\t\t\t{variant === \"ruler\" && (\n\t\t\t\t\t<div\n\t\t\t\t\t\tclassName={sliderParts.scale}\n\t\t\t\t\t\taria-hidden=\"true\"\n\t\t\t\t\t\tstyle={{ \"--_ticks\": ticks } as CSSProperties}\n\t\t\t\t\t/>\n\t\t\t\t)}\n\t\t\t\t{values.map((v, i) => {\n\t\t\t\t\tconst thumbId = i === 0 ? baseId : `${baseId}-${i}`;\n\t\t\t\t\treturn (\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t// Thumbs never reorder: they are clamped between their neighbours.\n\t\t\t\t\t\t\t// oxlint-disable-next-line no-array-index-key\n\t\t\t\t\t\t\tkey={i}\n\t\t\t\t\t\t\tclassName=\"rx-slider-layer\"\n\t\t\t\t\t\t\tdata-top={top === i ? \"\" : undefined}\n\t\t\t\t\t\t\tdata-dragging={dragging === i ? \"\" : undefined}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\ttype=\"range\"\n\t\t\t\t\t\t\t\tid={thumbId}\n\t\t\t\t\t\t\t\tclassName={sliderParts.input}\n\t\t\t\t\t\t\t\tmin={min}\n\t\t\t\t\t\t\t\tmax={max}\n\t\t\t\t\t\t\t\tstep={step}\n\t\t\t\t\t\t\t\tvalue={v}\n\t\t\t\t\t\t\t\tname={name}\n\t\t\t\t\t\t\t\tform={form}\n\t\t\t\t\t\t\t\tdisabled={disabled}\n\t\t\t\t\t\t\t\tlist={items.length ? listId : undefined}\n\t\t\t\t\t\t\t\taria-label={range ? (ariaLabel ? `${ariaLabel} ${names[i]}` : names[i]) : ariaLabel}\n\t\t\t\t\t\t\t\taria-labelledby={range && outerLabel ? `${outerLabel} ${thumbId}` : labelledByProp}\n\t\t\t\t\t\t\t\taria-describedby={describedBy}\n\t\t\t\t\t\t\t\taria-invalid={invalid}\n\t\t\t\t\t\t\t\taria-valuetext={formatValue ? formatValue(v) : undefined}\n\t\t\t\t\t\t\t\taria-orientation={orientation === \"vertical\" ? \"vertical\" : undefined}\n\t\t\t\t\t\t\t\tonFocus={() => setActive(i)}\n\t\t\t\t\t\t\t\tonPointerDown={() => setActive(i)}\n\t\t\t\t\t\t\t\tonChange={(event: ChangeEvent<HTMLInputElement>) =>\n\t\t\t\t\t\t\t\t\tupdate(i, Number(event.target.value))\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t{showValue && variant !== \"ruler\" && (\n\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\tclassName={sliderParts.bubble}\n\t\t\t\t\t\t\t\t\taria-hidden=\"true\"\n\t\t\t\t\t\t\t\t\tstyle={{ \"--_p\": percent(v) } as CSSProperties}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{format(v)}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t);\n\t\t\t\t})}\n\t\t\t</div>\n\t\t\t{items.length > 0 && (\n\t\t\t\t<>\n\t\t\t\t\t<datalist id={listId}>\n\t\t\t\t\t\t{items.map((mark) => (\n\t\t\t\t\t\t\t<option key={mark.value} value={mark.value}>\n\t\t\t\t\t\t\t\t{typeof mark.label === \"string\" ? mark.label : format(mark.value)}\n\t\t\t\t\t\t\t</option>\n\t\t\t\t\t\t))}\n\t\t\t\t\t</datalist>\n\t\t\t\t\t<div className={sliderParts.marks} aria-hidden=\"true\">\n\t\t\t\t\t\t{items.map((mark) => {\n\t\t\t\t\t\t\tconst p = percent(mark.value);\n\t\t\t\t\t\t\treturn (\n\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\tkey={mark.value}\n\t\t\t\t\t\t\t\t\tclassName={sliderParts.mark}\n\t\t\t\t\t\t\t\t\tdata-in={p >= lo && p <= hi ? \"\" : undefined}\n\t\t\t\t\t\t\t\t\tstyle={{ \"--_p\": p } as CSSProperties}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{mark.label !== undefined && <span>{mark.label}</span>}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t);\n\t\t\t\t\t\t})}\n\t\t\t\t\t</div>\n\t\t\t\t</>\n\t\t\t)}\n\t\t</div>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-slider": {
+        "--_track": "6px",
+        "--_thumb": "1.25rem",
+        "--_thumb-h": "var(--_thumb)",
+        "--_hit": "1.75rem",
+        "--_lo": "0",
+        "--_hi": "0",
+        "--_from": "0%",
+        "--_to": "calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_hi))",
+        "--_dir": "to right",
+        "--_shift": "-50%",
+        "--_rail": "color-mix(in oklab, var(--muted-foreground) 22%, var(--background))",
+        "--_bar": "var(--primary)",
+        "--_edge-a": "var(--field-edge-top)",
+        "--_edge-b": "var(--field-edge-bottom)",
+        "--_rail-bg": "linear-gradient( var(--_dir), var(--_rail) 0 var(--_from), var(--_bar) var(--_from) var(--_to), var(--_rail) var(--_to) )",
+        "position": "relative",
+        "display": "flex",
+        "flex-direction": "column",
+        "gap": "0.25rem",
+        "inline-size": "100%",
+        "min-inline-size": "8rem",
+        "touch-action": "none",
+        "-webkit-tap-highlight-color": "transparent"
+      },
+      ".rx-slider[data-range]": {
+        "--_from": "calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_lo))"
+      },
+      ".rx-slider[data-orientation=\"vertical\"]": {
+        "--_dir": "to top",
+        "--_shift": "50%",
+        "flex-direction": "row",
+        "inline-size": "auto",
+        "min-inline-size": "0",
+        "block-size": "12rem"
+      },
+      ".rx-slider[data-show-value]:not([data-orientation=\"vertical\"])": {
+        "padding-block-start": "1.75rem"
+      },
+      ".rx-slider[data-disabled]": {
+        "opacity": "0.5"
+      },
+      ":is([dir=\"rtl\"] .rx-slider, .rx-slider[dir=\"rtl\"]):not([data-orientation=\"vertical\"])": {
+        "--_dir": "to left",
+        "--_shift": "50%"
+      },
+      ".rx-slider-sm": {
+        "--_track": "4px",
+        "--_thumb": "1rem",
+        "--_hit": "1.5rem"
+      },
+      ".rx-slider-lg": {
+        "--_track": "8px",
+        "--_thumb": "1.5rem",
+        "--_hit": "2rem"
+      },
+      ".rx-slider-control": {
+        "position": "relative",
+        "block-size": "var(--_hit)"
+      },
+      "[data-orientation=\"vertical\"] > .rx-slider-control": {
+        "inline-size": "var(--_hit)",
+        "block-size": "100%"
+      },
+      ".rx-slider-layer": {
+        "position": "absolute",
+        "inset": "0"
+      },
+      "[data-range] .rx-slider-layer": {
+        "pointer-events": "none"
+      },
+      ".rx-slider-layer[data-top]": {
+        "z-index": "1"
+      },
+      ".rx-slider-input": {
+        "--_sx": "1",
+        "--_sy": "1",
+        "--_halo": "0px",
+        "--_focus": "transparent",
+        "--_knob-edge": "var(--primary)",
+        "--_knob-ring": "var(--surface-ring)",
+        "--_knob-sheen": "var(--surface-sheen)",
+        "--_knob-shade": "var(--surface-shade)",
+        "display": "block",
+        "box-sizing": "border-box",
+        "inline-size": "100%",
+        "block-size": "100%",
+        "margin": "0",
+        "padding": "0",
+        "appearance": "none",
+        "background": "transparent",
+        "outline": "none",
+        "cursor": "pointer"
+      },
+      "[data-orientation=\"vertical\"] .rx-slider-input": {
+        "writing-mode": "vertical-lr",
+        "direction": "rtl"
+      },
+      "[data-range] .rx-slider-input": {
+        "pointer-events": "none"
+      },
+      ".rx-slider-input:focus-visible": {
+        "--_focus": "var(--ring)"
+      },
+      ".rx-slider-input:disabled": {
+        "cursor": "not-allowed"
+      },
+      ".rx-slider-input::-webkit-slider-runnable-track": {
+        "box-sizing": "border-box",
+        "block-size": "var(--_track)",
+        "border": "1px solid transparent",
+        "border-radius": "var(--radius-button)",
+        "background": "var(--_rail-bg) padding-box, linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box, linear-gradient(var(--_rail), var(--_rail)) border-box"
+      },
+      ".rx-slider-input::-moz-range-track": {
+        "box-sizing": "border-box",
+        "block-size": "var(--_track)",
+        "border": "1px solid transparent",
+        "border-radius": "var(--radius-button)",
+        "background": "var(--_rail-bg) padding-box, linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box, linear-gradient(var(--_rail), var(--_rail)) border-box"
+      },
+      ".rx-slider-input::-moz-range-progress": {
+        "background": "transparent"
+      },
+      ".rx-slider-input::-webkit-slider-thumb": {
+        "box-sizing": "border-box",
+        "inline-size": "var(--_thumb)",
+        "block-size": "var(--_thumb-h)",
+        "margin-block-start": "calc((var(--_track) - var(--_thumb-h)) / 2 - 1px)",
+        "appearance": "none",
+        "pointer-events": "auto",
+        "border": "2px solid var(--_knob-edge)",
+        "border-radius": "var(--radius-button)",
+        "background-color": "var(--background)",
+        "background-image": "linear-gradient( 180deg, var(--_knob-sheen), transparent 40%, transparent 60%, var(--_knob-shade) )",
+        "box-shadow": "0 0 0 1px var(--_knob-ring), 0 0 0 var(--_halo) color-mix(in oklab, var(--_knob-edge) 18%, transparent)",
+        "outline": "2px solid var(--_focus)",
+        "outline-offset": "2px",
+        "transform": "scale(var(--_sx), var(--_sy))",
+        "transition": "transform var(--spring-press-duration) var(--spring-press), box-shadow 150ms var(--motion-ease)"
+      },
+      ".rx-slider-input::-moz-range-thumb": {
+        "box-sizing": "border-box",
+        "inline-size": "var(--_thumb)",
+        "block-size": "var(--_thumb-h)",
+        "pointer-events": "auto",
+        "border": "2px solid var(--_knob-edge)",
+        "border-radius": "var(--radius-button)",
+        "background-color": "var(--background)",
+        "background-image": "linear-gradient( 180deg, var(--_knob-sheen), transparent 40%, transparent 60%, var(--_knob-shade) )",
+        "box-shadow": "0 0 0 1px var(--_knob-ring), 0 0 0 var(--_halo) color-mix(in oklab, var(--_knob-edge) 18%, transparent)",
+        "outline": "2px solid var(--_focus)",
+        "outline-offset": "2px",
+        "transform": "scale(var(--_sx), var(--_sy))",
+        "transition": "transform var(--spring-press-duration) var(--spring-press), box-shadow 150ms var(--motion-ease)"
+      },
+      "[data-range] .rx-slider-input::-webkit-slider-runnable-track": {
+        "border-color": "transparent",
+        "background": "none"
+      },
+      "[data-range] .rx-slider-input::-moz-range-track": {
+        "border-color": "transparent",
+        "background": "none"
+      },
+      ".rx-slider-track": {
+        "position": "absolute",
+        "inset-inline": "0",
+        "top": "50%",
+        "box-sizing": "border-box",
+        "block-size": "var(--_track)",
+        "translate": "0 -50%",
+        "border": "1px solid transparent",
+        "border-radius": "var(--radius-button)",
+        "background": "var(--_rail-bg) padding-box, linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box, linear-gradient(var(--_rail), var(--_rail)) border-box"
+      },
+      "[data-orientation=\"vertical\"] .rx-slider-track": {
+        "inset": "0 auto",
+        "left": "50%",
+        "top": "0",
+        "inline-size": "var(--_track)",
+        "block-size": "100%",
+        "translate": "-50% 0"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-slider-input:hover:not(:disabled)": {
+          "--_halo": "4px"
+        }
+      },
+      ".rx-slider-input:active:not(:disabled), .rx-slider-layer[data-dragging] > .rx-slider-input": {
+        "--_sx": "1.2",
+        "--_sy": "1.2",
+        "--_halo": "5px"
+      },
+      ".rx-slider-bubble": {
+        "--_pos": "calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_p))",
+        "--_y": "6px",
+        "position": "absolute",
+        "inset-inline-start": "var(--_pos)",
+        "bottom": "calc(50% + var(--_thumb-h) / 2 + 0.5rem)",
+        "z-index": "2",
+        "padding": "2px 8px",
+        "border-radius": "var(--radius-item)",
+        "background": "var(--foreground)",
+        "color": "var(--background)",
+        "font-size": "12px",
+        "font-weight": "510",
+        "line-height": "16px",
+        "letter-spacing": "-0.15px",
+        "font-variant-numeric": "tabular-nums",
+        "white-space": "nowrap",
+        "pointer-events": "none",
+        "transform-origin": "50% calc(100% + 4px)",
+        "translate": "var(--_shift) var(--_y)",
+        "scale": "0.5",
+        "opacity": "0",
+        "transition": "translate 120ms var(--motion-ease), scale 120ms var(--motion-ease), opacity 120ms var(--motion-ease)"
+      },
+      ".rx-slider-bubble::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "left": "50%",
+        "bottom": "-3px",
+        "inline-size": "7px",
+        "block-size": "7px",
+        "translate": "-50% 0",
+        "rotate": "45deg",
+        "border-radius": "1px",
+        "background": "inherit"
+      },
+      "[data-orientation=\"vertical\"] .rx-slider-bubble": {
+        "inset-inline-start": "calc(50% + var(--_thumb-h) / 2 + 0.5rem)",
+        "bottom": "var(--_pos)",
+        "--_y": "50%",
+        "translate": "6px var(--_y)",
+        "transform-origin": "-4px 50%"
+      },
+      "[data-orientation=\"vertical\"] .rx-slider-bubble::after": {
+        "left": "-3px",
+        "bottom": "50%",
+        "translate": "0 50%"
+      },
+      ".rx-slider-input:is(:hover, :focus-visible, :active):not(:disabled) + .rx-slider-bubble, .rx-slider-layer[data-dragging] > .rx-slider-bubble, [data-show-value=\"always\"] .rx-slider-bubble": {
+        "--_y": "0px",
+        "scale": "1",
+        "opacity": "1",
+        "transition": "translate var(--spring-swap-duration) var(--spring-swap), scale var(--spring-swap-duration) var(--spring-swap), opacity 150ms var(--motion-ease)"
+      },
+      "[data-orientation=\"vertical\"]\n\t\t.rx-slider-input:is(:hover, :focus-visible, :active):not(:disabled)\n\t\t+ .rx-slider-bubble, [data-orientation=\"vertical\"] .rx-slider-layer[data-dragging] > .rx-slider-bubble, [data-orientation=\"vertical\"][data-show-value=\"always\"] .rx-slider-bubble": {
+        "--_y": "50%",
+        "translate": "0 var(--_y)"
+      },
+      ".rx-slider-marks": {
+        "position": "relative",
+        "block-size": "6px"
+      },
+      "[data-labels] > .rx-slider-marks": {
+        "block-size": "1.5rem"
+      },
+      "[data-orientation=\"vertical\"] > .rx-slider-marks": {
+        "inline-size": "6px",
+        "block-size": "auto"
+      },
+      "[data-orientation=\"vertical\"][data-labels] > .rx-slider-marks": {
+        "inline-size": "3rem"
+      },
+      ".rx-slider-mark": {
+        "position": "absolute",
+        "top": "0",
+        "inset-inline-start": "calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_p))",
+        "display": "flex",
+        "flex-direction": "column",
+        "align-items": "center",
+        "gap": "2px",
+        "translate": "var(--_shift) 0",
+        "color": "var(--muted-foreground)",
+        "font-size": "12px",
+        "line-height": "16px",
+        "letter-spacing": "-0.15px",
+        "font-variant-numeric": "tabular-nums",
+        "white-space": "nowrap"
+      },
+      ".rx-slider-mark::before": {
+        "content": "\"\"",
+        "inline-size": "1px",
+        "block-size": "6px",
+        "border-radius": "1px",
+        "background": "color-mix(in oklab, var(--muted-foreground) 60%, transparent)"
+      },
+      ".rx-slider-mark[data-in]::before": {
+        "background": "var(--_bar)"
+      },
+      "[data-orientation=\"vertical\"] .rx-slider-mark": {
+        "top": "auto",
+        "inset-inline-start": "0",
+        "bottom": "calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_p))",
+        "flex-direction": "row",
+        "translate": "0 50%"
+      },
+      "[data-orientation=\"vertical\"] .rx-slider-mark::before": {
+        "inline-size": "6px",
+        "block-size": "1px"
+      },
+      ".rx-slider-ruler": {
+        "--_thumb": "4px",
+        "--_thumb-h": "2.25rem",
+        "--_track": "2.25rem",
+        "--_hit": "2.5rem",
+        "--_bar": "var(--foreground)",
+        "--_rail": "color-mix(in oklab, var(--muted-foreground) 45%, transparent)"
+      },
+      ".rx-slider-ruler .rx-slider-input": {
+        "--_knob-edge": "var(--foreground)",
+        "--_knob-ring": "transparent",
+        "--_knob-sheen": "transparent",
+        "--_knob-shade": "transparent"
+      },
+      ".rx-slider-ruler .rx-slider-input::-webkit-slider-runnable-track": {
+        "border-color": "transparent",
+        "background": "none"
+      },
+      ".rx-slider-ruler .rx-slider-input::-moz-range-track": {
+        "border-color": "transparent",
+        "background": "none"
+      },
+      ".rx-slider-ruler .rx-slider-input::-webkit-slider-thumb": {
+        "border-width": "0",
+        "border-radius": "2px",
+        "background": "var(--foreground)",
+        "box-shadow": "none"
+      },
+      ".rx-slider-ruler .rx-slider-input::-moz-range-thumb": {
+        "border-width": "0",
+        "border-radius": "2px",
+        "background": "var(--foreground)",
+        "box-shadow": "none"
+      },
+      ".rx-slider-ruler .rx-slider-track": {
+        "display": "none"
+      },
+      ".rx-slider-ruler .rx-slider-mark::before": {
+        "block-size": "10px"
+      },
+      ".rx-slider-ruler .rx-slider-input:active:not(:disabled), .rx-slider-ruler .rx-slider-layer[data-dragging] > .rx-slider-input": {
+        "--_sx": "1.5",
+        "--_sy": "1.08"
+      },
+      ".rx-slider-readout": {
+        "color": "var(--foreground)",
+        "font-size": "24px",
+        "font-weight": "600",
+        "line-height": "32px",
+        "letter-spacing": "-0.4px",
+        "font-variant-numeric": "tabular-nums",
+        "text-align": "center"
+      },
+      ".rx-slider-scale": {
+        "position": "absolute",
+        "inset-block": "0.25rem",
+        "inset-inline": "calc(var(--_thumb) / 2 - 0.5px) calc(var(--_thumb) / 2 - 1px)",
+        "--_s-from": "0%",
+        "--_s-to": "calc(100% * var(--_hi))",
+        "background": "linear-gradient( var(--_dir), var(--_rail) 0 var(--_s-from), var(--_bar) var(--_s-from) var(--_s-to), var(--_rail) var(--_s-to) )",
+        "mask": "repeating-linear-gradient( var(--_dir), #000 0 1px, transparent 1px calc((100% - 1px) / var(--_ticks)) ) 0 0 / calc(100% + 1px) 100%, linear-gradient(to top, #000 45%, transparent 45%)",
+        "mask-composite": "intersect"
+      },
+      "[data-range] .rx-slider-scale": {
+        "--_s-from": "calc(100% * var(--_lo))"
+      },
+      "[data-depth=\"flat\"] .rx-slider": {
+        "--_edge-a": "transparent",
+        "--_edge-b": "transparent"
+      },
+      "[data-depth=\"flat\"] .rx-slider-input": {
+        "--_knob-ring": "transparent",
+        "--_knob-sheen": "transparent",
+        "--_knob-shade": "transparent"
+      },
+      ".rx-slider:has(.rx-slider-input[aria-invalid=\"true\"])": {
+        "--_edge-a": "var(--destructive)",
+        "--_edge-b": "var(--destructive)"
+      },
+      ".rx-slider:has(.rx-slider-input[aria-invalid=\"true\"]) .rx-slider-input": {
+        "--_knob-edge": "var(--destructive)"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-slider-input::-webkit-slider-thumb": {
+          "transition": "none"
+        },
+        ".rx-slider-input::-moz-range-thumb": {
+          "transition": "none"
+        },
+        ".rx-slider-bubble": {
+          "--_y": "0px",
+          "scale": "1"
+        },
+        "[data-orientation=\"vertical\"] .rx-slider-bubble": {
+          "--_y": "50%",
+          "translate": "0 var(--_y)"
+        },
+        ".rx-slider-bubble, .rx-slider-input:is(:hover, :focus-visible, :active) + .rx-slider-bubble, .rx-slider-layer[data-dragging] > .rx-slider-bubble": {
+          "transition": "opacity 100ms linear"
+        }
+      },
+      "[data-motion=\"off\"] .rx-slider-input::-webkit-slider-thumb": {
+        "transition": "none"
+      },
+      "[data-motion=\"off\"] .rx-slider-input::-moz-range-thumb": {
+        "transition": "none"
+      },
+      "[data-motion=\"off\"] .rx-slider-bubble, [data-motion=\"off\"] .rx-slider-input:is(:hover, :focus-visible, :active) + .rx-slider-bubble, [data-motion=\"off\"] .rx-slider-layer[data-dragging] > .rx-slider-bubble": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

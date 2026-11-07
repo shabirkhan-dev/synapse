@@ -1,0 +1,162 @@
+---
+title: Dropdown Menu
+description: WAI-ARIA's menu button on the native Popover API, with icons, shortcuts, checkbox and radio rows, submenus, typeahead and a highlight that glides between rows. Plus a right-click ContextMenu.
+---
+
+<ComponentPreview name="dropdown-menu/default" />
+
+## Installation
+
+<Installation name="dropdown-menu" />
+
+The menu is a popover: installing it also installs `popover` for its placement and motion.
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/dropdown-menu`; inside this monorepo,
+from `@rabtx/ui/dropdown-menu`.
+
+```tsx
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@rabtx/ui/dropdown-menu";
+
+export function RowActions() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Actions">
+          <HugeiconsIcon icon={MoreHorizontalIcon} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem icon={<HugeiconsIcon icon={Copy01Icon} />} shortcut="⌘D">
+          Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onSelect={remove}>
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+The parts and `data-slot` names are shadcn's. The content is a `role="menu"` `[popover]` and the
+trigger its native invoker, so the top layer, a press outside, Escape and focus going back to the
+trigger come from the browser. The component adds the menu keyboard: roving focus over the rows,
+arrows, Home and End, typeahead and submenus.
+
+## Icons, shortcuts and a destructive action
+
+A row takes an `icon`, a `shortcut` hint, `variant="destructive"` and `disabled`. Disabled rows are
+skipped by the keys and cannot be chosen.
+
+<ComponentPreview name="dropdown-menu/actions" />
+
+## Checkboxes
+
+`DropdownMenuCheckboxItem` is a `menuitemcheckbox`; its tick draws itself in on the check spring.
+Choosing a row closes the menu; call `event.preventDefault()` in `onSelect` to keep it open while
+toggling several.
+
+<ComponentPreview name="dropdown-menu/checkboxes" />
+
+## Radio group
+
+`DropdownMenuRadioGroup` holds the value; each `DropdownMenuRadioItem` is a `menuitemradio` whose
+dot pops in on the swap spring. A `DropdownMenuLabel` inside a group (or radio group) names it.
+
+<ComponentPreview name="dropdown-menu/radio" />
+
+## Context menu
+
+`ContextMenu` opens the same menu at the pointer on a right-click over `ContextMenuTrigger`, or
+under the focused element with the menu key or Shift+F10 (landing on the first row). It is anchored
+to an invisible point where the press was, unfolds from it, and flips near the edges. The rows are
+the dropdown menu's, exported again as `ContextMenuItem`, `ContextMenuCheckboxItem` and so on.
+
+<ComponentPreview name="dropdown-menu/context-menu" />
+
+## API
+
+`DropdownMenu` (and `ContextMenu`) hold the state:
+
+<TypeTable
+  type={{
+    open: { type: "boolean", description: "Controlled, with onOpenChange." },
+    defaultOpen: { type: "boolean", default: "false" },
+    onOpenChange: { type: "(open: boolean) => void", description: "Every change." },
+  }}
+/>
+
+`DropdownMenuContent` (and `DropdownMenuSubContent`, `ContextMenuContent`):
+
+<TypeTable
+  type={{
+    side: { type: '"top" | "right" | "bottom" | "left"', default: '"bottom" (submenu "right")', description: "Flips when it would not fit." },
+    align: { type: '"start" | "center" | "end"', default: '"start"' },
+    sideOffset: { type: "number", default: "8 (submenu 6, context menu 2)", description: "The gap to the anchor, in px." },
+    className: { type: "string", description: "Classes for the panel, such as a width." },
+  }}
+/>
+
+`DropdownMenuItem`:
+
+<TypeTable
+  type={{
+    onSelect: { type: "(event: Event) => void", description: "On click, Enter or Space. preventDefault() keeps the menu open." },
+    icon: { type: "ReactNode", description: "An icon before the label, hidden from screen readers." },
+    shortcut: { type: "ReactNode", description: "A hint at the end of the row. It does not bind the keys." },
+    variant: { type: '"default" | "destructive"', default: '"default"' },
+    disabled: { type: "boolean", default: "false" },
+    inset: { type: "boolean", default: "false", description: "Indent to line up with ticked rows." },
+    textValue: { type: "string", description: "What typeahead matches, when the label is not plain text." },
+  }}
+/>
+
+`DropdownMenuCheckboxItem` adds `checked`, `defaultChecked` and `onCheckedChange`;
+`DropdownMenuRadioGroup` takes `value`, `defaultValue` and `onValueChange`, and each
+`DropdownMenuRadioItem` a `value`. `DropdownMenuSub` wraps a `DropdownMenuSubTrigger` and its
+`DropdownMenuSubContent`; one submenu per menu is open at a time. `DropdownMenuLabel`,
+`DropdownMenuGroup`, `DropdownMenuSeparator` and `DropdownMenuShortcut` are `div`s and a `span`.
+
+## Theming
+
+| Part | Tokens |
+| --- | --- |
+| Panel | the popover's: `--popover`, `--popover-foreground`, the surface edge tokens, `--radius-box` |
+| Rows | text `--popover-foreground`, icons, labels and shortcuts `--muted-foreground`, corners `--radius-item` |
+| Highlight | `--accent` (text `--accent-foreground`); destructive rows `--destructive` and a 12% tint of it |
+| Separator | `--border` |
+| Motion | `--spring-unfold` (panel), `--spring-check` (tick), `--spring-swap` (dot), `--motion-ease` |
+
+## How it works
+
+| Effect | CSS |
+| --- | --- |
+| Placement, flip, unfold | the [popover's](/docs/ui/popover#how-it-works): anchor positioning, try fallbacks and a reveal from the anchor side |
+| Highlight | the active row (focused, or a submenu's open row) takes `anchor-name`; one highlight, the panel's last child, is placed on it with `anchor()` and its `top` and `bottom` glide in 160ms. `anchor-scope` keeps each menu's rows to itself |
+| Tick | `stroke-dashoffset` from 1 to 0 over `pathLength="1"` on the check spring |
+| Dot | `scale` from 0 on the swap spring |
+| Submenu | a nested `[popover]` anchored to its row, `side="right"`, flipping left near the edge |
+
+Without anchor scoping, the active row fills itself instead of the gliding highlight.
+
+## Accessibility
+
+- The trigger has `aria-haspopup="menu"`, `aria-expanded` and `aria-controls`, and names the menu
+  (`aria-labelledby`).
+- Rows are `menuitem`, `menuitemcheckbox` (with `aria-checked`) and `menuitemradio`; disabled rows
+  have `aria-disabled`; groups are `role="group"` named by their label; separators are
+  `role="separator"`.
+- Enter, Space and ArrowDown open the menu on the first row, ArrowUp on the last; a click opens it
+  with focus on the menu. Arrows move and wrap, Home and End jump, letters jump by typeahead,
+  Enter and Space choose. ArrowRight, Enter or Space open a submenu on its first row, ArrowLeft
+  and Escape close it and go back to its row. Escape closes the menu and Tab closes it and moves
+  on; focus goes back to the trigger.

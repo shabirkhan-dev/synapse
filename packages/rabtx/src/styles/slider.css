@@ -1,0 +1,582 @@
+/*
+ * The Slider: native <input type="range">s with `appearance: none`. The browser keeps the keyboard,
+ * the form value and the slider role; this file draws the track, the thumb, the value bubbles, the
+ * marks and the ruler scale.
+ *
+ * The component writes the values as numbers from 0 to 1: `--_lo` and `--_hi` (the filled span) on
+ * the root and `--_p` on each bubble and mark. A thumb's centre travels from half a thumb in to half
+ * a thumb short of the end, so every position is `thumb / 2 + (100% - thumb) * p` and the fill, the
+ * bubbles and the marks line up with the native thumb exactly.
+ *
+ *   - one value: the input's own track (::-webkit-slider-runnable-track, ::-moz-range-track) paints
+ *     the rail and the fill in one gradient from the CSS variables;
+ *   - two or more: one input per thumb, overlaid, each taking the pointer only on its thumb; a shared
+ *     `.rx-slider-track` paints the rail and the fill between the first and the last thumb;
+ *   - pressing a thumb grows it to 1.2 with a soft halo on the press spring (a `transform`: Chrome
+ *     ignores the `scale` property on a range thumb); hover shows the halo;
+ *   - `showValue` bubbles pop out of the thumb (scale 0.5 to 1, 6px up) on the swap spring while it
+ *     is hovered, focused or dragged, and fold away in 120ms; `"always"` keeps them out;
+ *   - `variant="ruler"` swaps the round thumb for a needle over a tick scale (a repeating gradient
+ *     used as a mask over the fill colors), with a large readout above.
+ *
+ * Colors come only from the theme: the rail is --muted-foreground (22% over --background), the fill
+ * and the thumb edge --primary, the thumb --background, the bubble --foreground with --background
+ * text, focus --ring, an error --destructive. Floating recesses the rail (field edge and shade) and
+ * rings the thumb (surface ring and sheen); Flat drops both. Corners follow --radius-button.
+ */
+@layer components {
+	.rx-slider {
+		/* Size (md). --_thumb is the thumb's length along the track, --_thumb-h across it. */
+		--_track: 6px;
+		--_thumb: 1.25rem;
+		--_thumb-h: var(--_thumb);
+		--_hit: 1.75rem;
+		/* Values, written by the component. */
+		--_lo: 0;
+		--_hi: 0;
+		/* Where the fill starts and ends, in the track's own box. One value fills from the start. */
+		--_from: 0%;
+		--_to: calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_hi));
+		--_dir: to right;
+		--_shift: -50%;
+		/* Color and depth. --_fill, --_edge-* and --_sheen are registered in control.css. */
+		--_rail: color-mix(in oklab, var(--muted-foreground) 22%, var(--background));
+		--_bar: var(--primary);
+		--_edge-a: var(--field-edge-top);
+		--_edge-b: var(--field-edge-bottom);
+		--_rail-bg: linear-gradient(
+			var(--_dir),
+			var(--_rail) 0 var(--_from),
+			var(--_bar) var(--_from) var(--_to),
+			var(--_rail) var(--_to)
+		);
+
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		inline-size: 100%;
+		min-inline-size: 8rem;
+		touch-action: none;
+		-webkit-tap-highlight-color: transparent;
+
+		&[data-range] {
+			--_from: calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_lo));
+		}
+
+		&[data-orientation="vertical"] {
+			--_dir: to top;
+			--_shift: 50%;
+
+			flex-direction: row;
+			inline-size: auto;
+			min-inline-size: 0;
+			block-size: 12rem;
+		}
+
+		/* Room for the bubbles above the thumbs, so they never cover what sits above the slider. */
+		&[data-show-value]:not([data-orientation="vertical"]) {
+			padding-block-start: 1.75rem;
+		}
+
+		&[data-disabled] {
+			opacity: 0.5;
+		}
+	}
+
+	/*
+	 * Right to left: the rail fills from the right, and the bubbles and marks shift the other way.
+	 * An attribute selector, because Lightning CSS (Tailwind's) drops a :dir() rule here.
+	 */
+	:is([dir="rtl"] .rx-slider, .rx-slider[dir="rtl"]):not([data-orientation="vertical"]) {
+		--_dir: to left;
+		--_shift: 50%;
+	}
+
+	.rx-slider-sm {
+		--_track: 4px;
+		--_thumb: 1rem;
+		--_hit: 1.5rem;
+	}
+	.rx-slider-lg {
+		--_track: 8px;
+		--_thumb: 1.5rem;
+		--_hit: 2rem;
+	}
+
+	/* What the thumbs travel: the inputs, the shared track, the scale and the bubbles sit in it. */
+	.rx-slider-control {
+		position: relative;
+		block-size: var(--_hit);
+
+		[data-orientation="vertical"] > & {
+			inline-size: var(--_hit);
+			block-size: 100%;
+		}
+	}
+
+	/* One per thumb: the input and its bubble. A range overlays them. */
+	.rx-slider-layer {
+		position: absolute;
+		inset: 0;
+
+		[data-range] & {
+			pointer-events: none;
+		}
+		&[data-top] {
+			z-index: 1;
+		}
+	}
+
+	.rx-slider-input {
+		/* The thumb's state, read by the thumb pseudo-elements below. */
+		--_sx: 1;
+		--_sy: 1;
+		--_halo: 0px;
+		--_focus: transparent;
+		--_knob-edge: var(--primary);
+		--_knob-ring: var(--surface-ring);
+		--_knob-sheen: var(--surface-sheen);
+		--_knob-shade: var(--surface-shade);
+
+		display: block;
+		box-sizing: border-box;
+		inline-size: 100%;
+		block-size: 100%;
+		margin: 0;
+		padding: 0;
+		appearance: none;
+		background: transparent;
+		outline: none;
+		cursor: pointer;
+
+		[data-orientation="vertical"] & {
+			writing-mode: vertical-lr;
+			direction: rtl;
+		}
+		[data-range] & {
+			pointer-events: none;
+		}
+
+		&:focus-visible {
+			--_focus: var(--ring);
+		}
+
+		&:disabled {
+			cursor: not-allowed;
+		}
+
+		/* The rail. A range's inputs leave it to the shared track. */
+		&::-webkit-slider-runnable-track {
+			box-sizing: border-box;
+			block-size: var(--_track);
+			border: 1px solid transparent;
+			border-radius: var(--radius-button);
+			background:
+				var(--_rail-bg) padding-box,
+				linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box,
+				linear-gradient(var(--_rail), var(--_rail)) border-box;
+		}
+		&::-moz-range-track {
+			box-sizing: border-box;
+			block-size: var(--_track);
+			border: 1px solid transparent;
+			border-radius: var(--radius-button);
+			background:
+				var(--_rail-bg) padding-box,
+				linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box,
+				linear-gradient(var(--_rail), var(--_rail)) border-box;
+		}
+		&::-moz-range-progress {
+			background: transparent;
+		}
+
+		/* The thumb. Its centre sits on the rail's centre; the 1px is the rail's border. */
+		&::-webkit-slider-thumb {
+			box-sizing: border-box;
+			inline-size: var(--_thumb);
+			block-size: var(--_thumb-h);
+			margin-block-start: calc((var(--_track) - var(--_thumb-h)) / 2 - 1px);
+			appearance: none;
+			pointer-events: auto;
+			border: 2px solid var(--_knob-edge);
+			border-radius: var(--radius-button);
+			background-color: var(--background);
+			background-image: linear-gradient(
+				180deg,
+				var(--_knob-sheen),
+				transparent 40%,
+				transparent 60%,
+				var(--_knob-shade)
+			);
+			box-shadow:
+				0 0 0 1px var(--_knob-ring),
+				0 0 0 var(--_halo) color-mix(in oklab, var(--_knob-edge) 18%, transparent);
+			outline: 2px solid var(--_focus);
+			outline-offset: 2px;
+			transform: scale(var(--_sx), var(--_sy));
+			transition:
+				transform var(--spring-press-duration) var(--spring-press),
+				box-shadow 150ms var(--motion-ease);
+		}
+		&::-moz-range-thumb {
+			box-sizing: border-box;
+			inline-size: var(--_thumb);
+			block-size: var(--_thumb-h);
+			pointer-events: auto;
+			border: 2px solid var(--_knob-edge);
+			border-radius: var(--radius-button);
+			background-color: var(--background);
+			background-image: linear-gradient(
+				180deg,
+				var(--_knob-sheen),
+				transparent 40%,
+				transparent 60%,
+				var(--_knob-shade)
+			);
+			box-shadow:
+				0 0 0 1px var(--_knob-ring),
+				0 0 0 var(--_halo) color-mix(in oklab, var(--_knob-edge) 18%, transparent);
+			outline: 2px solid var(--_focus);
+			outline-offset: 2px;
+			transform: scale(var(--_sx), var(--_sy));
+			transition:
+				transform var(--spring-press-duration) var(--spring-press),
+				box-shadow 150ms var(--motion-ease);
+		}
+	}
+
+	/* A range's inputs are see-through rails: the shared track draws it once, under every thumb. */
+	[data-range] .rx-slider-input::-webkit-slider-runnable-track {
+		border-color: transparent;
+		background: none;
+	}
+	[data-range] .rx-slider-input::-moz-range-track {
+		border-color: transparent;
+		background: none;
+	}
+
+	.rx-slider-track {
+		position: absolute;
+		inset-inline: 0;
+		top: 50%;
+		box-sizing: border-box;
+		block-size: var(--_track);
+		translate: 0 -50%;
+		border: 1px solid transparent;
+		border-radius: var(--radius-button);
+		background:
+			var(--_rail-bg) padding-box,
+			linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box,
+			linear-gradient(var(--_rail), var(--_rail)) border-box;
+
+		[data-orientation="vertical"] & {
+			inset: 0 auto;
+			left: 50%;
+			top: 0;
+			inline-size: var(--_track);
+			block-size: 100%;
+			translate: -50% 0;
+		}
+	}
+
+	/* Hover shows the halo, only where hover is real. */
+	@media (hover: hover) and (pointer: fine) {
+		.rx-slider-input:hover:not(:disabled) {
+			--_halo: 4px;
+		}
+	}
+
+	/* Press: the thumb grows on the press spring. A range's track drag counts as a press too. */
+	.rx-slider-input:active:not(:disabled),
+	.rx-slider-layer[data-dragging] > .rx-slider-input {
+		--_sx: 1.2;
+		--_sy: 1.2;
+		--_halo: 5px;
+	}
+
+	/* The value bubble, over the thumb at --_p. */
+	.rx-slider-bubble {
+		--_pos: calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_p));
+		--_y: 6px;
+
+		position: absolute;
+		inset-inline-start: var(--_pos);
+		bottom: calc(50% + var(--_thumb-h) / 2 + 0.5rem);
+		z-index: 2;
+		padding: 2px 8px;
+		border-radius: var(--radius-item);
+		background: var(--foreground);
+		color: var(--background);
+		font-size: 12px;
+		font-weight: 510;
+		line-height: 16px;
+		letter-spacing: -0.15px;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		pointer-events: none;
+		transform-origin: 50% calc(100% + 4px);
+		translate: var(--_shift) var(--_y);
+		scale: 0.5;
+		opacity: 0;
+		transition:
+			translate 120ms var(--motion-ease),
+			scale 120ms var(--motion-ease),
+			opacity 120ms var(--motion-ease);
+
+		/* The point under the bubble. */
+		&::after {
+			content: "";
+			position: absolute;
+			left: 50%;
+			bottom: -3px;
+			inline-size: 7px;
+			block-size: 7px;
+			translate: -50% 0;
+			rotate: 45deg;
+			border-radius: 1px;
+			background: inherit;
+		}
+
+		[data-orientation="vertical"] & {
+			inset-inline-start: calc(50% + var(--_thumb-h) / 2 + 0.5rem);
+			bottom: var(--_pos);
+			--_y: 50%;
+			translate: 6px var(--_y);
+			transform-origin: -4px 50%;
+
+			&::after {
+				left: -3px;
+				bottom: 50%;
+				translate: 0 50%;
+			}
+		}
+	}
+
+	/* Out while the thumb is hovered, focused or dragged, or always. */
+	.rx-slider-input:is(:hover, :focus-visible, :active):not(:disabled) + .rx-slider-bubble,
+	.rx-slider-layer[data-dragging] > .rx-slider-bubble,
+	[data-show-value="always"] .rx-slider-bubble {
+		--_y: 0px;
+
+		scale: 1;
+		opacity: 1;
+		transition:
+			translate var(--spring-swap-duration) var(--spring-swap),
+			scale var(--spring-swap-duration) var(--spring-swap),
+			opacity 150ms var(--motion-ease);
+	}
+	[data-orientation="vertical"]
+		.rx-slider-input:is(:hover, :focus-visible, :active):not(:disabled)
+		+ .rx-slider-bubble,
+	[data-orientation="vertical"] .rx-slider-layer[data-dragging] > .rx-slider-bubble,
+	[data-orientation="vertical"][data-show-value="always"] .rx-slider-bubble {
+		--_y: 50%;
+
+		translate: 0 var(--_y);
+	}
+
+	/* Marks: ticks under the rail, clear of the thumb, with optional labels under them. */
+	.rx-slider-marks {
+		position: relative;
+		block-size: 6px;
+
+		[data-labels] > & {
+			block-size: 1.5rem;
+		}
+		[data-orientation="vertical"] > & {
+			inline-size: 6px;
+			block-size: auto;
+		}
+		[data-orientation="vertical"][data-labels] > & {
+			inline-size: 3rem;
+		}
+	}
+	.rx-slider-mark {
+		position: absolute;
+		top: 0;
+		inset-inline-start: calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_p));
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		translate: var(--_shift) 0;
+		color: var(--muted-foreground);
+		font-size: 12px;
+		line-height: 16px;
+		letter-spacing: -0.15px;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+
+		&::before {
+			content: "";
+			inline-size: 1px;
+			block-size: 6px;
+			border-radius: 1px;
+			background: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+		}
+		&[data-in]::before {
+			background: var(--_bar);
+		}
+
+		[data-orientation="vertical"] & {
+			top: auto;
+			inset-inline-start: 0;
+			bottom: calc(var(--_thumb) / 2 + (100% - var(--_thumb)) * var(--_p));
+			flex-direction: row;
+			translate: 0 50%;
+
+			&::before {
+				inline-size: 6px;
+				block-size: 1px;
+			}
+		}
+	}
+
+	/* Ruler: a needle over a tick scale, a large readout above. */
+	.rx-slider-ruler {
+		--_thumb: 4px;
+		--_thumb-h: 2.25rem;
+		--_track: 2.25rem;
+		--_hit: 2.5rem;
+		--_bar: var(--foreground);
+		--_rail: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+
+		.rx-slider-input {
+			--_knob-edge: var(--foreground);
+			--_knob-ring: transparent;
+			--_knob-sheen: transparent;
+			--_knob-shade: transparent;
+		}
+		.rx-slider-input::-webkit-slider-runnable-track {
+			border-color: transparent;
+			background: none;
+		}
+		.rx-slider-input::-moz-range-track {
+			border-color: transparent;
+			background: none;
+		}
+		.rx-slider-input::-webkit-slider-thumb {
+			border-width: 0;
+			border-radius: 2px;
+			background: var(--foreground);
+			box-shadow: none;
+		}
+		.rx-slider-input::-moz-range-thumb {
+			border-width: 0;
+			border-radius: 2px;
+			background: var(--foreground);
+			box-shadow: none;
+		}
+		.rx-slider-track {
+			display: none;
+		}
+		.rx-slider-mark::before {
+			block-size: 10px;
+		}
+	}
+	.rx-slider-ruler .rx-slider-input:active:not(:disabled),
+	.rx-slider-ruler .rx-slider-layer[data-dragging] > .rx-slider-input {
+		--_sx: 1.5;
+		--_sy: 1.08;
+	}
+
+	.rx-slider-readout {
+		color: var(--foreground);
+		font-size: 24px;
+		font-weight: 600;
+		line-height: 32px;
+		letter-spacing: -0.4px;
+		font-variant-numeric: tabular-nums;
+		text-align: center;
+	}
+
+	/* Minor ticks every step (at most 100): the fill colors, masked to 1px lines on the lower half. */
+	.rx-slider-scale {
+		position: absolute;
+		inset-block: 0.25rem;
+		inset-inline: calc(var(--_thumb) / 2 - 0.5px) calc(var(--_thumb) / 2 - 1px);
+		/* Positions here are along the scale itself, which already starts at half a thumb. */
+		--_s-from: 0%;
+		--_s-to: calc(100% * var(--_hi));
+		background: linear-gradient(
+			var(--_dir),
+			var(--_rail) 0 var(--_s-from),
+			var(--_bar) var(--_s-from) var(--_s-to),
+			var(--_rail) var(--_s-to)
+		);
+		mask:
+			repeating-linear-gradient(
+					var(--_dir),
+					#000 0 1px,
+					transparent 1px calc((100% - 1px) / var(--_ticks))
+				)
+				0 0 / calc(100% + 1px) 100%,
+			linear-gradient(to top, #000 45%, transparent 45%);
+		mask-composite: intersect;
+
+		[data-range] & {
+			--_s-from: calc(100% * var(--_lo));
+		}
+	}
+
+	/* Flat: no recess on the rail, no ring or sheen on the thumb. */
+	[data-depth="flat"] .rx-slider {
+		--_edge-a: transparent;
+		--_edge-b: transparent;
+	}
+	[data-depth="flat"] .rx-slider-input {
+		--_knob-ring: transparent;
+		--_knob-sheen: transparent;
+		--_knob-shade: transparent;
+	}
+
+	/* Error, from a Field or aria-invalid: a red rail edge and thumb edge. */
+	.rx-slider:has(.rx-slider-input[aria-invalid="true"]) {
+		--_edge-a: var(--destructive);
+		--_edge-b: var(--destructive);
+
+		.rx-slider-input {
+			--_knob-edge: var(--destructive);
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-slider-input::-webkit-slider-thumb {
+			transition: none;
+		}
+		.rx-slider-input::-moz-range-thumb {
+			transition: none;
+		}
+		/* The bubble only fades in place. */
+		.rx-slider-bubble {
+			--_y: 0px;
+
+			scale: 1;
+		}
+		[data-orientation="vertical"] .rx-slider-bubble {
+			--_y: 50%;
+
+			translate: 0 var(--_y);
+		}
+		.rx-slider-bubble,
+		.rx-slider-input:is(:hover, :focus-visible, :active) + .rx-slider-bubble,
+		.rx-slider-layer[data-dragging] > .rx-slider-bubble {
+			transition: opacity 100ms linear;
+		}
+	}
+	/* Motion off: every state still shows, nothing moves. */
+	[data-motion="off"] .rx-slider-input::-webkit-slider-thumb {
+		transition: none;
+	}
+	[data-motion="off"] .rx-slider-input::-moz-range-thumb {
+		transition: none;
+	}
+	[data-motion="off"] .rx-slider-bubble,
+	[data-motion="off"] .rx-slider-input:is(:hover, :focus-visible, :active) + .rx-slider-bubble,
+	[data-motion="off"] .rx-slider-layer[data-dragging] > .rx-slider-bubble {
+		transition: none;
+	}
+}

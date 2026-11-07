@@ -1,0 +1,383 @@
+/*
+ * The command block: the panel around the search field, the list, its groups and options, the
+ * highlight, key caps, the loading and empty states, the hints, and the dialog it sits in. The
+ * field, badges, buttons and scope tabs are the components'.
+ *
+ *   - The highlight is the list's last child, positioned on the active option with CSS anchor
+ *     positioning: `data-active` makes that option the anchor and `anchor-scope` keeps it to its own
+ *     list. Moving the anchor changes the highlight's insets and a transition on the unfold spring
+ *     slides it there. Where `anchor-scope` is missing the active option paints its own fill.
+ *   - The viewport eases its height to the content's (`--_h`, measured in script) on the panel
+ *     spring, so the list grows and shrinks as results come and go, up to a cap where it scrolls.
+ *   - In the dialog the panel drops in from 8px above at 0.97 scale (the Dialog's own motion).
+ *
+ * Colors come only from the theme: --popover for the surface, --accent for the highlight,
+ * --muted and --muted-foreground for headings, hints and placeholders, --border for key caps and
+ * the footer rule.
+ */
+@layer components {
+	.rx-command {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		box-sizing: border-box;
+		min-width: 0;
+		padding: 8px;
+		color: var(--popover-foreground);
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+	}
+
+	/* Standing alone: the raised popover surface, as the Dialog panel draws it. */
+	.rx-command-surface {
+		--_fill: var(--popover);
+		--_flat: var(--border);
+		--_ring: var(--surface-ring);
+		--_edge-a: var(--surface-edge-top);
+		--_edge-b: var(--surface-edge-bottom);
+		--_sheen: var(--surface-sheen);
+		--_shade: var(--surface-shade);
+		width: 100%;
+		max-width: 36rem;
+		border-radius: var(--radius-box);
+		overflow: hidden;
+	}
+
+	/* In the Dialog: narrower than lg, nearer the top, and the panel pads itself. */
+	.rx-dialog.rx-command-dialog {
+		--_w: 36rem;
+		--_pad: 0px;
+		--_from-y: -8px;
+		--_from-scale: 0.97;
+		margin-block-start: min(14dvh, 8rem);
+		overflow: hidden;
+
+		&[open] {
+			display: block;
+		}
+	}
+
+	.rx-command-crumbs {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+
+		& .rx-btn {
+			flex-shrink: 0;
+			padding-inline: 0.5rem 0.75rem;
+		}
+	}
+
+	.rx-command-search .rx-input-icon kbd {
+		font-size: 11px;
+	}
+
+	.rx-command-scopes {
+		margin-inline: 4px;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.rx-command-viewport {
+		height: var(--_h, auto);
+		max-height: min(22rem, 50dvh);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		scroll-padding-block: 4px;
+		scrollbar-width: thin;
+		transition: height var(--spring-panel-duration) var(--spring-panel);
+	}
+
+	.rx-command-list {
+		position: relative;
+		isolation: isolate;
+		display: grid;
+		gap: 4px;
+		outline: none;
+	}
+
+	.rx-command-group {
+		display: grid;
+		gap: 1px;
+	}
+
+	.rx-command-heading {
+		padding: 8px 8px 4px;
+		font-size: 12px;
+		line-height: 16px;
+		font-weight: 510;
+		color: var(--muted-foreground);
+		user-select: none;
+	}
+
+	.rx-command-item {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 36px;
+		box-sizing: border-box;
+		padding: 6px 8px;
+		border-radius: var(--radius-item);
+		color: var(--popover-foreground);
+		cursor: pointer;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+		scroll-margin-block: 28px 4px;
+		transition: color 150ms var(--motion-ease);
+
+		&[data-active] {
+			color: var(--accent-foreground);
+		}
+		&[aria-disabled="true"] {
+			opacity: 0.5;
+			cursor: default;
+		}
+		&:active:not([aria-disabled="true"]) .rx-command-item-text {
+			scale: 0.99;
+		}
+	}
+
+	.rx-command-item-icon {
+		display: grid;
+		flex-shrink: 0;
+		place-items: center;
+		width: 16px;
+		height: 16px;
+		color: var(--muted-foreground);
+		transition: color 150ms var(--motion-ease);
+
+		& svg {
+			width: 16px;
+			height: 16px;
+		}
+		.rx-command-item[data-active] & {
+			color: var(--accent-foreground);
+		}
+	}
+
+	.rx-command-item-text {
+		display: grid;
+		flex: 1;
+		min-width: 0;
+		transition: scale var(--spring-press-duration) var(--spring-press);
+	}
+
+	.rx-command-item-label,
+	.rx-command-item-description {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.rx-command-item-label {
+		font-size: 14px;
+		line-height: 20px;
+	}
+	.rx-command-item-description {
+		font-size: 12px;
+		line-height: 16px;
+		color: var(--muted-foreground);
+	}
+
+	.rx-command-match {
+		background: none;
+		color: inherit;
+		font-weight: 650;
+	}
+
+	.rx-command-item-chevron {
+		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
+		color: var(--muted-foreground);
+	}
+
+	.rx-command-kbd {
+		display: inline-grid;
+		place-items: center;
+		box-sizing: border-box;
+		min-width: 20px;
+		height: 20px;
+		padding-inline: 5px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-badge);
+		background-color: var(--background);
+		color: var(--muted-foreground);
+		font-family: inherit;
+		font-size: 11px;
+		line-height: 1;
+		font-weight: 510;
+		letter-spacing: 0;
+
+		& svg {
+			width: 12px;
+			height: 12px;
+		}
+	}
+
+	/*
+	 * The highlight. No base rule: the shadcn CLI merges every item's `@supports` block into the first
+	 * one in a project's CSS, so a base rule later in the file would beat it.
+	 */
+	@supports (anchor-scope: all) {
+		.rx-command-list {
+			anchor-scope: --_command-active;
+		}
+		.rx-command-item[data-active] {
+			anchor-name: --_command-active;
+		}
+		.rx-command-highlight {
+			position: absolute;
+			position-anchor: --_command-active;
+			top: anchor(top);
+			right: anchor(right);
+			bottom: anchor(bottom);
+			left: anchor(left);
+			z-index: -1;
+			display: block;
+			border-radius: var(--radius-item);
+			background-color: var(--accent);
+			pointer-events: none;
+			transition:
+				top var(--spring-unfold-duration) var(--spring-unfold),
+				right var(--spring-unfold-duration) var(--spring-unfold),
+				bottom var(--spring-unfold-duration) var(--spring-unfold),
+				left var(--spring-unfold-duration) var(--spring-unfold);
+		}
+		.rx-command-list:not(:has([data-active])) > .rx-command-highlight {
+			display: none;
+		}
+	}
+	@supports not (anchor-scope: all) {
+		.rx-command-highlight {
+			display: none;
+		}
+		.rx-command-item[data-active] {
+			background-color: var(--accent);
+		}
+	}
+
+	/* Loading: placeholder rows that breathe, one after another. */
+	.rx-command-skeleton {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		height: 36px;
+		padding-inline: 8px;
+		animation: rx-command-breathe 1.2s var(--motion-ease) calc(var(--_i, 0) * 120ms) infinite
+			alternate;
+
+		& span {
+			height: 10px;
+			border-radius: 999px;
+			background-color: color-mix(in oklab, var(--muted-foreground) 16%, transparent);
+		}
+		& span:first-child {
+			width: 16px;
+			height: 16px;
+			border-radius: var(--radius-badge);
+		}
+		& span:last-child {
+			width: calc(70% - var(--_i, 0) * 12%);
+		}
+	}
+	@keyframes rx-command-breathe {
+		to {
+			opacity: 0.45;
+		}
+	}
+
+	.rx-command-spinner {
+		display: block;
+		width: 14px;
+		height: 14px;
+		box-sizing: border-box;
+		border: 2px solid var(--muted);
+		border-top-color: var(--muted-foreground);
+		border-radius: 999px;
+		animation: rx-command-spin 700ms linear infinite;
+	}
+	@keyframes rx-command-spin {
+		to {
+			rotate: 1turn;
+		}
+	}
+
+	.rx-command-empty {
+		display: grid;
+		justify-items: center;
+		gap: 12px;
+		padding: 28px 16px;
+		color: var(--muted-foreground);
+		text-align: center;
+		text-wrap: pretty;
+	}
+
+	.rx-command-footer {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 16px;
+		margin: 2px -8px -8px;
+		padding: 8px 12px;
+		border-top: 1px solid var(--border);
+		color: var(--muted-foreground);
+		font-size: 12px;
+		line-height: 16px;
+		user-select: none;
+
+		& > span {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+		}
+	}
+
+	/* Touch screens have no keys to hint at. */
+	@media (hover: none) and (pointer: coarse) {
+		.rx-command .rx-command-footer,
+		.rx-command-search .rx-input-icon:has(> .rx-command-kbd) {
+			display: none;
+		}
+	}
+
+	/* The trigger: a search field look on the outline Button, with the shortcut at the end. */
+	.rx-btn.rx-command-trigger {
+		justify-content: flex-start;
+		gap: 8px;
+		min-width: 16rem;
+		max-width: 100%;
+		padding-inline: 0.875rem 0.5rem;
+		color: var(--muted-foreground);
+
+		& > svg {
+			width: 16px;
+			height: 16px;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-command :is(.rx-command-viewport, .rx-command-highlight, .rx-command-item-text) {
+			transition: none;
+		}
+		.rx-command .rx-command-skeleton {
+			animation: none;
+		}
+		.rx-command .rx-command-spinner {
+			animation-duration: 2400ms;
+		}
+	}
+	[data-motion="off"] .rx-command :is(.rx-command-viewport, .rx-command-highlight, .rx-command-item-text) {
+		transition: none;
+	}
+	[data-motion="off"] .rx-command .rx-command-skeleton {
+		animation: none;
+	}
+	[data-motion="off"] .rx-command .rx-command-spinner {
+		animation-duration: 2400ms;
+	}
+}

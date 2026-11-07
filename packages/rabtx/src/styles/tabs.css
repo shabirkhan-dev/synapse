@@ -1,0 +1,456 @@
+/*
+ * Tabs. The selected tab is the anchor (`anchor-name`, from `aria-selected`) and the indicator, the
+ * list's last child, is positioned on it with `anchor()`. Moving the anchor to another tab changes
+ * the indicator's insets, and a transition on the tabs spring (245 / 36 / 1.2, no overshoot) glides
+ * it there. `anchor-scope` keeps every list's anchor to itself. No JavaScript measures anything.
+ *
+ * Where anchor positioning (with anchor-scope) is missing, the indicator is not drawn and the
+ * selected tab paints the same highlight on its own `::before`, which fades instead of sliding.
+ * `expandable` always works that way: its selected tab grows, and the highlight grows with it.
+ *
+ * Each variant only sets private variables: the track (--_track-*), the highlight (--_ind-*) and the
+ * selected text color (--_on). Colors come from the theme; depth and radius from their modes.
+ */
+@layer components {
+	.rx-tabs {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+
+		&[data-orientation="vertical"] {
+			flex-direction: row;
+			align-items: flex-start;
+		}
+	}
+
+	.rx-tabs-list {
+		/* Size (md). --_bw is the track's border, --_pad the gap around the tabs. */
+		--_h: 2.5rem;
+		--_pad: 4px;
+		--_bw: 1px;
+		--_px: 0.75rem;
+		--_icon: 16px;
+		--_gap: 0.375rem;
+		--_fs: 0.875rem;
+		--_lh: 1.25rem;
+		/* A tab's height: the list's, less the track around it. */
+		--_th: calc(var(--_h) - var(--_pad) * 2 - var(--_bw) * 2);
+		/* Track, highlight and the selected text, set per variant below. */
+		--_track: transparent;
+		--_track-a: transparent;
+		--_track-b: transparent;
+		--_track-ring: transparent;
+		--_track-radius: var(--radius-control);
+		--_ind: var(--card);
+		--_ind-a: var(--_ind);
+		--_ind-b: var(--_ind);
+		--_ind-ring: transparent;
+		/* Concentric with the track. */
+		--_ind-radius: max(2px, calc(var(--_track-radius) - var(--_pad) - var(--_bw)));
+		--_off: var(--muted-foreground);
+		--_on: var(--foreground);
+
+		position: relative;
+		isolation: isolate;
+		display: inline-flex;
+		align-self: flex-start;
+		align-items: center;
+		gap: 2px;
+		box-sizing: border-box;
+		max-inline-size: 100%;
+		padding: var(--_pad);
+		border: var(--_bw) solid transparent;
+		border-radius: var(--_track-radius);
+		/* The edge is a real border painted under the fill, so it follows the radius exactly. */
+		background:
+			linear-gradient(var(--_track), var(--_track)) padding-box,
+			linear-gradient(180deg, var(--_track-a), var(--_track-b)) border-box;
+		box-shadow: 0 0 0 1px var(--_track-ring);
+		font-family: var(--font-sans);
+		font-size: var(--_fs);
+		line-height: var(--_lh);
+		letter-spacing: -0.15px;
+
+		/* A long row scrolls sideways instead of overflowing the page; focus scrolls a tab into view. */
+		&[data-orientation="horizontal"] {
+			overflow-x: auto;
+			overflow-y: hidden;
+			scrollbar-width: none;
+		}
+		&[data-orientation="vertical"] {
+			flex-direction: column;
+			align-items: stretch;
+		}
+	}
+
+	.rx-tabs-trigger {
+		position: relative;
+		isolation: isolate;
+		display: inline-flex;
+		flex: 1 0 auto;
+		align-items: center;
+		justify-content: center;
+		gap: var(--_gap);
+		box-sizing: border-box;
+		height: var(--_th);
+		margin: 0;
+		padding: 0 var(--_px);
+		border: 0;
+		border-radius: var(--_ind-radius);
+		background: none;
+		color: var(--_off);
+		font: inherit;
+		font-weight: 500;
+		white-space: nowrap;
+		cursor: pointer;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+		transition: color 150ms var(--motion-ease);
+
+		&[aria-selected="true"] {
+			color: var(--_on);
+		}
+
+		/* The tab's own highlight, used where the indicator is not drawn (see the top of this file). */
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			z-index: -1;
+			box-sizing: border-box;
+			border: 1px solid transparent;
+			border-radius: inherit;
+			background:
+				linear-gradient(var(--_ind), var(--_ind)) padding-box,
+				linear-gradient(180deg, var(--_ind-a), var(--_ind-b)) border-box;
+			box-shadow: 0 0 0 1px var(--_ind-ring);
+			opacity: 0;
+			transition: opacity 150ms var(--motion-ease);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 1px;
+		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		& svg {
+			flex: none;
+			width: var(--_icon);
+			height: var(--_icon);
+		}
+	}
+
+	[data-orientation="vertical"] > .rx-tabs-trigger {
+		flex: none;
+		justify-content: flex-start;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.rx-tabs-trigger:hover:not(:disabled, [aria-selected="true"]) {
+			color: var(--foreground);
+		}
+	}
+
+	.rx-tabs-icon {
+		display: inline-flex;
+		flex: none;
+	}
+	.rx-tabs-label {
+		display: block;
+		min-width: 0;
+	}
+
+	.rx-tabs-indicator {
+		display: none;
+	}
+
+	@supports (anchor-scope: all) {
+		.rx-tabs-list {
+			anchor-scope: --_tab;
+		}
+		.rx-tabs-trigger[aria-selected="true"] {
+			anchor-name: --_tab;
+		}
+		.rx-tabs-indicator {
+			position: absolute;
+			position-anchor: --_tab;
+			top: anchor(top);
+			right: anchor(right);
+			bottom: anchor(bottom);
+			left: anchor(left);
+			z-index: -1;
+			display: block;
+			box-sizing: border-box;
+			border: 1px solid transparent;
+			border-radius: var(--_ind-radius);
+			background:
+				linear-gradient(var(--_ind), var(--_ind)) padding-box,
+				linear-gradient(180deg, var(--_ind-a), var(--_ind-b)) border-box;
+			box-shadow: 0 0 0 1px var(--_ind-ring);
+			pointer-events: none;
+			transition:
+				top var(--spring-tabs-duration) var(--spring-tabs),
+				right var(--spring-tabs-duration) var(--spring-tabs),
+				bottom var(--spring-tabs-duration) var(--spring-tabs),
+				left var(--spring-tabs-duration) var(--spring-tabs);
+		}
+		/* Nothing selected (or the selected tab is gone): no anchor, no indicator. */
+		.rx-tabs-list:not(:has(> [aria-selected="true"])) > .rx-tabs-indicator {
+			display: none;
+		}
+	}
+	@supports not (anchor-scope: all) {
+		.rx-tabs-trigger[aria-selected="true"]::before {
+			opacity: 1;
+		}
+	}
+
+	/* Segmented: a recessed track with a raised thumb on it. */
+	.rx-tabs-segmented {
+		--_track: var(--secondary);
+		--_track-a: var(--field-edge-top);
+		--_track-b: var(--field-edge-bottom);
+		--_ind: var(--card);
+		--_ind-a: var(--surface-edge-top);
+		--_ind-b: var(--surface-edge-bottom);
+		--_ind-ring: var(--surface-ring);
+	}
+	[data-depth="flat"] .rx-tabs-segmented {
+		--_track-a: var(--_track);
+		--_track-b: var(--_track);
+		--_ind-a: var(--input);
+		--_ind-b: var(--input);
+		--_ind-ring: transparent;
+	}
+
+	/* Pill: a filled capsule on a raised track, the selected label on the fill. */
+	.rx-tabs-pill,
+	.rx-tabs-expandable {
+		--_track: var(--card);
+		--_track-a: var(--surface-edge-top);
+		--_track-b: var(--surface-edge-bottom);
+		--_track-ring: var(--surface-ring);
+		--_track-radius: var(--radius-button);
+	}
+	.rx-tabs-pill {
+		--_ind: var(--primary);
+		--_on: var(--primary-foreground);
+
+		/*
+		 * The selected label is light on the fill and would vanish on the track while the fill is
+		 * still on its way, so its color follows the same spring as the fill instead of snapping.
+		 */
+		& > .rx-tabs-trigger {
+			transition: color var(--spring-tabs-duration) var(--spring-tabs);
+		}
+	}
+	[data-depth="flat"] :is(.rx-tabs-pill, .rx-tabs-expandable) {
+		--_track-a: var(--border);
+		--_track-b: var(--border);
+		--_track-ring: transparent;
+	}
+	/* Underline: no track; a 2px line under the selected tab, over a 1px rule under the row. */
+	.rx-tabs-underline {
+		--_pad: 0px;
+		--_bw: 0px;
+		--_ind: var(--primary);
+		--_track-radius: 0px;
+		--_ind-radius: 0px;
+		align-self: stretch;
+		gap: 0.25rem;
+		box-shadow: inset 0 -1px var(--border);
+
+		& > .rx-tabs-trigger {
+			flex: none;
+			border-radius: var(--radius-item);
+
+			&::before {
+				inset: auto 0 0;
+				height: 2px;
+				border: 0;
+				border-radius: 0;
+			}
+			&:focus-visible {
+				outline-offset: -2px;
+			}
+		}
+		& > .rx-tabs-indicator {
+			top: auto;
+			height: 2px;
+			border: 0;
+		}
+
+		&[data-orientation="vertical"] {
+			align-self: flex-start;
+			box-shadow: none;
+			border-inline-start: 1px solid var(--border);
+			padding-inline-start: 0.25rem;
+
+			& > .rx-tabs-trigger::before {
+				inset: 0 auto 0 calc(-0.25rem - 1px);
+				width: 2px;
+				height: auto;
+			}
+			& > .rx-tabs-indicator {
+				top: anchor(top);
+				bottom: anchor(bottom);
+				right: auto;
+				left: auto;
+				inset-inline-start: -1px;
+				width: 2px;
+				height: auto;
+			}
+		}
+	}
+
+	/*
+	 * Expandable: icon tabs. The label sits in a grid column that animates from 0fr to 1fr on the
+	 * selected tab (the grid trick: it works in every browser and needs no measured width), so
+	 * the tab opens to its label's natural width. The label fades and unblurs as it opens.
+	 */
+	.rx-tabs-expandable {
+		--_ind: color-mix(in oklab, var(--foreground) 9%, transparent);
+		--_px: calc((var(--_th) - var(--_icon)) / 2);
+
+		& > .rx-tabs-trigger {
+			display: inline-grid;
+			flex: none;
+			grid-template-columns: auto 0fr;
+			gap: 0;
+			transition:
+				color 150ms var(--motion-ease),
+				grid-template-columns 160ms var(--motion-ease),
+				padding 160ms var(--motion-ease);
+
+			&::before {
+				transition: opacity 120ms var(--motion-ease);
+			}
+			& .rx-tabs-label {
+				overflow: hidden;
+			}
+			& .rx-tabs-text {
+				display: block;
+				padding-inline-start: var(--_gap);
+				opacity: 0;
+				filter: blur(3px);
+				transition:
+					opacity 120ms var(--motion-ease),
+					filter 120ms var(--motion-ease);
+			}
+
+			/* Selected: open on the swap spring; closing above is shorter and plain. */
+			&[aria-selected="true"] {
+				grid-template-columns: auto 1fr;
+				padding-inline-end: calc(var(--_px) + 0.25rem);
+				transition:
+					color 150ms var(--motion-ease),
+					grid-template-columns var(--spring-swap-duration) var(--spring-swap),
+					padding var(--spring-swap-duration) var(--spring-swap);
+
+				&::before {
+					opacity: 1;
+					transition-duration: 200ms;
+				}
+				& .rx-tabs-text {
+					opacity: 1;
+					filter: blur(0);
+					transition:
+						opacity 200ms var(--motion-ease) 60ms,
+						filter 200ms var(--motion-ease) 60ms;
+				}
+			}
+		}
+		/* A tab with no icon always shows its label, or it would be an empty button. */
+		& > .rx-tabs-trigger:not(:has(> .rx-tabs-icon)) {
+			grid-template-columns: 0px 1fr;
+
+			& .rx-tabs-text {
+				padding-inline-start: 0;
+				opacity: 1;
+				filter: none;
+			}
+		}
+	}
+
+	/* Sizes. */
+	.rx-tabs-sm {
+		--_h: 2rem;
+		--_pad: 3px;
+		--_px: 0.625rem;
+		--_icon: 14px;
+		--_gap: 0.25rem;
+		--_fs: 0.8125rem;
+		--_lh: 1.25rem;
+	}
+	.rx-tabs-lg {
+		--_h: 3rem;
+		--_px: 1rem;
+		--_icon: 18px;
+		--_gap: 0.5rem;
+		--_fs: 1rem;
+		--_lh: 1.5rem;
+	}
+	/* The size sets the padding; underline keeps none. */
+	.rx-tabs-underline:is(.rx-tabs-sm, .rx-tabs-lg) {
+		--_pad: 0px;
+	}
+	/* Expandable sizes keep their tabs square. */
+	.rx-tabs-expandable:is(.rx-tabs-sm, .rx-tabs-lg) {
+		--_px: calc((var(--_th) - var(--_icon)) / 2);
+	}
+
+	/* A panel fades in, rising 4px out of a 4px blur, as `hidden` comes off. Leaving is instant. */
+	.rx-tabs-content {
+		flex: 1;
+		min-width: 0;
+		border-radius: var(--radius-control);
+		transition:
+			opacity 200ms var(--motion-ease),
+			filter 200ms var(--motion-ease),
+			translate var(--spring-panel-duration) var(--spring-panel);
+
+		@starting-style {
+			opacity: 0;
+			filter: blur(4px);
+			translate: 0 4px;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/*
+	 * Less motion: nothing slides, grows, blurs or rises; colors and panels still fade quickly.
+	 */
+	@media (prefers-reduced-motion: reduce) {
+		.rx-tabs-indicator,
+		.rx-tabs-pill > .rx-tabs-trigger,
+		.rx-tabs-expandable > .rx-tabs-trigger,
+		.rx-tabs-expandable > .rx-tabs-trigger[aria-selected="true"] {
+			transition: color 100ms var(--motion-ease);
+		}
+		.rx-tabs-trigger .rx-tabs-text {
+			filter: none;
+			transition: opacity 100ms var(--motion-ease);
+		}
+		/* Only opacity transitions, so the blur and the rise from @starting-style snap away. */
+		.rx-tabs-content {
+			transition: opacity 100ms var(--motion-ease);
+		}
+	}
+	/* Motion off: every state still changes, nothing travels or fades. */
+	[data-motion="off"] :is(.rx-tabs-indicator, .rx-tabs-trigger, .rx-tabs-content),
+	[data-motion="off"] .rx-tabs-trigger::before,
+	[data-motion="off"] .rx-tabs-trigger .rx-tabs-text {
+		transition: none;
+	}
+}

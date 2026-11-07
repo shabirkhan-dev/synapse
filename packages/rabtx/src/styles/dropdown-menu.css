@@ -1,0 +1,240 @@
+/*
+ * Menus (DropdownMenu, its submenus and ContextMenu). The panel is a popover surface (popover.css
+ * places it, flips it and unfolds it from the anchor); this file draws the rows.
+ *
+ * The active row (focused by the arrow keys, typeahead or the pointer, or a submenu's open row) is
+ * the anchor of one highlight, the panel's last child, placed on it with `anchor()`. Moving focus
+ * moves the anchor and the highlight glides there; `anchor-scope` keeps each menu's rows to itself,
+ * so a submenu has its own. Where anchor scoping is missing, the active row fills itself instead.
+ *
+ * A checkbox row's tick draws itself on the check spring (stroke-dashoffset over pathLength 1); a
+ * radio row's dot pops in on the swap spring. A submenu row draws its chevron with a mask.
+ * Colors come only from the theme: rows are --popover-foreground with --muted-foreground icons,
+ * labels and shortcuts, the highlight is --accent (--destructive, tinted, on a destructive row),
+ * separators are --border.
+ */
+@layer components {
+	.rx-menu {
+		--_row: 32px;
+		--_pad: 8px;
+		--_indent: 32px;
+
+		min-inline-size: 11rem;
+		padding: 4px;
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+	}
+
+	.rx-menu-item {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		box-sizing: border-box;
+		min-block-size: var(--_row);
+		padding-inline: var(--_pad);
+		border-radius: var(--radius-item);
+		color: var(--popover-foreground);
+		cursor: default;
+		outline: none;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+		transition: color 150ms var(--motion-ease);
+
+		&[data-inset] {
+			padding-inline-start: var(--_indent);
+		}
+		&[aria-disabled="true"] {
+			opacity: 0.5;
+		}
+		&[data-variant="destructive"] {
+			color: var(--destructive);
+
+			& .rx-menu-icon {
+				color: currentColor;
+			}
+		}
+		/* Rows with a tick or a dot keep it in the indent, so their labels line up with inset rows. */
+		&:has(> .rx-menu-indicator) {
+			padding-inline-start: var(--_indent);
+		}
+	}
+
+	.rx-menu-icon,
+	.rx-menu-indicator {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		inline-size: 16px;
+		block-size: 16px;
+		color: var(--muted-foreground);
+
+		& svg {
+			inline-size: 100%;
+			block-size: 100%;
+		}
+	}
+	.rx-menu-item:focus .rx-menu-icon {
+		color: currentColor;
+	}
+	.rx-menu-text {
+		flex: 1;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.rx-menu-shortcut {
+		margin-inline-start: auto;
+		padding-inline-start: 16px;
+		font-size: 12px;
+		letter-spacing: 0.02em;
+		color: var(--muted-foreground);
+	}
+
+	/* The tick and the dot sit in the indent. */
+	.rx-menu-indicator {
+		position: absolute;
+		inset-inline-start: var(--_pad);
+		color: currentColor;
+	}
+	.rx-menu-check {
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		transition: stroke-dashoffset 120ms var(--motion-ease);
+	}
+	.rx-menu-item[aria-checked="true"] .rx-menu-check {
+		stroke-dashoffset: 0;
+		transition: stroke-dashoffset var(--spring-check-duration) var(--spring-check);
+	}
+	.rx-menu-dot {
+		inline-size: 6px;
+		block-size: 6px;
+		border-radius: 999px;
+		background: currentColor;
+		scale: 0;
+		transition: scale 120ms var(--motion-ease);
+	}
+	.rx-menu-item[aria-checked="true"] .rx-menu-dot {
+		scale: 1;
+		transition: scale var(--spring-swap-duration) var(--spring-swap);
+	}
+
+	/* A submenu's row: the anchor its submenu opens beside (`--_anchor`, set by the component). */
+	.rx-menu-subtrigger {
+		anchor-name: var(--_anchor);
+	}
+	/* A chevron at the end (HugeIcons "arrow right 01", MIT, as a mask). */
+	.rx-menu-subtrigger::after {
+		content: "";
+		flex: none;
+		margin-inline-start: auto;
+		inline-size: 14px;
+		block-size: 14px;
+		background: var(--muted-foreground);
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6C9 6 15 10.4189 15 12C15 13.5812 9 18 9 18'/%3E%3C/svg%3E")
+			center / contain no-repeat;
+	}
+
+	.rx-menu-label {
+		padding: 6px var(--_pad) 4px;
+		font-size: 12px;
+		line-height: 16px;
+		font-weight: 510;
+		color: var(--muted-foreground);
+
+		&[data-inset] {
+			padding-inline-start: var(--_indent);
+		}
+	}
+	.rx-menu-separator {
+		block-size: 1px;
+		margin: 4px -4px;
+		background: var(--border);
+	}
+
+	/* The invisible point a context menu opens from. */
+	.rx-menu-point {
+		position: fixed;
+		inline-size: 0;
+		block-size: 0;
+		pointer-events: none;
+	}
+
+	/* The highlight: one shape that glides to the active row. */
+	.rx-menu-highlight {
+		display: none;
+	}
+	@supports (anchor-scope: all) {
+		.rx-menu {
+			anchor-scope: --_rx-row;
+		}
+		.rx-menu-item:is(:focus, [aria-expanded="true"]) {
+			anchor-name: --_rx-row;
+		}
+		.rx-menu-subtrigger:is(:focus, [aria-expanded="true"]) {
+			anchor-name: var(--_anchor), --_rx-row;
+		}
+		.rx-menu-highlight {
+			position: absolute;
+			position-anchor: --_rx-row;
+			top: anchor(top);
+			right: anchor(right);
+			bottom: anchor(bottom);
+			left: anchor(left);
+			z-index: -1;
+			display: block;
+			border-radius: var(--radius-item);
+			background-color: var(--accent);
+			pointer-events: none;
+			transition:
+				top 160ms var(--motion-ease),
+				bottom 160ms var(--motion-ease),
+				background-color 160ms var(--motion-ease),
+				opacity 100ms linear;
+		}
+		@starting-style {
+			.rx-menu-highlight {
+				opacity: 0;
+			}
+		}
+		/* No active row: no anchor, no highlight. */
+		.rx-menu:not(:has(.rx-menu-item:is(:focus, [aria-expanded="true"]))) > .rx-menu-highlight {
+			display: none;
+		}
+		.rx-menu:has(.rx-menu-item[data-variant="destructive"]:focus) > .rx-menu-highlight {
+			background-color: color-mix(in oklab, var(--destructive) 12%, transparent);
+		}
+	}
+	@supports not (anchor-scope: all) {
+		.rx-menu-item:is(:focus, [aria-expanded="true"]) {
+			background-color: var(--accent);
+		}
+		.rx-menu-item[data-variant="destructive"]:focus {
+			background-color: color-mix(in oklab, var(--destructive) 12%, transparent);
+		}
+	}
+	.rx-menu-item:is(:focus, [aria-expanded="true"]):not([data-variant="destructive"]) {
+		color: var(--accent-foreground);
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-menu-highlight,
+		.rx-menu-check,
+		.rx-menu-dot,
+		.rx-menu-item[aria-checked="true"] :is(.rx-menu-check, .rx-menu-dot) {
+			transition-duration: 0ms;
+		}
+	}
+	[data-motion="off"] :is(.rx-menu-item, .rx-menu-highlight, .rx-menu-check, .rx-menu-dot) {
+		transition: none;
+	}
+}

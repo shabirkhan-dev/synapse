@@ -1,0 +1,175 @@
+---
+title: Button
+description: A native button with four styles and four sizes, a stateful label, ripple, magnetic and metallic looks. Every animation is CSS.
+---
+
+## Installation
+
+<Installation name="button" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/button`; inside this monorepo, from
+`@rabtx/ui/button`.
+
+```tsx
+import { Button } from "@rabtx/ui/button";
+
+export function Actions() {
+  return (
+    <>
+      <Button variant="secondary">Cancel</Button>
+      <Button type="submit">Save</Button>
+    </>
+  );
+}
+```
+
+Hover grows the button to 1.02, only where a real mouse hovers. Pressing springs it down to 0.93
+and back on a spring solved into a CSS `linear()` easing.
+
+## Variants
+
+`primary` (the default), `secondary`, `ghost` and `outline`.
+
+<ComponentPreview name="button/variants" />
+
+## Icons
+
+Put HugeIcons in the children, before or after the text. They are sized for you.
+
+<ComponentPreview name="button/icons" />
+
+## States
+
+`StatefulButton` moves between `idle`, `loading`, `success` and `error`. The status icon widens in
+while the old one folds away, the label rolls over letter by letter, and the button eases to its
+new width. Loading sets `aria-busy`, blocks clicks and stays focusable. Click to try both.
+
+<ComponentPreview name="button/states" />
+
+```tsx
+import { type ButtonState, StatefulButton } from "@rabtx/ui/button";
+
+const [state, setState] = useState<ButtonState>("idle");
+
+<StatefulButton state={state} onClick={save}>
+  Save changes
+</StatefulButton>;
+```
+
+## Disabled
+
+Half opacity and no pointer events. A native `disabled` attribute, so it also leaves the tab order.
+
+<ComponentPreview name="button/disabled" />
+
+## Ripple
+
+`ripple` spreads a soft disc of the text color from where you pressed. `pressScale` sets how far
+the press goes (1 turns it off).
+
+<ComponentPreview name="button/ripple" />
+
+## Link
+
+`ButtonLink` is an `<a>` that looks like a button, for navigation.
+
+<ComponentPreview name="button/link" />
+
+## Magnetic
+
+`MagneticButton` leans toward a mouse pointer and springs back when it leaves. `strength` is 0 to 1
+(default 0.25). Touch, reduced motion and `data-motion="off"` keep it still.
+
+<ComponentPreview name="button/magnetic" />
+
+## Metallic
+
+`MetallicButton` has a polished chrome rim that drifts on a slow loop. Hover sweeps a highlight
+across it. `paused` holds the chrome still.
+
+<ComponentPreview name="button/metallic" />
+
+## API
+
+`Button` takes everything a native `<button>` takes, plus:
+
+<TypeTable
+  type={{
+    variant: { type: '"primary" | "secondary" | "ghost" | "outline"', default: '"primary"' },
+    size: { type: '"sm" | "md" | "lg" | "icon"', default: '"md"', description: "icon needs aria-label." },
+    pressScale: { type: "number", default: "0.93", description: "Scale while pressed." },
+    ripple: { type: "boolean", default: "false", description: "A disc spreads from the press." },
+  }}
+/>
+
+`StatefulButton` adds:
+
+<TypeTable
+  type={{
+    state: { type: '"idle" | "loading" | "success" | "error"', default: '"idle"' },
+    loadingText: { type: "ReactNode", default: '"Loading"' },
+    successText: { type: "ReactNode", default: '"Done"' },
+    errorText: { type: "ReactNode", default: '"Try again"' },
+    icon: { type: "ReactNode", description: "After the idle label; folds away in other states." },
+  }}
+/>
+
+`MagneticButton` adds `strength` (default `0.25`). `MetallicButton` adds `paused`. `ButtonLink`
+takes the `Button` props on an `<a>`.
+
+Outside React, `buttonClass()` from `@rabtx/ui/button/styles` returns the class names:
+
+```html
+<button class="rx-btn rx-btn-outline rx-btn-sm">Edit</button>
+```
+
+## Theming
+
+The Button reads only the [theme tokens](/docs/ui/theming), so it follows your theme with nothing
+to configure.
+
+| Part | Tokens |
+| --- | --- |
+| Primary | `--primary`, `--primary-foreground` |
+| Secondary | `--secondary`, `--secondary-foreground`, edge `--input` |
+| Ghost and outline | text `--muted-foreground`, hover `--accent` / `--accent-foreground`, outline edge `--input` |
+| Metallic | face `--background`, shadow `--shadow-raised` |
+| Focus | `--ring` |
+| Corners | `--radius-button` (pill), `--radius-item` (icon button) |
+| Font | `--font-sans` |
+| Motion | `--spring-press`, `--spring-label`, `--spring-magnetic` |
+
+To restyle one button, set a token on it or on an ancestor, or pass Tailwind classes (they win over
+the component styles):
+
+```tsx
+<div className="[--primary:var(--success)]">
+  <Button>Approve</Button>
+</div>
+<Button className="rounded-md">Square-ish</Button>
+```
+
+`pressScale` changes how far a press scales (default `0.93`).
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Hover and press | `scale` transition on the press spring, hover inside `@media (hover: hover) and (pointer: fine)` |
+| Ripple | a span per press positioned by CSS variables, `@keyframes` scale 0.05 to 1 and fade over 1.6s |
+| Status icons | always in the DOM; `data-shown` transitions width, opacity, scale and blur (in on a spring, out in 160ms) |
+| Letter roll | each letter is an inline-block with `--i`; `@keyframes` from 105% below with blur, `animation-delay: calc(var(--i) * 25ms)`; the leaving label rolls up and out |
+| Width | the label box transitions `width` to the incoming label's measured width |
+| Magnetic | the pointer sets `--_btn-mx` and `--_btn-my`; `translate` transitions on the magnetic spring |
+| Metallic | a gradient wider than the button drifts with an 8s `@keyframes` loop; hover transitions a skewed highlight across |
+
+## Accessibility
+
+- A real `<button>` with `type="button"` by default, and a 2px focus ring for the keyboard only.
+- A rolling label is hidden from screen readers letter by letter; the whole label is read instead,
+  and changes are announced politely.
+- Loading keeps focus and full color, sets `aria-busy` and blocks clicks.
+- With reduced motion labels cross-fade and nothing travels; with `data-motion="off"` states swap
+  at once.

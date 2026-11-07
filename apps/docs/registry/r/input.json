@@ -1,0 +1,431 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "input",
+  "title": "Input",
+  "description": "A native text input in three sizes with icons, addons, a floating label, clear and password buttons, plus a one-time code. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/input-otp.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ChangeEvent,\n\ttype CSSProperties,\n\ttype InputHTMLAttributes,\n\ttype Ref,\n\ttype SyntheticEvent,\n\tuseContext,\n\tuseState,\n} from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport { type InputSize, type OtpCharset, cleanCode, otpClass, otpParts } from \"./input.styles\";\n\nexport type InputOTPProps = Omit<\n\tInputHTMLAttributes<HTMLInputElement>,\n\t\"size\" | \"value\" | \"defaultValue\" | \"maxLength\" | \"type\"\n> & {\n\t/** How many characters the code has. Default 6. */\n\tlength?: number;\n\t/** Slot height: 32, 40 (default) or 48. */\n\tsize?: InputSize;\n\t/** Which characters are kept. Default digits, with the numeric keyboard on phones. */\n\tcharset?: OtpCharset;\n\t/** Show a dot for each character instead of the character. */\n\tmask?: boolean;\n\tvalue?: string;\n\tdefaultValue?: string;\n\t/** The code after every change. `onChange` still receives the native event. */\n\tonValueChange?: (value: string) => void;\n\t/** Called once each time the last slot is filled. */\n\tonComplete?: (value: string) => void;\n\t/** Applied to the wrapper. */\n\tclassName?: string;\n\tref?: Ref<HTMLInputElement>;\n};\n\n/**\n * A one-time code: one native input, so typing, backspace, paste and SMS autofill\n * (`autocomplete=\"one-time-code\"`) all work as usual, shown as a row of slots. The focus ring glides\n * to the next slot and each character rolls in, in CSS. Put it in a `Field` for a label and a hint,\n * or give it an `aria-label`.\n */\nexport function InputOTP({\n\tlength = 6,\n\tsize,\n\tcharset = \"digits\",\n\tmask,\n\tvalue,\n\tdefaultValue,\n\tonValueChange,\n\tonComplete,\n\tonChange,\n\tonSelect,\n\tclassName,\n\tref,\n\t...rest\n}: InputOTPProps) {\n\tconst field = useContext(FieldContext);\n\tconst [own, setOwn] = useState(() => cleanCode(defaultValue ?? \"\", length, charset));\n\tconst code = value === undefined ? own : cleanCode(value, length, charset);\n\tconst active = Math.min(code.length, length - 1);\n\tconst any = charset === \"digits\" ? \"\\\\d\" : \"[A-Za-z0-9]\";\n\n\treturn (\n\t\t<div className={cn(otpClass(size), className)} style={{ \"--_at\": active } as CSSProperties}>\n\t\t\t<input\n\t\t\t\tid={field?.id}\n\t\t\t\taria-describedby={field?.describedBy}\n\t\t\t\taria-invalid={field?.invalid || undefined}\n\t\t\t\taria-label={field ? undefined : \"One-time code\"}\n\t\t\t\tautoComplete=\"one-time-code\"\n\t\t\t\tinputMode={charset === \"digits\" ? \"numeric\" : \"text\"}\n\t\t\t\tautoCapitalize=\"off\"\n\t\t\t\tautoCorrect=\"off\"\n\t\t\t\tspellCheck={false}\n\t\t\t\tpattern={`${any}{${length}}`}\n\t\t\t\t{...rest}\n\t\t\t\tref={ref}\n\t\t\t\ttype=\"text\"\n\t\t\t\tmaxLength={length}\n\t\t\t\tvalue={code}\n\t\t\t\tclassName={otpParts.input}\n\t\t\t\tonChange={(event: ChangeEvent<HTMLInputElement>) => {\n\t\t\t\t\tconst next = cleanCode(event.target.value, length, charset);\n\t\t\t\t\tif (value === undefined) setOwn(next);\n\t\t\t\t\tonChange?.(event);\n\t\t\t\t\tonValueChange?.(next);\n\t\t\t\t\tif (next.length === length && code.length < length) onComplete?.(next);\n\t\t\t\t}}\n\t\t\t\tonSelect={(event: SyntheticEvent<HTMLInputElement>) => {\n\t\t\t\t\tkeepCaretAtEnd(event.currentTarget);\n\t\t\t\t\tonSelect?.(event);\n\t\t\t\t}}\n\t\t\t/>\n\t\t\t<div className={otpParts.slots} aria-hidden=\"true\">\n\t\t\t\t{Array.from({ length }, (_, index) => {\n\t\t\t\t\tconst char = code[index];\n\t\t\t\t\treturn (\n\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t// The slots are a fixed row that never reorders.\n\t\t\t\t\t\t\t// oxlint-disable-next-line react/no-array-index-key\n\t\t\t\t\t\t\tkey={index}\n\t\t\t\t\t\t\tclassName={otpParts.slot}\n\t\t\t\t\t\t\tdata-filled={char ? \"\" : undefined}\n\t\t\t\t\t\t\tdata-active={index === active ? \"\" : undefined}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{char ? (\n\t\t\t\t\t\t\t\t<span key={char} className={otpParts.char}>\n\t\t\t\t\t\t\t\t\t{mask ? \"•\" : char}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t);\n\t\t\t\t})}\n\t\t\t</div>\n\t\t\t<span className={otpParts.ring} aria-hidden=\"true\" />\n\t\t</div>\n\t);\n}\n\n/**\n * A code is typed and erased at its end, so a bare caret anywhere else moves back there. A real\n * selection (select all, to retype) is left alone.\n */\nfunction keepCaretAtEnd(input: HTMLInputElement) {\n\tconst end = input.value.length;\n\tif (input.selectionStart === input.selectionEnd && input.selectionStart !== end) {\n\t\tinput.setSelectionRange(end, end);\n\t}\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/input.styles.ts",
+      "content": "export type InputSize = \"sm\" | \"md\" | \"lg\";\nexport type InputVariant = \"outline\" | \"filled\";\n\nexport const inputSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly InputSize[];\nexport const inputVariants = [\"outline\", \"filled\"] as const satisfies readonly InputVariant[];\n\ntype InputStyle = {\n\tsize?: InputSize;\n\t/** `outline` matches the Select trigger; `filled` is the recessed field. */\n\tvariant?: InputVariant;\n\t/** Fully round, for search bars. Independent of the radius mode. */\n\tpill?: boolean;\n};\n\n/**\n * The class list for an Input's wrapper. The look lives in `input.css` (your global CSS, when\n * installed from the registry), so React and plain HTML get the same field from these names:\n *\n *   <div class=\"rx-input-field rx-input-md\">\n *     <input class=\"rx-input\" placeholder=\" \" />\n *   </div>\n */\nexport function inputClass({ size = \"md\", variant = \"outline\", pill }: InputStyle = {}) {\n\treturn `rx-input-field rx-input-${size}${variant === \"filled\" ? \" rx-input-filled\" : \"\"}${pill ? \" rx-input-pill\" : \"\"}`;\n}\n\n/** Class names for the parts of an Input, for markup written by hand. */\nexport const inputParts = {\n\t/** The native `<input>`. Give it a placeholder (a space will do) so clear and float work. */\n\tinput: \"rx-input\",\n\t/** A decorative icon at either end. */\n\ticon: \"rx-input-icon\",\n\t/** A text or control segment at either end, divided from the text by a line. */\n\taddon: \"rx-input-addon\",\n\t/** A small button on the trailing edge. */\n\taction: \"rx-input-action\",\n\t/** Add to an action to show it only while the input has a value. */\n\tclear: \"rx-input-clear\",\n\t/** Add to an action holding two icons (`data-when=\"hidden\"` / `\"shown\"`), swapped by `aria-pressed`. */\n\treveal: \"rx-input-reveal\",\n\t/** A tick that draws itself in; give its path `pathLength=\"1\"`. */\n\tcheck: \"rx-input-check\",\n\t/** Wraps the input and its floating `<label>`, which comes right after the input. */\n\tfloat: \"rx-input-float\",\n\tlabel: \"rx-input-label\",\n} as const;\n\n/**\n * The class list for a one-time code. Markup:\n *\n *   <div class=\"rx-otp rx-otp-md\" style=\"--_at: 0\">\n *     <input class=\"rx-otp-input\" autocomplete=\"one-time-code\" maxlength=\"6\" />\n *     <div class=\"rx-otp-slots\" aria-hidden=\"true\"><span class=\"rx-otp-slot\" data-active></span>…</div>\n *     <span class=\"rx-otp-ring\" aria-hidden=\"true\"></span>\n *   </div>\n */\nexport function otpClass(size: InputSize = \"md\") {\n\treturn `rx-otp rx-otp-${size}`;\n}\n\n/** Class names for the parts of a one-time code. */\nexport const otpParts = {\n\t/** The one real input, laid invisibly over the slots. */\n\tinput: \"rx-otp-input\",\n\tslots: \"rx-otp-slots\",\n\t/** One character box. `data-filled` once it has one, `data-active` on the next to type. */\n\tslot: \"rx-otp-slot\",\n\t/** The character inside a slot; it rolls up when it mounts. */\n\tchar: \"rx-otp-char\",\n\t/** The focus ring. It glides to the slot at `--_at` (a number on the root). */\n\tring: \"rx-otp-ring\",\n} as const;\n\nexport type OtpCharset = \"digits\" | \"alphanumeric\";\n\n/** Keep only the characters a code may contain, up to its length. */\nexport function cleanCode(raw: string, length: number, charset: OtpCharset = \"digits\") {\n\tconst kept = charset === \"digits\" ? raw.replace(/\\D/g, \"\") : raw.replace(/[^a-z0-9]/gi, \"\");\n\treturn kept.slice(0, length);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/input.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype InputHTMLAttributes,\n\ttype ReactNode,\n\ttype Ref,\n\ttype SVGProps,\n\tuseContext,\n\tuseId,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport { type InputSize, type InputVariant, inputClass, inputParts } from \"./input.styles\";\n\nexport type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, \"size\"> & {\n\t/** Control height: 32, 40 (default) or 48, the same as the Button and the Select. */\n\tsize?: InputSize;\n\t/** `outline` (default) matches the Select trigger; `filled` is the recessed field. */\n\tvariant?: InputVariant;\n\t/** Fully round, for search bars. Independent of the radius mode. */\n\tpill?: boolean;\n\t/** A decorative icon before the text. */\n\tleadingIcon?: ReactNode;\n\t/** A decorative icon after the text. */\n\ttrailingIcon?: ReactNode;\n\t/** A segment at the start, such as `https://`. Read with the field by screen readers. */\n\tstartAddon?: ReactNode;\n\t/** A segment at the end, such as `.com` or a unit. */\n\tendAddon?: ReactNode;\n\t/**\n\t * A floating label: it sits where the text goes and floats to the top edge once the input is\n\t * focused or filled. Use it instead of a Field label, not with one. Needs md or lg.\n\t */\n\tlabel?: ReactNode;\n\t/** Show a clear button while the input has a value. */\n\tclearable?: boolean;\n\t/** Called after the clear button empties the input. */\n\tonClear?: () => void;\n\t/** The clear button's accessible name. */\n\tclearLabel?: string;\n\t/** Draw a green tick at the end, for a value that has been checked. */\n\tsuccess?: boolean;\n\t/** A button on the trailing edge; give it `inputParts.action`. */\n\taction?: ReactNode;\n\t/** Applied to the wrapper, so width utilities size the whole control. */\n\tclassName?: string;\n\tref?: Ref<HTMLInputElement>;\n};\n\n/**\n * A native `<input>` inside a wrapper that draws the field, the same size and look as the Select\n * trigger. Put it in a `Field` to get a label, a hint and an error wired up, or give it a floating\n * `label` or an `aria-label`. `aria-invalid`, or a failed native constraint once the person has\n * edited it, turns the edge red and shakes it once.\n */\nexport function Input({\n\tsize,\n\tvariant,\n\tpill,\n\tleadingIcon,\n\ttrailingIcon,\n\tstartAddon,\n\tendAddon,\n\tlabel,\n\tclearable,\n\tonClear,\n\tclearLabel = \"Clear\",\n\tsuccess,\n\taction,\n\tclassName,\n\tplaceholder,\n\tid,\n\tref,\n\t...rest\n}: InputProps) {\n\tconst inner = useRef<HTMLInputElement>(null);\n\tconst field = useContext(FieldContext);\n\tconst ownId = useId();\n\tconst inputId = id ?? field?.id ?? (label ? ownId : undefined);\n\tconst { icon, addon } = inputParts;\n\n\tconst input = (\n\t\t<input\n\t\t\tid={inputId}\n\t\t\taria-describedby={field?.describedBy}\n\t\t\taria-invalid={field?.invalid || undefined}\n\t\t\t{...rest}\n\t\t\t// `:placeholder-shown` is how the CSS knows the input is empty, so there is always one.\n\t\t\tplaceholder={placeholder ?? (clearable || label ? \" \" : undefined)}\n\t\t\tref={(node) => {\n\t\t\t\tinner.current = node;\n\t\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\t\telse if (ref) ref.current = node;\n\t\t\t}}\n\t\t\tclassName={inputParts.input}\n\t\t/>\n\t);\n\n\treturn (\n\t\t// The wrapper only forwards pointer focus; keyboard users already land on the input.\n\t\t// oxlint-disable-next-line jsx-a11y/no-static-element-interactions\n\t\t<div\n\t\t\tclassName={cn(inputClass({ size, variant, pill }), className)}\n\t\t\tonPointerDown={(event) => {\n\t\t\t\tif (event.target instanceof Element && event.target.closest(\"input, button, a, label\"))\n\t\t\t\t\treturn;\n\t\t\t\tevent.preventDefault();\n\t\t\t\tinner.current?.focus();\n\t\t\t}}\n\t\t>\n\t\t\t{startAddon != null && <span className={addon}>{startAddon}</span>}\n\t\t\t{leadingIcon && (\n\t\t\t\t<span className={icon} aria-hidden=\"true\">\n\t\t\t\t\t{leadingIcon}\n\t\t\t\t</span>\n\t\t\t)}\n\t\t\t{label ? (\n\t\t\t\t<span className={inputParts.float}>\n\t\t\t\t\t{input}\n\t\t\t\t\t<label htmlFor={inputId} className={inputParts.label}>\n\t\t\t\t\t\t{label}\n\t\t\t\t\t</label>\n\t\t\t\t</span>\n\t\t\t) : (\n\t\t\t\tinput\n\t\t\t)}\n\t\t\t{clearable && (\n\t\t\t\t<button\n\t\t\t\t\ttype=\"button\"\n\t\t\t\t\taria-label={clearLabel}\n\t\t\t\t\tclassName={`${inputParts.action} ${inputParts.clear}`}\n\t\t\t\t\tonClick={() => {\n\t\t\t\t\t\tif (!inner.current) return;\n\t\t\t\t\t\tclearInput(inner.current);\n\t\t\t\t\t\tonClear?.();\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\t<CrossIcon />\n\t\t\t\t</button>\n\t\t\t)}\n\t\t\t{success && (\n\t\t\t\t<span className={`${icon} ${inputParts.check}`} aria-hidden=\"true\">\n\t\t\t\t\t<TickIcon />\n\t\t\t\t</span>\n\t\t\t)}\n\t\t\t{trailingIcon && (\n\t\t\t\t<span className={icon} aria-hidden=\"true\">\n\t\t\t\t\t{trailingIcon}\n\t\t\t\t</span>\n\t\t\t)}\n\t\t\t{action}\n\t\t\t{endAddon != null && <span className={addon}>{endAddon}</span>}\n\t\t</div>\n\t);\n}\n\n/**\n * Empty an input the way typing would, so React's `onChange` fires for controlled and uncontrolled\n * inputs alike, then put focus back in it.\n */\nexport function clearInput(input: HTMLInputElement) {\n\tconst setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, \"value\")?.set;\n\tsetValue?.call(input, \"\");\n\tinput.dispatchEvent(new Event(\"input\", { bubbles: true }));\n\tinput.focus();\n}\n\nexport type PasswordInputProps = Omit<InputProps, \"type\" | \"action\"> & {\n\t/** The eye button's accessible name. Its pressed state says whether the password shows. */\n\trevealLabel?: string;\n};\n\n/** An Input for passwords with an eye button that shows and hides the text. */\nexport function PasswordInput({\n\trevealLabel = \"Show password\",\n\tdisabled,\n\t...rest\n}: PasswordInputProps) {\n\tconst [shown, setShown] = useState(false);\n\treturn (\n\t\t<Input\n\t\t\tautoComplete=\"current-password\"\n\t\t\t{...rest}\n\t\t\tdisabled={disabled}\n\t\t\ttype={shown ? \"text\" : \"password\"}\n\t\t\taction={\n\t\t\t\t<button\n\t\t\t\t\ttype=\"button\"\n\t\t\t\t\taria-label={revealLabel}\n\t\t\t\t\taria-pressed={shown}\n\t\t\t\t\tdisabled={disabled}\n\t\t\t\t\tclassName={`${inputParts.action} ${inputParts.reveal}`}\n\t\t\t\t\tonClick={() => setShown((value) => !value)}\n\t\t\t\t>\n\t\t\t\t\t<EyeIcon data-when=\"hidden\" />\n\t\t\t\t\t<EyeOffIcon data-when=\"shown\" />\n\t\t\t\t</button>\n\t\t\t}\n\t\t/>\n\t);\n}\n\n// HugeIcons (MIT) glyphs, inlined so the component needs no icon package.\ntype IconProps = SVGProps<SVGSVGElement> & { \"data-when\"?: string };\n\nfunction Icon({ children, ...props }: IconProps) {\n\treturn (\n\t\t<svg\n\t\t\tviewBox=\"0 0 24 24\"\n\t\t\tfill=\"none\"\n\t\t\tstroke=\"currentColor\"\n\t\t\tstrokeWidth={1.5}\n\t\t\tstrokeLinecap=\"round\"\n\t\t\tstrokeLinejoin=\"round\"\n\t\t\taria-hidden=\"true\"\n\t\t\t{...props}\n\t\t>\n\t\t\t{children}\n\t\t</svg>\n\t);\n}\n\nfunction CrossIcon() {\n\treturn (\n\t\t<Icon>\n\t\t\t<path d=\"M19 5L5 19M5 5l14 14\" />\n\t\t</Icon>\n\t);\n}\n\nfunction TickIcon() {\n\treturn (\n\t\t<Icon strokeWidth={2}>\n\t\t\t<path d=\"M5 14L8.5 17.5L19 6.5\" pathLength={1} />\n\t\t</Icon>\n\t);\n}\n\nfunction EyeIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M21.544 11.045C21.848 11.4713 22 11.6845 22 12C22 12.3155 21.848 12.5287 21.544 12.955C20.1779 14.8706 16.6892 19 12 19C7.31078 19 3.8221 14.8706 2.45604 12.955C2.15201 12.5287 2 12.3155 2 12C2 11.6845 2.15201 11.4713 2.45604 11.045C3.8221 9.12944 7.31078 5 12 5C16.6892 5 20.1779 9.12944 21.544 11.045Z\" />\n\t\t\t<path d=\"M15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12Z\" />\n\t\t</Icon>\n\t);\n}\n\nfunction EyeOffIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M19.439 15.439C20.3636 14.5212 21.0775 13.6091 21.544 12.955C21.848 12.5287 22 12.3155 22 12C22 11.6845 21.848 11.4713 21.544 11.045C20.1779 9.12944 16.6892 5 12 5C11.0922 5 10.2294 5.15476 9.41827 5.41827M6.74742 6.74742C4.73118 8.1072 3.24215 9.94266 2.45604 11.045C2.15201 11.4713 2 11.6845 2 12C2 12.3155 2.15201 12.5287 2.45604 12.955C3.8221 14.8706 7.31078 19 12 19C13.9908 19 15.7651 18.2557 17.2526 17.2526\" />\n\t\t\t<path d=\"M9.85786 10C9.32783 10.53 9 11.2623 9 12.0711C9 13.6887 10.3113 15 11.9289 15C12.7377 15 13.47 14.6722 14 14.1421\" />\n\t\t\t<path d=\"M3 3L21 21\" />\n\t\t</Icon>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-input-field": {
+        "--_h": "2.5rem",
+        "--_pad": "0.75rem",
+        "--_px": "var(--_pad)",
+        "--_icon": "16px",
+        "--_font": "0.875rem",
+        "--_r": "var(--radius-box)",
+        "--_bg": "var(--card)",
+        "position": "relative",
+        "box-sizing": "border-box",
+        "display": "flex",
+        "align-items": "center",
+        "gap": "0.5rem",
+        "width": "100%",
+        "min-width": "0",
+        "height": "var(--_h)",
+        "padding-inline": "var(--_px)",
+        "overflow": "clip",
+        "border": "1px solid var(--input)",
+        "border-radius": "var(--_r)",
+        "background-color": "var(--_bg)",
+        "color": "var(--card-foreground)",
+        "font-family": "var(--font-sans)",
+        "font-size": "var(--_font)",
+        "line-height": "1.25rem",
+        "letter-spacing": "-0.15px",
+        "cursor": "text",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "border-color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease)"
+      },
+      "@media (hover: hover)": {
+        ".rx-input-field:hover": {
+          "border-color": "color-mix(in oklab, var(--foreground) 24%, var(--card))"
+        },
+        ".rx-input-action:hover": {
+          "background-color": "var(--accent)",
+          "color": "var(--accent-foreground)"
+        }
+      },
+      ".rx-input-field:has(.rx-input:focus-visible)": {
+        "border-color": "var(--ring)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent)"
+      },
+      ".rx-input-field:has(.rx-input:is([aria-invalid=\"true\"], :user-invalid))": {
+        "border-color": "var(--destructive)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent)",
+        "animation": "rx-input-shake 400ms cubic-bezier(0.25, 1, 0.5, 1)"
+      },
+      ".rx-input-field:has(.rx-input:read-only:not(:disabled))": {
+        "--_bg": "color-mix(in oklab, var(--muted) 50%, var(--card))"
+      },
+      ".rx-input-field:has(.rx-input:disabled)": {
+        "opacity": "0.5",
+        "cursor": "not-allowed"
+      },
+      ".rx-input-sm": {
+        "--_h": "2rem",
+        "--_pad": "0.625rem",
+        "--_font": "0.8125rem"
+      },
+      ".rx-input-lg": {
+        "--_h": "3rem",
+        "--_pad": "1rem",
+        "--_icon": "18px",
+        "--_font": "1rem"
+      },
+      ".rx-input-pill": {
+        "--_r": "999px",
+        "--_px": "calc(var(--_pad) + 0.25rem)"
+      },
+      ".rx-input-filled": {
+        "--_bg": "var(--field)",
+        "border-color": "transparent",
+        "background": "linear-gradient(180deg, var(--field-shade), transparent 40%) padding-box, linear-gradient(var(--_bg), var(--_bg)) padding-box, linear-gradient(180deg, var(--field-edge-top), var(--field-edge-bottom)) border-box"
+      },
+      ".rx-input-filled:has(.rx-input:disabled)": {
+        "--_bg": "var(--field-disabled)"
+      },
+      "[data-depth=\"flat\"] .rx-input-filled": {
+        "border-color": "var(--input)",
+        "background": "var(--_bg)"
+      },
+      ".rx-input": {
+        "flex": "1 1 auto",
+        "align-self": "stretch",
+        "width": "0",
+        "min-width": "0",
+        "margin": "0",
+        "padding": "0",
+        "border": "0",
+        "background": "transparent",
+        "color": "inherit",
+        "font": "inherit",
+        "letter-spacing": "inherit",
+        "text-overflow": "ellipsis",
+        "outline": "none"
+      },
+      ".rx-input::placeholder": {
+        "color": "var(--subtle-foreground)",
+        "opacity": "1"
+      },
+      ".rx-input:disabled": {
+        "cursor": "not-allowed"
+      },
+      ".rx-input:autofill": {
+        "-webkit-text-fill-color": "var(--card-foreground)",
+        "box-shadow": "inset 0 0 0 100vmax var(--_bg)"
+      },
+      ".rx-input-field:has(.rx-input-clear) .rx-input::-webkit-search-cancel-button": {
+        "appearance": "none"
+      },
+      ".rx-input-icon": {
+        "display": "inline-flex",
+        "flex": "none",
+        "align-items": "center",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-input-icon svg": {
+        "width": "var(--_icon)",
+        "height": "var(--_icon)"
+      },
+      ".rx-input-addon": {
+        "display": "flex",
+        "flex": "none",
+        "align-items": "center",
+        "align-self": "stretch",
+        "padding-inline": "var(--_pad)",
+        "background-color": "var(--secondary)",
+        "color": "var(--muted-foreground)",
+        "white-space": "nowrap"
+      },
+      ".rx-input-addon:first-child": {
+        "margin-inline-start": "calc(var(--_px) * -1)",
+        "border-inline-end": "1px solid var(--input)"
+      },
+      ".rx-input-addon:last-child": {
+        "margin-inline-end": "calc(var(--_px) * -1)",
+        "border-inline-start": "1px solid var(--input)"
+      },
+      ".rx-input-action": {
+        "display": "inline-grid",
+        "flex": "none",
+        "place-items": "center",
+        "width": "calc(var(--_icon) + 0.5rem)",
+        "height": "calc(var(--_icon) + 0.5rem)",
+        "margin-inline": "-0.25rem",
+        "padding": "0",
+        "border": "0",
+        "border-radius": "var(--radius-item)",
+        "background": "transparent",
+        "color": "var(--muted-foreground)",
+        "cursor": "pointer",
+        "transition": "background-color 150ms var(--motion-ease), color 150ms var(--motion-ease), opacity 150ms var(--motion-ease), visibility 150ms, scale var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-input-action svg": {
+        "grid-area": "1 / 1",
+        "width": "var(--_icon)",
+        "height": "var(--_icon)"
+      },
+      ".rx-input-action:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "0"
+      },
+      ".rx-input-action:disabled": {
+        "pointer-events": "none"
+      },
+      ".rx-input-field:has(.rx-input:is(:placeholder-shown, :read-only)) .rx-input-clear": {
+        "visibility": "hidden",
+        "opacity": "0",
+        "scale": "0.5",
+        "transition-duration": "120ms"
+      },
+      ".rx-input-reveal svg": {
+        "transition": "opacity 300ms cubic-bezier(0.2, 0, 0, 1), scale 300ms cubic-bezier(0.2, 0, 0, 1), filter 300ms cubic-bezier(0.2, 0, 0, 1)"
+      },
+      ".rx-input-reveal[aria-pressed=\"true\"] > [data-when=\"hidden\"], .rx-input-reveal[aria-pressed=\"false\"] > [data-when=\"shown\"]": {
+        "opacity": "0",
+        "scale": "0.25",
+        "filter": "blur(4px)",
+        "transition-duration": "150ms"
+      },
+      ".rx-input-check": {
+        "color": "var(--success)"
+      },
+      ".rx-input-check path": {
+        "stroke-dasharray": "1",
+        "animation": "rx-input-draw 350ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards"
+      },
+      ".rx-input-field:has(.rx-input-float)": {
+        "--_lift": "calc(var(--_h) / 4 - 0.125rem)"
+      },
+      ".rx-input-sm:has(.rx-input-float)": {
+        "--_h": "2.5rem"
+      },
+      ".rx-input-float": {
+        "position": "relative",
+        "display": "flex",
+        "flex": "1 1 auto",
+        "align-self": "stretch",
+        "min-width": "0"
+      },
+      ".rx-input-float > .rx-input": {
+        "padding-block-start": "var(--_lift)"
+      },
+      ".rx-input-float > .rx-input::placeholder": {
+        "color": "transparent",
+        "transition": "color 150ms var(--motion-ease)"
+      },
+      ".rx-input-float > .rx-input:focus::placeholder": {
+        "color": "var(--subtle-foreground)"
+      },
+      ".rx-input-label": {
+        "position": "absolute",
+        "inset-inline-start": "0",
+        "top": "50%",
+        "max-width": "100%",
+        "overflow": "hidden",
+        "color": "var(--subtle-foreground)",
+        "white-space": "nowrap",
+        "text-overflow": "ellipsis",
+        "pointer-events": "none",
+        "translate": "0 -50%",
+        "transform-origin": "0 50%",
+        "transition": "translate var(--spring-label-duration) var(--spring-label), scale var(--spring-label-duration) var(--spring-label), color 150ms var(--motion-ease)"
+      },
+      ".rx-input:is(:focus, :not(:placeholder-shown), :autofill) + .rx-input-label": {
+        "translate": "0 calc(-50% - var(--_lift))",
+        "scale": "0.8",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-input:focus + .rx-input-label": {
+        "color": "var(--ring)"
+      },
+      ".rx-input:is([aria-invalid=\"true\"], :user-invalid) + .rx-input-label": {
+        "color": "var(--destructive)"
+      },
+      ".rx-otp": {
+        "--_h": "2.5rem",
+        "--_w": "2.25rem",
+        "--_gap": "0.5rem",
+        "--_font": "1.125rem",
+        "--_r": "var(--radius-box)",
+        "position": "relative",
+        "display": "inline-flex",
+        "font-family": "var(--font-sans)"
+      },
+      ".rx-otp:has(.rx-otp-input:disabled)": {
+        "opacity": "0.5"
+      },
+      ".rx-otp-sm": {
+        "--_h": "2rem",
+        "--_w": "1.75rem",
+        "--_gap": "0.375rem",
+        "--_font": "0.9375rem"
+      },
+      ".rx-otp-lg": {
+        "--_h": "3rem",
+        "--_w": "2.75rem",
+        "--_gap": "0.625rem",
+        "--_font": "1.375rem"
+      },
+      ".rx-otp-input": {
+        "position": "absolute",
+        "inset": "0",
+        "z-index": "1",
+        "width": "100%",
+        "height": "100%",
+        "margin": "0",
+        "padding": "0",
+        "border": "0",
+        "background": "transparent",
+        "color": "transparent",
+        "caret-color": "transparent",
+        "font-size": "16px",
+        "-webkit-text-fill-color": "transparent",
+        "outline": "none",
+        "cursor": "text"
+      },
+      ".rx-otp-input::selection": {
+        "background": "transparent"
+      },
+      ".rx-otp-input:autofill": {
+        "transition": "background-color 600000s, color 600000s"
+      },
+      ".rx-otp-input:disabled": {
+        "cursor": "not-allowed"
+      },
+      ".rx-otp-slots": {
+        "display": "flex",
+        "gap": "var(--_gap)"
+      },
+      ".rx-otp-slot": {
+        "position": "relative",
+        "box-sizing": "border-box",
+        "display": "grid",
+        "place-items": "center",
+        "width": "var(--_w)",
+        "height": "var(--_h)",
+        "overflow": "clip",
+        "border": "1px solid var(--input)",
+        "border-radius": "var(--_r)",
+        "background-color": "var(--card)",
+        "color": "var(--card-foreground)",
+        "font-size": "var(--_font)",
+        "font-weight": "500",
+        "font-variant-numeric": "tabular-nums",
+        "line-height": "1",
+        "transition": "border-color 150ms var(--motion-ease)"
+      },
+      ".rx-otp-slot[data-filled]": {
+        "border-color": "color-mix(in oklab, var(--foreground) 24%, var(--card))"
+      },
+      ".rx-otp-char": {
+        "grid-area": "1 / 1",
+        "animation": "rx-otp-roll var(--spring-label-duration) var(--spring-label) backwards"
+      },
+      ".rx-otp-ring": {
+        "position": "absolute",
+        "top": "0",
+        "left": "0",
+        "box-sizing": "border-box",
+        "width": "var(--_w)",
+        "height": "var(--_h)",
+        "border": "1px solid var(--ring)",
+        "border-radius": "var(--_r)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent)",
+        "opacity": "0",
+        "pointer-events": "none",
+        "translate": "calc(var(--_at, 0) * (var(--_w) + var(--_gap))) 0",
+        "transition": "translate var(--spring-swap-duration) var(--spring-swap), opacity 150ms var(--motion-ease)"
+      },
+      ".rx-otp:has(.rx-otp-input:focus-visible) .rx-otp-ring": {
+        "opacity": "1"
+      },
+      ".rx-otp:has(.rx-otp-input:focus-visible) .rx-otp-slot[data-active]:not([data-filled])::after": {
+        "content": "\"\"",
+        "grid-area": "1 / 1",
+        "width": "1px",
+        "height": "45%",
+        "background": "currentColor",
+        "animation": "rx-otp-blink 1.1s step-end infinite"
+      },
+      ".rx-otp:has(.rx-otp-input:is([aria-invalid=\"true\"], :user-invalid)) .rx-otp-slot": {
+        "border-color": "var(--destructive)"
+      },
+      ".rx-otp:has(.rx-otp-input:is([aria-invalid=\"true\"], :user-invalid)) .rx-otp-ring": {
+        "border-color": "var(--destructive)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent)"
+      },
+      ".rx-otp:has(.rx-otp-input:is([aria-invalid=\"true\"], :user-invalid)) .rx-otp-slots": {
+        "animation": "rx-input-shake 400ms cubic-bezier(0.25, 1, 0.5, 1)"
+      },
+      "@keyframes rx-input-shake": {
+        "15%": {
+          "translate": "-5px 0"
+        },
+        "30%": {
+          "translate": "4px 0"
+        },
+        "45%": {
+          "translate": "-3px 0"
+        },
+        "60%": {
+          "translate": "2px 0"
+        },
+        "75%": {
+          "translate": "-1px 0"
+        }
+      },
+      "@keyframes rx-input-draw": {
+        "from": {
+          "stroke-dashoffset": "1"
+        }
+      },
+      "@keyframes rx-otp-roll": {
+        "from": {
+          "translate": "0 60%",
+          "opacity": "0",
+          "filter": "blur(4px)"
+        }
+      },
+      "@keyframes rx-otp-blink": {
+        "50%": {
+          "opacity": "0"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ":is(.rx-input-field, .rx-input-field *, .rx-otp *)": {
+          "animation-name": "none",
+          "transition-duration": "0ms"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-input-field, .rx-input-field *, .rx-otp *)": {
+        "animation": "none",
+        "transition-duration": "0ms"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

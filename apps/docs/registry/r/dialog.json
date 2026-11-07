@@ -1,0 +1,265 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "dialog",
+  "title": "Dialog",
+  "description": "A native modal dialog with header, title, description, footer and close parts, three sizes, right and bottom sheets and a morph from its trigger. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/dialog.styles.ts",
+      "content": "export type DialogSize = \"sm\" | \"md\" | \"lg\";\n/** Where the panel sits: centered, or a sheet against the right or bottom edge. */\nexport type DialogSide = \"center\" | \"right\" | \"bottom\";\n\nexport const dialogSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly DialogSize[];\nexport const dialogSides = [\"center\", \"right\", \"bottom\"] as const satisfies readonly DialogSide[];\n\n/**\n * The class list for a dialog panel. The look and the motion live in `dialog.css` (your global CSS,\n * when installed from the registry), on top of the shared surface in `control.css`, so React and\n * plain HTML get the same dialog from these names:\n *\n *   <dialog class=\"rx-surface rx-dialog rx-dialog-md\" closedby=\"any\">…</dialog>\n *\n * Widths are 24, 32 (default) and 42rem; a sheet ignores the size on the axis it fills.\n */\nexport function dialogClass({\n\tsize = \"md\",\n\tside = \"center\",\n}: { size?: DialogSize; side?: DialogSide } = {}) {\n\treturn `rx-surface rx-dialog rx-dialog-${size}${side === \"center\" ? \"\" : ` rx-dialog-${side}`}`;\n}\n\n/** Class names for the parts of a Dialog, for markup written by hand. */\nexport const dialogParts = {\n\theader: \"rx-dialog-header\",\n\ttitle: \"rx-dialog-title\",\n\tdescription: \"rx-dialog-description\",\n\tfooter: \"rx-dialog-footer\",\n\t/** The round button in the top corner. Its cross is drawn by CSS. */\n\tclose: \"rx-dialog-close\",\n} as const;\n\n/**\n * A CSS `view-transition-name` from a React id (`«r1»` or `:r1:`), which may hold characters an\n * identifier cannot.\n */\nexport function morphName(id: string) {\n\treturn `rx-dialog-${id.replace(/[^\\w-]/g, \"\")}`;\n}\n\n/** True when the page asks for no movement: the OS setting or a `data-motion=\"off\"` ancestor. */\nexport function motionOff(element: Element) {\n\treturn (\n\t\telement.closest('[data-motion=\"off\"]') !== null ||\n\t\t(typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches)\n\t);\n}\n\n/**\n * Whether a click on the dialog element landed on its backdrop. The backdrop belongs to the dialog,\n * so a click there targets the dialog itself, outside its box.\n */\nexport function onBackdrop(\n\trect: { left: number; top: number; right: number; bottom: number },\n\tx: number,\n\ty: number,\n) {\n\treturn x < rect.left || x > rect.right || y < rect.top || y > rect.bottom;\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/dialog.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ButtonHTMLAttributes,\n\tcloneElement,\n\tcreateContext,\n\ttype DialogHTMLAttributes,\n\ttype HTMLAttributes,\n\tisValidElement,\n\ttype MouseEvent,\n\ttype ReactElement,\n\ttype ReactNode,\n\ttype Ref,\n\ttype RefObject,\n\tuse,\n\tuseCallback,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n\tuseSyncExternalStore,\n} from \"react\";\nimport { flushSync } from \"react-dom\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\ttype DialogSide,\n\ttype DialogSize,\n\tdialogClass,\n\tdialogParts,\n\tmorphName,\n\tmotionOff,\n\tonBackdrop,\n} from \"./dialog.styles\";\n\ntype DialogContextValue = {\n\topen: boolean;\n\tmodal: boolean;\n\tmorph: boolean;\n\tcontentId: string;\n\ttitleId: string;\n\tdescriptionId: string;\n\thasTitle: boolean;\n\thasDescription: boolean;\n\tsetHasTitle: (has: boolean) => void;\n\tsetHasDescription: (has: boolean) => void;\n\tcontentRef: RefObject<HTMLDialogElement | null>;\n\ttriggerRef: RefObject<HTMLElement | null>;\n\t/** Records a state the browser already reached (Escape, a backdrop press, an invoker). */\n\tsync: (open: boolean) => void;\n\t/** Opens or closes from our own controls, morphing from the trigger when asked. */\n\tchange: (open: boolean) => void;\n};\n\nconst DialogContext = createContext<DialogContextValue | null>(null);\n\nfunction useDialog(part: string) {\n\tconst context = use(DialogContext);\n\tif (!context) throw new Error(`${part} must be used inside <Dialog>`);\n\treturn context;\n}\n\n/** Writes a node to every ref it is given (an object ref, a callback ref, or none). */\nfunction mergeRefs<T>(...refs: (Ref<T> | undefined)[]) {\n\treturn (node: T | null) => {\n\t\tfor (const ref of refs) {\n\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\telse if (ref) ref.current = node;\n\t\t}\n\t};\n}\n\nconst noop = () => () => {};\n/** False on the server and while hydrating, true after: React keeps both renders consistent. */\nconst useHydrated = () =>\n\tuseSyncExternalStore(\n\t\tnoop,\n\t\t() => true,\n\t\t() => false,\n\t);\n\nexport type DialogProps = {\n\t/** Controlled open state; pair it with `onOpenChange`. */\n\topen?: boolean;\n\t/** The state on first render, when uncontrolled. */\n\tdefaultOpen?: boolean;\n\t/** Called with the next state, whatever closed or opened it. */\n\tonOpenChange?: (open: boolean) => void;\n\t/**\n\t * Modal (default) puts the panel in the top layer with a backdrop and makes the page inert.\n\t * `false` opens it in place with `show()`: no backdrop, the page stays usable.\n\t */\n\tmodal?: boolean;\n\t/**\n\t * Grow the panel out of its trigger and fold it back on close, with a View Transition. Falls\n\t * back to the scale and fade where View Transitions, or motion, are not available.\n\t */\n\tmorph?: boolean;\n\tchildren?: ReactNode;\n};\n\n/**\n * Holds a dialog's state and wires its parts together. Every part reads it, so the trigger, the\n * title and the description need no ids passed by hand.\n */\nexport function Dialog({\n\topen: openProp,\n\tdefaultOpen = false,\n\tonOpenChange,\n\tmodal = true,\n\tmorph = false,\n\tchildren,\n}: DialogProps) {\n\tconst id = useId();\n\tconst [internal, setInternal] = useState(defaultOpen);\n\tconst [hasTitle, setHasTitle] = useState(false);\n\tconst [hasDescription, setHasDescription] = useState(false);\n\tconst controlled = openProp !== undefined;\n\tconst open = controlled ? openProp : internal;\n\tconst contentRef = useRef<HTMLDialogElement>(null);\n\tconst triggerRef = useRef<HTMLElement>(null);\n\n\t// The last committed state, for event handlers that run between renders.\n\tconst current = useRef(open);\n\tuseLayoutEffect(() => {\n\t\tcurrent.current = open;\n\t}, [open]);\n\n\tconst sync = useCallback(\n\t\t(next: boolean) => {\n\t\t\tif (next === current.current) return;\n\t\t\tif (!controlled) setInternal(next);\n\t\t\tonOpenChange?.(next);\n\t\t},\n\t\t[controlled, onOpenChange],\n\t);\n\n\tconst change = useCallback(\n\t\t(next: boolean) => {\n\t\t\tconst dialog = contentRef.current;\n\t\t\tconst trigger = triggerRef.current;\n\t\t\tif (\n\t\t\t\t!morph ||\n\t\t\t\t!dialog ||\n\t\t\t\t!trigger ||\n\t\t\t\t!modal ||\n\t\t\t\tnext === current.current ||\n\t\t\t\ttypeof document.startViewTransition !== \"function\" ||\n\t\t\t\tmotionOff(dialog)\n\t\t\t) {\n\t\t\t\tsync(next);\n\t\t\t\treturn;\n\t\t\t}\n\t\t\t// The element that is visible now carries the name into the old picture, the other one\n\t\t\t// into the new picture, and the browser animates the box between them.\n\t\t\tconst name = morphName(id);\n\t\t\tconst [from, to] = next ? [trigger, dialog] : [dialog, trigger];\n\t\t\tfrom.style.viewTransitionName = name;\n\t\t\tdialog.dataset.morphing = \"\";\n\t\t\tconst update = () => {\n\t\t\t\tfrom.style.viewTransitionName = \"\";\n\t\t\t\tto.style.viewTransitionName = name;\n\t\t\t\tflushSync(() => sync(next));\n\t\t\t};\n\t\t\t// A type tells the CSS which way it is going; older engines take only the callback.\n\t\t\tconst transition =\n\t\t\t\ttypeof ViewTransition !== \"undefined\" && \"types\" in ViewTransition.prototype\n\t\t\t\t\t? document.startViewTransition({\n\t\t\t\t\t\t\tupdate,\n\t\t\t\t\t\t\ttypes: [next ? \"rx-morph-open\" : \"rx-morph-close\"],\n\t\t\t\t\t\t})\n\t\t\t\t\t: document.startViewTransition(update);\n\t\t\tvoid transition.finished.finally(() => {\n\t\t\t\tto.style.viewTransitionName = \"\";\n\t\t\t\tdelete dialog.dataset.morphing;\n\t\t\t});\n\t\t},\n\t\t[id, modal, morph, sync],\n\t);\n\n\tconst value = useMemo<DialogContextValue>(\n\t\t() => ({\n\t\t\topen,\n\t\t\tmodal,\n\t\t\tmorph,\n\t\t\tcontentId: `${id}-content`,\n\t\t\ttitleId: `${id}-title`,\n\t\t\tdescriptionId: `${id}-description`,\n\t\t\thasTitle,\n\t\t\thasDescription,\n\t\t\tsetHasTitle,\n\t\t\tsetHasDescription,\n\t\t\tcontentRef,\n\t\t\ttriggerRef,\n\t\t\tsync,\n\t\t\tchange,\n\t\t}),\n\t\t[open, modal, morph, id, hasTitle, hasDescription, sync, change],\n\t);\n\n\treturn <DialogContext value={value}>{children}</DialogContext>;\n}\n\ntype ButtonPartProps = ButtonHTMLAttributes<HTMLButtonElement> & {\n\t/**\n\t * Merge into the one child element instead of rendering a button, such as our `Button` or a\n\t * link styled as one. The child must forward its props and ref to a focusable element.\n\t */\n\tasChild?: boolean;\n\tref?: Ref<HTMLButtonElement>;\n};\n\nconst LAZY = Symbol.for(\"react.lazy\");\n\n/**\n * An element a Server Component passes down can arrive as a lazy reference to a chunk that is still\n * streaming. Unwrap it, so `asChild` sees the element itself on the server and the client alike.\n */\nfunction useResolvedChild(children: ReactNode): ReactNode {\n\tif (\n\t\tchildren !== null &&\n\t\ttypeof children === \"object\" &&\n\t\t(children as { $$typeof?: symbol }).$$typeof === LAZY &&\n\t\t\"_payload\" in children\n\t) {\n\t\t// oxlint-disable-next-line no-underscore-dangle -- React's own field for a lazy element's payload\n\t\treturn use(children._payload as PromiseLike<ReactNode> as Promise<ReactNode>);\n\t}\n\treturn children;\n}\n\n/** Renders a button, or hands the same props to its child with `asChild`. */\nfunction ButtonPart({\n\tasChild,\n\tchildren,\n\tonClick,\n\tonActivate,\n\tref,\n\t...rest\n}: ButtonPartProps & { onActivate: () => void }) {\n\tconst handle = (event: MouseEvent<HTMLButtonElement>) => {\n\t\tonClick?.(event);\n\t\tif (!event.defaultPrevented) onActivate();\n\t};\n\tconst only = useResolvedChild(children);\n\tif (asChild && isValidElement(only)) {\n\t\tconst child = only as ReactElement<Record<string, unknown> & { ref?: Ref<HTMLButtonElement> }>;\n\t\tconst childClick = child.props.onClick as\n\t\t\t| ((event: MouseEvent<HTMLButtonElement>) => void)\n\t\t\t| undefined;\n\t\treturn cloneElement(child, {\n\t\t\t...rest,\n\t\t\t// oxlint-disable-next-line react/refs -- the child's own ref prop, merged, not a ref's value\n\t\t\tref: mergeRefs(ref, child.props.ref),\n\t\t\tonClick: (event: MouseEvent<HTMLButtonElement>) => {\n\t\t\t\tchildClick?.(event);\n\t\t\t\tif (!event.defaultPrevented) handle(event);\n\t\t\t},\n\t\t});\n\t}\n\treturn (\n\t\t<button type=\"button\" {...rest} ref={ref} onClick={handle}>\n\t\t\t{children}\n\t\t</button>\n\t);\n}\n\nexport type DialogTriggerProps = ButtonPartProps;\n\n/**\n * Opens the dialog. It is announced as opening a dialog, and focus comes back to it on close.\n * Until the page hydrates it also carries `command=\"show-modal\"`, so where the Invoker Commands API\n * exists the dialog already opens without JavaScript.\n */\nexport function DialogTrigger({ ref, ...rest }: DialogTriggerProps) {\n\tconst dialog = useDialog(\"DialogTrigger\");\n\tconst hydrated = useHydrated();\n\t// Not in React's types yet; React passes lowercase attributes through.\n\tconst invoker =\n\t\t!hydrated && dialog.modal && !dialog.morph\n\t\t\t? ({ command: \"show-modal\", commandfor: dialog.contentId } as Record<string, string>)\n\t\t\t: undefined;\n\treturn (\n\t\t<ButtonPart\n\t\t\t{...invoker}\n\t\t\t{...rest}\n\t\t\tref={mergeRefs(ref, dialog.triggerRef as RefObject<HTMLButtonElement | null>)}\n\t\t\taria-haspopup=\"dialog\"\n\t\t\taria-expanded={dialog.open}\n\t\t\taria-controls={dialog.contentId}\n\t\t\tdata-slot=\"dialog-trigger\"\n\t\t\tdata-morph={dialog.morph ? \"\" : undefined}\n\t\t\tonActivate={() => dialog.change(true)}\n\t\t/>\n\t);\n}\n\nexport type DialogCloseProps = ButtonPartProps;\n\n/** Closes the dialog: wrap a Cancel or Done button in it with `asChild`, or use it as a button. */\nexport function DialogClose({ ref, ...rest }: DialogCloseProps) {\n\tconst dialog = useDialog(\"DialogClose\");\n\treturn (\n\t\t<ButtonPart\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\tdata-slot=\"dialog-close\"\n\t\t\tonActivate={() => dialog.change(false)}\n\t\t/>\n\t);\n}\n\nexport type DialogContentProps = Omit<DialogHTMLAttributes<HTMLDialogElement>, \"open\"> & {\n\t/** Width: 24, 32 (default) or 42rem. A sheet takes three quarters (right) or 1.25× (bottom). */\n\tsize?: DialogSize;\n\t/** `center` (default), or a sheet that slides in from the `right` or the `bottom` edge. */\n\tside?: DialogSide;\n\t/** The round close button in the top corner. Default true. */\n\tshowClose?: boolean;\n\t/** The close button's accessible name. Default \"Close\". */\n\tcloseLabel?: string;\n\t/**\n\t * Close on a press on the backdrop (light dismiss). Default true. Escape always closes; to\n\t * keep a dialog open, control `open` and ignore the change.\n\t */\n\tdismissible?: boolean;\n\tref?: Ref<HTMLDialogElement>;\n};\n\nconst closedBySupported = () =>\n\ttypeof HTMLDialogElement !== \"undefined\" && \"closedBy\" in HTMLDialogElement.prototype;\n\n/**\n * The panel: a native `<dialog>`. It is named by `DialogTitle` and described by\n * `DialogDescription` automatically, and stays in the page while closed (hidden), so it can open\n * before hydration and its state survives a close.\n */\nexport function DialogContent({\n\tsize = \"md\",\n\tside = \"center\",\n\tshowClose = true,\n\tcloseLabel = \"Close\",\n\tdismissible = true,\n\tclassName,\n\tchildren,\n\tonClick,\n\tonPointerDown,\n\tref,\n\t...rest\n}: DialogContentProps) {\n\tconst dialog = useDialog(\"DialogContent\");\n\tconst { open, modal, contentRef, sync, change } = dialog;\n\tconst pressedBackdrop = useRef(false);\n\n\t// State drives the element. Opening twice or closing a closed dialog is a no-op. On the first\n\t// run, a dialog an invoker opened before hydration is adopted rather than closed.\n\tconst adopted = useRef(false);\n\tuseLayoutEffect(() => {\n\t\tconst element = contentRef.current;\n\t\tif (!element) return;\n\t\tif (!adopted.current) {\n\t\t\tadopted.current = true;\n\t\t\tif (element.open && !open) {\n\t\t\t\tsync(true);\n\t\t\t\treturn;\n\t\t\t}\n\t\t}\n\t\tif (open && !element.open) {\n\t\t\tif (modal) element.showModal();\n\t\t\telse element.show();\n\t\t} else if (!open && element.open) {\n\t\t\telement.close();\n\t\t}\n\t}, [open, modal, contentRef, sync]);\n\n\t// The browser can change the state too: Escape and light dismiss ask first (`cancel`), an\n\t// invoker opens it (`toggle`), and anything else that closes it ends in `close`.\n\tuseEffect(() => {\n\t\tconst element = contentRef.current;\n\t\tif (!element) return;\n\t\tconst onCancel = (event: Event) => {\n\t\t\tif (event.target !== element || !event.cancelable) return;\n\t\t\tevent.preventDefault();\n\t\t\tchange(false);\n\t\t};\n\t\tconst onClose = (event: Event) => {\n\t\t\tif (event.target === element) sync(false);\n\t\t};\n\t\tconst onToggle = (event: Event) => {\n\t\t\tif (event.target === element && (event as ToggleEvent).newState === \"open\") sync(true);\n\t\t};\n\t\telement.addEventListener(\"cancel\", onCancel);\n\t\telement.addEventListener(\"close\", onClose);\n\t\telement.addEventListener(\"toggle\", onToggle);\n\t\treturn () => {\n\t\t\telement.removeEventListener(\"cancel\", onCancel);\n\t\t\telement.removeEventListener(\"close\", onClose);\n\t\t\telement.removeEventListener(\"toggle\", onToggle);\n\t\t};\n\t}, [contentRef, change, sync]);\n\n\treturn (\n\t\t// The dialog's keyboard equivalent of a backdrop press is Escape, which the browser handles.\n\t\t// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions\n\t\t<dialog\n\t\t\t{...rest}\n\t\t\tref={mergeRefs(ref, contentRef)}\n\t\t\tid={dialog.contentId}\n\t\t\tclosedby={dismissible ? \"any\" : \"closerequest\"}\n\t\t\taria-labelledby={dialog.hasTitle ? dialog.titleId : undefined}\n\t\t\taria-describedby={dialog.hasDescription ? dialog.descriptionId : undefined}\n\t\t\tdata-slot=\"dialog-content\"\n\t\t\tdata-size={size}\n\t\t\tdata-side={side}\n\t\t\tclassName={cn(dialogClass({ size, side }), className)}\n\t\t\tonPointerDown={(event) => {\n\t\t\t\tonPointerDown?.(event);\n\t\t\t\tpressedBackdrop.current =\n\t\t\t\t\tevent.target === event.currentTarget &&\n\t\t\t\t\tonBackdrop(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY);\n\t\t\t}}\n\t\t\tonClick={(event) => {\n\t\t\t\tonClick?.(event);\n\t\t\t\t// Light dismiss where `closedby` is not supported. The press and the release must both\n\t\t\t\t// land on the backdrop, so a drag out of a text field does not close the dialog.\n\t\t\t\tif (\n\t\t\t\t\t!dismissible ||\n\t\t\t\t\tclosedBySupported() ||\n\t\t\t\t\tevent.defaultPrevented ||\n\t\t\t\t\tevent.target !== event.currentTarget ||\n\t\t\t\t\t!pressedBackdrop.current\n\t\t\t\t)\n\t\t\t\t\treturn;\n\t\t\t\tif (onBackdrop(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY))\n\t\t\t\t\tchange(false);\n\t\t\t}}\n\t\t>\n\t\t\t{children}\n\t\t\t{showClose ? <DialogClose className={dialogParts.close} aria-label={closeLabel} /> : null}\n\t\t</dialog>\n\t);\n}\n\ntype PartProps<T> = HTMLAttributes<T> & { ref?: Ref<T> };\n\n/** Title and description, stacked. */\nexport function DialogHeader({ className, ...rest }: PartProps<HTMLDivElement>) {\n\treturn <div {...rest} data-slot=\"dialog-header\" className={cn(dialogParts.header, className)} />;\n}\n\n/** The actions, at the end. Below 20rem of panel width they stack, the primary one on top. */\nexport function DialogFooter({ className, ...rest }: PartProps<HTMLDivElement>) {\n\treturn <div {...rest} data-slot=\"dialog-footer\" className={cn(dialogParts.footer, className)} />;\n}\n\n/** The dialog's name: an `h2` the panel points `aria-labelledby` at. */\nexport function DialogTitle({ className, children, ...rest }: PartProps<HTMLHeadingElement>) {\n\tconst dialog = useDialog(\"DialogTitle\");\n\tconst { setHasTitle } = dialog;\n\tuseLayoutEffect(() => {\n\t\tsetHasTitle(true);\n\t\treturn () => setHasTitle(false);\n\t}, [setHasTitle]);\n\treturn (\n\t\t<h2\n\t\t\t{...rest}\n\t\t\tid={dialog.titleId}\n\t\t\tdata-slot=\"dialog-title\"\n\t\t\tclassName={cn(dialogParts.title, className)}\n\t\t>\n\t\t\t{children}\n\t\t</h2>\n\t);\n}\n\n/** A line under the title, which the panel points `aria-describedby` at. */\nexport function DialogDescription({ className, ...rest }: PartProps<HTMLParagraphElement>) {\n\tconst dialog = useDialog(\"DialogDescription\");\n\tconst { setHasDescription } = dialog;\n\tuseLayoutEffect(() => {\n\t\tsetHasDescription(true);\n\t\treturn () => setHasDescription(false);\n\t}, [setHasDescription]);\n\treturn (\n\t\t<p\n\t\t\t{...rest}\n\t\t\tid={dialog.descriptionId}\n\t\t\tdata-slot=\"dialog-description\"\n\t\t\tclassName={cn(dialogParts.description, className)}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-dialog": {
+        "--_fill": "var(--popover)",
+        "--_flat": "var(--border)",
+        "--_ring": "var(--surface-ring)",
+        "--_edge-a": "var(--surface-edge-top)",
+        "--_edge-b": "var(--surface-edge-bottom)",
+        "--_sheen": "var(--surface-sheen)",
+        "--_shade": "var(--surface-shade)",
+        "--_w": "32rem",
+        "--_pad": "19px",
+        "--_exit": "160ms",
+        "--_from-scale": "0.96",
+        "--_from-x": "0px",
+        "--_from-y": "8px",
+        "container": "rx-dialog / inline-size",
+        "position": "fixed",
+        "inset": "0",
+        "box-sizing": "border-box",
+        "width": "min(calc(100% - 2rem), var(--_w))",
+        "max-width": "none",
+        "height": "fit-content",
+        "max-height": "calc(100dvh - 2rem)",
+        "margin": "auto",
+        "padding": "var(--_pad)",
+        "overflow-y": "auto",
+        "overscroll-behavior": "contain",
+        "border-radius": "var(--radius-box)",
+        "color": "var(--popover-foreground)",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px",
+        "outline": "none",
+        "view-transition-class": "rx-morph",
+        "opacity": "0",
+        "scale": "var(--_from-scale)",
+        "translate": "var(--_from-x) var(--_from-y)",
+        "transition": "opacity var(--_exit) var(--motion-ease), scale var(--_exit) var(--motion-ease), translate var(--_exit) var(--motion-ease), display var(--_exit) allow-discrete, overlay var(--_exit) allow-discrete"
+      },
+      ".rx-dialog[open]": {
+        "display": "grid",
+        "align-content": "start",
+        "gap": "16px",
+        "opacity": "1",
+        "scale": "1",
+        "translate": "0 0",
+        "transition": "opacity 200ms var(--motion-ease), scale var(--spring-panel-duration) var(--spring-panel), translate var(--spring-panel-duration) var(--spring-panel), display var(--spring-panel-duration) allow-discrete, overlay var(--spring-panel-duration) allow-discrete"
+      },
+      ".rx-dialog::backdrop": {
+        "background-color": "transparent",
+        "backdrop-filter": "blur(0)",
+        "transition": "background-color var(--_exit) var(--motion-ease), backdrop-filter var(--_exit) var(--motion-ease), display var(--_exit) allow-discrete, overlay var(--_exit) allow-discrete"
+      },
+      ".rx-dialog[open]::backdrop": {
+        "background-color": "oklch(from var(--background) calc(l * 0.25) c h / 0.45)",
+        "backdrop-filter": "blur(2px)",
+        "transition-duration": "240ms"
+      },
+      ".rx-dialog-sm": {
+        "--_w": "24rem"
+      },
+      ".rx-dialog-md": {
+        "--_w": "32rem"
+      },
+      ".rx-dialog-lg": {
+        "--_w": "42rem"
+      },
+      ".rx-dialog-right": {
+        "--_from-scale": "1",
+        "--_from-x": "100%",
+        "--_from-y": "0px",
+        "--_exit": "220ms",
+        "width": "min(calc(100% - 3rem), calc(var(--_w) * 0.75))",
+        "height": "100dvh",
+        "max-height": "100dvh",
+        "margin": "0",
+        "margin-inline-start": "auto",
+        "border-start-end-radius": "0",
+        "border-end-end-radius": "0",
+        "opacity": "1"
+      },
+      ".rx-dialog-right[open]": {
+        "grid-template-rows": "auto 1fr auto"
+      },
+      ".rx-dialog-bottom": {
+        "--_from-scale": "1",
+        "--_from-y": "100%",
+        "--_exit": "220ms",
+        "width": "min(100%, calc(var(--_w) * 1.25))",
+        "max-height": "85dvh",
+        "margin-block-end": "0",
+        "padding-block-end": "calc(var(--_pad) + env(safe-area-inset-bottom, 0px))",
+        "border-end-start-radius": "0",
+        "border-end-end-radius": "0",
+        "opacity": "1"
+      },
+      ".rx-dialog-header": {
+        "display": "grid",
+        "gap": "4px"
+      },
+      ".rx-dialog:has(> .rx-dialog-close) > .rx-dialog-header": {
+        "padding-inline-end": "28px"
+      },
+      ".rx-dialog-title": {
+        "margin": "0",
+        "font-size": "14px",
+        "line-height": "20px",
+        "font-weight": "510",
+        "letter-spacing": "-0.15px",
+        "color": "var(--popover-foreground)",
+        "text-wrap": "balance"
+      },
+      ".rx-dialog-description": {
+        "margin": "0",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px",
+        "color": "var(--muted-foreground)",
+        "text-wrap": "pretty"
+      },
+      ".rx-dialog-footer": {
+        "display": "flex",
+        "flex-wrap": "wrap",
+        "justify-content": "flex-end",
+        "gap": "8px"
+      },
+      "@container rx-dialog (width < 20rem)": {
+        ".rx-dialog-footer": {
+          "flex-direction": "column-reverse",
+          "align-items": "stretch"
+        }
+      },
+      ".rx-dialog-close": {
+        "position": "absolute",
+        "inset-block-start": "11px",
+        "inset-inline-end": "11px",
+        "display": "grid",
+        "place-items": "center",
+        "width": "28px",
+        "height": "28px",
+        "padding": "0",
+        "border": "0",
+        "border-radius": "var(--radius-item)",
+        "background-color": "transparent",
+        "color": "var(--muted-foreground)",
+        "cursor": "pointer",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "background-color 150ms var(--motion-ease), color 150ms var(--motion-ease), opacity 200ms var(--motion-ease) 120ms, scale var(--spring-press-duration) var(--spring-press) 120ms"
+      },
+      ".rx-dialog-close::before, .rx-dialog-close::after": {
+        "content": "\"\"",
+        "grid-area": "1 / 1",
+        "width": "14px",
+        "height": "1.5px",
+        "border-radius": "1px",
+        "background-color": "currentColor",
+        "rotate": "45deg"
+      },
+      ".rx-dialog-close::after": {
+        "rotate": "-45deg"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-dialog-close:hover": {
+          "background-color": "var(--accent)",
+          "color": "var(--accent-foreground)"
+        }
+      },
+      ".rx-dialog-close:active": {
+        "scale": "0.9",
+        "transition-delay": "0ms"
+      },
+      ".rx-dialog-close:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "1px"
+      },
+      "@starting-style ": {
+        ".rx-dialog[open]": {
+          "opacity": "0",
+          "scale": "var(--_from-scale)",
+          "translate": "var(--_from-x) var(--_from-y)"
+        },
+        ".rx-dialog[open]::backdrop": {
+          "background-color": "transparent",
+          "backdrop-filter": "blur(0)"
+        },
+        ".rx-dialog[open] .rx-dialog-close": {
+          "opacity": "0",
+          "scale": "0.8"
+        }
+      },
+      ":root:has(.rx-dialog:modal)": {
+        "overflow": "hidden"
+      },
+      "[data-slot=\"dialog-trigger\"][data-morph]": {
+        "view-transition-class": "rx-morph"
+      },
+      "[data-slot=\"dialog-trigger\"][data-morph][aria-expanded=\"true\"]": {
+        "opacity": "0"
+      },
+      ".rx-dialog[data-morphing], .rx-dialog[data-morphing]::backdrop": {
+        "transition": "none"
+      },
+      "::view-transition-group(*.rx-morph)": {
+        "animation-duration": "var(--spring-panel-duration)",
+        "animation-timing-function": "var(--spring-panel)"
+      },
+      "::view-transition-image-pair(*.rx-morph)": {
+        "overflow": "clip",
+        "border-radius": "var(--radius-box)"
+      },
+      "::view-transition-old(*.rx-morph), ::view-transition-new(*.rx-morph)": {
+        "inset": "50% auto auto 50%",
+        "inline-size": "auto",
+        "block-size": "auto",
+        "translate": "-50% -50%",
+        "animation-duration": "200ms",
+        "animation-timing-function": "var(--motion-ease)"
+      },
+      ":root:active-view-transition-type(rx-morph-open, rx-morph-close)::view-transition-old(*.rx-morph), :root:active-view-transition-type(rx-morph-open, rx-morph-close)::view-transition-new(*.rx-morph)": {
+        "mix-blend-mode": "normal"
+      },
+      ":root:active-view-transition-type(rx-morph-open)::view-transition-new(*.rx-morph)": {
+        "animation-duration": "100ms"
+      },
+      ":root:active-view-transition-type(rx-morph-close)::view-transition-new(*.rx-morph)": {
+        "animation": "none"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-dialog, .rx-dialog::backdrop, .rx-dialog-close": {
+          "transition-duration": "0ms",
+          "transition-delay": "0ms"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-dialog, .rx-dialog-close), [data-motion=\"off\"] .rx-dialog::backdrop": {
+        "transition-duration": "0ms",
+        "transition-delay": "0ms"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

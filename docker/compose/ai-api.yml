@@ -1,0 +1,36 @@
+# Bun + Hono AI API (RAG on pgvector, streaming tool chat) — included from root docker-compose.yml
+services:
+  ai-api:
+    build:
+      context: ../..
+      dockerfile: apps/ai-api/Dockerfile
+    image: starter-ai-api:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      SERVICE_NAME: starter-ai-api
+      DATABASE_URL: postgresql://${POSTGRES_USER:-starter}:${POSTGRES_PASSWORD:-starter}@postgres:5432/${POSTGRES_DB:-starter}
+      DATABASE_POOL_MAX: ${AI_DATABASE_POOL_MAX:-5}
+      # Same secret as nest-api: ai-api verifies nest-issued access tokens.
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_PROVIDER_NAME: ${AI_PROVIDER_NAME:-openrouter}
+      AI_API_KEY: ${AI_API_KEY:?Set AI_API_KEY in .env (OpenRouter or any OpenAI-compatible key)}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai/gpt-4o-mini}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      AI_EMBEDDING_BASE_URL: ${AI_EMBEDDING_BASE_URL:-}
+      AI_EMBEDDING_API_KEY: ${AI_EMBEDDING_API_KEY:-}
+    ports:
+      - "${AI_API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

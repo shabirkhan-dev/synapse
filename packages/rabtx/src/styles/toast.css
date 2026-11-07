@@ -1,0 +1,430 @@
+/*
+ * Toast: a stacked region in the top layer, Sonner-style. The Toaster is a `popover="manual"`
+ * section, so it sits above dialogs; the component re-shows it when a dialog or popover opens.
+ *
+ * The component only writes state: on the region `data-y` / `data-x` (position), `data-expanded`
+ * (hover, focus, a press, or `expand`) and the measured `--_front-h`; on each toast `--_i` (0 is
+ * the front), `--_h` (its own height), `--_offset` (where it sits when fanned out), `data-front`,
+ * `data-removed`, `data-swiping`, `data-swipe-out` and, while dragged, `--_swipe-x` / `--_swipe-y`
+ * / `--_swipe-p`. Every movement below is CSS:
+ *
+ *   - stacked: the toasts behind are cut to the front one's height, peek out 14px each and shrink
+ *     5% each; their content fades away;
+ *   - fanned out: each moves to its `--_offset` at full size and height;
+ *   - enter: `@starting-style` (22px from the edge, 0.96, 10px blur) on the toast spring;
+ *   - exit: a shorter fade with `display` transitioned `allow-discrete`, so the toast stays
+ *     painted until it has faded; a swipe carries on in the direction it was thrown;
+ *   - swipe: the toast follows the pointer with transitions off, then springs back or flies out.
+ *
+ * Colors come only from the theme: the toast is --popover on the shared raised surface (no cast
+ * shadow), the icon chip tints --success, --warning, --destructive or --primary like a Badge.
+ */
+@layer components {
+	.rx-toaster {
+		--_peek: 14px;
+		--_dir: -1;
+		--_edge: 24px;
+		--_gap: 14px;
+
+		/* The popover's own box, reset: no border, fill or scroll, placed by position. */
+		position: fixed;
+		inset: auto;
+		box-sizing: border-box;
+		width: min(calc(100vw - var(--_edge) * 2), 22.25rem);
+		height: var(--_front-h, 0px);
+		margin: 0;
+		padding: 0;
+		overflow: visible;
+		border: 0;
+		background: transparent;
+		color: var(--popover-foreground);
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+		outline: none;
+		/* The region never catches the pointer; the toasts do. */
+		pointer-events: none;
+
+		&[data-y="bottom"] {
+			bottom: calc(var(--_edge) + env(safe-area-inset-bottom, 0px));
+		}
+		&[data-y="top"] {
+			--_dir: 1;
+			top: calc(var(--_edge) + env(safe-area-inset-top, 0px));
+		}
+		&[data-x="left"] {
+			left: var(--_edge);
+		}
+		&[data-x="right"] {
+			right: var(--_edge);
+		}
+		&[data-x="center"] {
+			left: 50%;
+			translate: -50% 0;
+		}
+	}
+
+	/* A phone: full width less 1rem a side, whatever the corner. */
+	@media (width < 600px) {
+		.rx-toaster[data-x] {
+			left: 1rem;
+			right: 1rem;
+			width: auto;
+			translate: none;
+		}
+	}
+
+	.rx-toaster-list {
+		position: relative;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.rx-toast {
+		--_fill: var(--popover);
+		--_flat: var(--border);
+		--_ring: var(--surface-ring);
+		--_edge-a: var(--surface-edge-top);
+		--_edge-b: var(--surface-edge-bottom);
+		--_sheen: var(--surface-sheen);
+		--_shade: var(--surface-shade);
+		--_swipe-x: 0px;
+		--_swipe-y: 0px;
+		--_swipe-p: 0;
+		--_exit-x: 0px;
+		--_exit-y: 0px;
+		--_y: calc(var(--_dir) * var(--_i, 0) * var(--_peek));
+		--_scale: calc(1 - var(--_i, 0) * 0.05);
+
+		position: absolute;
+		inset-inline: 0;
+		z-index: calc(100 - var(--_i, 0));
+		box-sizing: content-box;
+		height: var(--_h, auto);
+		border-radius: var(--radius-box);
+		color: var(--popover-foreground);
+		pointer-events: auto;
+		touch-action: none;
+		outline: none;
+		opacity: calc(1 - var(--_swipe-p) * 0.8);
+		translate: calc(var(--_swipe-x) + var(--_exit-x))
+			calc(var(--_y) + var(--_swipe-y) + var(--_exit-y));
+		scale: var(--_scale);
+		transition:
+			--_fill 150ms var(--motion-ease),
+			opacity 200ms var(--motion-ease),
+			filter var(--spring-toast-duration) var(--spring-toast),
+			translate var(--spring-toast-duration) var(--spring-toast),
+			scale var(--spring-toast-duration) var(--spring-toast),
+			height var(--spring-toast-duration) var(--spring-toast),
+			display 200ms allow-discrete;
+
+		.rx-toaster[data-y="bottom"] & {
+			bottom: 0;
+			transform-origin: 50% 100%;
+		}
+		.rx-toaster[data-y="top"] & {
+			top: 0;
+			transform-origin: 50% 0;
+		}
+
+		/* Fills the gap to the toast behind, so moving between fanned-out toasts keeps them open. */
+		&::after {
+			content: "";
+			position: absolute;
+			inset-inline: 0;
+			height: calc(var(--_gap) + 1px);
+		}
+		.rx-toaster[data-y="bottom"] &::after {
+			bottom: 100%;
+		}
+		.rx-toaster[data-y="top"] &::after {
+			top: 100%;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+
+		/* Following the pointer: no easing, and no text selection on the way. */
+		&[data-swiping] {
+			user-select: none;
+			transition-property: --_fill, filter, scale, height, display;
+		}
+
+		/* Leaving: shorter than entering, and the box stays painted until it has faded. */
+		&[data-removed] {
+			display: none;
+			opacity: 0;
+			scale: 0.96;
+			filter: blur(8px);
+			pointer-events: none;
+			transition:
+				opacity 200ms var(--motion-ease),
+				filter 200ms var(--motion-ease),
+				translate 200ms var(--motion-ease),
+				scale 200ms var(--motion-ease),
+				display 200ms allow-discrete;
+		}
+		.rx-toaster[data-x="right"] &[data-removed] {
+			--_exit-x: 32px;
+		}
+		.rx-toaster[data-x="left"] &[data-removed] {
+			--_exit-x: -32px;
+		}
+		.rx-toaster[data-x="center"] &[data-removed] {
+			--_exit-y: calc(var(--_dir) * -22px);
+		}
+	}
+
+	/* Thrown: it carries on the way the swipe went, from wherever the pointer let go. */
+	.rx-toaster .rx-toast[data-removed][data-swipe-out] {
+		--_exit-x: 0px;
+		--_exit-y: 0px;
+	}
+	.rx-toaster .rx-toast[data-removed][data-swipe-out="right"] {
+		--_exit-x: 100%;
+	}
+	.rx-toaster .rx-toast[data-removed][data-swipe-out="left"] {
+		--_exit-x: -100%;
+	}
+	.rx-toaster .rx-toast[data-removed][data-swipe-out="down"] {
+		--_exit-y: 100%;
+	}
+	.rx-toaster .rx-toast[data-removed][data-swipe-out="up"] {
+		--_exit-y: -100%;
+	}
+
+	/* Fanned out: each toast at its offset, full size and its own height. */
+	.rx-toaster[data-expanded] .rx-toast {
+		--_y: calc(var(--_dir) * var(--_offset, 0px));
+		--_scale: 1;
+	}
+
+	/* Stacked: the toasts behind take the front one's height and hide their content. */
+	.rx-toaster:not([data-expanded]) .rx-toast:not([data-front]) {
+		height: var(--_front-h, auto);
+
+		& > * {
+			opacity: 0;
+			pointer-events: none;
+		}
+	}
+
+	.rx-toast-body {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 10px;
+		padding: 11px 13px;
+		transition: opacity 200ms var(--motion-ease);
+	}
+
+	.rx-toast-icon {
+		--_tone: var(--muted-foreground);
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 999px;
+		background: color-mix(in oklab, var(--_tone) 14%, var(--popover));
+		color: color-mix(in oklab, var(--_tone) 80%, var(--tint-ink));
+
+		& > svg {
+			width: 16px;
+			height: 16px;
+			transition:
+				opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+				scale var(--spring-swap-duration) var(--spring-swap),
+				filter 300ms cubic-bezier(0.2, 0, 0, 1);
+		}
+		/* The tick and the cross draw themselves in, just after the chip pops. */
+		& path[pathLength] {
+			stroke-dasharray: 1;
+			stroke-dashoffset: 0;
+			transition: stroke-dashoffset var(--spring-check-duration) var(--spring-check) 80ms;
+		}
+		/* A spinner: three quarters of a ring, turning. */
+		& circle {
+			stroke-dasharray: 0.7 0.3;
+			transform-origin: 50% 50%;
+			animation: rx-toast-spin 800ms linear infinite;
+		}
+	}
+	.rx-toast[data-type="success"] .rx-toast-icon {
+		--_tone: var(--success);
+	}
+	.rx-toast[data-type="error"] .rx-toast-icon {
+		--_tone: var(--destructive);
+	}
+	.rx-toast[data-type="warning"] .rx-toast-icon {
+		--_tone: var(--warning);
+	}
+	.rx-toast[data-type="info"] .rx-toast-icon {
+		--_tone: var(--primary);
+	}
+
+	.rx-toast-content {
+		flex: 1 1 10rem;
+		min-width: 0;
+		transition:
+			opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+			translate var(--spring-swap-duration) var(--spring-swap),
+			filter 300ms cubic-bezier(0.2, 0, 0, 1);
+	}
+	.rx-toast-title {
+		font-weight: 510;
+		overflow-wrap: anywhere;
+	}
+	.rx-toast-description {
+		color: var(--muted-foreground);
+		overflow-wrap: anywhere;
+		text-wrap: pretty;
+	}
+	.rx-toast-actions {
+		display: flex;
+		flex: none;
+		gap: 6px;
+		margin-inline-start: auto;
+	}
+
+	/* The close button: a small round button on the corner, shown on hover and focus. */
+	.rx-toast-close {
+		position: absolute;
+		top: 0;
+		inset-inline-start: 0;
+		display: grid;
+		place-items: center;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 1px solid var(--input);
+		border-radius: 999px;
+		background-color: var(--popover);
+		color: var(--muted-foreground);
+		cursor: pointer;
+		opacity: 0;
+		translate: -35% -35%;
+		scale: 0.8;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			opacity 150ms var(--motion-ease),
+			color 150ms var(--motion-ease),
+			background-color 150ms var(--motion-ease),
+			scale var(--spring-press-duration) var(--spring-press);
+
+		&::before,
+		&::after {
+			content: "";
+			grid-area: 1 / 1;
+			width: 10px;
+			height: 1.5px;
+			border-radius: 1px;
+			background-color: currentColor;
+			rotate: 45deg;
+		}
+		&::after {
+			rotate: -45deg;
+		}
+		&:hover {
+			background-color: var(--muted);
+			color: var(--foreground);
+		}
+		&:active {
+			scale: 0.9;
+		}
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 1px;
+		}
+	}
+	.rx-toast:is(:hover, :focus-within) > .rx-toast-close {
+		opacity: 1;
+		scale: 1;
+	}
+	@media (hover: none) {
+		.rx-toast > .rx-toast-close {
+			opacity: 1;
+			scale: 1;
+		}
+	}
+
+	/* Screen reader announcements: read, never seen. */
+	.rx-toast-announcer {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	/* First frames: the toast rises in from its edge; a new icon and new text swap in. */
+	@starting-style {
+		.rx-toast {
+			opacity: 0;
+			translate: 0 calc(var(--_dir) * -22px);
+			scale: 0.96;
+			filter: blur(10px);
+		}
+		.rx-toast-icon > svg {
+			opacity: 0;
+			scale: 0.25;
+			filter: blur(4px);
+		}
+		.rx-toast-icon path[pathLength] {
+			stroke-dashoffset: 1;
+		}
+		.rx-toast-content {
+			opacity: 0;
+			translate: 0 4px;
+			filter: blur(4px);
+		}
+	}
+
+	@keyframes rx-toast-spin {
+		to {
+			rotate: 1turn;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-toast,
+		.rx-toast-body,
+		.rx-toast-content,
+		.rx-toast-close,
+		.rx-toast-icon > svg,
+		.rx-toast-icon path {
+			transition-duration: 0ms;
+			transition-delay: 0ms;
+		}
+		.rx-toast-icon circle {
+			animation-duration: 2400ms;
+		}
+	}
+	/* Motion off: toasts appear, stack, fan out and leave at once; the spinner barely turns. */
+	[data-motion="off"]
+		:is(
+			.rx-toast,
+			.rx-toast-body,
+			.rx-toast-content,
+			.rx-toast-close,
+			.rx-toast-icon > svg,
+			.rx-toast-icon path
+		) {
+		transition-duration: 0ms;
+		transition-delay: 0ms;
+	}
+	[data-motion="off"] .rx-toast-icon circle {
+		animation-duration: 2400ms;
+	}
+}

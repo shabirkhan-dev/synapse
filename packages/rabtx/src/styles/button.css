@@ -1,0 +1,460 @@
+/*
+ * The Button. Every animation here is CSS: transitions on springs solved into `linear()` easings
+ * (the spring tokens in theme.css), and @keyframes with a backwards fill for the ripple, the label roll and the chrome
+ * drift, so a new ripple or label starts from its first frame. JavaScript only sets state: a
+ * ripple's position, a magnetic offset, the label width and which label is leaving.
+ *
+ * Colors come only from the theme: primary uses --primary / --primary-foreground, secondary uses
+ * --secondary / --secondary-foreground with an --input edge, ghost and outline hover on --accent, and
+ * focus draws --ring. Corners use --radius-button (--radius-item for the icon button). To restyle
+ * one button, set a theme token on it or an ancestor (`[--primary:var(--success)]`), or pass
+ * Tailwind classes in `className`: everything below is in the components layer, so they win.
+ */
+@layer components {
+	.rx-btn {
+		--_bg: transparent;
+		--_bg-hover: var(--_bg);
+		--_fg: var(--foreground);
+		--_fg-hover: var(--_fg);
+		--_edge: transparent;
+		--_icon: 16px;
+		--_gap: 0.5rem;
+
+		position: relative;
+		isolation: isolate;
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		gap: var(--_gap);
+		border: 1px solid var(--_edge);
+		border-radius: var(--radius-button);
+		background-color: var(--_bg);
+		color: var(--_fg);
+		font: inherit;
+		font-family: var(--font-sans);
+		font-weight: 500;
+		white-space: nowrap;
+		text-decoration: none;
+		cursor: pointer;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+		translate: var(--_btn-mx, 0px) var(--_btn-my, 0px);
+		transition:
+			background-color 150ms var(--motion-ease),
+			border-color 150ms var(--motion-ease),
+			color 150ms var(--motion-ease),
+			box-shadow 150ms var(--motion-ease),
+			opacity 150ms var(--motion-ease),
+			scale var(--spring-press-duration) var(--spring-press),
+			translate var(--spring-magnetic-duration) var(--spring-magnetic);
+
+		& svg {
+			flex: none;
+			width: var(--_icon);
+			height: var(--_icon);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+
+		/* Hover grows a touch, only where hover is real: never on touch, never with less motion. */
+		@media (hover: hover) and (pointer: fine) {
+			&:hover {
+				background-color: var(--_bg-hover);
+				color: var(--_fg-hover);
+				scale: 1.02;
+			}
+		}
+		/* After hover so a press wins while the pointer is over the button. */
+		&:active {
+			scale: var(--_btn-press, 0.93);
+		}
+
+		&:disabled,
+		&[aria-disabled="true"] {
+			opacity: 0.5;
+			pointer-events: none;
+		}
+		/* Busy blocks the pointer but keeps focus and full color, so the progress stays legible. */
+		&[aria-busy="true"] {
+			pointer-events: none;
+		}
+	}
+
+	/* Tones. A tone only sets the private variables; the rules above draw it. */
+	.rx-btn-primary {
+		--_bg: var(--primary);
+		--_bg-hover: color-mix(in oklab, var(--primary) 90%, transparent);
+		--_fg: var(--primary-foreground);
+	}
+	.rx-btn-secondary {
+		--_bg: var(--secondary);
+		--_bg-hover: color-mix(in oklab, var(--secondary) 80%, transparent);
+		--_fg: var(--secondary-foreground);
+		--_edge: var(--input);
+	}
+	.rx-btn-ghost {
+		--_fg: var(--muted-foreground);
+		--_fg-hover: var(--accent-foreground);
+		--_bg-hover: var(--accent);
+	}
+	.rx-btn-outline {
+		--_edge: var(--input);
+		--_bg-hover: var(--accent);
+	}
+
+	/* Sizes. */
+	.rx-btn-sm {
+		--_gap: 0.375rem;
+		--_icon: 14px;
+		height: 2rem;
+		padding-inline: 0.75rem;
+		font-size: 0.75rem;
+		line-height: 1rem;
+	}
+	.rx-btn-md {
+		height: 2.5rem;
+		padding-inline: 1.25rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+	}
+	.rx-btn-lg {
+		--_icon: 18px;
+		height: 3rem;
+		padding-inline: 1.5rem;
+		font-size: 1rem;
+		line-height: 1.5rem;
+	}
+	.rx-btn-icon {
+		width: 2rem;
+		height: 2rem;
+		padding: 0;
+		border-radius: var(--radius-item);
+	}
+
+	/* Ripple: a disc of the text color, spawned where the press landed, that spreads and fades. */
+	.rx-btn-ripples {
+		position: absolute;
+		inset: -1px;
+		z-index: -1;
+		overflow: hidden;
+		border-radius: inherit;
+		pointer-events: none;
+	}
+	.rx-btn-ripple {
+		position: absolute;
+		left: var(--_ripple-x);
+		top: var(--_ripple-y);
+		width: var(--_ripple-d);
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background: currentColor;
+		translate: -50% -50%;
+		opacity: 0;
+		animation: rx-btn-ripple 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+	@keyframes rx-btn-ripple {
+		from {
+			scale: 0.05;
+			opacity: 0.3;
+		}
+		to {
+			scale: 1;
+			opacity: 0;
+		}
+	}
+
+	/*
+	 * Stateful: status icons and the label trade places. A slot is always in the DOM and widens
+	 * in or folds away, so both directions are plain transitions: in on the label spring, out in
+	 * 160ms. The gap lives in the slot's own width, so a folded slot leaves no space.
+	 */
+	.rx-btn:has(> .rx-btn-text) {
+		gap: 0;
+	}
+	.rx-btn-slot {
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-start;
+		width: 0;
+		height: var(--_icon);
+		opacity: 0;
+		scale: 0.7;
+		filter: blur(6px);
+		transition:
+			width 160ms cubic-bezier(0.16, 1, 0.3, 1),
+			opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+			scale 160ms cubic-bezier(0.16, 1, 0.3, 1),
+			filter 160ms cubic-bezier(0.16, 1, 0.3, 1);
+
+		&[data-shown] {
+			width: calc(var(--_icon) + var(--_gap));
+			opacity: 1;
+			scale: 1;
+			filter: blur(0);
+			transition:
+				width var(--spring-label-duration) var(--spring-label),
+				opacity var(--spring-label-duration) var(--spring-label),
+				scale var(--spring-label-duration) var(--spring-label),
+				filter var(--spring-label-duration) var(--spring-label);
+		}
+		/* A slot after the label keeps its icon at the far edge, so the gap opens toward the text. */
+		.rx-btn-text ~ & {
+			justify-content: flex-end;
+		}
+	}
+
+	/* The three built-in glyphs, drawn as masks so they take the text color. */
+	.rx-btn-glyph {
+		flex: none;
+		width: var(--_icon);
+		height: var(--_icon);
+		background: currentColor;
+		mask: var(--_glyph) center / contain no-repeat;
+
+		&[data-glyph="spinner"] {
+			--_glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M12 3a9 9 0 1 0 9 9'/%3E%3C/svg%3E");
+			animation: rx-btn-spin 0.8s linear infinite;
+		}
+		&[data-glyph="check"] {
+			--_glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+		}
+		&[data-glyph="cross"] {
+			--_glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");
+		}
+	}
+	@keyframes rx-btn-spin {
+		to {
+			rotate: 1turn;
+		}
+	}
+
+	/*
+	 * The label box clips the rolling letters and eases its width to the measured width of the
+	 * incoming label, so the whole button resizes on the same spring as the letters.
+	 */
+	.rx-btn-text {
+		position: relative;
+		display: inline-flex;
+		width: var(--_btn-text-w, auto);
+		overflow: clip;
+		overflow-clip-margin: 2px;
+		transition: width var(--spring-label-duration) var(--spring-label);
+	}
+	.rx-btn-label {
+		display: inline-flex;
+		flex: none;
+		white-space: pre;
+
+		&[data-exit] {
+			position: absolute;
+			inset-block: 0;
+			inset-inline-start: 0;
+		}
+	}
+	.rx-btn-letter {
+		display: inline-block;
+
+		/* Each letter waits 25ms longer than the one before it; going out it waits half as long. */
+		[data-enter] > & {
+			animation: rx-btn-roll-in var(--spring-label-duration) var(--spring-label) both;
+			animation-delay: calc(var(--_i, 0) * 25ms);
+		}
+		[data-exit] > & {
+			animation: rx-btn-roll-out 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+			animation-delay: calc(var(--_i, 0) * 12.5ms);
+		}
+	}
+	@keyframes rx-btn-roll-in {
+		from {
+			translate: 0 105%;
+			opacity: 0;
+			filter: blur(6px);
+		}
+	}
+	@keyframes rx-btn-roll-out {
+		to {
+			translate: 0 -105%;
+			opacity: 0;
+			filter: blur(6px);
+		}
+	}
+	.rx-btn-sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/*
+	 * Metallic: a chrome gradient wider than the button drifts back and forth under a face inset
+	 * by 2px, so only a polished rim shows. Hovering sweeps a skewed highlight across the rim.
+	 */
+	.rx-btn.rx-btn-metal {
+		--_bg: transparent;
+		--_bg-hover: transparent;
+		--_fg: var(--foreground);
+		--_fg-hover: var(--foreground);
+		--_edge: transparent;
+		border: 0;
+		overflow: hidden;
+		box-shadow: var(--shadow-raised);
+
+		&.rx-btn-icon {
+			border-radius: var(--radius-button);
+		}
+		& > :is(.rx-btn-metal-rim, .rx-btn-metal-sheen, .rx-btn-metal-face, .rx-btn-metal-bevel) {
+			position: absolute;
+			pointer-events: none;
+		}
+	}
+	.rx-btn-metal-rim {
+		inset-block: 0;
+		left: -18%;
+		width: 136%;
+		z-index: -4;
+		border-radius: inherit;
+		background: linear-gradient(
+			105deg,
+			#141414 0%,
+			#767676 13%,
+			#f7f7f7 25%,
+			#575757 37%,
+			#0b0b0b 50%,
+			#a6a6a6 63%,
+			#ffffff 74%,
+			#444444 86%,
+			#141414 100%
+		);
+		animation: rx-btn-drift 8s cubic-bezier(0.77, 0, 0.175, 1) infinite;
+
+		[data-paused] > & {
+			animation-play-state: paused;
+		}
+	}
+	@keyframes rx-btn-drift {
+		50% {
+			translate: 13% 0;
+		}
+	}
+	.rx-btn-metal-sheen {
+		inset-block: 0;
+		left: -58%;
+		width: 52%;
+		z-index: -3;
+		background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5) 48%, transparent);
+		opacity: 0.5;
+		filter: blur(3px);
+		mix-blend-mode: screen;
+		transform: skewX(-12deg);
+		transition: translate 2.4s cubic-bezier(0.77, 0, 0.175, 1);
+
+		[data-paused] > & {
+			transition: none;
+		}
+	}
+	@media (hover: hover) and (pointer: fine) {
+		.rx-btn-metal:hover > .rx-btn-metal-sheen {
+			translate: 310% 0;
+		}
+	}
+	.rx-btn-metal-face,
+	.rx-btn-metal-bevel {
+		inset: 2px;
+		border-radius: inherit;
+	}
+	.rx-btn-metal-face {
+		z-index: -2;
+		background: var(--background);
+		transition: background-color 150ms var(--motion-ease);
+
+		.rx-btn-metal:hover > & {
+			background: color-mix(in oklab, var(--background) 94%, var(--foreground));
+		}
+	}
+	.rx-btn-metal-bevel {
+		z-index: -1;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.28),
+			inset 0 -1px 0 rgb(0 0 0 / 0.16);
+	}
+	@keyframes rx-btn-fade {
+		from {
+			opacity: 0;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/*
+	 * Motion off, or the OS asks for less. Hover no longer grows, the button no longer chases the
+	 * pointer, the chrome holds still and labels cross-fade (less motion) or simply swap (off).
+	 * Colors and the press still show (instantly when off), so every state stays visible.
+	 */
+	@media (prefers-reduced-motion: reduce) {
+		.rx-btn {
+			translate: none;
+		}
+		.rx-btn:hover:not(:active) {
+			scale: none;
+		}
+		.rx-btn-ripple {
+			display: none;
+		}
+		.rx-btn-metal-rim {
+			animation: none;
+		}
+		.rx-btn-metal-sheen {
+			transition: none;
+		}
+		.rx-btn-slot,
+		.rx-btn-slot[data-shown],
+		.rx-btn-text {
+			transition-property: opacity;
+			transition-duration: 150ms;
+		}
+		.rx-btn-slot {
+			scale: none;
+			filter: none;
+		}
+		[data-enter] > .rx-btn-letter,
+		[data-exit] > .rx-btn-letter {
+			animation-name: rx-btn-fade;
+			animation-duration: 150ms;
+			animation-delay: 0ms;
+		}
+		[data-exit] > .rx-btn-letter {
+			animation-direction: reverse;
+		}
+	}
+	[data-motion="off"] {
+		& .rx-btn {
+			translate: none;
+			transition-duration: 0ms;
+		}
+		& .rx-btn:hover:not(:active) {
+			scale: none;
+		}
+		& .rx-btn-slot,
+		& .rx-btn-slot[data-shown],
+		& .rx-btn-text {
+			transition: none;
+		}
+		& .rx-btn-ripple,
+		& .rx-btn-label[data-exit] {
+			display: none;
+		}
+		& .rx-btn-letter,
+		& .rx-btn-metal-rim {
+			animation: none;
+		}
+		& .rx-btn-metal-sheen {
+			transition: none;
+		}
+	}
+}

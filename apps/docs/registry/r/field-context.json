@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "field-context",
+  "title": "Field context",
+  "description": "Shares a Field's id, hint and error with the control inside it.",
+  "files": [
+    {
+      "path": "registry/rabtx/ui/field-context.ts",
+      "content": "import { createContext } from \"react\";\n\n/** What a Field tells the control inside it, so the label, hint and error are wired up for you. */\nexport type FieldState = { id: string; describedBy?: string; invalid: boolean };\n\nexport const FieldContext = createContext<FieldState | null>(null);\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

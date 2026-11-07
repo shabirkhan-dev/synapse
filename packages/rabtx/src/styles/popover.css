@@ -1,0 +1,246 @@
+/*
+ * Popover: the anchored panel under Popover, DropdownMenu and ContextMenu. Two elements:
+ *
+ *   .rx-popover          the native [popover]. The browser puts it in the top layer and closes it
+ *                        on a press outside or Escape. CSS anchor positioning places it on a side
+ *                        of its anchor (`data-side`, `data-align`) and `position-try-fallbacks`
+ *                        flips it when it would not fit. The component reads which way it flipped
+ *                        as it opens and writes `data-flip` (`block`, `inline` or both).
+ *   .rx-popover-surface  the panel, drawn on the shared raised surface (control.css). It unfolds
+ *                        from the corner or edge that touches the anchor: `--_ax` / `--_ay` name
+ *                        that point (as a share of the panel) for the preferred side, and
+ *                        `data-flip` mirrors it. A clip reveal and a small scale run from there on
+ *                        the unfold spring, `@starting-style` gives the first frame, and closing
+ *                        retraces it on a short ease while `display` and `overlay` (allow-discrete)
+ *                        keep the panel rendered until it has gone.
+ *
+ * Where anchor positioning is missing the popover keeps the browser's own placement (centered in
+ * the viewport); without JavaScript it unfolds from the preferred side.
+ * Colors come only from the theme: --popover / --popover-foreground, the surface edge tokens,
+ * --muted-foreground for the description. No cast shadow: the edge and ring separate it.
+ */
+@layer components {
+	.rx-popover {
+		--_offset: 8px;
+		--_exit: 150ms;
+		--_ax: 50%;
+		--_ay: 0%;
+
+		box-sizing: border-box;
+		max-inline-size: calc(100vw - 16px);
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		overflow: visible;
+		outline: none;
+		transition:
+			display var(--_exit) allow-discrete,
+			overlay var(--_exit) allow-discrete;
+	}
+
+	@supports (position-area: bottom) {
+		.rx-popover {
+			inset: auto;
+			margin: 0;
+			position-area: bottom;
+			margin-block-start: var(--_offset);
+			position-try-fallbacks:
+				flip-block,
+				flip-inline,
+				flip-block flip-inline;
+		}
+		.rx-popover[data-side="top"] {
+			--_ay: 100%;
+			position-area: top;
+			margin: 0 0 var(--_offset);
+		}
+		.rx-popover[data-side="right"] {
+			--_ax: 0%;
+			--_ay: 50%;
+			position-area: right;
+			margin: 0 0 0 var(--_offset);
+			position-try-fallbacks:
+				flip-inline,
+				flip-block,
+				flip-block flip-inline;
+		}
+		.rx-popover[data-side="left"] {
+			--_ax: 100%;
+			--_ay: 50%;
+			position-area: left;
+			margin: 0 var(--_offset) 0 0;
+			position-try-fallbacks:
+				flip-inline,
+				flip-block,
+				flip-block flip-inline;
+		}
+		/* Along the side: the start edge (left, or top) or the end edge lines up with the anchor's. */
+		.rx-popover:is([data-side="top"], [data-side="bottom"]) {
+			&[data-align="start"] {
+				--_ax: 0%;
+			}
+			&[data-align="end"] {
+				--_ax: 100%;
+			}
+		}
+		.rx-popover[data-side="bottom"][data-align="start"],
+		.rx-popover:not([data-side])[data-align="start"] {
+			position-area: bottom span-right;
+		}
+		.rx-popover[data-side="bottom"][data-align="end"],
+		.rx-popover:not([data-side])[data-align="end"] {
+			position-area: bottom span-left;
+		}
+		.rx-popover[data-side="top"][data-align="start"] {
+			position-area: top span-right;
+		}
+		.rx-popover[data-side="top"][data-align="end"] {
+			position-area: top span-left;
+		}
+		.rx-popover:is([data-side="left"], [data-side="right"]) {
+			&[data-align="start"] {
+				--_ay: 0%;
+			}
+			&[data-align="end"] {
+				--_ay: 100%;
+			}
+		}
+		.rx-popover[data-side="right"][data-align="start"] {
+			position-area: right span-bottom;
+		}
+		.rx-popover[data-side="right"][data-align="end"] {
+			position-area: right span-top;
+		}
+		.rx-popover[data-side="left"][data-align="start"] {
+			position-area: left span-bottom;
+		}
+		.rx-popover[data-side="left"][data-align="end"] {
+			position-area: left span-top;
+		}
+	}
+
+	.rx-popover-surface {
+		--_fill: var(--popover);
+		--_flat: var(--border);
+		--_ring: var(--surface-ring);
+		--_edge-a: var(--surface-edge-top);
+		--_edge-b: var(--surface-edge-bottom);
+		--_sheen: var(--surface-sheen);
+		--_shade: var(--surface-shade);
+		/* The point that touches the anchor, mirrored below when the popover has flipped. */
+		--_ox: var(--_ax);
+		--_oy: var(--_ay);
+		/* Closed: a sliver of the panel at that point. */
+		--_from: inset(
+			calc(var(--_oy) * 0.86) calc((100% - var(--_ox)) * 0.86) calc((100% - var(--_oy)) * 0.86)
+				calc(var(--_ox) * 0.86) round var(--radius-box)
+		);
+
+		position: relative;
+		box-sizing: border-box;
+		max-inline-size: calc(100vw - 16px);
+		max-block-size: calc(100dvh - 16px);
+		overflow: auto;
+		overscroll-behavior: contain;
+		border-radius: var(--radius-box);
+		color: var(--popover-foreground);
+		font-family: var(--font-sans);
+		transform-origin: var(--_ox) var(--_oy);
+
+		/* Closed, and the frame it leaves to. */
+		opacity: 0;
+		scale: 0.96;
+		clip-path: var(--_from);
+		transition:
+			opacity var(--_exit) var(--motion-ease),
+			scale var(--_exit) var(--motion-ease),
+			clip-path var(--_exit) var(--motion-ease);
+	}
+	.rx-popover[data-flip~="block"] > .rx-popover-surface {
+		--_oy: calc(100% - var(--_ay));
+	}
+	.rx-popover[data-flip~="inline"] > .rx-popover-surface {
+		--_ox: calc(100% - var(--_ax));
+	}
+
+	/*
+	 * Open: the whole panel (and the 1px ring just outside it), on the unfold spring. The fade and
+	 * the scale start from `@starting-style`. The reveal is a keyframe instead, because its first
+	 * frame reads the unfold point through var(): the flip is only known once the panel is laid out,
+	 * a moment after a transition would have fixed its start.
+	 */
+	.rx-popover:popover-open > .rx-popover-surface {
+		opacity: 1;
+		scale: 1;
+		clip-path: inset(-1px round calc(var(--radius-box) + 1px));
+		animation: rx-popover-reveal var(--spring-unfold-duration) var(--spring-unfold);
+		transition:
+			opacity 90ms linear,
+			scale var(--spring-unfold-duration) var(--spring-unfold);
+	}
+	@starting-style {
+		.rx-popover:popover-open > .rx-popover-surface {
+			opacity: 0;
+			scale: 0.96;
+		}
+	}
+	@keyframes rx-popover-reveal {
+		from {
+			clip-path: var(--_from);
+		}
+	}
+
+	/* The Popover's own panel: a width, padding and type. Menus bring their own. */
+	.rx-popover-content {
+		inline-size: 18rem;
+		padding: 16px;
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+	}
+	.rx-popover-header {
+		display: grid;
+		gap: 2px;
+		margin-block-end: 12px;
+	}
+	.rx-popover-title {
+		margin: 0;
+		font-size: 14px;
+		line-height: 20px;
+		font-weight: 510;
+		letter-spacing: -0.15px;
+		color: var(--popover-foreground);
+	}
+	.rx-popover-description {
+		margin: 0;
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+		color: var(--muted-foreground);
+		text-wrap: pretty;
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/* Less motion: the panel only fades, in place. */
+	@media (prefers-reduced-motion: reduce) {
+		.rx-popover-surface,
+		.rx-popover:popover-open > .rx-popover-surface {
+			scale: 1;
+			clip-path: none;
+			animation: none;
+			transition: opacity 120ms linear;
+		}
+		.rx-popover {
+			transition-duration: 120ms;
+		}
+	}
+	/* Motion off: it appears and goes at once. */
+	[data-motion="off"] .rx-popover,
+	[data-motion="off"] .rx-popover-surface,
+	[data-motion="off"] .rx-popover:popover-open > .rx-popover-surface {
+		animation: none;
+		transition: none;
+	}
+}

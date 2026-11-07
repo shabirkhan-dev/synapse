@@ -1,0 +1,83 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "textarea",
+  "title": "Textarea",
+  "description": "A native textarea that grows with its text.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/textarea.styles.ts",
+      "content": "/**\n * The class for a Textarea. The look lives in `textarea.css` (your global CSS, when installed from\n * the registry), so plain HTML gets the same field: `<textarea class=\"rx-textarea\"></textarea>`.\n */\nexport const textareaClass = \"rx-textarea\";\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/textarea.tsx",
+      "content": "\"use client\";\n\nimport { type Ref, type TextareaHTMLAttributes, useContext } from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport { textareaClass } from \"./textarea.styles\";\n\nexport type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {\n\tref?: Ref<HTMLTextAreaElement>;\n};\n\n/**\n * A native `<textarea>` drawn as a field. Put it in a `Field` to get a label, a hint and an error\n * wired up, or give it an `aria-label`. `aria-invalid` turns the edge red.\n */\nexport function Textarea({ className, ...rest }: TextareaProps) {\n\tconst field = useContext(FieldContext);\n\n\treturn (\n\t\t<textarea\n\t\t\tid={field?.id}\n\t\t\taria-describedby={field?.describedBy}\n\t\t\taria-invalid={field?.invalid || undefined}\n\t\t\t{...rest}\n\t\t\tclassName={cn(textareaClass, className)}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-textarea": {
+        "box-sizing": "border-box",
+        "display": "block",
+        "width": "100%",
+        "min-height": "6rem",
+        "field-sizing": "content",
+        "margin": "0",
+        "padding": "0.5rem 0.75rem",
+        "border": "1px solid var(--input)",
+        "border-radius": "var(--radius-box)",
+        "background-color": "var(--card)",
+        "color": "var(--card-foreground)",
+        "font": "inherit",
+        "font-family": "var(--font-sans)",
+        "font-size": "0.875rem",
+        "line-height": "1.25rem",
+        "letter-spacing": "-0.15px",
+        "resize": "vertical",
+        "outline": "none",
+        "transition": "border-color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease)"
+      },
+      ".rx-textarea::placeholder": {
+        "color": "var(--subtle-foreground)",
+        "opacity": "1"
+      },
+      "@media (hover: hover)": {
+        ".rx-textarea:hover": {
+          "border-color": "color-mix(in oklab, var(--foreground) 24%, var(--card))"
+        }
+      },
+      ".rx-textarea:focus-visible": {
+        "border-color": "var(--ring)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent)"
+      },
+      ".rx-textarea:is([aria-invalid=\"true\"], :user-invalid)": {
+        "border-color": "var(--destructive)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent)"
+      },
+      ".rx-textarea:read-only:not(:disabled)": {
+        "background-color": "color-mix(in oklab, var(--muted) 50%, var(--card))"
+      },
+      ".rx-textarea:disabled": {
+        "opacity": "0.5",
+        "cursor": "not-allowed"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-textarea": {
+          "transition-duration": "0ms"
+        }
+      },
+      "[data-motion=\"off\"] .rx-textarea": {
+        "transition-duration": "0ms"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

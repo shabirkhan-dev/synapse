@@ -1,0 +1,23 @@
+---
+title: Blocks
+description: Whole screens made only of the @rabtx/ui components. Install one and own every line.
+---
+
+A block is a ready screen, such as a sign-up flow, composed from the components on the other
+pages: Card, Field, Input, Select, Checkbox, Switch, Tabs, Dialog and Button. It adds no new primitives, only
+the layout, the flow between steps and a little CSS of its own for what is unique to it.
+
+- **In this monorepo**, a block lives in `packages/rabtx/src/blocks/<name>` and is imported from
+  `@rabtx/ui/blocks/<name>`. Its CSS is part of `@rabtx/ui/styles.css`.
+- **In any shadcn project**, a block is a `registry:block` item. `npx shadcn@latest add` copies
+  its files to `components/blocks/<name>` and pulls in every component it uses as a registry
+  dependency, so a fresh project gets all of it in one command.
+- **Nothing is sent anywhere.** A block takes callbacks (`onSubmit` and friends) for your API and,
+  without them, only waits a moment so the flow can be tried.
+
+## Blocks
+
+- [Sign-up](/docs/ui/blocks/signup): a three-step sign-up and a compact sign-in.
+- [Command palette](/docs/ui/blocks/command): a ⌘K palette with search, pages and recent items.
+- [Settings](/docs/ui/blocks/settings): profile, account, notifications, appearance and a danger
+  zone, with an unsaved changes bar.

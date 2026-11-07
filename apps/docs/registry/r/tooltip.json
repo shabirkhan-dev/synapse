@@ -1,0 +1,242 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tooltip",
+  "title": "Tooltip",
+  "description": "A hint popover placed by CSS anchor positioning, with a provider for delays, flipping, an arrow and a shortcut key cap. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/tooltip.styles.ts",
+      "content": "export type TooltipSide = \"top\" | \"right\" | \"bottom\" | \"left\";\nexport type TooltipAlign = \"start\" | \"center\" | \"end\";\n\nexport const tooltipSides = [\n\t\"top\",\n\t\"right\",\n\t\"bottom\",\n\t\"left\",\n] as const satisfies readonly TooltipSide[];\nexport const tooltipAligns = [\"start\", \"center\", \"end\"] as const satisfies readonly TooltipAlign[];\n\n/**\n * The class list for a tooltip. The look, the placement and the motion live in `tooltip.css`\n * (your global CSS, when installed from the registry), so plain HTML gets the same tooltip from\n * these names. The placement is CSS anchor positioning: the trigger names an anchor, the tooltip\n * points `position-anchor` at it and `data-side` / `data-align` pick the `position-area`:\n *\n *   <button interestfor=\"tip\" style=\"anchor-name: --tip\">Save</button>\n *   <span id=\"tip\" popover=\"hint\" role=\"tooltip\" class=\"rx-tooltip\"\n *     data-side=\"top\" data-align=\"center\" style=\"position-anchor: --tip\">Save the draft</span>\n */\nexport function tooltipClass() {\n\treturn \"rx-tooltip\";\n}\n\n/** Class names for the parts of a tooltip, for markup written by hand. */\nexport const tooltipParts = {\n\t/** The pointer at the trigger: a small rotated square, oriented by `data-placed`. */\n\tarrow: \"rx-tooltip-arrow\",\n\t/** A keyboard shortcut inside the label, such as ⌘B. */\n\tkbd: \"rx-tooltip-kbd\",\n} as const;\n\n/** A CSS anchor name from a React id (`«r1»`, `:r1:` or `_r_1_`), which may hold any character. */\nexport function anchorName(id: string) {\n\treturn `--_tooltip-${id.replace(/[^\\w-]/g, \"\")}`;\n}\n\ntype Box = { left: number; top: number; right: number; bottom: number };\n\n/**\n * The side the tooltip actually ended up on. CSS may have flipped it (`position-try-fallbacks`)\n * when the preferred side had no room, and CSS does not say which fallback it chose, so the\n * component reads it from the two boxes once the tooltip is shown. The arrow and the\n * `transform-origin` follow it.\n */\nexport function placedSide(trigger: Box, content: Box, preferred: TooltipSide): TooltipSide {\n\tconst triggerX = (trigger.left + trigger.right) / 2;\n\tconst triggerY = (trigger.top + trigger.bottom) / 2;\n\tconst contentX = (content.left + content.right) / 2;\n\tconst contentY = (content.top + content.bottom) / 2;\n\tif (preferred === \"top\" || preferred === \"bottom\") return contentY < triggerY ? \"top\" : \"bottom\";\n\treturn contentX < triggerX ? \"left\" : \"right\";\n}\n\n/**\n * Where the arrow sits along the tooltip's edge, in px from its start (left or top): under the\n * trigger's center, kept clear of the rounded corners.\n */\nexport function arrowOffset(\n\ttrigger: Box,\n\tcontent: Box,\n\tside: TooltipSide,\n\t{ arrow = 10, inset = 8 }: { arrow?: number; inset?: number } = {},\n) {\n\tconst vertical = side === \"top\" || side === \"bottom\";\n\tconst center = vertical ? (trigger.left + trigger.right) / 2 : (trigger.top + trigger.bottom) / 2;\n\tconst start = vertical ? content.left : content.top;\n\tconst length = vertical ? content.right - content.left : content.bottom - content.top;\n\tconst at = center - start - arrow / 2;\n\treturn Math.round(Math.max(inset, Math.min(at, length - inset - arrow)));\n}\n\n/**\n * Placement where CSS anchor positioning is missing (Firefox below 147, Safari below 26): the same\n * side, alignment and offset, flipped to the other side when it does not fit and kept `margin`\n * inside the viewport. Returns the viewport coordinates of the tooltip's top left corner.\n */\nexport function fallbackPosition(\n\ttrigger: Box,\n\tsize: { width: number; height: number },\n\tviewport: { width: number; height: number },\n\t{\n\t\tside,\n\t\talign,\n\t\toffset,\n\t\tmargin = 8,\n\t}: { side: TooltipSide; align: TooltipAlign; offset: number; margin?: number },\n): { x: number; y: number; side: TooltipSide } {\n\tconst fits: Record<TooltipSide, boolean> = {\n\t\ttop: trigger.top - offset - size.height >= margin,\n\t\tbottom: trigger.bottom + offset + size.height <= viewport.height - margin,\n\t\tleft: trigger.left - offset - size.width >= margin,\n\t\tright: trigger.right + offset + size.width <= viewport.width - margin,\n\t};\n\tconst opposite: Record<TooltipSide, TooltipSide> = {\n\t\ttop: \"bottom\",\n\t\tbottom: \"top\",\n\t\tleft: \"right\",\n\t\tright: \"left\",\n\t};\n\tconst placed = fits[side] || !fits[opposite[side]] ? side : opposite[side];\n\tconst vertical = placed === \"top\" || placed === \"bottom\";\n\tconst along = (start: number, end: number, extent: number) =>\n\t\talign === \"start\" ? start : align === \"end\" ? end - extent : (start + end - extent) / 2;\n\tconst clamp = (value: number, extent: number, room: number) =>\n\t\tMath.max(margin, Math.min(value, room - margin - extent));\n\tconst x = vertical\n\t\t? clamp(along(trigger.left, trigger.right, size.width), size.width, viewport.width)\n\t\t: placed === \"left\"\n\t\t\t? trigger.left - offset - size.width\n\t\t\t: trigger.right + offset;\n\tconst y = vertical\n\t\t? placed === \"top\"\n\t\t\t? trigger.top - offset - size.height\n\t\t\t: trigger.bottom + offset\n\t\t: clamp(along(trigger.top, trigger.bottom, size.height), size.height, viewport.height);\n\treturn { x: Math.round(x), y: Math.round(y), side: placed };\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/tooltip.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ButtonHTMLAttributes,\n\ttype CSSProperties,\n\tcloneElement,\n\tcreateContext,\n\ttype FocusEvent,\n\ttype HTMLAttributes,\n\tisValidElement,\n\ttype MouseEvent,\n\ttype PointerEvent,\n\ttype ReactElement,\n\ttype ReactNode,\n\ttype Ref,\n\ttype RefObject,\n\tuse,\n\tuseCallback,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n\tuseSyncExternalStore,\n} from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\tanchorName,\n\tarrowOffset,\n\tfallbackPosition,\n\tplacedSide,\n\ttype TooltipAlign,\n\ttype TooltipSide,\n\ttooltipClass,\n\ttooltipParts,\n} from \"./tooltip.styles\";\n\n/** How long the pointer may take to cross from the trigger onto the tooltip (and back). */\nconst GRACE_MS = 100;\n/** The room an arrow adds to the gap (see `--_gap` in tooltip.css). */\nconst ARROW_PX = 6;\nconst DEFAULT_OFFSET = 6;\n\ntype Group = {\n\t/** When a tooltip of this provider last closed: inside the skip delay the next one is instant. */\n\tclosedAt: number;\n};\n\ntype ProviderValue = { delayDuration: number; skipDelayDuration: number; group: Group };\n\nconst ProviderContext = createContext<ProviderValue>({\n\tdelayDuration: 120,\n\tskipDelayDuration: 300,\n\tgroup: { closedAt: Number.NEGATIVE_INFINITY },\n});\n\n/** Only one tooltip shows at a time: a hovered one replaces a keyboard-focused one and back. */\nlet shown: { close: () => void } | null = null;\n\nexport type TooltipProviderProps = {\n\t/** Hover time before a tooltip opens, in ms. Keyboard focus opens at once. Default 120. */\n\tdelayDuration?: number;\n\t/**\n\t * After a tooltip closes, the next one opens with no delay for this long, in ms, so moving\n\t * along a toolbar feels instant after the first label. Default 300.\n\t */\n\tskipDelayDuration?: number;\n\tchildren?: ReactNode;\n};\n\n/** Shared timing for the tooltips inside it. Optional: a tooltip works without one. */\nexport function TooltipProvider({\n\tdelayDuration = 120,\n\tskipDelayDuration = 300,\n\tchildren,\n}: TooltipProviderProps) {\n\tconst [group] = useState<Group>(() => ({ closedAt: Number.NEGATIVE_INFINITY }));\n\tconst value = useMemo(\n\t\t() => ({ delayDuration, skipDelayDuration, group }),\n\t\t[delayDuration, skipDelayDuration, group],\n\t);\n\treturn <ProviderContext value={value}>{children}</ProviderContext>;\n}\n\ntype TriggerHandlers = {\n\tonPointerEnter: (event: PointerEvent<HTMLElement>) => void;\n\tonPointerLeave: (event: PointerEvent<HTMLElement>) => void;\n\tonPointerDown: (event: PointerEvent<HTMLElement>) => void;\n\tonClick: (event: MouseEvent<HTMLElement>) => void;\n\tonFocus: (event: FocusEvent<HTMLElement>) => void;\n\tonBlur: (event: FocusEvent<HTMLElement>) => void;\n};\n\ntype TooltipContextValue = {\n\topen: boolean;\n\tcontentId: string;\n\tanchor: string;\n\tasLabel: boolean;\n\thasContent: boolean;\n\t/** TooltipContent registers itself, so the trigger only points at a tooltip that exists. */\n\tregister: (mounted: boolean) => void;\n\ttriggerRef: RefObject<HTMLElement | null>;\n\tcontentRef: RefObject<HTMLElement | null>;\n\ttrigger: TriggerHandlers;\n\tcontent: {\n\t\tonPointerEnter: (event: PointerEvent<HTMLElement>) => void;\n\t\tonPointerLeave: (event: PointerEvent<HTMLElement>) => void;\n\t};\n\t/** Records a state the browser reached on its own (light dismiss, an interest invoker). */\n\tsync: (open: boolean) => void;\n};\n\nconst TooltipContext = createContext<TooltipContextValue | null>(null);\n\nfunction useTooltip(part: string) {\n\tconst context = use(TooltipContext);\n\tif (!context) throw new Error(`${part} must be used inside <Tooltip>`);\n\treturn context;\n}\n\n/** Writes a node to every ref it is given (an object ref, a callback ref, or none). */\nfunction mergeRefs<T>(...refs: (Ref<T> | undefined)[]) {\n\treturn (node: T | null) => {\n\t\tfor (const ref of refs) {\n\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\telse if (ref) ref.current = node;\n\t\t}\n\t};\n}\n\n/** Runs the consumer's handler first; ours runs unless it called `preventDefault()`. */\nfunction compose<E extends { defaultPrevented: boolean }>(\n\ttheirs: ((event: E) => void) | undefined,\n\tours: (event: E) => void,\n) {\n\treturn (event: E) => {\n\t\ttheirs?.(event);\n\t\tif (!event.defaultPrevented) ours(event);\n\t};\n}\n\nconst noop = () => () => {};\n/** False on the server and while hydrating, true after: React keeps both renders consistent. */\nconst useHydrated = () =>\n\tuseSyncExternalStore(\n\t\tnoop,\n\t\t() => true,\n\t\t() => false,\n\t);\n\nlet anchoring: boolean | undefined;\n/** Whether CSS anchor positioning places the tooltip, or the component has to. */\nfunction anchorSupported() {\n\tanchoring ??= typeof CSS !== \"undefined\" && CSS.supports(\"position-area\", \"top\");\n\treturn anchoring;\n}\n\n/** `:popover-open` is an invalid selector where the Popover API is missing. */\nfunction isShown(element: HTMLElement) {\n\ttry {\n\t\treturn element.matches(\":popover-open\");\n\t} catch {\n\t\treturn element.dataset.state === \"open\";\n\t}\n}\n\nexport type TooltipProps = {\n\t/** Controlled open state; pair it with `onOpenChange`. */\n\topen?: boolean;\n\t/** The state on first render, when uncontrolled. */\n\tdefaultOpen?: boolean;\n\t/** Called with the next state, whatever opened or closed it. */\n\tonOpenChange?: (open: boolean) => void;\n\t/** Hover time before it opens, in ms. Defaults to the provider's `delayDuration`. */\n\tdelayDuration?: number;\n\t/** Never show, for example while the label it repeats is already on screen. */\n\tdisabled?: boolean;\n\t/**\n\t * Use the tooltip as the trigger's accessible name instead of its description: for an\n\t * icon-only button whose only label is the tooltip.\n\t */\n\tasLabel?: boolean;\n\tchildren?: ReactNode;\n};\n\n/**\n * Holds one tooltip's state and timing and wires its trigger to its content. It opens on hover\n * after the delay (at once inside the provider's skip delay), on keyboard focus at once, and on a\n * tap on touch screens; it closes when the pointer leaves both the trigger and the tooltip, on\n * blur, on Escape, on a press, and when the window loses focus.\n */\nexport function Tooltip({\n\topen: openProp,\n\tdefaultOpen = false,\n\tonOpenChange,\n\tdelayDuration,\n\tdisabled = false,\n\tasLabel = false,\n\tchildren,\n}: TooltipProps) {\n\tconst provider = use(ProviderContext);\n\tconst id = useId();\n\tconst [internal, setInternal] = useState(defaultOpen);\n\t// Assume a TooltipContent until the first layout says otherwise, so the server markup already\n\t// links the trigger to it.\n\tconst [hasContent, setHasContent] = useState(true);\n\tconst contentMounted = useRef(false);\n\tconst controlled = openProp !== undefined;\n\tconst open = controlled ? openProp : internal;\n\tconst triggerRef = useRef<HTMLElement>(null);\n\tconst contentRef = useRef<HTMLElement>(null);\n\n\t// Everything the handlers read, current between renders.\n\tconst latest = useRef({\n\t\topen,\n\t\tcontrolled,\n\t\tonOpenChange,\n\t\tdisabled,\n\t\tdelay: delayDuration ?? provider.delayDuration,\n\t\tskip: provider.skipDelayDuration,\n\t\tgroup: provider.group,\n\t});\n\tuseLayoutEffect(() => {\n\t\tlatest.current = {\n\t\t\topen,\n\t\t\tcontrolled,\n\t\t\tonOpenChange,\n\t\t\tdisabled,\n\t\t\tdelay: delayDuration ?? provider.delayDuration,\n\t\t\tskip: provider.skipDelayDuration,\n\t\t\tgroup: provider.group,\n\t\t};\n\t});\n\n\tconst openTimer = useRef<ReturnType<typeof setTimeout>>(undefined);\n\tconst closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);\n\t/** A mouse press hides the label until the pointer leaves the trigger. */\n\tconst suppressed = useRef(false);\n\t/** Opened by keyboard focus: the pointer leaving does not close it, blur does. */\n\tconst byFocus = useRef(false);\n\t/** The pointer type and open state at the last press, so a tap can toggle. */\n\tconst press = useRef<{ type: string; wasOpen: boolean } | null>(null);\n\tconst self = useRef({ close: () => {} });\n\n\tconst clearTimers = useCallback(() => {\n\t\tclearTimeout(openTimer.current);\n\t\tclearTimeout(closeTimer.current);\n\t}, []);\n\n\tconst commit = useCallback((next: boolean) => {\n\t\tconst state = latest.current;\n\t\tif (state.open === next) return;\n\t\tstate.open = next;\n\t\tif (!state.controlled) setInternal(next);\n\t\tstate.onOpenChange?.(next);\n\t}, []);\n\n\tconst show = useCallback(() => {\n\t\tclearTimers();\n\t\tif (latest.current.disabled) return;\n\t\tif (shown && shown !== self.current) shown.close();\n\t\tshown = self.current;\n\t\tcommit(true);\n\t}, [clearTimers, commit]);\n\n\tconst hide = useCallback(() => {\n\t\tclearTimers();\n\t\tbyFocus.current = false;\n\t\tif (latest.current.open) latest.current.group.closedAt = Date.now();\n\t\tif (shown === self.current) shown = null;\n\t\tcommit(false);\n\t}, [clearTimers, commit]);\n\n\tuseLayoutEffect(() => {\n\t\tself.current.close = hide;\n\t}, [hide]);\n\n\tconst requestShow = useCallback(() => {\n\t\tclearTimers();\n\t\tconst state = latest.current;\n\t\tif (state.open || state.disabled) return;\n\t\t// Warm: another label is still showing, or one closed a moment ago.\n\t\tconst warm =\n\t\t\t(shown !== null && shown !== self.current) || Date.now() - state.group.closedAt < state.skip;\n\t\tif (warm || state.delay <= 0) show();\n\t\telse openTimer.current = setTimeout(show, state.delay);\n\t}, [clearTimers, show]);\n\n\tconst requestHide = useCallback(() => {\n\t\tclearTimeout(openTimer.current);\n\t\tclearTimeout(closeTimer.current);\n\t\tif (!latest.current.open) return;\n\t\tcloseTimer.current = setTimeout(hide, GRACE_MS);\n\t}, [hide]);\n\n\tconst sync = useCallback(\n\t\t(next: boolean) => {\n\t\t\tif (next === latest.current.open) return;\n\t\t\tif (next) show();\n\t\t\telse hide();\n\t\t},\n\t\t[show, hide],\n\t);\n\n\t// While open: Escape closes it (and only it, so a dialog around it stays), a press outside\n\t// closes it (a tap elsewhere on a phone), and so does the window losing focus.\n\tuseEffect(() => {\n\t\tif (!open) return;\n\t\tconst onKeyDown = (event: KeyboardEvent) => {\n\t\t\tif (event.key !== \"Escape\" || event.defaultPrevented) return;\n\t\t\t// Cancelling the key stops the browser's close request, which would also close a dialog.\n\t\t\tevent.preventDefault();\n\t\t\thide();\n\t\t};\n\t\tconst onPointerDown = (event: globalThis.PointerEvent) => {\n\t\t\tconst target = event.target as Node | null;\n\t\t\tif (triggerRef.current?.contains(target) || contentRef.current?.contains(target)) return;\n\t\t\thide();\n\t\t};\n\t\tdocument.addEventListener(\"keydown\", onKeyDown);\n\t\tdocument.addEventListener(\"pointerdown\", onPointerDown, true);\n\t\twindow.addEventListener(\"blur\", hide);\n\t\treturn () => {\n\t\t\tdocument.removeEventListener(\"keydown\", onKeyDown);\n\t\t\tdocument.removeEventListener(\"pointerdown\", onPointerDown, true);\n\t\t\twindow.removeEventListener(\"blur\", hide);\n\t\t};\n\t}, [open, hide]);\n\n\t// Children's layout effects run first: by now a TooltipContent has registered, if there is one.\n\tuseLayoutEffect(() => {\n\t\tif (!contentMounted.current) setHasContent(false);\n\t}, []);\n\n\tuseEffect(() => {\n\t\tif (disabled) hide();\n\t}, [disabled, hide]);\n\n\tuseEffect(\n\t\t() => () => {\n\t\t\tclearTimers();\n\t\t\tif (shown === self.current) shown = null;\n\t\t},\n\t\t[clearTimers],\n\t);\n\n\tconst trigger = useMemo<TriggerHandlers>(\n\t\t() => ({\n\t\t\tonPointerEnter: (event) => {\n\t\t\t\t// A finger has no hover; a tap toggles instead (onClick).\n\t\t\t\tif (event.pointerType === \"touch\") return;\n\t\t\t\tclearTimeout(closeTimer.current);\n\t\t\t\tif (!suppressed.current) requestShow();\n\t\t\t},\n\t\t\tonPointerLeave: (event) => {\n\t\t\t\tif (event.pointerType === \"touch\") return;\n\t\t\t\tsuppressed.current = false;\n\t\t\t\tif (byFocus.current) {\n\t\t\t\t\tclearTimeout(openTimer.current);\n\t\t\t\t\treturn;\n\t\t\t\t}\n\t\t\t\trequestHide();\n\t\t\t},\n\t\t\tonPointerDown: (event) => {\n\t\t\t\tpress.current = { type: event.pointerType, wasOpen: latest.current.open };\n\t\t\t\tif (event.pointerType !== \"touch\") {\n\t\t\t\t\tsuppressed.current = true;\n\t\t\t\t\thide();\n\t\t\t\t}\n\t\t\t},\n\t\t\tonClick: () => {\n\t\t\t\t// Only a tap toggles. A mouse press already closed it; a key press has no pointer.\n\t\t\t\tconst last = press.current;\n\t\t\t\tpress.current = null;\n\t\t\t\tif (last?.type !== \"touch\") return;\n\t\t\t\tif (last.wasOpen) hide();\n\t\t\t\telse show();\n\t\t\t},\n\t\t\tonFocus: (event) => {\n\t\t\t\t// A focus from a mouse press is not a request to read the label; a keyboard focus is.\n\t\t\t\tif (!event.currentTarget.matches(\":focus-visible\")) return;\n\t\t\t\tbyFocus.current = true;\n\t\t\t\tshow();\n\t\t\t},\n\t\t\tonBlur: () => hide(),\n\t\t}),\n\t\t[requestShow, requestHide, show, hide],\n\t);\n\n\tconst content = useMemo(\n\t\t() => ({\n\t\t\tonPointerEnter: () => clearTimeout(closeTimer.current),\n\t\t\tonPointerLeave: (event: PointerEvent<HTMLElement>) => {\n\t\t\t\tif (event.pointerType === \"touch\" || byFocus.current) return;\n\t\t\t\trequestHide();\n\t\t\t},\n\t\t}),\n\t\t[requestHide],\n\t);\n\n\tconst register = useCallback((mounted: boolean) => {\n\t\tcontentMounted.current = mounted;\n\t\tsetHasContent(mounted);\n\t}, []);\n\n\tconst value = useMemo<TooltipContextValue>(\n\t\t() => ({\n\t\t\topen,\n\t\t\tcontentId: `${id}-tooltip`,\n\t\t\tanchor: anchorName(id),\n\t\t\tasLabel,\n\t\t\thasContent,\n\t\t\tregister,\n\t\t\ttriggerRef,\n\t\t\tcontentRef,\n\t\t\ttrigger,\n\t\t\tcontent,\n\t\t\tsync,\n\t\t}),\n\t\t[open, id, asLabel, hasContent, register, trigger, content, sync],\n\t);\n\n\treturn <TooltipContext value={value}>{children}</TooltipContext>;\n}\n\nconst LAZY = Symbol.for(\"react.lazy\");\n\n/**\n * An element a Server Component passes down can arrive as a lazy reference to a chunk that is still\n * streaming. Unwrap it, so `asChild` sees the element itself on the server and the client alike.\n */\nfunction useResolvedChild(children: ReactNode): ReactNode {\n\tif (\n\t\tchildren !== null &&\n\t\ttypeof children === \"object\" &&\n\t\t(children as { $$typeof?: symbol }).$$typeof === LAZY &&\n\t\t\"_payload\" in children\n\t) {\n\t\t// oxlint-disable-next-line no-underscore-dangle -- React's own field for a lazy element's payload\n\t\treturn use(children._payload as PromiseLike<ReactNode> as Promise<ReactNode>);\n\t}\n\treturn children;\n}\n\nconst joinIds = (...ids: unknown[]) =>\n\tids.filter((value) => typeof value === \"string\" && value).join(\" \") || undefined;\n\nexport type TooltipTriggerProps = ButtonHTMLAttributes<HTMLButtonElement> & {\n\t/**\n\t * Merge into the one child element instead of rendering a button: our `Button`, a link, an\n\t * icon. The child must forward its props and ref to a focusable element.\n\t */\n\tasChild?: boolean;\n\tref?: Ref<HTMLButtonElement>;\n};\n\ntype Handler<E> = ((event: E) => void) | undefined;\n\n/**\n * What the tooltip describes (or names, with `asLabel`). It is the anchor the tooltip is placed\n * against. Until the page hydrates it also carries `interestfor`, so where Interest Invokers exist\n * the tooltip already shows on hover and focus without JavaScript.\n */\nexport function TooltipTrigger({ asChild, children, ref, ...rest }: TooltipTriggerProps) {\n\tconst tooltip = useTooltip(\"TooltipTrigger\");\n\tconst hydrated = useHydrated();\n\tconst only = useResolvedChild(children);\n\tconst child =\n\t\tasChild && isValidElement(only)\n\t\t\t? (only as ReactElement<Record<string, unknown> & { ref?: Ref<HTMLElement> }>)\n\t\t\t: null;\n\tconst own = (child?.props ?? rest) as Record<string, unknown>;\n\tconst { trigger } = tooltip;\n\n\tconst wired: Record<string, unknown> = {\n\t\t// Not in React's types yet; React passes lowercase attributes through.\n\t\t...(!hydrated && tooltip.hasContent ? { interestfor: tooltip.contentId } : {}),\n\t\t\"data-slot\": \"tooltip-trigger\",\n\t\t\"data-state\": tooltip.open ? \"open\" : \"closed\",\n\t\t\"aria-describedby\": joinIds(\n\t\t\town[\"aria-describedby\"],\n\t\t\t!tooltip.asLabel && tooltip.hasContent ? tooltip.contentId : undefined,\n\t\t),\n\t\t\"aria-labelledby\":\n\t\t\ttooltip.asLabel && tooltip.hasContent\n\t\t\t\t? tooltip.contentId\n\t\t\t\t: (own[\"aria-labelledby\"] as string | undefined),\n\t\tstyle: { anchorName: tooltip.anchor, ...(own.style as CSSProperties | undefined) },\n\t\tonPointerEnter: compose(\n\t\t\town.onPointerEnter as Handler<PointerEvent<HTMLElement>>,\n\t\t\ttrigger.onPointerEnter,\n\t\t),\n\t\tonPointerLeave: compose(\n\t\t\town.onPointerLeave as Handler<PointerEvent<HTMLElement>>,\n\t\t\ttrigger.onPointerLeave,\n\t\t),\n\t\tonPointerDown: compose(\n\t\t\town.onPointerDown as Handler<PointerEvent<HTMLElement>>,\n\t\t\ttrigger.onPointerDown,\n\t\t),\n\t\tonClick: compose(own.onClick as Handler<MouseEvent<HTMLElement>>, trigger.onClick),\n\t\tonFocus: compose(own.onFocus as Handler<FocusEvent<HTMLElement>>, trigger.onFocus),\n\t\tonBlur: compose(own.onBlur as Handler<FocusEvent<HTMLElement>>, trigger.onBlur),\n\t};\n\n\tif (child) {\n\t\treturn cloneElement(child, {\n\t\t\t...rest,\n\t\t\t...wired,\n\t\t\t// oxlint-disable-next-line react/refs -- the child's own ref prop, merged, not a ref's value\n\t\t\tref: mergeRefs(ref as Ref<HTMLElement>, child.props.ref, tooltip.triggerRef),\n\t\t});\n\t}\n\treturn (\n\t\t<button\n\t\t\ttype=\"button\"\n\t\t\t{...rest}\n\t\t\t{...wired}\n\t\t\tref={mergeRefs(ref, tooltip.triggerRef as RefObject<HTMLButtonElement | null>)}\n\t\t>\n\t\t\t{children}\n\t\t</button>\n\t);\n}\n\nexport type TooltipContentProps = HTMLAttributes<HTMLSpanElement> & {\n\t/** The preferred side. It flips to the opposite side when there is no room. Default `top`. */\n\tside?: TooltipSide;\n\t/** Alignment against the trigger along that side. Default `center`. */\n\talign?: TooltipAlign;\n\t/** The gap to the trigger, in px. Default 6 (plus the arrow, when shown). */\n\tsideOffset?: number;\n\t/** Draw an arrow pointing at the trigger. Default false. */\n\tarrow?: boolean;\n\tref?: Ref<HTMLSpanElement>;\n};\n\n/**\n * The label: a `popover=\"hint\"` element with `role=\"tooltip\"`, in the top layer while shown and\n * placed against the trigger by CSS anchor positioning. It stays in the page while closed (hidden),\n * so the trigger's `aria-describedby` always resolves.\n */\nexport function TooltipContent({\n\tside = \"top\",\n\talign = \"center\",\n\tsideOffset,\n\tarrow = false,\n\tclassName,\n\tstyle,\n\tchildren,\n\tonPointerEnter,\n\tonPointerLeave,\n\tref,\n\t...rest\n}: TooltipContentProps) {\n\tconst tooltip = useTooltip(\"TooltipContent\");\n\tconst { open, contentRef, triggerRef, register, sync } = tooltip;\n\n\tuseLayoutEffect(() => {\n\t\tregister(true);\n\t\treturn () => register(false);\n\t}, [register]);\n\n\t// Reads where CSS put it: the side after any flip, and the arrow's offset along the edge.\n\t// Where anchor positioning is missing it places it first.\n\tconst placement = useRef({ side, align, offset: sideOffset ?? DEFAULT_OFFSET, arrow });\n\tuseLayoutEffect(() => {\n\t\tplacement.current = { side, align, offset: sideOffset ?? DEFAULT_OFFSET, arrow };\n\t});\n\tconst place = useCallback(() => {\n\t\tconst element = contentRef.current;\n\t\tconst anchor = triggerRef.current;\n\t\tif (!element || !anchor || !isShown(element)) return;\n\t\tconst { side: preferred, align: alignment, offset, arrow: withArrow } = placement.current;\n\t\tconst box = anchor.getBoundingClientRect();\n\t\tif (!anchorSupported()) {\n\t\t\tconst root = document.documentElement;\n\t\t\tconst at = fallbackPosition(\n\t\t\t\tbox,\n\t\t\t\t{ width: element.offsetWidth, height: element.offsetHeight },\n\t\t\t\t{ width: root.clientWidth, height: root.clientHeight },\n\t\t\t\t{ side: preferred, align: alignment, offset: offset + (withArrow ? ARROW_PX : 0) },\n\t\t\t);\n\t\t\telement.style.setProperty(\"--_x\", `${at.x}px`);\n\t\t\telement.style.setProperty(\"--_y\", `${at.y}px`);\n\t\t}\n\t\t// Layout boxes, not getBoundingClientRect: the entrance scale must not skew the numbers.\n\t\tconst left = element.offsetLeft;\n\t\tconst top = element.offsetTop;\n\t\tconst content = {\n\t\t\tleft,\n\t\t\ttop,\n\t\t\tright: left + element.offsetWidth,\n\t\t\tbottom: top + element.offsetHeight,\n\t\t};\n\t\tconst placed = placedSide(box, content, preferred);\n\t\tconst vertical = placed === \"top\" || placed === \"bottom\";\n\t\tconst border = vertical ? element.clientLeft : element.clientTop;\n\t\telement.dataset.placed = placed;\n\t\telement.style.setProperty(\"--_arrow\", `${arrowOffset(box, content, placed) - border}px`);\n\t}, [contentRef, triggerRef]);\n\n\t// State drives the element: show or hide it to match `open`. Opening twice or hiding a hidden\n\t// tooltip is a no-op.\n\tconst wanted = useRef(open);\n\tconst reconcile = useCallback(() => {\n\t\tconst element = contentRef.current;\n\t\tif (!element) return;\n\t\tconst showing = isShown(element);\n\t\tif (typeof element.showPopover !== \"function\") {\n\t\t\tif (wanted.current) place();\n\t\t} else if (wanted.current && !showing) {\n\t\t\telement.showPopover();\n\t\t\tplace();\n\t\t} else if (!wanted.current && showing) {\n\t\t\telement.hidePopover();\n\t\t}\n\t}, [contentRef, place]);\n\n\t// On the first run, a tooltip an interest invoker opened before hydration is adopted rather\n\t// than closed.\n\tconst adopted = useRef(false);\n\tuseLayoutEffect(() => {\n\t\twanted.current = open;\n\t\tconst element = contentRef.current;\n\t\tif (!adopted.current && element) {\n\t\t\tadopted.current = true;\n\t\t\tif (isShown(element) && !open) {\n\t\t\t\tsync(true);\n\t\t\t\treturn;\n\t\t\t}\n\t\t}\n\t\treconcile();\n\t}, [open, contentRef, sync, reconcile]);\n\n\t// The browser can close a hint popover itself (a press elsewhere, another hint opening). Record\n\t// it, then, once React has applied the change, put the element back in line with `open`: a\n\t// controlled tooltip that is held open stays open.\n\tuseEffect(() => {\n\t\tconst element = contentRef.current;\n\t\tif (!element) return;\n\t\tlet frame = 0;\n\t\tconst onToggle = (event: Event) => {\n\t\t\tif (event.target !== element) return;\n\t\t\tsync((event as ToggleEvent).newState === \"open\");\n\t\t\tcancelAnimationFrame(frame);\n\t\t\tframe = requestAnimationFrame(reconcile);\n\t\t};\n\t\telement.addEventListener(\"toggle\", onToggle);\n\t\treturn () => {\n\t\t\tcancelAnimationFrame(frame);\n\t\t\telement.removeEventListener(\"toggle\", onToggle);\n\t\t};\n\t}, [contentRef, sync, reconcile]);\n\n\t// While open, follow scrolling and resizing: CSS moves it, this keeps the arrow on the trigger.\n\tuseEffect(() => {\n\t\tif (!open) return;\n\t\tlet frame = 0;\n\t\tconst schedule = () => {\n\t\t\tcancelAnimationFrame(frame);\n\t\t\tframe = requestAnimationFrame(place);\n\t\t};\n\t\twindow.addEventListener(\"scroll\", schedule, { capture: true, passive: true });\n\t\twindow.addEventListener(\"resize\", schedule);\n\t\treturn () => {\n\t\t\tcancelAnimationFrame(frame);\n\t\t\twindow.removeEventListener(\"scroll\", schedule, { capture: true });\n\t\t\twindow.removeEventListener(\"resize\", schedule);\n\t\t};\n\t}, [open, place]);\n\n\treturn (\n\t\t<span\n\t\t\t{...rest}\n\t\t\tref={mergeRefs(ref, contentRef as RefObject<HTMLSpanElement | null>)}\n\t\t\tid={tooltip.contentId}\n\t\t\t// An unknown popover value means `manual`, so browsers without `hint` still get a popover.\n\t\t\tpopover=\"hint\"\n\t\t\trole=\"tooltip\"\n\t\t\t// As the trigger's name it is already read with the trigger; do not announce it twice.\n\t\t\taria-hidden={tooltip.asLabel || undefined}\n\t\t\tdata-slot=\"tooltip-content\"\n\t\t\tdata-state={open ? \"open\" : \"closed\"}\n\t\t\tdata-side={side}\n\t\t\tdata-align={align}\n\t\t\tdata-arrow={arrow ? \"\" : undefined}\n\t\t\tclassName={cn(tooltipClass(), className)}\n\t\t\tstyle={\n\t\t\t\t{\n\t\t\t\t\tpositionAnchor: tooltip.anchor,\n\t\t\t\t\t...(sideOffset === undefined ? {} : { \"--_offset\": `${sideOffset}px` }),\n\t\t\t\t\t...style,\n\t\t\t\t} as CSSProperties\n\t\t\t}\n\t\t\tonPointerEnter={compose(onPointerEnter, tooltip.content.onPointerEnter)}\n\t\t\tonPointerLeave={compose(onPointerLeave, tooltip.content.onPointerLeave)}\n\t\t>\n\t\t\t{children}\n\t\t\t{arrow ? <span className={tooltipParts.arrow} aria-hidden=\"true\" /> : null}\n\t\t</span>\n\t);\n}\n\nexport type TooltipKbdProps = Omit<HTMLAttributes<HTMLElement>, \"children\"> & {\n\t/** The key or keys, such as `⌘` or `K`. */\n\tchildren: string;\n\tref?: Ref<HTMLElement>;\n};\n\n/**\n * A keyboard shortcut inside the label, as a small key cap. The key is drawn by CSS generated\n * content with empty alternative text (`content: attr(data-key) / \"\"`), so it is seen but never\n * read: the tooltip's name or description stays the words, even though a hidden element that\n * `aria-labelledby` points at is read in full. Announce the shortcut with `aria-keyshortcuts` on\n * the trigger instead.\n */\nexport function TooltipKbd({ className, children, ...rest }: TooltipKbdProps) {\n\treturn (\n\t\t<kbd\n\t\t\t{...rest}\n\t\t\tdata-key={children}\n\t\t\tdata-slot=\"tooltip-kbd\"\n\t\t\tclassName={cn(tooltipParts.kbd, className)}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-tooltip": {
+        "--_tip": "var(--popover)",
+        "--_tip-edge-a": "var(--surface-edge-top)",
+        "--_tip-edge-b": "var(--surface-edge-bottom)",
+        "--_tip-ring": "var(--surface-ring)",
+        "--_tip-sheen": "var(--surface-sheen)",
+        "--_tip-shade": "var(--surface-shade)",
+        "--_offset": "6px",
+        "--_gap": "var(--_offset)",
+        "--_arrow": "8px",
+        "--_exit": "100ms",
+        "position": "fixed",
+        "inset": "auto",
+        "margin": "0",
+        "box-sizing": "border-box",
+        "width": "max-content",
+        "max-width": "min(20rem, calc(100vw - 16px))",
+        "padding": "4px 8px",
+        "overflow": "visible",
+        "border": "1px solid transparent",
+        "border-radius": "var(--radius-control)",
+        "background": "linear-gradient( 180deg, var(--_tip-sheen), transparent 40%, transparent 60%, var(--_tip-shade) ) padding-box, linear-gradient(var(--_tip), var(--_tip)) padding-box, linear-gradient(180deg, var(--_tip-edge-a), var(--_tip-edge-b)) border-box",
+        "box-shadow": "0 0 0 1px var(--_tip-ring)",
+        "color": "var(--popover-foreground)",
+        "font-size": "12px",
+        "line-height": "16px",
+        "font-weight": "510",
+        "letter-spacing": "-0.1px",
+        "text-align": "start",
+        "text-wrap": "pretty",
+        "overflow-wrap": "anywhere",
+        "white-space": "normal",
+        "position-area": "top",
+        "position-try-fallbacks": "flip-block, flip-inline, flip-block flip-inline",
+        "position-visibility": "anchors-visible",
+        "margin-bottom": "var(--_gap)",
+        "transform-origin": "calc(var(--_arrow) + 5px) 100%",
+        "opacity": "0",
+        "scale": "0.96",
+        "transition": "opacity var(--_exit) var(--motion-ease), scale var(--_exit) var(--motion-ease), display var(--_exit) allow-discrete, overlay var(--_exit) allow-discrete"
+      },
+      ".rx-tooltip:popover-open": {
+        "display": "block",
+        "opacity": "1",
+        "scale": "1",
+        "transition": "opacity 140ms var(--motion-ease), scale var(--spring-unfold-duration) var(--spring-unfold), display var(--spring-unfold-duration) allow-discrete, overlay var(--spring-unfold-duration) allow-discrete"
+      },
+      ".rx-tooltip[data-arrow]": {
+        "--_gap": "calc(var(--_offset) + 6px)"
+      },
+      ".rx-tooltip[data-side=\"bottom\"]": {
+        "position-area": "bottom",
+        "margin": "0",
+        "margin-top": "var(--_gap)"
+      },
+      ".rx-tooltip[data-side=\"left\"]": {
+        "position-area": "left",
+        "position-try-fallbacks": "flip-inline, flip-block, flip-inline flip-block",
+        "margin": "0",
+        "margin-right": "var(--_gap)"
+      },
+      ".rx-tooltip[data-side=\"right\"]": {
+        "position-area": "right",
+        "position-try-fallbacks": "flip-inline, flip-block, flip-inline flip-block",
+        "margin": "0",
+        "margin-left": "var(--_gap)"
+      },
+      ".rx-tooltip[data-align=\"center\"]:is([data-side=\"top\"], [data-side=\"bottom\"])": {
+        "margin-left": "8px",
+        "margin-right": "8px"
+      },
+      ".rx-tooltip[data-align=\"center\"]:is([data-side=\"left\"], [data-side=\"right\"])": {
+        "margin-top": "8px",
+        "margin-bottom": "8px"
+      },
+      ".rx-tooltip[data-side=\"top\"][data-align=\"start\"]": {
+        "position-area": "top span-right"
+      },
+      ".rx-tooltip[data-side=\"top\"][data-align=\"end\"]": {
+        "position-area": "top span-left"
+      },
+      ".rx-tooltip[data-side=\"bottom\"][data-align=\"start\"]": {
+        "position-area": "bottom span-right"
+      },
+      ".rx-tooltip[data-side=\"bottom\"][data-align=\"end\"]": {
+        "position-area": "bottom span-left"
+      },
+      ".rx-tooltip[data-side=\"left\"][data-align=\"start\"]": {
+        "position-area": "left span-bottom"
+      },
+      ".rx-tooltip[data-side=\"left\"][data-align=\"end\"]": {
+        "position-area": "left span-top"
+      },
+      ".rx-tooltip[data-side=\"right\"][data-align=\"start\"]": {
+        "position-area": "right span-bottom"
+      },
+      ".rx-tooltip[data-side=\"right\"][data-align=\"end\"]": {
+        "position-area": "right span-top"
+      },
+      ".rx-tooltip[data-placed=\"bottom\"]": {
+        "transform-origin": "calc(var(--_arrow) + 5px) 0%"
+      },
+      ".rx-tooltip[data-placed=\"left\"]": {
+        "transform-origin": "100% calc(var(--_arrow) + 5px)"
+      },
+      ".rx-tooltip[data-placed=\"right\"]": {
+        "transform-origin": "0% calc(var(--_arrow) + 5px)"
+      },
+      ".rx-tooltip-arrow": {
+        "position": "absolute",
+        "top": "calc(100% - 4.5px)",
+        "left": "var(--_arrow)",
+        "box-sizing": "border-box",
+        "width": "10px",
+        "height": "10px",
+        "border": "0 solid var(--_tip-edge-b)",
+        "border-right-width": "1px",
+        "border-bottom-width": "1px",
+        "background-color": "var(--_tip)",
+        "box-shadow": "1px 1px 0 0 var(--_tip-ring)",
+        "rotate": "45deg",
+        "pointer-events": "none"
+      },
+      ".rx-tooltip[data-placed=\"bottom\"] > .rx-tooltip-arrow": {
+        "top": "-5.5px",
+        "border-width": "0",
+        "border-top-width": "1px",
+        "border-left-width": "1px",
+        "border-color": "var(--_tip-edge-a)",
+        "box-shadow": "-1px -1px 0 0 var(--_tip-ring)"
+      },
+      ".rx-tooltip[data-placed=\"left\"] > .rx-tooltip-arrow": {
+        "top": "var(--_arrow)",
+        "left": "calc(100% - 4.5px)",
+        "border-width": "0",
+        "border-top-width": "1px",
+        "border-right-width": "1px",
+        "border-color": "var(--_tip-edge-b)",
+        "box-shadow": "1px -1px 0 0 var(--_tip-ring)"
+      },
+      ".rx-tooltip[data-placed=\"right\"] > .rx-tooltip-arrow": {
+        "top": "var(--_arrow)",
+        "left": "-5.5px",
+        "border-width": "0",
+        "border-bottom-width": "1px",
+        "border-left-width": "1px",
+        "border-color": "var(--_tip-edge-b)",
+        "box-shadow": "-1px 1px 0 0 var(--_tip-ring)"
+      },
+      ".rx-tooltip-kbd": {
+        "display": "inline-flex",
+        "align-items": "center",
+        "justify-content": "center",
+        "box-sizing": "border-box",
+        "min-inline-size": "18px",
+        "block-size": "16px",
+        "margin-inline-start": "6px",
+        "padding-inline": "4px",
+        "border": "1px solid var(--border)",
+        "border-radius": "var(--radius-badge)",
+        "background-color": "var(--muted)",
+        "color": "var(--muted-foreground)",
+        "font-family": "inherit",
+        "font-size": "11px",
+        "line-height": "14px",
+        "font-weight": "510",
+        "letter-spacing": "0",
+        "vertical-align": "top"
+      },
+      ".rx-tooltip-kbd::before": {
+        "content": "attr(data-key) / \"\""
+      },
+      ".rx-tooltip-kbd + .rx-tooltip-kbd": {
+        "margin-inline-start": "2px"
+      },
+      "[data-depth=\"flat\"] .rx-tooltip": {
+        "--_tip-edge-a": "var(--border)",
+        "--_tip-edge-b": "var(--border)",
+        "--_tip-ring": "transparent",
+        "--_tip-sheen": "transparent",
+        "--_tip-shade": "transparent"
+      },
+      "@starting-style ": {
+        ".rx-tooltip:popover-open": {
+          "opacity": "0",
+          "scale": "0.94"
+        }
+      },
+      "[data-slot=\"tooltip-trigger\"][interestfor]": {
+        "interest-delay": "120ms 100ms"
+      },
+      "@supports not selector(:popover-open)": {
+        ".rx-tooltip:not([data-state=\"open\"])": {
+          "display": "none"
+        }
+      },
+      "@supports not (position-area: top)": {
+        ".rx-tooltip, .rx-tooltip[data-side]": {
+          "top": "var(--_y, 0px)",
+          "left": "var(--_x, 0px)",
+          "margin": "0"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-tooltip, .rx-tooltip:popover-open": {
+          "scale": "none",
+          "transition-duration": "100ms"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-tooltip, .rx-tooltip:popover-open)": {
+        "scale": "none",
+        "transition-duration": "0ms"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

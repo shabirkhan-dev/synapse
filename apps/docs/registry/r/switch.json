@@ -1,0 +1,160 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "switch",
+  "title": "Switch",
+  "description": "A native checkbox drawn as a switch, with a thumb that stretches on press and springs across.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/switch.styles.ts",
+      "content": "export type SwitchSize = \"sm\" | \"md\" | \"lg\";\n\nexport const switchSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly SwitchSize[];\n\n/**\n * The class list for a Switch. The look and the motion live in `switch.css` (your global CSS, when\n * installed from the registry), so React and plain HTML get the same switch from these names:\n *\n *   <input type=\"checkbox\" role=\"switch\" switch class=\"rx-switch rx-switch-md\" aria-label=\"Wi-Fi\">\n */\nexport function switchClass(size: SwitchSize = \"md\") {\n\treturn `rx-switch rx-switch-${size}`;\n}\n\n/** Class names for the parts around a Switch, for markup written by hand. */\nexport const switchParts = {\n\t/** A `<label>` around the switch and its text, so the whole row toggles it. */\n\tlabel: \"rx-switch-label\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/switch.tsx",
+      "content": "\"use client\";\n\nimport { type ChangeEvent, type InputHTMLAttributes, type Ref, useContext } from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport { type SwitchSize, switchClass, switchParts } from \"./switch.styles\";\n\nexport type SwitchProps = Omit<InputHTMLAttributes<HTMLInputElement>, \"type\" | \"size\" | \"role\"> & {\n\t/** Track size: sm (36 by 20), md (48 by 28, the default) or lg (56 by 32). */\n\tsize?: SwitchSize;\n\t/** The new state after every toggle. `onChange` still receives the native event. */\n\tonCheckedChange?: (checked: boolean) => void;\n\tref?: Ref<HTMLInputElement>;\n};\n\n/**\n * The HTML `switch` attribute (Safari 17.4+): the browser treats the checkbox as a switch, so\n * `:indeterminate` never matches and it is announced as on and off. Browsers without it ignore the\n * attribute, and `role=\"switch\"` gives them the same semantics. `switch.css` sets\n * `appearance: none`, so every browser draws the same track and thumb.\n */\nconst nativeSwitch: Record<string, string> = { switch: \"\" };\n\n/**\n * A native checkbox drawn as a switch. Space toggles it, forms submit it and its checked state is\n * what assistive technology reads, so there is no `aria-checked` to keep in sync. With children it\n * renders a `<label>` around the switch, so the text names it and the whole row is clickable;\n * without children, put it in a `Field` or give it an `aria-label`.\n *\n * Pressing it stretches the thumb toward where it is going and squishes it a little; releasing\n * springs it across. All of that is CSS (`:checked`, `:active` and the `switch` spring).\n */\nexport function Switch({\n\tsize,\n\tonCheckedChange,\n\tonChange,\n\tclassName,\n\tchildren,\n\tref,\n\t...rest\n}: SwitchProps) {\n\tconst field = useContext(FieldContext);\n\n\tconst input = (\n\t\t<input\n\t\t\tid={field?.id}\n\t\t\taria-describedby={field?.describedBy}\n\t\t\taria-invalid={field?.invalid || undefined}\n\t\t\t{...rest}\n\t\t\t{...nativeSwitch}\n\t\t\ttype=\"checkbox\"\n\t\t\trole=\"switch\"\n\t\t\tref={ref}\n\t\t\tclassName={children ? switchClass(size) : cn(switchClass(size), className)}\n\t\t\tonChange={(event: ChangeEvent<HTMLInputElement>) => {\n\t\t\t\tonChange?.(event);\n\t\t\t\tonCheckedChange?.(event.target.checked);\n\t\t\t}}\n\t\t/>\n\t);\n\n\tif (!children) return input;\n\treturn (\n\t\t<label className={cn(switchParts.label, className)}>\n\t\t\t{input}\n\t\t\t{children}\n\t\t</label>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-switch": {
+        "--_w": "3rem",
+        "--_h": "1.75rem",
+        "--_pad": "4px",
+        "--_stretch": "4px",
+        "--_thumb": "calc(var(--_h) - var(--_pad) * 2)",
+        "--_travel": "calc(var(--_w) - var(--_h))",
+        "--_x": "0px",
+        "--_grow": "0px",
+        "--_squish": "1",
+        "--_fill": "color-mix(in oklab, var(--muted-foreground) 70%, var(--background))",
+        "--_edge-a": "var(--field-edge-top)",
+        "--_edge-b": "var(--field-edge-bottom)",
+        "--_sheen": "var(--field-shade)",
+        "--_knob": "var(--background)",
+        "--_knob-ring": "var(--surface-ring)",
+        "--_knob-sheen": "var(--surface-sheen)",
+        "--_knob-shade": "var(--surface-shade)",
+        "position": "relative",
+        "display": "inline-block",
+        "flex-shrink": "0",
+        "box-sizing": "border-box",
+        "width": "var(--_w)",
+        "height": "var(--_h)",
+        "margin": "0",
+        "appearance": "none",
+        "vertical-align": "middle",
+        "border": "1px solid transparent",
+        "border-radius": "var(--radius-button)",
+        "background": "linear-gradient(180deg, var(--_sheen), transparent 60%) padding-box, linear-gradient(var(--_fill), var(--_fill)) padding-box, linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box, linear-gradient(var(--_fill), var(--_fill)) border-box",
+        "cursor": "pointer",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "--_fill 200ms var(--motion-ease), box-shadow 150ms var(--motion-ease), opacity 150ms var(--motion-ease)"
+      },
+      ".rx-switch::before": {
+        "content": "\"\"",
+        "position": "absolute",
+        "top": "calc(var(--_pad) - 1px)",
+        "inset-inline-start": "calc(var(--_pad) - 1px + var(--_x))",
+        "width": "calc(var(--_thumb) + var(--_grow))",
+        "height": "var(--_thumb)",
+        "border-radius": "max(1px, calc(var(--radius-button) - var(--_pad)))",
+        "background-color": "var(--_knob)",
+        "background-image": "linear-gradient( 180deg, var(--_knob-sheen), transparent 40%, transparent 60%, var(--_knob-shade) )",
+        "box-shadow": "0 0 0 1px var(--_knob-ring)",
+        "scale": "var(--_squish)",
+        "transition": "inset-inline-start var(--spring-switch-duration) var(--spring-switch), width var(--spring-switch-duration) var(--spring-switch), scale var(--spring-switch-duration) var(--spring-switch), background-color 200ms var(--motion-ease)"
+      },
+      ".rx-switch::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset": "calc(min(0px, (var(--_h) - 24px) / 2) - 1px)"
+      },
+      ".rx-switch:checked": {
+        "--_fill": "var(--primary)",
+        "--_knob": "var(--primary-foreground)",
+        "--_x": "var(--_travel)"
+      },
+      ".rx-switch:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-switch:disabled": {
+        "opacity": "0.5",
+        "cursor": "not-allowed"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ":is(.rx-switch:hover, .rx-switch-label:hover > .rx-switch):not(:disabled)": {
+          "--_fill": "color-mix(in oklab, var(--muted-foreground) 82%, var(--background))"
+        },
+        ":is(.rx-switch:hover, .rx-switch-label:hover > .rx-switch):checked:not(:disabled)": {
+          "--_fill": "color-mix(in oklab, var(--primary) 88%, var(--foreground))"
+        }
+      },
+      ":is(.rx-switch:active, .rx-switch-label:active > .rx-switch):not(:disabled)": {
+        "--_grow": "var(--_stretch)",
+        "--_squish": "0.9"
+      },
+      ":is(.rx-switch:active, .rx-switch-label:active > .rx-switch):checked:not(:disabled)": {
+        "--_x": "calc(var(--_travel) - var(--_stretch))"
+      },
+      ".rx-switch-sm": {
+        "--_w": "2.25rem",
+        "--_h": "1.25rem",
+        "--_pad": "3px",
+        "--_stretch": "3px"
+      },
+      ".rx-switch-lg": {
+        "--_w": "3.5rem",
+        "--_h": "2rem",
+        "--_pad": "4px",
+        "--_stretch": "5px"
+      },
+      "[data-depth=\"flat\"] .rx-switch": {
+        "--_edge-a": "transparent",
+        "--_edge-b": "transparent",
+        "--_sheen": "transparent",
+        "--_knob-ring": "transparent",
+        "--_knob-sheen": "transparent",
+        "--_knob-shade": "transparent"
+      },
+      ".rx-switch[aria-invalid=\"true\"]": {
+        "--_edge-a": "var(--destructive)",
+        "--_edge-b": "var(--destructive)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--destructive) 15%, transparent)"
+      },
+      ".rx-switch-label": {
+        "display": "inline-flex",
+        "align-items": "center",
+        "gap": "0.75rem",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px",
+        "color": "var(--foreground)",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent"
+      },
+      ".rx-switch-label:has(> .rx-switch:disabled)": {
+        "color": "var(--disabled-foreground)",
+        "cursor": "not-allowed"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-switch, .rx-switch::before": {
+          "transition": "none"
+        }
+      },
+      "[data-motion=\"off\"] .rx-switch, [data-motion=\"off\"] .rx-switch::before": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

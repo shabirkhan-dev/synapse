@@ -1,0 +1,193 @@
+---
+title: Tabs
+description: WAI-ARIA tabs in segmented, pill, underline and expandable variants. The indicator slides to the selected tab by CSS anchor positioning on a spring, and panels fade in. Every animation is CSS.
+---
+
+<ComponentPreview name="tabs/default" />
+
+## Installation
+
+<Installation name="tabs" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/tabs`; inside this monorepo, from
+`@rabtx/ui/tabs`. The API is shadcn's.
+
+```tsx
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rabtx/ui/tabs";
+
+export function Settings() {
+  return (
+    <Tabs defaultValue="account">
+      <TabsList aria-label="Settings">
+        <TabsTrigger value="account">Account</TabsTrigger>
+        <TabsTrigger value="password">Password</TabsTrigger>
+      </TabsList>
+      <TabsContent value="account">Your name, email and avatar.</TabsContent>
+      <TabsContent value="password">Change your password.</TabsContent>
+    </Tabs>
+  );
+}
+```
+
+Name the list with an `aria-label` (or `aria-labelledby`). Every panel stays mounted and is
+`hidden` while its tab is not selected, so its content is in the server HTML. A list with no panels
+(a segmented filter, say) is fine: its tabs simply control nothing.
+
+## Variants
+
+`segmented` (the default) is a recessed track with a raised thumb, `pill` fills the selected tab
+with `--primary` on a raised capsule, `underline` draws a 2px line under it, and `expandable` is a
+row of icons where the selected tab opens to show its label.
+
+<ComponentPreview name="tabs/variants" />
+
+## Pill
+
+<ComponentPreview name="tabs/pill" />
+
+## Underline
+
+<ComponentPreview name="tabs/underline" />
+
+## Expandable
+
+Give every tab an `icon`. A folded tab is a square icon button, still named by its label (the label
+is folded, not removed). The selected tab's label opens in a grid column that animates from `0fr` to
+`1fr` on the swap spring, so the tab grows to the label's natural width without measuring it, and
+the label fades in out of a small blur. Closing is shorter and plain.
+
+<ComponentPreview name="tabs/expandable" />
+
+## Vertical
+
+`orientation="vertical"` puts the list beside the panels and moves focus with the up and down
+arrows. The underline becomes a line on the list's start edge.
+
+<ComponentPreview name="tabs/vertical" />
+
+## Manual activation
+
+By default a tab is selected as the arrow keys reach it (`activationMode="automatic"`). With
+`manual` the arrows only move focus and Enter or Space selects, for panels that are slow to show.
+
+<ComponentPreview name="tabs/manual" />
+
+## Disabled
+
+A disabled tab is dimmed, cannot be selected and is skipped by the arrow keys.
+
+<ComponentPreview name="tabs/states" />
+
+## Controlled
+
+<ComponentPreview name="tabs/controlled" />
+
+## Overflow
+
+A row longer than its box scrolls sideways with no scrollbar; moving focus to a tab scrolls it into
+view.
+
+<ComponentPreview name="tabs/overflow" />
+
+## Right to left
+
+The row starts at the inline start, the indicator follows, and the left and right arrows swap.
+
+<ComponentPreview name="tabs/rtl" />
+
+## API
+
+`Tabs` takes everything a `div` takes, plus:
+
+<TypeTable
+  type={{
+    value: { type: "string", description: "The selected tab (controlled)." },
+    defaultValue: { type: "string", description: "The tab selected first (uncontrolled)." },
+    onValueChange: { type: "(value: string) => void", description: "The new value, only when it changes." },
+    orientation: { type: '"horizontal" | "vertical"', default: '"horizontal"' },
+    activationMode: { type: '"automatic" | "manual"', default: '"automatic"', description: "Select as the arrows reach a tab, or wait for Enter or Space." },
+    dir: { type: '"ltr" | "rtl"', description: "Inherited when unset. Swaps the left and right arrows." },
+  }}
+/>
+
+`TabsList` takes everything a `div` takes, plus:
+
+<TypeTable
+  type={{
+    variant: { type: '"segmented" | "pill" | "underline" | "expandable"', default: '"segmented"' },
+    size: { type: '"sm" | "md" | "lg"', default: '"md"', description: "32, 40 or 48px tall." },
+  }}
+/>
+
+`TabsTrigger` takes everything a `button` takes, except `type` and `value`, plus:
+
+<TypeTable
+  type={{
+    value: { type: "string", description: "The value it selects. Required." },
+    icon: { type: "ReactNode", description: "A decorative icon before the label. Needed by expandable." },
+    disabled: { type: "boolean", description: "Dimmed, not selectable, skipped by the arrows." },
+  }}
+/>
+
+`TabsContent` takes everything a `div` takes, plus a required `value`, the tab it belongs to.
+
+Outside React, the class names are exported from `@rabtx/ui/tabs/styles` (`tabsListClass()`,
+`tabsParts`). Set `aria-selected` on the tabs yourself; the CSS does the rest:
+
+```html
+<div class="rx-tabs" data-orientation="horizontal">
+  <div role="tablist" aria-label="Settings" class="rx-tabs-list rx-tabs-segmented rx-tabs-md">
+    <button role="tab" id="t1" class="rx-tabs-trigger" aria-selected="true" aria-controls="p1">
+      <span class="rx-tabs-label"><span class="rx-tabs-text">Account</span></span>
+    </button>
+    <button role="tab" id="t2" class="rx-tabs-trigger" aria-selected="false" aria-controls="p2" tabindex="-1">
+      <span class="rx-tabs-label"><span class="rx-tabs-text">Password</span></span>
+    </button>
+    <span class="rx-tabs-indicator" aria-hidden="true"></span>
+  </div>
+  <div role="tabpanel" id="p1" aria-labelledby="t1" class="rx-tabs-content" tabindex="0">…</div>
+  <div role="tabpanel" id="p2" aria-labelledby="t2" class="rx-tabs-content" tabindex="0" hidden>…</div>
+</div>
+```
+
+## Theming
+
+Tabs read only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Labels | `--muted-foreground`, `--foreground` when selected or hovered |
+| Segmented | track `--secondary` with the field edges; thumb `--card` with the surface edges and ring (`--input` edge in Flat) |
+| Pill | track `--card` with the surface edges and ring; fill `--primary`, label `--primary-foreground` |
+| Underline | rule `--border`, line `--primary` |
+| Expandable | track as pill; highlight `--foreground` at 9% |
+| Focus | `--ring` |
+| Corners | `--radius-control` (segmented), `--radius-button` (pill, expandable), `--radius-item` (underline focus ring) |
+| Motion | `--spring-tabs` (indicator), `--spring-swap` (expandable label), `--spring-panel` (panel rise), `--motion-ease` |
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Anchor | `[aria-selected="true"]` sets `anchor-name: --_tab`; the list sets `anchor-scope: --_tab`, so every list keeps its own |
+| Indicator | the list's last child, `position-anchor: --_tab` with `top`, `right`, `bottom` and `left` from `anchor()`; when the anchor moves they change, and a transition on the tabs spring (245 / 36 / 1.2, no overshoot, about 670ms) glides it there |
+| Fallback | where `anchor-scope` is missing the indicator is not drawn and the selected tab paints the same highlight on its `::before`, fading in 150ms |
+| Expandable | `grid-template-columns: auto 0fr` to `auto 1fr` on the swap spring (160ms ease to close); the label fades and unblurs 60ms later |
+| Panel | `@starting-style` starts a newly shown panel at opacity 0, `blur(4px)` and 4px down; it settles in 200ms (the rise on the panel spring). The old panel hides at once |
+
+A `linear()` spring is a fixed curve: switching tabs mid-glide restarts it from where the indicator
+is, without carrying its speed.
+
+## Accessibility
+
+- `tablist`, `tab` and `tabpanel` roles, `aria-selected`, `aria-controls`, `aria-labelledby` and
+  `aria-orientation`, following the WAI-ARIA tabs pattern.
+- One tab stop: the selected tab (or the first enabled tab when none is). The arrow keys move along
+  the list and wrap; Home and End jump to the ends; disabled tabs are skipped. In right-to-left text
+  the left and right arrows swap.
+- The panel is in the Tab order, so a panel with no controls can still be reached and read.
+- Keyboard focus shows a 2px ring on tabs and panels.
+- With reduced motion nothing slides, grows, blurs or rises; colors and panels fade in 100ms. With
+  `data-motion="off"` every state changes at once.

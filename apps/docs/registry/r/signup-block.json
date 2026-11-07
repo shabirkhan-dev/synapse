@@ -1,0 +1,316 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "signup-block",
+  "title": "Sign-up block",
+  "description": "A three-step sign-up card (details with a password meter, an emailed code with a resend countdown, a drawn tick) and a compact sign-in card, made of the Rabtx components. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/button.json",
+    "{{origin}}/r/card.json",
+    "{{origin}}/r/checkbox.json",
+    "{{origin}}/r/field.json",
+    "{{origin}}/r/input.json",
+    "utils",
+    "{{origin}}/r/select.json",
+    "{{origin}}/r/switch.json"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/blocks/signup/icons.tsx",
+      "content": "import type { SVGProps } from \"react\";\n\n// HugeIcons (MIT) glyphs, inlined so the blocks need no icon package. Decorative: aria-hidden.\ntype IconProps = SVGProps<SVGSVGElement>;\n\nfunction Icon({ children, ...props }: IconProps) {\n\treturn (\n\t\t<svg\n\t\t\tviewBox=\"0 0 24 24\"\n\t\t\tfill=\"none\"\n\t\t\tstroke=\"currentColor\"\n\t\t\tstrokeWidth={1.5}\n\t\t\tstrokeLinecap=\"round\"\n\t\t\tstrokeLinejoin=\"round\"\n\t\t\taria-hidden=\"true\"\n\t\t\t{...props}\n\t\t>\n\t\t\t{children}\n\t\t</svg>\n\t);\n}\n\nexport function UserIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M20 21C19.713 17.269 16.729 14.315 12.995 14.066L12 14C11.645 14.01 11.313 14.023 11.001 14.038C7.3 14.219 4.284 17.306 4 21\" />\n\t\t\t<circle cx=\"12\" cy=\"7\" r=\"4\" />\n\t\t</Icon>\n\t);\n}\n\nexport function MailIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M2 6L8.913 9.917C11.462 11.361 12.538 11.361 15.087 9.917L22 6\" />\n\t\t\t<path d=\"M2.016 13.476C2.081 16.541 2.114 18.074 3.245 19.209C4.376 20.345 5.95 20.384 9.099 20.463C11.039 20.512 12.961 20.512 14.901 20.463C18.05 20.384 19.624 20.345 20.755 19.209C21.886 18.074 21.919 16.541 21.984 13.476C22.005 12.49 22.005 11.51 21.984 10.524C21.919 7.459 21.886 5.926 20.755 4.791C19.624 3.655 18.05 3.616 14.901 3.537C12.961 3.488 11.039 3.488 9.099 3.537C5.95 3.616 4.376 3.655 3.245 4.791C2.114 5.926 2.081 7.459 2.016 10.524C1.995 11.51 1.995 12.49 2.016 13.476Z\" />\n\t\t</Icon>\n\t);\n}\n\nexport function LockIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M12 14.5V17.5M13 14.5C13 15.052 12.552 15.5 12 15.5C11.448 15.5 11 15.052 11 14.5C11 13.948 11.448 13.5 12 13.5C12.552 13.5 13 13.948 13 14.5Z\" />\n\t\t\t<path d=\"M16.5 9V6.5C16.5 4.015 14.485 2 12 2C9.515 2 7.5 4.015 7.5 6.5V9\" />\n\t\t\t<path d=\"M4.268 18.845C4.493 20.515 5.876 21.824 7.56 21.901C8.976 21.966 10.415 22 12 22C13.585 22 15.024 21.966 16.44 21.901C18.124 21.824 19.507 20.515 19.732 18.845C19.879 17.755 20 16.638 20 15.5C20 14.362 19.879 13.245 19.732 12.155C19.507 10.485 18.124 9.176 16.44 9.099C15.024 9.034 13.585 9 12 9C10.415 9 8.976 9.034 7.56 9.099C5.876 9.176 4.493 10.485 4.268 12.155C4.121 13.245 4 14.362 4 15.5C4 16.638 4.121 17.755 4.268 18.845Z\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ArrowLeftIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M15 6C15 6 9 10.419 9 12C9 13.581 15 18 15 18\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ArrowRightIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M9 6C9 6 15 10.419 15 12C15 13.581 9 18 9 18\" />\n\t\t</Icon>\n\t);\n}\n\nexport function GoogleIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<circle cx=\"12\" cy=\"12\" r=\"10\" />\n\t\t\t<path d=\"M12 12H17C17 14.761 14.761 17 12 17C9.239 17 7 14.761 7 12C7 9.239 9.239 7 12 7C13.381 7 14.631 7.56 15.536 8.464\" />\n\t\t</Icon>\n\t);\n}\n\nexport function GithubIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M10 20.568C6.571 21.725 3.714 20.568 2 17\" />\n\t\t\t<path d=\"M10 22V18.758C10 18.16 10.184 17.64 10.48 17.17C10.684 16.848 10.545 16.39 10.177 16.289C7.134 15.453 5 14.108 5 9.646C5 8.486 5.38 7.396 6.048 6.446C6.214 6.21 6.297 6.092 6.317 5.985C6.337 5.878 6.303 5.739 6.233 5.459C5.95 4.323 5.969 3.116 6.393 2.028C6.393 2.028 7.27 1.742 9.267 2.99C9.723 3.274 9.951 3.417 10.152 3.449C10.352 3.481 10.621 3.414 11.157 3.28C11.891 3.098 12.648 3 13.5 3C14.352 3 15.109 3.098 15.843 3.28C16.379 3.414 16.648 3.481 16.849 3.449C17.049 3.417 17.277 3.274 17.733 2.99C19.73 1.742 20.607 2.028 20.607 2.028C21.031 3.116 21.05 4.323 20.767 5.459C20.697 5.739 20.663 5.878 20.683 5.985C20.703 6.092 20.786 6.21 20.952 6.446C21.62 7.396 22 8.486 22 9.646C22 14.108 19.866 15.453 16.823 16.289C16.456 16.39 16.316 16.848 16.52 17.17C16.816 17.64 17 18.16 17 18.758V22\" />\n\t\t</Icon>\n\t);\n}\n\n/** A tick and the step number swap places in the progress dots. */\nexport function TickIcon(props: IconProps) {\n\treturn (\n\t\t<Icon strokeWidth={2.25} {...props}>\n\t\t\t<path d=\"M5 12.5L9.5 17L19 7\" pathLength={1} />\n\t\t</Icon>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/signup/icons.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/signup/password-strength.ts",
+      "content": "/** How strong a password looks: 0 for empty, then weak, fair, good and strong. */\nexport type StrengthScore = 0 | 1 | 2 | 3 | 4;\n\n/** The shortest password the sign-up form accepts. */\nexport const MIN_PASSWORD_LENGTH = 8;\n\nexport const strengthLabels = [\"\", \"Weak\", \"Fair\", \"Good\", \"Strong\"] as const;\n\n/** A few habits that make a long password easy to guess anyway. */\nconst PREDICTABLE = [\n\t/^(.)\\1+$/,\n\t/^(?:0123|1234|2345|3456|4567|5678|6789|abcd|qwer|asdf|pass|letmein)/i,\n];\n\n/**\n * A quick strength score for feedback while typing, weighted to length the way NIST SP 800-63B\n * advises: mixing letters, digits and symbols only nudges the score, and nothing under the minimum\n * gets past weak. It is a hint for the person typing, not a check; do the real one on the server\n * (length, and a breached-password list).\n */\nexport function passwordStrength(password: string): StrengthScore {\n\tif (!password) return 0;\n\tif (password.length < MIN_PASSWORD_LENGTH) return 1;\n\tif (PREDICTABLE.some((pattern) => pattern.test(password))) return 1;\n\n\tconst kinds = [/[a-z]/, /[A-Z]/, /\\d/, /[^A-Za-z\\d]/].filter((kind) =>\n\t\tkind.test(password),\n\t).length;\n\tlet score = 2;\n\tif (password.length >= 12) score += 1;\n\tif (password.length >= 16) score += 1;\n\tif (kinds >= 3) score += 1;\n\treturn Math.min(score, 4) as StrengthScore;\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/signup/password-strength.ts"
+    },
+    {
+      "path": "registry/rabtx/blocks/signup/signin-block.tsx",
+      "content": "\"use client\";\n\nimport { type FormEvent, type ReactNode, type Ref, useId, useState } from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport type { ButtonState } from \"@/components/ui/button.styles\";\nimport { StatefulButton } from \"@/components/ui/stateful-button\";\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { Checkbox } from \"@/components/ui/checkbox\";\nimport { Field } from \"@/components/ui/field\";\nimport { Input, PasswordInput } from \"@/components/ui/input\";\nimport { cn } from \"@/lib/utils\";\nimport { GithubIcon, GoogleIcon, LockIcon, MailIcon } from \"./icons\";\nimport { signupParts } from \"./signup.styles\";\nimport { type ValidityMessages, validityMessage } from \"./validity\";\n\nexport type SigninValues = { email: string; password: string; remember: boolean };\nexport type SigninErrors = Partial<Record<\"email\" | \"password\", string>>;\nexport type SigninProvider = \"google\" | \"github\";\n\nexport type SigninBlockProps = {\n\ttitle?: ReactNode;\n\tdescription?: ReactNode;\n\t/** Social sign-in buttons, in order. Pass `[]` for none. */\n\tproviders?: SigninProvider[];\n\t/** Called with the provider when its button is pressed. */\n\tonProvider?: (provider: SigninProvider) => void;\n\t/**\n\t * Check the credentials. Return field errors to show them, or throw to show the error's message\n\t * (such as \"Wrong email or password.\"). Without it, the block waits a moment and succeeds.\n\t */\n\tonSubmit?: (values: SigninValues) => Promise<SigninErrors | void> | SigninErrors | void;\n\t/** The \"Forgot password?\" link's address. */\n\tforgotHref?: string;\n\t/** Under the form, such as a link to sign up. */\n\tfooter?: ReactNode;\n\t/** The title's heading level, to fit the page around it. */\n\theadingLevel?: 2 | 3 | 4;\n\tclassName?: string;\n\tref?: Ref<HTMLElement>;\n};\n\nconst PROVIDERS: Record<SigninProvider, { label: string; icon: ReactNode }> = {\n\tgoogle: { label: \"Google\", icon: <GoogleIcon /> },\n\tgithub: { label: \"GitHub\", icon: <GithubIcon /> },\n};\n\nconst MESSAGES: Record<\"email\" | \"password\", ValidityMessages> = {\n\temail: {\n\t\tvalueMissing: \"Enter your email address.\",\n\t\ttypeMismatch: \"Enter an email address like name@example.com.\",\n\t},\n\tpassword: { valueMissing: \"Enter your password.\" },\n};\n\nconst DEFAULT_PROVIDERS: SigninProvider[] = [\"google\", \"github\"];\n\nfunction check(control: HTMLInputElement) {\n\treturn validityMessage(control, MESSAGES[control.name as \"email\" | \"password\"]);\n}\n\nconst pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));\n\n/**\n * A compact sign-in card: social buttons, email and password with native constraints, remember\n * me, and a submit button that shows its progress. Nothing is sent: wire `onSubmit`.\n */\nexport function SigninBlock({\n\ttitle = \"Welcome back\",\n\tdescription = \"Sign in to your account.\",\n\tproviders = DEFAULT_PROVIDERS,\n\tonProvider,\n\tonSubmit,\n\tforgotHref = \"#\",\n\tfooter,\n\theadingLevel = 2,\n\tclassName,\n\tref,\n}: SigninBlockProps) {\n\tconst id = useId();\n\tconst [errors, setErrors] = useState<SigninErrors>({});\n\tconst [formError, setFormError] = useState<string>();\n\tconst [state, setState] = useState<ButtonState>(\"idle\");\n\tconst busy = state === \"loading\";\n\n\tasync function submit(event: FormEvent<HTMLFormElement>) {\n\t\tevent.preventDefault();\n\t\tif (busy) return;\n\t\tconst form = event.currentTarget;\n\t\tconst controls = [\"email\", \"password\"]\n\t\t\t.map((name) => form.elements.namedItem(name))\n\t\t\t.filter((el): el is HTMLInputElement => el instanceof HTMLInputElement);\n\t\tconst found: SigninErrors = {};\n\t\tfor (const control of controls) {\n\t\t\tconst message = check(control);\n\t\t\tif (message) found[control.name as \"email\" | \"password\"] = message;\n\t\t}\n\t\tsetErrors(found);\n\t\tsetFormError(undefined);\n\t\tconst first = controls.find((control) => found[control.name as \"email\" | \"password\"]);\n\t\tif (first) {\n\t\t\tfirst.focus();\n\t\t\treturn;\n\t\t}\n\t\tconst data = new FormData(form);\n\t\tconst values: SigninValues = {\n\t\t\temail: String(data.get(\"email\") ?? \"\"),\n\t\t\tpassword: String(data.get(\"password\") ?? \"\"),\n\t\t\tremember: data.get(\"remember\") === \"on\",\n\t\t};\n\t\tsetState(\"loading\");\n\t\ttry {\n\t\t\tconst result = onSubmit ? await onSubmit(values) : await pause(900);\n\t\t\tif (result && Object.values(result).some(Boolean)) {\n\t\t\t\tsetErrors(result);\n\t\t\t\tsetState(\"error\");\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tsetState(\"success\");\n\t\t} catch (error) {\n\t\t\tsetFormError(\n\t\t\t\terror instanceof Error && error.message ? error.message : \"Something went wrong.\",\n\t\t\t);\n\t\t\tsetState(\"error\");\n\t\t}\n\t}\n\n\tfunction revalidate(control: HTMLInputElement) {\n\t\tif (state === \"error\") setState(\"idle\");\n\t\tsetFormError(undefined);\n\t\tconst name = control.name as \"email\" | \"password\";\n\t\tif (errors[name]) setErrors((current) => ({ ...current, [name]: check(control) }));\n\t}\n\n\treturn (\n\t\t<Card\n\t\t\tas=\"section\"\n\t\t\tsize=\"lg\"\n\t\t\tref={ref}\n\t\t\taria-labelledby={`${id}-title`}\n\t\t\tclassName={cn(signupParts.root, \"w-full max-w-sm\", className)}\n\t\t>\n\t\t\t<CardHeader>\n\t\t\t\t<CardTitle as={`h${headingLevel}`} id={`${id}-title`} className=\"text-lg/7 font-[590]\">\n\t\t\t\t\t{title}\n\t\t\t\t</CardTitle>\n\t\t\t\t{description ? <CardDescription>{description}</CardDescription> : null}\n\t\t\t</CardHeader>\n\t\t\t{providers.length > 0 ? (\n\t\t\t\t<CardContent className=\"grid gap-3\">\n\t\t\t\t\t<div className=\"grid auto-cols-fr grid-flow-col gap-2\">\n\t\t\t\t\t\t{providers.map((provider) => (\n\t\t\t\t\t\t\t<Button\n\t\t\t\t\t\t\t\tkey={provider}\n\t\t\t\t\t\t\t\tvariant=\"outline\"\n\t\t\t\t\t\t\t\tdisabled={busy}\n\t\t\t\t\t\t\t\tonClick={() => onProvider?.(provider)}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{PROVIDERS[provider].icon}\n\t\t\t\t\t\t\t\t{PROVIDERS[provider].label}\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t))}\n\t\t\t\t\t</div>\n\t\t\t\t\t<p className={signupParts.divider}>or</p>\n\t\t\t\t</CardContent>\n\t\t\t) : null}\n\t\t\t<form noValidate aria-busy={busy || undefined} onSubmit={submit} className=\"grid gap-4\">\n\t\t\t\t<fieldset disabled={busy} className=\"m-0 grid min-w-0 gap-4 border-0 p-0\">\n\t\t\t\t\t<legend className=\"sr-only\">Email and password</legend>\n\t\t\t\t\t<Field label=\"Email\" error={errors.email}>\n\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\tname=\"email\"\n\t\t\t\t\t\t\ttype=\"email\"\n\t\t\t\t\t\t\tinputMode=\"email\"\n\t\t\t\t\t\t\tautoComplete=\"email\"\n\t\t\t\t\t\t\tplaceholder=\"you@example.com\"\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\tleadingIcon={<MailIcon />}\n\t\t\t\t\t\t\tonChange={(event) => revalidate(event.target)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<Field label=\"Password\" error={errors.password}>\n\t\t\t\t\t\t<PasswordInput\n\t\t\t\t\t\t\tname=\"password\"\n\t\t\t\t\t\t\tautoComplete=\"current-password\"\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\tleadingIcon={<LockIcon />}\n\t\t\t\t\t\t\tonChange={(event) => revalidate(event.target)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<div className=\"flex flex-wrap items-center justify-between gap-2\">\n\t\t\t\t\t\t<Checkbox name=\"remember\" size=\"sm\">\n\t\t\t\t\t\t\tRemember me\n\t\t\t\t\t\t</Checkbox>\n\t\t\t\t\t\t<a\n\t\t\t\t\t\t\thref={forgotHref}\n\t\t\t\t\t\t\tclassName=\"rounded-sm text-[13px]/5 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tForgot password?\n\t\t\t\t\t\t</a>\n\t\t\t\t\t</div>\n\t\t\t\t</fieldset>\n\t\t\t\t{formError ? (\n\t\t\t\t\t<p\n\t\t\t\t\t\trole=\"alert\"\n\t\t\t\t\t\tclassName=\"m-0 rounded-(--radius-control) bg-destructive/10 px-3 py-2 text-[13px]/5 text-destructive\"\n\t\t\t\t\t>\n\t\t\t\t\t\t{formError}\n\t\t\t\t\t</p>\n\t\t\t\t) : null}\n\t\t\t\t<StatefulButton\n\t\t\t\t\ttype=\"submit\"\n\t\t\t\t\tstate={state}\n\t\t\t\t\tloadingText=\"Signing in\"\n\t\t\t\t\tsuccessText=\"Signed in\"\n\t\t\t\t\terrorText=\"Try again\"\n\t\t\t\t\tclassName=\"w-full\"\n\t\t\t\t>\n\t\t\t\t\tSign in\n\t\t\t\t</StatefulButton>\n\t\t\t</form>\n\t\t\t{footer ? (\n\t\t\t\t<div className=\"text-center text-[13px]/5 text-muted-foreground\">{footer}</div>\n\t\t\t) : null}\n\t\t</Card>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/signup/signin-block.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/signup/signup-block.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype CSSProperties,\n\ttype FormEvent,\n\ttype ReactNode,\n\ttype Ref,\n\tuseEffect,\n\tuseId,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport type { ButtonState } from \"@/components/ui/button.styles\";\nimport { StatefulButton } from \"@/components/ui/stateful-button\";\nimport { Card, CardDescription, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { Checkbox } from \"@/components/ui/checkbox\";\nimport { Field } from \"@/components/ui/field\";\nimport { fieldParts } from \"@/components/ui/field.styles\";\nimport { Input, PasswordInput } from \"@/components/ui/input\";\nimport { InputOTP } from \"@/components/ui/input-otp\";\nimport { cn } from \"@/lib/utils\";\nimport { Select, SelectItem } from \"@/components/ui/select\";\nimport { Switch } from \"@/components/ui/switch\";\nimport { ArrowLeftIcon, ArrowRightIcon, LockIcon, MailIcon, TickIcon, UserIcon } from \"./icons\";\nimport {\n\tMIN_PASSWORD_LENGTH,\n\ttype StrengthScore,\n\tpasswordStrength,\n\tstrengthLabels,\n} from \"./password-strength\";\nimport { STEP_EXIT_MS, signupParts } from \"./signup.styles\";\nimport { type ValidityMessages, validityMessage } from \"./validity\";\n\nexport type SignupValues = {\n\tname: string;\n\temail: string;\n\tpassword: string;\n\trole: string;\n\tcountry: string;\n\t/** The terms checkbox. Required. */\n\tterms: boolean;\n\t/** The product updates switch. */\n\tupdates: boolean;\n};\n\nexport type SignupField = keyof SignupValues;\n/** A message per field, to show under it. */\nexport type SignupErrors = Partial<Record<SignupField, string>>;\nexport type SignupOption = { value: string; label: string };\n\nexport type SignupBlockProps = {\n\ttitle?: ReactNode;\n\tdescription?: ReactNode;\n\troles?: SignupOption[];\n\tcountries?: SignupOption[];\n\tdefaultValues?: Partial<SignupValues>;\n\t/** The terms checkbox's label. Put your links in it. */\n\ttermsLabel?: ReactNode;\n\t/** Digits in the emailed code. Default 6. */\n\tcodeLength?: number;\n\t/** Seconds before the code can be sent again. Default 30. */\n\tresendSeconds?: number;\n\t/**\n\t * Step 1: create the account and send the code. Return field errors to stay on the step (such\n\t * as `{ email: \"That email already has an account.\" }`), or throw to show the error's message\n\t * above the buttons. Without it, the block waits a moment and moves on.\n\t */\n\tonSubmit?: (values: SignupValues) => Promise<SignupErrors | void> | SignupErrors | void;\n\t/** Step 2: check the code. Return a message to reject it, or throw. Without it, any code passes. */\n\tonVerify?: (code: string, values: SignupValues) => Promise<string | void> | string | void;\n\t/** Send a new code. Without it, the block waits a moment. */\n\tonResend?: (values: SignupValues) => Promise<void> | void;\n\t/** The last step's button. Without it, the button starts the flow over. */\n\tonFinish?: (values: SignupValues, actions: { restart: () => void }) => void;\n\tfinishLabel?: string;\n\t/** Under the steps, such as a link to sign in. */\n\tfooter?: ReactNode;\n\t/** The title's heading level, to fit the page around it. Step headings are one below. */\n\theadingLevel?: 2 | 3 | 4;\n\tclassName?: string;\n\tref?: Ref<HTMLElement>;\n};\n\nconst STEPS = [\n\t{ id: \"account\", label: \"Account\", heading: \"Your details\" },\n\t{ id: \"verify\", label: \"Verify\", heading: \"Check your email\" },\n\t{ id: \"done\", label: \"Done\", heading: \"You're all set\" },\n] as const;\ntype StepIndex = 0 | 1 | 2;\n\nconst DEFAULT_ROLES: SignupOption[] = [\n\t{ value: \"engineer\", label: \"Engineer\" },\n\t{ value: \"designer\", label: \"Designer\" },\n\t{ value: \"product\", label: \"Product manager\" },\n\t{ value: \"founder\", label: \"Founder\" },\n\t{ value: \"other\", label: \"Something else\" },\n];\n\nconst DEFAULT_COUNTRIES: SignupOption[] = [\n\t{ value: \"pk\", label: \"Pakistan\" },\n\t{ value: \"ae\", label: \"United Arab Emirates\" },\n\t{ value: \"gb\", label: \"United Kingdom\" },\n\t{ value: \"us\", label: \"United States\" },\n\t{ value: \"de\", label: \"Germany\" },\n\t{ value: \"in\", label: \"India\" },\n];\n\nconst EMPTY: SignupValues = {\n\tname: \"\",\n\temail: \"\",\n\tpassword: \"\",\n\trole: \"\",\n\tcountry: \"\",\n\tterms: false,\n\tupdates: false,\n};\n\n/** The fields of step 1, in order: errors focus the first one that fails. */\nconst ACCOUNT_FIELDS = [\"name\", \"email\", \"password\", \"role\", \"country\", \"terms\"] as const;\ntype AccountField = (typeof ACCOUNT_FIELDS)[number];\n\nconst TOO_SHORT = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;\nconst MESSAGES: Record<AccountField, ValidityMessages> = {\n\tname: { valueMissing: \"Enter your name.\", patternMismatch: \"Enter your name.\" },\n\temail: {\n\t\tvalueMissing: \"Enter your email address.\",\n\t\ttypeMismatch: \"Enter an email address like name@example.com.\",\n\t\tpatternMismatch: \"Enter an email address like name@example.com.\",\n\t},\n\tpassword: { valueMissing: \"Choose a password.\", tooShort: TOO_SHORT, customError: TOO_SHORT },\n\trole: { valueMissing: \"Choose the role closest to yours.\" },\n\tcountry: { valueMissing: \"Choose your country.\" },\n\tterms: { valueMissing: \"Accept the terms to continue.\" },\n};\n\n/** Stands in for your API when a callback is left out, so the flow can be tried as is. */\nconst SIMULATED_MS = 900;\n/** How long \"Verified\" shows before the last step opens. */\nconst VERIFIED_HOLD_MS = 650;\nconst pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));\n\ntype Control = HTMLInputElement | HTMLSelectElement;\ntype Leaving = { step: StepIndex; dir: 1 | -1 };\n\n/** The control's message, after syncing the constraints only script can express. */\nfunction check(control: Control): string | undefined {\n\tconst name = control.name as AccountField;\n\tif (name === \"password\" && control instanceof HTMLInputElement) {\n\t\tconst short = control.value.length > 0 && control.value.length < MIN_PASSWORD_LENGTH;\n\t\tcontrol.setCustomValidity(short ? TOO_SHORT : \"\");\n\t}\n\treturn validityMessage(control, MESSAGES[name]);\n}\n\n/**\n * A three-step sign-up in a Card: details, an emailed code, then done. One native `<form>`: the\n * browser's constraints (`required`, `type=\"email\"`, `pattern`, a custom validity for the password\n * length) decide what is wrong, Field shows it, and `:user-invalid` colors it. An error shows when\n * a filled field loses focus or on Continue, and clears as soon as the field is fixed.\n *\n * Steps slide and fade in CSS (`@starting-style` in, a keyframe out) while the card eases to the\n * new height; reduced motion and `data-motion=\"off\"` switch steps at once. Each new step's heading\n * takes focus and a polite live region names the step.\n *\n * Nothing is sent anywhere: wire `onSubmit`, `onVerify` and `onResend` to your API.\n */\nexport function SignupBlock({\n\ttitle = \"Create your account\",\n\tdescription = \"Three quick steps and you are in.\",\n\troles = DEFAULT_ROLES,\n\tcountries = DEFAULT_COUNTRIES,\n\tdefaultValues,\n\ttermsLabel = \"I agree to the Terms of Service and Privacy Policy\",\n\tcodeLength = 6,\n\tresendSeconds = 30,\n\tonSubmit,\n\tonVerify,\n\tonResend,\n\tonFinish,\n\tfinishLabel = \"Get started\",\n\tfooter,\n\theadingLevel = 2,\n\tclassName,\n\tref,\n}: SignupBlockProps) {\n\tconst id = useId();\n\tconst [step, setStep] = useState<StepIndex>(0);\n\tconst [dir, setDir] = useState<1 | -1>(1);\n\tconst [leaving, setLeaving] = useState<Leaving[]>([]);\n\tconst [moved, setMoved] = useState(false);\n\tconst [values, setValues] = useState<SignupValues>(() => ({ ...EMPTY, ...defaultValues }));\n\tconst [errors, setErrors] = useState<SignupErrors>({});\n\tconst [formError, setFormError] = useState<string>();\n\tconst [status, setStatus] = useState<{ step: StepIndex; state: ButtonState }>({\n\t\tstep: 0,\n\t\tstate: \"idle\",\n\t});\n\tconst [code, setCode] = useState(\"\");\n\tconst [codeError, setCodeError] = useState<string>();\n\tconst [resendIn, setResendIn] = useState(0);\n\tconst [resending, setResending] = useState(false);\n\tconst [announcement, setAnnouncement] = useState(\"\");\n\n\tconst formRef = useRef<HTMLFormElement>(null);\n\tconst viewportRef = useRef<HTMLDivElement>(null);\n\t/** The code as typed, ahead of state, so a submit fired by the last digit sees all of it. */\n\tconst codeRef = useRef(\"\");\n\t/** A field to focus after the next render, once a disabled step is enabled again. */\n\tconst focusNext = useRef<string | null>(null);\n\n\tconst busy = status.state === \"loading\";\n\tconst stateOf = (index: StepIndex): ButtonState =>\n\t\tstatus.step === index ? status.state : \"idle\";\n\n\t// The leaving step stays for its exit animation, then goes.\n\tuseEffect(() => {\n\t\tif (leaving.length === 0) return;\n\t\tconst timer = setTimeout(() => setLeaving([]), STEP_EXIT_MS);\n\t\treturn () => clearTimeout(timer);\n\t}, [leaving]);\n\n\t// A new step: its heading takes focus (not on the first render).\n\tuseEffect(() => {\n\t\tif (!moved) return;\n\t\tviewportRef.current\n\t\t\t?.querySelector<HTMLElement>(`[data-step=\"${STEPS[step].id}\"] .${signupParts.heading}`)\n\t\t\t?.focus();\n\t}, [step, moved]);\n\n\tuseEffect(() => {\n\t\tif (!focusNext.current || busy) return;\n\t\tconst target = formRef.current?.elements.namedItem(focusNext.current);\n\t\tfocusNext.current = null;\n\t\tif (target instanceof HTMLElement) target.focus();\n\t});\n\n\t// The viewport eases to the current step's height; only the CSS variable changes.\n\tuseEffect(() => {\n\t\tconst viewport = viewportRef.current;\n\t\tconst panel = viewport?.querySelector<HTMLElement>(\n\t\t\t`[data-step=\"${STEPS[step].id}\"][data-current]`,\n\t\t);\n\t\tif (!viewport || !panel) return;\n\t\tconst measure = () => viewport.style.setProperty(\"--_h\", `${panel.offsetHeight}px`);\n\t\tmeasure();\n\t\tconst observer = new ResizeObserver(measure);\n\t\tobserver.observe(panel);\n\t\treturn () => observer.disconnect();\n\t}, [step]);\n\n\t// The resend countdown, one second at a time, only while the code step is open.\n\tuseEffect(() => {\n\t\tif (step !== 1 || resendIn <= 0) return;\n\t\tconst timer = setTimeout(() => setResendIn((seconds) => seconds - 1), 1000);\n\t\treturn () => clearTimeout(timer);\n\t}, [step, resendIn]);\n\n\tfunction go(next: StepIndex) {\n\t\tconst direction = next > step ? 1 : -1;\n\t\tsetLeaving((list) => [...list.filter((item) => item.step !== next), { step, dir: direction }]);\n\t\tsetDir(direction);\n\t\tsetStep(next);\n\t\tsetMoved(true);\n\t\tsetFormError(undefined);\n\t\tsetAnnouncement(`Step ${next + 1} of ${STEPS.length}: ${STEPS[next].heading}`);\n\t}\n\n\tfunction restart() {\n\t\tsetValues({ ...EMPTY, ...defaultValues });\n\t\tsetErrors({});\n\t\tchangeCode(\"\");\n\t\tsetCodeError(undefined);\n\t\tsetStatus({ step: 0, state: \"idle\" });\n\t\tgo(0);\n\t}\n\n\tfunction update<K extends SignupField>(name: K, value: SignupValues[K], control?: Control) {\n\t\tsetValues((current) => ({ ...current, [name]: value }));\n\t\tsetFormError(undefined);\n\t\tif (status.step === 0 && status.state === \"error\") setStatus({ step: 0, state: \"idle\" });\n\t\t// Reward early: a field showing an error clears it the moment it is fixed.\n\t\tif (control && errors[name]) setErrors((current) => ({ ...current, [name]: check(control) }));\n\t}\n\n\t/** Punish late: a filled field is checked when focus leaves it, an empty one only on Continue. */\n\tfunction onBlurField(event: { currentTarget: Control }) {\n\t\tconst control = event.currentTarget;\n\t\tif (!control.value) return;\n\t\tsetErrors((current) => ({ ...current, [control.name]: check(control) }));\n\t}\n\n\tasync function submitAccount(form: HTMLFormElement) {\n\t\tconst controls = ACCOUNT_FIELDS.map((name) => form.elements.namedItem(name)).filter(\n\t\t\t(el): el is Control => el instanceof HTMLInputElement || el instanceof HTMLSelectElement,\n\t\t);\n\t\tconst found: SignupErrors = {};\n\t\tfor (const control of controls) {\n\t\t\tconst message = check(control);\n\t\t\tif (message) found[control.name as AccountField] = message;\n\t\t}\n\t\tsetErrors(found);\n\t\tconst first = controls.find((control) => found[control.name as AccountField]);\n\t\tif (first) {\n\t\t\tfirst.focus();\n\t\t\treturn;\n\t\t}\n\n\t\tsetStatus({ step: 0, state: \"loading\" });\n\t\ttry {\n\t\t\tconst result = onSubmit ? await onSubmit(values) : await pause(SIMULATED_MS);\n\t\t\tconst fieldErrors = result ? Object.entries(result).filter(([, message]) => message) : [];\n\t\t\tif (fieldErrors.length > 0) {\n\t\t\t\tsetErrors(Object.fromEntries(fieldErrors));\n\t\t\t\tfocusNext.current = fieldErrors[0][0];\n\t\t\t\tsetStatus({ step: 0, state: \"error\" });\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tsetStatus({ step: 0, state: \"success\" });\n\t\t\tchangeCode(\"\");\n\t\t\tsetCodeError(undefined);\n\t\t\tsetResendIn(resendSeconds);\n\t\t\tgo(1);\n\t\t} catch (error) {\n\t\t\tsetFormError(messageOf(error));\n\t\t\tsetStatus({ step: 0, state: \"error\" });\n\t\t}\n\t}\n\n\tfunction changeCode(next: string) {\n\t\tcodeRef.current = next;\n\t\tsetCode(next);\n\t}\n\n\tasync function submitCode() {\n\t\tconst typed = codeRef.current;\n\t\tif (typed.length < codeLength) {\n\t\t\tsetCodeError(`Enter all ${codeLength} digits.`);\n\t\t\tfocusNext.current = \"code\";\n\t\t\tsetStatus({ step: 1, state: \"idle\" });\n\t\t\treturn;\n\t\t}\n\t\tsetCodeError(undefined);\n\t\tsetStatus({ step: 1, state: \"loading\" });\n\t\ttry {\n\t\t\tconst message = onVerify ? await onVerify(typed, values) : await pause(SIMULATED_MS);\n\t\t\tif (typeof message === \"string\" && message) {\n\t\t\t\tsetCodeError(message);\n\t\t\t\tchangeCode(\"\");\n\t\t\t\tfocusNext.current = \"code\";\n\t\t\t\tsetStatus({ step: 1, state: \"error\" });\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tsetStatus({ step: 1, state: \"success\" });\n\t\t\tawait pause(VERIFIED_HOLD_MS);\n\t\t\tgo(2);\n\t\t} catch (error) {\n\t\t\tsetCodeError(messageOf(error));\n\t\t\tfocusNext.current = \"code\";\n\t\t\tsetStatus({ step: 1, state: \"error\" });\n\t\t}\n\t}\n\n\tasync function resend() {\n\t\tsetResending(true);\n\t\ttry {\n\t\t\tif (onResend) await onResend(values);\n\t\t\telse await pause(SIMULATED_MS / 2);\n\t\t\tchangeCode(\"\");\n\t\t\tsetCodeError(undefined);\n\t\t\tsetResendIn(resendSeconds);\n\t\t\tsetAnnouncement(`We sent a new code to ${values.email}.`);\n\t\t} catch (error) {\n\t\t\tsetCodeError(messageOf(error));\n\t\t} finally {\n\t\t\tsetResending(false);\n\t\t}\n\t}\n\n\tfunction onFormSubmit(event: FormEvent<HTMLFormElement>) {\n\t\tevent.preventDefault();\n\t\tif (busy) return;\n\t\tif (step === 0) void submitAccount(event.currentTarget);\n\t\telse if (step === 1) void submitCode();\n\t}\n\n\tconst strength = passwordStrength(values.password);\n\tconst panels: { index: StepIndex; leaving?: Leaving }[] = [\n\t\t...leaving.map((item) => ({ index: item.step, leaving: item })),\n\t\t{ index: step },\n\t];\n\n\tfunction renderStep(index: StepIndex, current: boolean): ReactNode {\n\t\tconst headingId = `${id}-step-${index}`;\n\t\tconst Heading = `h${headingLevel + 1}` as \"h3\";\n\t\tconst heading = (\n\t\t\t<Heading id={headingId} tabIndex={-1} className={signupParts.heading}>\n\t\t\t\t{STEPS[index].heading}\n\t\t\t</Heading>\n\t\t);\n\n\t\tif (index === 0) {\n\t\t\tconst termsError = errors.terms;\n\t\t\treturn (\n\t\t\t\t<>\n\t\t\t\t\t<fieldset\n\t\t\t\t\t\tdisabled={!current || busy}\n\t\t\t\t\t\taria-labelledby={headingId}\n\t\t\t\t\t\tclassName=\"m-0 grid min-w-0 gap-4 border-0 p-0\"\n\t\t\t\t\t>\n\t\t\t\t\t\t{heading}\n\t\t\t\t\t\t<Field label=\"Full name\" error={errors.name}>\n\t\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\t\tname=\"name\"\n\t\t\t\t\t\t\t\tautoComplete=\"name\"\n\t\t\t\t\t\t\t\tplaceholder=\"Ada Lovelace\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tpattern=\".*\\S.*\"\n\t\t\t\t\t\t\t\tleadingIcon={<UserIcon />}\n\t\t\t\t\t\t\t\tvalue={values.name}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"name\", event.target.value, event.target)}\n\t\t\t\t\t\t\t\tonBlur={onBlurField}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t<Field label=\"Email\" error={errors.email}>\n\t\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\t\tname=\"email\"\n\t\t\t\t\t\t\t\ttype=\"email\"\n\t\t\t\t\t\t\t\tinputMode=\"email\"\n\t\t\t\t\t\t\t\tautoComplete=\"email\"\n\t\t\t\t\t\t\t\tplaceholder=\"you@example.com\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tpattern=\"[^@\\s]+@[^@\\s]+\\.[^@\\s]+\"\n\t\t\t\t\t\t\t\tleadingIcon={<MailIcon />}\n\t\t\t\t\t\t\t\tvalue={values.email}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"email\", event.target.value, event.target)}\n\t\t\t\t\t\t\t\tonBlur={onBlurField}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t<Field\n\t\t\t\t\t\t\tlabel=\"Password\"\n\t\t\t\t\t\t\terror={errors.password}\n\t\t\t\t\t\t\thint={\n\t\t\t\t\t\t\t\tstrength > 0\n\t\t\t\t\t\t\t\t\t? `Strength: ${strengthLabels[strength]}`\n\t\t\t\t\t\t\t\t\t: `At least ${MIN_PASSWORD_LENGTH} characters.`\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<PasswordInput\n\t\t\t\t\t\t\t\tname=\"password\"\n\t\t\t\t\t\t\t\tautoComplete=\"new-password\"\n\t\t\t\t\t\t\t\tplaceholder=\"Create a password\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tminLength={MIN_PASSWORD_LENGTH}\n\t\t\t\t\t\t\t\tleadingIcon={<LockIcon />}\n\t\t\t\t\t\t\t\tvalue={values.password}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"password\", event.target.value, event.target)}\n\t\t\t\t\t\t\t\tonBlur={onBlurField}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t<StrengthMeter score={strength} />\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t<div className=\"grid gap-4 sm:grid-cols-2\">\n\t\t\t\t\t\t\t<Field label=\"Role\" error={errors.role}>\n\t\t\t\t\t\t\t\t<Select\n\t\t\t\t\t\t\t\t\tname=\"role\"\n\t\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\t\tplaceholder=\"Choose a role\"\n\t\t\t\t\t\t\t\t\tvalue={values.role}\n\t\t\t\t\t\t\t\t\tonChange={(event) => update(\"role\", event.target.value, event.target)}\n\t\t\t\t\t\t\t\t\tonBlur={onBlurField}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{roles.map((option) => (\n\t\t\t\t\t\t\t\t\t\t<SelectItem key={option.value} value={option.value}>\n\t\t\t\t\t\t\t\t\t\t\t{option.label}\n\t\t\t\t\t\t\t\t\t\t</SelectItem>\n\t\t\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t\t\t</Select>\n\t\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t\t<Field label=\"Country\" error={errors.country}>\n\t\t\t\t\t\t\t\t<Select\n\t\t\t\t\t\t\t\t\tname=\"country\"\n\t\t\t\t\t\t\t\t\tautoComplete=\"country\"\n\t\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\t\tplaceholder=\"Choose a country\"\n\t\t\t\t\t\t\t\t\tvalue={values.country}\n\t\t\t\t\t\t\t\t\tonChange={(event) => update(\"country\", event.target.value, event.target)}\n\t\t\t\t\t\t\t\t\tonBlur={onBlurField}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{countries.map((option) => (\n\t\t\t\t\t\t\t\t\t\t<SelectItem key={option.value} value={option.value}>\n\t\t\t\t\t\t\t\t\t\t\t{option.label}\n\t\t\t\t\t\t\t\t\t\t</SelectItem>\n\t\t\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t\t\t</Select>\n\t\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div className=\"grid gap-1.5\">\n\t\t\t\t\t\t\t<Checkbox\n\t\t\t\t\t\t\t\tname=\"terms\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tchecked={values.terms}\n\t\t\t\t\t\t\t\taria-invalid={termsError ? true : undefined}\n\t\t\t\t\t\t\t\taria-describedby={termsError ? `${id}-terms-error` : undefined}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"terms\", event.target.checked, event.target)}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{termsLabel}\n\t\t\t\t\t\t\t</Checkbox>\n\t\t\t\t\t\t\t{termsError ? (\n\t\t\t\t\t\t\t\t<p\n\t\t\t\t\t\t\t\t\tid={`${id}-terms-error`}\n\t\t\t\t\t\t\t\t\taria-live=\"polite\"\n\t\t\t\t\t\t\t\t\tdata-invalid=\"\"\n\t\t\t\t\t\t\t\t\tclassName={cn(fieldParts.message, \"ps-7\")}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{termsError}\n\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<Switch\n\t\t\t\t\t\t\tname=\"updates\"\n\t\t\t\t\t\t\tsize=\"sm\"\n\t\t\t\t\t\t\tchecked={values.updates}\n\t\t\t\t\t\t\tonCheckedChange={(checked) => update(\"updates\", checked)}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span className=\"text-[13px]/5 text-foreground\">Email me product updates</span>\n\t\t\t\t\t\t</Switch>\n\t\t\t\t\t</fieldset>\n\t\t\t\t\t{current && formError ? <FormError>{formError}</FormError> : null}\n\t\t\t\t\t<div className=\"flex justify-end gap-2\">\n\t\t\t\t\t\t<StatefulButton\n\t\t\t\t\t\t\ttype=\"submit\"\n\t\t\t\t\t\t\tstate={stateOf(0)}\n\t\t\t\t\t\t\tloadingText=\"Creating account\"\n\t\t\t\t\t\t\tsuccessText=\"Code sent\"\n\t\t\t\t\t\t\terrorText=\"Try again\"\n\t\t\t\t\t\t\ticon={<ArrowRightIcon />}\n\t\t\t\t\t\t\tclassName=\"w-full sm:w-auto\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tContinue\n\t\t\t\t\t\t</StatefulButton>\n\t\t\t\t\t</div>\n\t\t\t\t</>\n\t\t\t);\n\t\t}\n\n\t\tif (index === 1) {\n\t\t\tconst counting = resendIn > 0;\n\t\t\treturn (\n\t\t\t\t<>\n\t\t\t\t\t<fieldset\n\t\t\t\t\t\tdisabled={!current || busy}\n\t\t\t\t\t\taria-labelledby={headingId}\n\t\t\t\t\t\tclassName=\"m-0 grid min-w-0 gap-4 border-0 p-0\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<div className=\"grid gap-1\">\n\t\t\t\t\t\t\t{heading}\n\t\t\t\t\t\t\t<p className=\"m-0 text-[13px]/5 text-muted-foreground\">\n\t\t\t\t\t\t\t\tWe sent a {codeLength}-digit code to{\" \"}\n\t\t\t\t\t\t\t\t<span className=\"font-[510] text-foreground\">{values.email}</span>.\n\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<Field label=\"Verification code\" error={codeError}>\n\t\t\t\t\t\t\t<InputOTP\n\t\t\t\t\t\t\t\tname=\"code\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tlength={codeLength}\n\t\t\t\t\t\t\t\tvalue={code}\n\t\t\t\t\t\t\t\tonValueChange={(next) => {\n\t\t\t\t\t\t\t\t\tchangeCode(next);\n\t\t\t\t\t\t\t\t\tsetCodeError(undefined);\n\t\t\t\t\t\t\t\t\tif (status.step === 1 && status.state === \"error\")\n\t\t\t\t\t\t\t\t\t\tsetStatus({ step: 1, state: \"idle\" });\n\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\tonComplete={() => formRef.current?.requestSubmit()}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t<p className=\"m-0 flex flex-wrap items-center gap-x-1 text-[13px]/5 text-muted-foreground\">\n\t\t\t\t\t\t\tDidn&apos;t get it?\n\t\t\t\t\t\t\t<Button\n\t\t\t\t\t\t\t\tvariant=\"ghost\"\n\t\t\t\t\t\t\t\tsize=\"sm\"\n\t\t\t\t\t\t\t\tdisabled={counting || resending}\n\t\t\t\t\t\t\t\tonClick={() => void resend()}\n\t\t\t\t\t\t\t\tclassName=\"-ms-1\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{resending\n\t\t\t\t\t\t\t\t\t? \"Sending…\"\n\t\t\t\t\t\t\t\t\t: counting\n\t\t\t\t\t\t\t\t\t\t? `Resend code in ${formatSeconds(resendIn)}`\n\t\t\t\t\t\t\t\t\t\t: \"Resend code\"}\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</fieldset>\n\t\t\t\t\t<div className=\"flex flex-wrap justify-between gap-2\">\n\t\t\t\t\t\t<Button variant=\"secondary\" disabled={busy} onClick={() => go(0)}>\n\t\t\t\t\t\t\t<ArrowLeftIcon />\n\t\t\t\t\t\t\tBack\n\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t<StatefulButton\n\t\t\t\t\t\t\ttype=\"submit\"\n\t\t\t\t\t\t\tstate={stateOf(1)}\n\t\t\t\t\t\t\tloadingText=\"Verifying\"\n\t\t\t\t\t\t\tsuccessText=\"Verified\"\n\t\t\t\t\t\t\terrorText=\"Try again\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tVerify email\n\t\t\t\t\t\t</StatefulButton>\n\t\t\t\t\t</div>\n\t\t\t\t</>\n\t\t\t);\n\t\t}\n\n\t\tconst firstName = values.name.trim().split(/\\s+/)[0];\n\t\treturn (\n\t\t\t<div className=\"grid justify-items-center gap-3 py-2 text-center\">\n\t\t\t\t<svg className={signupParts.doneMark} viewBox=\"0 0 56 56\" aria-hidden=\"true\">\n\t\t\t\t\t<circle cx=\"28\" cy=\"28\" r=\"25\" pathLength={1} />\n\t\t\t\t\t<path d=\"M17 29l7.5 7.5L39 21\" pathLength={1} />\n\t\t\t\t</svg>\n\t\t\t\t<div className=\"grid gap-1\">\n\t\t\t\t\t{heading}\n\t\t\t\t\t<p className=\"m-0 text-[13px]/5 text-pretty text-muted-foreground\">\n\t\t\t\t\t\t{firstName ? `Welcome, ${firstName}. ` : \"\"}Your account is ready\n\t\t\t\t\t\t{values.updates ? \", and we will keep you posted.\" : \".\"}\n\t\t\t\t\t</p>\n\t\t\t\t</div>\n\t\t\t\t<Button\n\t\t\t\t\tclassName=\"mt-2 w-full\"\n\t\t\t\t\tonClick={() => (onFinish ? onFinish(values, { restart }) : restart())}\n\t\t\t\t>\n\t\t\t\t\t{onFinish ? finishLabel : \"Start over\"}\n\t\t\t\t</Button>\n\t\t\t</div>\n\t\t);\n\t}\n\n\treturn (\n\t\t<Card\n\t\t\tas=\"section\"\n\t\t\tsize=\"lg\"\n\t\t\tref={ref}\n\t\t\taria-labelledby={`${id}-title`}\n\t\t\tdata-moved={moved ? \"\" : undefined}\n\t\t\tclassName={cn(signupParts.root, \"w-full max-w-md\", className)}\n\t\t>\n\t\t\t<CardHeader>\n\t\t\t\t<CardTitle as={`h${headingLevel}`} id={`${id}-title`} className=\"text-lg/7 font-[590]\">\n\t\t\t\t\t{title}\n\t\t\t\t</CardTitle>\n\t\t\t\t{description ? <CardDescription>{description}</CardDescription> : null}\n\t\t\t</CardHeader>\n\t\t\t<StepProgress current={step} />\n\t\t\t<form ref={formRef} noValidate aria-busy={busy || undefined} onSubmit={onFormSubmit}>\n\t\t\t\t<div ref={viewportRef} className={signupParts.viewport}>\n\t\t\t\t\t{panels.map(({ index, leaving: gone }) => (\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tkey={STEPS[index].id}\n\t\t\t\t\t\t\tclassName={cn(signupParts.panel, \"grid gap-5\")}\n\t\t\t\t\t\t\tdata-step={STEPS[index].id}\n\t\t\t\t\t\t\tdata-current={gone ? undefined : \"\"}\n\t\t\t\t\t\t\tdata-leaving={gone ? \"\" : undefined}\n\t\t\t\t\t\t\tinert={gone ? true : undefined}\n\t\t\t\t\t\t\tstyle={{ \"--_dir\": gone ? gone.dir : dir } as CSSProperties}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{renderStep(index, !gone)}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t))}\n\t\t\t\t</div>\n\t\t\t</form>\n\t\t\t{footer ? (\n\t\t\t\t<div className=\"text-center text-[13px]/5 text-muted-foreground\">{footer}</div>\n\t\t\t) : null}\n\t\t\t<p className=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\">\n\t\t\t\t{announcement}\n\t\t\t</p>\n\t\t</Card>\n\t);\n}\n\nfunction StepProgress({ current }: { current: StepIndex }) {\n\treturn (\n\t\t<ol\n\t\t\taria-label=\"Sign-up progress\"\n\t\t\tclassName={signupParts.progress}\n\t\t\tstyle={{ \"--_progress\": current / (STEPS.length - 1) } as CSSProperties}\n\t\t>\n\t\t\t{STEPS.map((item, index) => {\n\t\t\t\t// The last step is the finish line: reaching it completes every step.\n\t\t\t\tconst last = current === STEPS.length - 1;\n\t\t\t\tconst state =\n\t\t\t\t\tindex < current || last ? \"complete\" : index === current ? \"current\" : \"upcoming\";\n\t\t\t\treturn (\n\t\t\t\t\t<li\n\t\t\t\t\t\tkey={item.id}\n\t\t\t\t\t\tclassName={signupParts.progressStep}\n\t\t\t\t\t\tdata-state={state}\n\t\t\t\t\t\taria-current={index === current ? \"step\" : undefined}\n\t\t\t\t\t>\n\t\t\t\t\t\t<span className={signupParts.progressDot} aria-hidden=\"true\">\n\t\t\t\t\t\t\t<span>{index + 1}</span>\n\t\t\t\t\t\t\t<TickIcon />\n\t\t\t\t\t\t</span>\n\t\t\t\t\t\t<span className={signupParts.progressLabel}>\n\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t\t{state === \"complete\" ? <span className=\"sr-only\"> (done)</span> : null}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t</li>\n\t\t\t\t);\n\t\t\t})}\n\t\t</ol>\n\t);\n}\n\n/** Four bars that fill and change tone with the score. The words are the Field's hint. */\nfunction StrengthMeter({ score }: { score: StrengthScore }) {\n\treturn (\n\t\t<div className={signupParts.strength} data-score={score} aria-hidden=\"true\">\n\t\t\t{[1, 2, 3, 4].map((bar) => (\n\t\t\t\t<span\n\t\t\t\t\tkey={bar}\n\t\t\t\t\tclassName={signupParts.strengthBar}\n\t\t\t\t\tdata-filled={bar <= score ? \"\" : undefined}\n\t\t\t\t/>\n\t\t\t))}\n\t\t</div>\n\t);\n}\n\nfunction FormError({ children }: { children: ReactNode }) {\n\treturn (\n\t\t<p\n\t\t\trole=\"alert\"\n\t\t\tclassName=\"m-0 rounded-(--radius-control) bg-destructive/10 px-3 py-2 text-[13px]/5 text-destructive\"\n\t\t>\n\t\t\t{children}\n\t\t</p>\n\t);\n}\n\nfunction messageOf(error: unknown): string {\n\treturn error instanceof Error && error.message\n\t\t? error.message\n\t\t: \"Something went wrong. Try again.\";\n}\n\nfunction formatSeconds(total: number): string {\n\tconst minutes = Math.floor(total / 60);\n\tconst seconds = String(total % 60).padStart(2, \"0\");\n\treturn `${minutes}:${seconds}`;\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/signup/signup-block.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/signup/signup.styles.ts",
+      "content": "/**\n * Class names for the sign-up and sign-in blocks. Their look and motion live in `signup-block.css`\n * (your global CSS, when installed from the registry); layout inside a step is Tailwind.\n */\nexport const signupParts = {\n\t/** The block's card. `data-moved` turns on step transitions after the first step change. */\n\troot: \"rx-signup\",\n\t/** The step indicator: an `<ol>` whose track fills to `--_progress` (0 to 1). */\n\tprogress: \"rx-signup-progress\",\n\t/** One step: `data-state=\"complete\" | \"current\" | \"upcoming\"`. */\n\tprogressStep: \"rx-signup-progress-step\",\n\tprogressDot: \"rx-signup-progress-dot\",\n\tprogressLabel: \"rx-signup-progress-label\",\n\t/** Holds the steps in one grid cell and eases its height to the current step's (`--_h`). */\n\tviewport: \"rx-signup-viewport\",\n\t/** One step. Enters from `--_dir` (1 forward, -1 back); `data-leaving` plays its exit. */\n\tpanel: \"rx-signup-panel\",\n\t/** A step's heading, focused when the step opens. */\n\theading: \"rx-signup-heading\",\n\t/** The password strength meter: four bars, `data-score` 0 to 4. */\n\tstrength: \"rx-signup-strength\",\n\tstrengthBar: \"rx-signup-strength-bar\",\n\t/** The drawn tick on the last step. */\n\tdoneMark: \"rx-signup-done-mark\",\n\t/** A rule with a word in the middle, such as \"or\". */\n\tdivider: \"rx-signup-divider\",\n} as const;\n\n/** How long a leaving step stays in the DOM: its exit animation, plus a frame. */\nexport const STEP_EXIT_MS = 240;\n",
+      "type": "registry:component",
+      "target": "components/blocks/signup/signup.styles.ts"
+    },
+    {
+      "path": "registry/rabtx/blocks/signup/validity.ts",
+      "content": "/** A message for each way a native control can fail its constraints, by `ValidityState` key. */\nexport type ValidityMessages = Partial<Record<Exclude<keyof ValidityState, \"valid\">, string>>;\n\nconst ORDER = [\n\t\"valueMissing\",\n\t\"typeMismatch\",\n\t\"tooShort\",\n\t\"tooLong\",\n\t\"patternMismatch\",\n\t\"rangeUnderflow\",\n\t\"rangeOverflow\",\n\t\"stepMismatch\",\n\t\"badInput\",\n\t\"customError\",\n] as const;\n\ntype Validatable = { validity: ValidityState; validationMessage: string };\n\n/**\n * The first failing constraint of a native control, as a message: yours for that constraint, or\n * the browser's own. Nothing when the control is valid. Constraints come from the markup\n * (`required`, `type=\"email\"`, `minLength`, `pattern`) and `setCustomValidity`, so the CSS\n * `:user-invalid` state and this message always agree.\n */\nexport function validityMessage(\n\tcontrol: Validatable,\n\tmessages: ValidityMessages = {},\n): string | undefined {\n\tconst { validity } = control;\n\tif (validity.valid) return undefined;\n\tfor (const key of ORDER) {\n\t\tif (validity[key]) return messages[key] ?? (control.validationMessage || \"Check this field.\");\n\t}\n\treturn control.validationMessage || \"Check this field.\";\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/signup/validity.ts"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-signup-heading": {
+        "margin": "0",
+        "font-size": "15px",
+        "line-height": "22px",
+        "font-weight": "590",
+        "letter-spacing": "-0.2px",
+        "color": "var(--card-foreground)",
+        "outline": "none",
+        "scroll-margin-block": "4rem"
+      },
+      ".rx-signup-progress": {
+        "--_dot": "1.5rem",
+        "position": "relative",
+        "display": "grid",
+        "grid-template-columns": "repeat(3, minmax(0, 1fr))",
+        "margin": "0",
+        "padding-block": "0",
+        "list-style": "none"
+      },
+      ".rx-signup-progress::before, .rx-signup-progress::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset-block-start": "calc(var(--_dot) / 2 - 1px)",
+        "inset-inline": "calc(100% / 6 + var(--_pad, 0px) * 2 / 3)",
+        "height": "2px",
+        "border-radius": "999px",
+        "background-color": "var(--muted)"
+      },
+      ".rx-signup-progress::after": {
+        "background-color": "var(--primary)",
+        "transform-origin": "left center",
+        "scale": "var(--_progress, 0) 1",
+        "transition": "scale var(--spring-panel-duration) var(--spring-panel)"
+      },
+      ".rx-signup-progress:dir(rtl)::after": {
+        "transform-origin": "right center"
+      },
+      ".rx-signup-progress-step": {
+        "position": "relative",
+        "z-index": "1",
+        "display": "grid",
+        "justify-items": "center",
+        "gap": "6px"
+      },
+      ".rx-signup-progress-dot": {
+        "display": "grid",
+        "place-items": "center",
+        "width": "var(--_dot)",
+        "height": "var(--_dot)",
+        "border": "2px solid var(--input)",
+        "border-radius": "999px",
+        "background-color": "var(--card)",
+        "color": "var(--muted-foreground)",
+        "font-size": "11px",
+        "line-height": "1",
+        "font-weight": "590",
+        "font-variant-numeric": "tabular-nums",
+        "transition": "background-color 200ms var(--motion-ease), border-color 200ms var(--motion-ease), color 200ms var(--motion-ease), box-shadow 200ms var(--motion-ease)"
+      },
+      ".rx-signup-progress-dot > *": {
+        "grid-area": "1 / 1",
+        "transition": "opacity 160ms var(--motion-ease), scale var(--spring-check-duration) var(--spring-check)"
+      },
+      ".rx-signup-progress-dot svg": {
+        "width": "0.75rem",
+        "height": "0.75rem",
+        "opacity": "0",
+        "scale": "0.5"
+      },
+      ".rx-signup-progress-dot svg path": {
+        "stroke-dasharray": "1",
+        "stroke-dashoffset": "1",
+        "transition": "stroke-dashoffset var(--spring-check-duration) var(--spring-check) 80ms"
+      },
+      ".rx-signup-progress-label": {
+        "font-size": "12px",
+        "line-height": "16px",
+        "letter-spacing": "-0.1px",
+        "color": "var(--muted-foreground)",
+        "transition": "color 200ms var(--motion-ease)"
+      },
+      ".rx-signup-progress-step[data-state=\"current\"] .rx-signup-progress-dot": {
+        "border-color": "var(--primary)",
+        "color": "var(--primary)",
+        "box-shadow": "0 0 0 4px color-mix(in oklab, var(--primary) 15%, transparent)"
+      },
+      ".rx-signup-progress-step[data-state=\"current\"] .rx-signup-progress-label": {
+        "color": "var(--foreground)",
+        "font-weight": "510"
+      },
+      ".rx-signup-progress-step[data-state=\"complete\"] .rx-signup-progress-dot": {
+        "border-color": "var(--primary)",
+        "background-color": "var(--primary)",
+        "color": "var(--primary-foreground)"
+      },
+      ".rx-signup-progress-step[data-state=\"complete\"] .rx-signup-progress-dot > span": {
+        "opacity": "0",
+        "scale": "0.5"
+      },
+      ".rx-signup-progress-step[data-state=\"complete\"] .rx-signup-progress-dot svg": {
+        "opacity": "1",
+        "scale": "1"
+      },
+      ".rx-signup-progress-step[data-state=\"complete\"] .rx-signup-progress-dot svg path": {
+        "stroke-dashoffset": "0"
+      },
+      ".rx-signup-progress-step[data-state=\"complete\"] .rx-signup-progress-label": {
+        "color": "var(--foreground)"
+      },
+      ".rx-signup-viewport": {
+        "display": "grid",
+        "height": "var(--_h, auto)",
+        "overflow": "clip",
+        "overflow-clip-margin": "8px",
+        "transition": "height var(--spring-panel-duration) var(--spring-panel)"
+      },
+      ".rx-signup-panel": {
+        "--_flip": "1",
+        "grid-area": "1 / 1",
+        "align-self": "start",
+        "min-width": "0"
+      },
+      ".rx-signup-panel:dir(rtl)": {
+        "--_flip": "-1"
+      },
+      ".rx-signup[data-moved] .rx-signup-panel[data-current]": {
+        "transition": "opacity 220ms var(--motion-ease) 40ms, translate var(--spring-panel-duration) var(--spring-panel), filter 220ms var(--motion-ease) 40ms"
+      },
+      "@starting-style ": {
+        ".rx-signup[data-moved] .rx-signup-panel[data-current]": {
+          "opacity": "0",
+          "translate": "calc(var(--_dir, 1) * var(--_flip) * 2rem) 0",
+          "filter": "blur(4px)"
+        }
+      },
+      ".rx-signup-panel[data-leaving]": {
+        "pointer-events": "none",
+        "animation": "rx-signup-leave 200ms var(--motion-ease) forwards"
+      },
+      "@keyframes rx-signup-leave": {
+        "to": {
+          "opacity": "0",
+          "translate": "calc(var(--_dir, 1) * var(--_flip) * -2rem) 0",
+          "filter": "blur(4px)"
+        }
+      },
+      ".rx-signup-strength": {
+        "--_tone": "var(--muted-foreground)",
+        "display": "grid",
+        "grid-template-columns": "repeat(4, minmax(0, 1fr))",
+        "gap": "4px",
+        "margin-block-start": "2px"
+      },
+      ".rx-signup-strength[data-score=\"1\"]": {
+        "--_tone": "var(--destructive)"
+      },
+      ".rx-signup-strength[data-score=\"2\"]": {
+        "--_tone": "var(--warning)"
+      },
+      ".rx-signup-strength[data-score=\"3\"]": {
+        "--_tone": "var(--primary)"
+      },
+      ".rx-signup-strength[data-score=\"4\"]": {
+        "--_tone": "var(--success)"
+      },
+      ".rx-signup-strength-bar": {
+        "position": "relative",
+        "height": "4px",
+        "overflow": "hidden",
+        "border-radius": "999px",
+        "background-color": "var(--muted)"
+      },
+      ".rx-signup-strength-bar::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset": "0",
+        "border-radius": "inherit",
+        "background-color": "var(--_tone)",
+        "transform-origin": "left center",
+        "scale": "0 1",
+        "transition": "scale var(--spring-swap-duration) var(--spring-swap), background-color 200ms var(--motion-ease)"
+      },
+      ".rx-signup-strength-bar[data-filled]::after": {
+        "scale": "1 1"
+      },
+      ".rx-signup-strength-bar:dir(rtl)::after": {
+        "transform-origin": "right center"
+      },
+      ".rx-signup-done-mark": {
+        "width": "3.5rem",
+        "height": "3.5rem",
+        "border-radius": "999px",
+        "background-color": "color-mix(in oklab, var(--success) 12%, transparent)",
+        "fill": "none",
+        "stroke": "var(--success)",
+        "stroke-width": "2.5",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      },
+      ".rx-signup-done-mark :is(circle, path)": {
+        "stroke-dasharray": "1",
+        "stroke-dashoffset": "0"
+      },
+      ".rx-signup-done-mark circle": {
+        "rotate": "-90deg",
+        "transform-origin": "center",
+        "animation": "rx-signup-draw 520ms var(--motion-ease) both"
+      },
+      ".rx-signup-done-mark path": {
+        "animation": "rx-signup-draw var(--spring-check-duration) var(--spring-check) 360ms both"
+      },
+      "@keyframes rx-signup-draw": {
+        "from": {
+          "stroke-dashoffset": "1"
+        }
+      },
+      ".rx-signup-divider": {
+        "display": "flex",
+        "align-items": "center",
+        "gap": "12px",
+        "margin": "0",
+        "font-size": "12px",
+        "line-height": "16px",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-signup-divider::before, .rx-signup-divider::after": {
+        "content": "\"\"",
+        "flex": "1",
+        "height": "1px",
+        "background-color": "var(--border)"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-signup :is(.rx-signup-viewport, .rx-signup-panel, .rx-signup-progress-dot), .rx-signup .rx-signup-progress-dot *, .rx-signup .rx-signup-progress::after, .rx-signup .rx-signup-strength-bar::after": {
+          "transition": "none"
+        },
+        ".rx-signup .rx-signup-panel[data-leaving]": {
+          "display": "none"
+        },
+        ".rx-signup .rx-signup-done-mark :is(circle, path)": {
+          "animation": "none"
+        }
+      },
+      "[data-motion=\"off\"] .rx-signup :is(.rx-signup-viewport, .rx-signup-panel, .rx-signup-progress-dot), [data-motion=\"off\"] .rx-signup .rx-signup-progress-dot *, [data-motion=\"off\"] .rx-signup .rx-signup-progress::after, [data-motion=\"off\"] .rx-signup .rx-signup-strength-bar::after": {
+        "transition": "none"
+      },
+      "[data-motion=\"off\"] .rx-signup .rx-signup-panel[data-leaving]": {
+        "display": "none"
+      },
+      "[data-motion=\"off\"] .rx-signup .rx-signup-done-mark :is(circle, path)": {
+        "animation": "none"
+      }
+    }
+  },
+  "categories": [
+    "authentication"
+  ],
+  "type": "registry:block"
+}

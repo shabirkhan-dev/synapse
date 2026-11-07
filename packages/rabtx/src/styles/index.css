@@ -1,0 +1,30 @@
+/*
+ * @rabtx/ui styles: the theme, then each component's CSS. Import this once, after Tailwind.
+ * Tailwind scans the component sources for their classes, so apps need no @source line.
+ */
+@import "./theme.css";
+@import "./control.css";
+@import "./button.css";
+@import "./badge.css";
+@import "./select.css";
+@import "./input.css";
+@import "./textarea.css";
+@import "./checkbox.css";
+@import "./toggle.css";
+@import "./switch.css";
+@import "./radio-group.css";
+@import "./tabs.css";
+@import "./slider.css";
+@import "./collapsible.css";
+@import "./accordion.css";
+@import "./card.css";
+@import "./dialog.css";
+@import "./tooltip.css";
+@import "./popover.css";
+@import "./dropdown-menu.css";
+@import "./toast.css";
+@import "./signup-block.css";
+@import "./command-block.css";
+@import "./settings-block.css";
+
+@source "..";

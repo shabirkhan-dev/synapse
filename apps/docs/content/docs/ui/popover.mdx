@@ -1,0 +1,153 @@
+---
+title: Popover
+description: A non-modal panel on the native Popover API, anchored to its trigger with CSS anchor positioning. It flips to fit and unfolds from the side it opened on, in CSS.
+---
+
+<ComponentPreview name="popover/default" />
+
+## Installation
+
+<Installation name="popover" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/popover`; inside this monorepo, from
+`@rabtx/ui/popover`.
+
+```tsx
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@rabtx/ui/popover";
+
+export function Dimensions() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="secondary">Dimensions</Button>
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="center" sideOffset={8}>
+        <PopoverHeader>
+          <PopoverTitle>Dimensions</PopoverTitle>
+          <PopoverDescription>Set the width and height of the layer.</PopoverDescription>
+        </PopoverHeader>
+        …
+      </PopoverContent>
+    </Popover>
+  );
+}
+```
+
+The parts are shadcn's, with the same `data-slot` names. `PopoverContent` is a `[popover]` element
+and `PopoverTrigger` its native invoker (`popovertarget`), so the browser does the hard parts: the
+panel sits in the top layer above everything (dialogs included), a press outside or Escape closes
+it, focus goes back to the trigger, and it opens before the page hydrates. The panel is
+`role="dialog"`, named by `PopoverTitle` and described by `PopoverDescription` without ids passed
+by hand; on open, focus moves to its first field.
+
+## Sides
+
+`side` is `top`, `right`, `bottom` (default) or `left`. When the panel would not fit there,
+`position-try-fallbacks` flips it to the other side, and the unfold still starts at the trigger.
+
+<ComponentPreview name="popover/sides" />
+
+## Align
+
+`align` lines the panel up with the trigger's start edge, its center (default) or its end edge.
+A start- or end-aligned panel that would overflow flips to the other edge.
+
+<ComponentPreview name="popover/align" />
+
+## Controlled, with a close button
+
+`open` and `onOpenChange` follow every change, whatever made it. `PopoverClose` is a native
+`popovertargetaction="hide"`: wrap a Cancel button in it with `asChild`.
+
+<ComponentPreview name="popover/close" />
+
+## API
+
+`Popover` holds the state and renders nothing itself:
+
+<TypeTable
+  type={{
+    open: { type: "boolean", description: "Controlled, with onOpenChange." },
+    defaultOpen: { type: "boolean", default: "false" },
+    onOpenChange: { type: "(open: boolean) => void", description: "Every change: the trigger, Escape, a press outside." },
+  }}
+/>
+
+`PopoverContent` takes everything a `div` takes (on the `[popover]` element), plus:
+
+<TypeTable
+  type={{
+    side: { type: '"top" | "right" | "bottom" | "left"', default: '"bottom"', description: "Flips to the other side when it would not fit." },
+    align: { type: '"start" | "center" | "end"', default: '"center"' },
+    sideOffset: { type: "number", default: "8", description: "The gap to the trigger, in px." },
+    className: { type: "string", description: "Classes for the panel (it is 18rem wide with 16px padding)." },
+  }}
+/>
+
+`PopoverTrigger` and `PopoverClose` render a `button`, or with `asChild` pass their props to the
+one child, which must forward them to a `<button>` (our `Button` does). `PopoverHeader` and
+`PopoverTitle` are `div`s and `PopoverDescription` a `p`.
+
+Outside React, `popoverParts` from `@rabtx/ui/popover/styles` gives the class names; the Popover
+API and anchor positioning need no script at all:
+
+```html
+<button popovertarget="size" style="anchor-name: --size">Dimensions</button>
+<div id="size" popover role="dialog" class="rx-popover" data-side="bottom" data-align="center"
+     style="position-anchor: --size">
+  <div class="rx-surface rx-popover-surface rx-popover-content">…</div>
+</div>
+```
+
+## Theming
+
+The Popover reads only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Panel | fill `--popover`, text `--popover-foreground`, Flat edge `--border` |
+| Floating depth | `--surface-ring`, `--surface-edge-top`, `--surface-edge-bottom`, `--surface-sheen`, `--surface-shade` |
+| Description | `--muted-foreground` |
+| Corners | `--radius-box` |
+| Motion | `--spring-unfold`, `--motion-ease` |
+
+There is no cast shadow: the raised edge and its hairline ring separate the panel from the page.
+
+## How it works
+
+| Effect | CSS |
+| --- | --- |
+| Placement | `position-anchor` names the trigger's `anchor-name`; `position-area` puts the panel on a side (`bottom span-right` for bottom and start, and so on) and the side's margin is the offset |
+| Flip | `position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline` (inline first for left and right) |
+| Unfold point | `--_ax` / `--_ay` name the corner or edge that touches the trigger; `transform-origin` and the clip start there. As it opens, the component reads where the panel landed and sets `data-flip`, which mirrors that point |
+| Enter | `@starting-style` gives the first frame (opacity 0, scale 0.96); scale runs on the unfold spring, and a keyframe reveals the panel from a sliver at the unfold point (`clip-path: inset()`) |
+| Exit | 150ms, eased, back to the sliver; `display` and `overlay` transition with `allow-discrete`, so it stays in the top layer until it has gone |
+
+JavaScript only keeps the open state in step with the element and writes `data-flip`. Reduced
+motion keeps a 120ms fade; `data-motion="off"` shows and hides it at once.
+
+## Browser support
+
+- **Chromium 133+:** everything, including the invoker `source` that keeps a press on the trigger
+  from counting as a press outside.
+- **Safari 26 and Firefox with anchor positioning:** the same. Without anchor positioning the
+  browser centers the panel in the viewport, which is still usable; without `overlay` the exit is
+  instant.
+
+## Accessibility
+
+- The trigger has `aria-haspopup="dialog"`, `aria-expanded` and `aria-controls`.
+- The panel is a non-modal `role="dialog"`, labelled by its title and described by its description
+  when they are present. Focus moves to its first focusable element (or the panel) on open, and
+  back to the trigger on Escape or close.
+- Tab moves from the trigger into the open panel and on out of it in document order, as the Popover
+  API defines.

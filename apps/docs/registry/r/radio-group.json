@@ -1,0 +1,286 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "radio-group",
+  "title": "Radio Group",
+  "description": "Native radios in a radiogroup fieldset, three sizes and choice cards, with a dot that glides to the chosen option. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/radio-group.styles.ts",
+      "content": "export type RadioGroupSize = \"sm\" | \"md\" | \"lg\";\nexport type RadioGroupVariant = \"default\" | \"card\";\nexport type RadioGroupOrientation = \"vertical\" | \"horizontal\";\n\nexport const radioGroupSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly RadioGroupSize[];\nexport const radioGroupVariants = [\n\t\"default\",\n\t\"card\",\n] as const satisfies readonly RadioGroupVariant[];\n\n/**\n * The class list for a RadioGroup. The look and the motion live in `radio-group.css` (your global\n * CSS, when installed from the registry), so React and plain HTML get the same group from these\n * names. The size and the variant sit on the group; every option inside follows them.\n *\n *   <fieldset role=\"radiogroup\" class=\"rx-radio-group rx-radio-group-md\" aria-label=\"Plan\">\n *     <label class=\"rx-radio-item\">\n *       <span class=\"rx-radio\">\n *         <input type=\"radio\" name=\"plan\" value=\"pro\" class=\"rx-radio-input\" />\n *       </span>\n *       <span class=\"rx-radio-text\"><span>Pro</span></span>\n *     </label>\n *   </fieldset>\n */\nexport function radioGroupClass(\n\tsize: RadioGroupSize = \"md\",\n\tvariant: RadioGroupVariant = \"default\",\n) {\n\treturn variant === \"card\"\n\t\t? `rx-radio-group rx-radio-group-${size} rx-radio-group-card`\n\t\t: `rx-radio-group rx-radio-group-${size}`;\n}\n\n/** Class names for the parts of a RadioGroup, for markup written by hand. */\nexport const radioGroupParts = {\n\t/** One option: a `<label>` around the circle and its text, so the whole row checks it. */\n\titem: \"rx-radio-item\",\n\t/** The drawn circle. Its dot is `::after`, or the group's gliding dot where anchors exist. */\n\tradio: \"rx-radio\",\n\t/** The native radio. Invisible, it covers the circle and a 24px target around it. */\n\tinput: \"rx-radio-input\",\n\t/** The label text and the description, stacked. */\n\ttext: \"rx-radio-text\",\n\t/** A quieter line under the label, announced as the description. */\n\tdescription: \"rx-radio-description\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/radio-group.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ChangeEvent,\n\tcreateContext,\n\ttype FieldsetHTMLAttributes,\n\ttype InputHTMLAttributes,\n\ttype ReactNode,\n\ttype Ref,\n\tuseContext,\n\tuseId,\n\tuseMemo,\n} from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\ttype RadioGroupOrientation,\n\ttype RadioGroupSize,\n\ttype RadioGroupVariant,\n\tradioGroupClass,\n\tradioGroupParts,\n} from \"./radio-group.styles\";\n\ntype GroupState = {\n\tname: string;\n\t/** The controlled value, or undefined when the group keeps its own state. */\n\tvalue: string | undefined;\n\tdefaultValue: string | undefined;\n\tonValueChange: ((value: string) => void) | undefined;\n\trequired: boolean | undefined;\n\tform: string | undefined;\n};\n\nconst RadioGroupContext = createContext<GroupState | null>(null);\n\nexport type RadioGroupProps = Omit<\n\tFieldsetHTMLAttributes<HTMLFieldSetElement>,\n\t\"onChange\" | \"defaultValue\"\n> & {\n\t/** The chosen option's value, controlled. An empty string means none is chosen. */\n\tvalue?: string;\n\t/** The option chosen at first, uncontrolled. */\n\tdefaultValue?: string;\n\t/** The new value after every change, by click, Space or an arrow key. */\n\tonValueChange?: (value: string) => void;\n\t/** The form field name. One is generated when left out, so the arrow keys still group. */\n\tname?: string;\n\t/** Stack the options (default) or lay them out in a wrapping row. */\n\torientation?: RadioGroupOrientation;\n\t/** Circle size: 16, 20 (default) or 24. */\n\tsize?: RadioGroupSize;\n\t/** `card` draws every option as a bordered choice card, the circle at the end. */\n\tvariant?: RadioGroupVariant;\n\t/** One of the options must be chosen before the form submits. */\n\trequired?: boolean;\n\tref?: Ref<HTMLFieldSetElement>;\n};\n\n/**\n * A set of native radios sharing one `name` inside a `<fieldset role=\"radiogroup\">`. The browser\n * moves the choice with the arrow keys, keeps one tab stop, submits the value and announces it;\n * `disabled` on the fieldset disables every option at once. Give the group a name with\n * `aria-label`, `aria-labelledby` or a `Field`.\n *\n * The chosen option's dot glides to it, in CSS only: where anchor positioning exists the dot is one\n * element anchored to the checked circle, elsewhere each circle pops its own dot in.\n */\nexport function RadioGroup({\n\tvalue,\n\tdefaultValue,\n\tonValueChange,\n\tname,\n\torientation = \"vertical\",\n\tsize,\n\tvariant,\n\trequired,\n\tform,\n\tclassName,\n\tchildren,\n\tid: idProp,\n\t\"aria-describedby\": describedByProp,\n\t\"aria-labelledby\": labelledByProp,\n\t\"aria-invalid\": invalidProp,\n\tref,\n\t...rest\n}: RadioGroupProps) {\n\tconst field = useContext(FieldContext);\n\tconst autoName = useId();\n\tconst id = idProp ?? field?.id;\n\tconst describedBy = [field?.describedBy, describedByProp].filter(Boolean).join(\" \") || undefined;\n\tconst labelledBy =\n\t\tlabelledByProp ?? (field && !rest[\"aria-label\"] ? `${field.id}-label` : undefined);\n\tconst state = useMemo(\n\t\t() => ({ name: name ?? autoName, value, defaultValue, onValueChange, required, form }),\n\t\t[name, autoName, value, defaultValue, onValueChange, required, form],\n\t);\n\n\treturn (\n\t\t<RadioGroupContext value={state}>\n\t\t\t<fieldset\n\t\t\t\t{...rest}\n\t\t\t\tref={ref}\n\t\t\t\tid={id}\n\t\t\t\trole=\"radiogroup\"\n\t\t\t\taria-labelledby={labelledBy}\n\t\t\t\taria-describedby={describedBy}\n\t\t\t\taria-invalid={invalidProp ?? (field?.invalid || undefined)}\n\t\t\t\taria-required={required || undefined}\n\t\t\t\tdata-orientation={orientation}\n\t\t\t\tclassName={cn(radioGroupClass(size, variant), className)}\n\t\t\t>\n\t\t\t\t{children}\n\t\t\t</fieldset>\n\t\t</RadioGroupContext>\n\t);\n}\n\nexport type RadioGroupItemProps = Omit<\n\tInputHTMLAttributes<HTMLInputElement>,\n\t\"type\" | \"size\" | \"value\" | \"checked\" | \"defaultChecked\" | \"name\"\n> & {\n\t/** The value the group takes when this option is chosen. */\n\tvalue: string;\n\t/** A quieter line under the label. */\n\tdescription?: ReactNode;\n\t/** The label. Without it, give the option an `aria-label`. */\n\tchildren?: ReactNode;\n\tref?: Ref<HTMLInputElement>;\n};\n\n/**\n * One option: a `<label>` around a native radio and its text, so the text names it and the whole\n * row (or card) is clickable. `className` goes on the label.\n */\nexport function RadioGroupItem({\n\tvalue,\n\tdescription,\n\tchildren,\n\tclassName,\n\tonChange,\n\tid: idProp,\n\t\"aria-describedby\": describedByProp,\n\tref,\n\t...rest\n}: RadioGroupItemProps) {\n\tconst group = useContext(RadioGroupContext);\n\tif (!group) throw new Error(\"RadioGroupItem must be used inside a RadioGroup\");\n\tconst autoId = useId();\n\tconst id = idProp ?? autoId;\n\tconst labelled = children !== undefined && children !== null;\n\tconst descriptionId = description ? `${id}-description` : undefined;\n\t// The wrapping label would read the description as part of the name, so name it by the text alone.\n\tconst labelId = labelled && descriptionId && !rest[\"aria-label\"] ? `${id}-label` : undefined;\n\tconst describedBy = [describedByProp, descriptionId].filter(Boolean).join(\" \") || undefined;\n\n\treturn (\n\t\t<label className={cn(radioGroupParts.item, className)}>\n\t\t\t<span className={radioGroupParts.radio}>\n\t\t\t\t<input\n\t\t\t\t\trequired={group.required}\n\t\t\t\t\tform={group.form}\n\t\t\t\t\t{...rest}\n\t\t\t\t\tref={ref}\n\t\t\t\t\tid={id}\n\t\t\t\t\ttype=\"radio\"\n\t\t\t\t\tname={group.name}\n\t\t\t\t\tvalue={value}\n\t\t\t\t\taria-labelledby={rest[\"aria-labelledby\"] ?? labelId}\n\t\t\t\t\taria-describedby={describedBy}\n\t\t\t\t\t{...(group.value === undefined\n\t\t\t\t\t\t? { defaultChecked: group.defaultValue === value }\n\t\t\t\t\t\t: { checked: group.value === value })}\n\t\t\t\t\tclassName={radioGroupParts.input}\n\t\t\t\t\tonChange={(event: ChangeEvent<HTMLInputElement>) => {\n\t\t\t\t\t\tonChange?.(event);\n\t\t\t\t\t\tif (event.target.checked) group.onValueChange?.(value);\n\t\t\t\t\t}}\n\t\t\t\t/>\n\t\t\t</span>\n\t\t\t{labelled || description ? (\n\t\t\t\t<span className={radioGroupParts.text}>\n\t\t\t\t\t{labelled ? <span id={labelId}>{children}</span> : null}\n\t\t\t\t\t{description ? (\n\t\t\t\t\t\t<span id={descriptionId} className={radioGroupParts.description}>\n\t\t\t\t\t\t\t{description}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t) : null}\n\t\t\t\t</span>\n\t\t\t) : null}\n\t\t</label>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-radio-group": {
+        "--_size": "1.25rem",
+        "--_dot": "0.5rem",
+        "--_edge-w": "2px",
+        "position": "relative",
+        "display": "flex",
+        "flex-direction": "column",
+        "gap": "0.75rem",
+        "min-inline-size": "0",
+        "margin": "0",
+        "padding": "0",
+        "border": "0"
+      },
+      ".rx-radio-group[data-orientation=\"horizontal\"]": {
+        "flex-flow": "row wrap",
+        "gap": "0.75rem 1.5rem"
+      },
+      ".rx-radio-group-sm": {
+        "--_size": "1rem",
+        "--_dot": "0.375rem",
+        "--_edge-w": "1.5px",
+        "gap": "0.5rem"
+      },
+      ".rx-radio-group-lg": {
+        "--_size": "1.5rem",
+        "--_dot": "0.625rem"
+      },
+      ".rx-radio": {
+        "--_edge": "color-mix(in oklab, var(--muted-foreground) 50%, transparent)",
+        "--_halo": "transparent",
+        "position": "relative",
+        "display": "inline-grid",
+        "flex": "none",
+        "place-items": "center",
+        "box-sizing": "border-box",
+        "width": "var(--_size)",
+        "height": "var(--_size)",
+        "border": "var(--_edge-w) solid var(--_edge)",
+        "border-radius": "50%",
+        "background-color": "var(--background)",
+        "box-shadow": "0 0 0 3px var(--_halo)",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "border-color 200ms var(--motion-ease), box-shadow 200ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press)"
+      },
+      ".rx-radio::after": {
+        "content": "\"\"",
+        "grid-area": "1 / 1",
+        "width": "var(--_dot)",
+        "height": "var(--_dot)",
+        "border-radius": "50%",
+        "background-color": "var(--primary)",
+        "pointer-events": "none",
+        "opacity": "0",
+        "scale": "0",
+        "transition": "opacity 160ms var(--motion-ease), scale 160ms var(--motion-ease)"
+      },
+      ".rx-radio:has(> :checked)": {
+        "--_edge": "var(--primary)"
+      },
+      ".rx-radio:has(> :checked)::after": {
+        "opacity": "1",
+        "scale": "1",
+        "transition": "opacity calc(var(--spring-swap-duration) * 0.5) var(--motion-ease), scale var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-radio:has(> :focus-visible)": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-radio:has(> :active:not(:disabled))": {
+        "scale": "0.92"
+      },
+      ".rx-radio:has(> :disabled)": {
+        "opacity": "0.5"
+      },
+      "@media (hover: hover)": {
+        ".rx-radio-item:hover > .rx-radio:not(:has(> :disabled, > :checked))": {
+          "--_edge": "var(--muted-foreground)"
+        },
+        ".rx-radio-group-card > .rx-radio-item:hover:not(:has(:disabled, :checked))": {
+          "--_card-edge": "color-mix(in oklab, var(--muted-foreground) 50%, transparent)"
+        }
+      },
+      ".rx-radio-group[aria-invalid=\"true\"]:not(:has(:checked)) .rx-radio": {
+        "--_edge": "var(--destructive)",
+        "--_halo": "color-mix(in oklab, var(--destructive) 15%, transparent)",
+        "outline-color": "var(--destructive)"
+      },
+      ".rx-radio-input": {
+        "position": "absolute",
+        "top": "50%",
+        "left": "50%",
+        "width": "max(24px, var(--_size))",
+        "height": "max(24px, var(--_size))",
+        "translate": "-50% -50%",
+        "z-index": "1",
+        "margin": "0",
+        "appearance": "none",
+        "opacity": "0",
+        "cursor": "pointer"
+      },
+      ".rx-radio-input:disabled": {
+        "cursor": "not-allowed"
+      },
+      ".rx-radio-item": {
+        "display": "inline-flex",
+        "align-items": "flex-start",
+        "gap": "0.75rem",
+        "color": "var(--foreground)",
+        "font-size": "0.875rem",
+        "line-height": "1.25rem",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent"
+      },
+      ".rx-radio-item > .rx-radio": {
+        "margin-block": "calc((1lh - var(--_size)) / 2)"
+      },
+      ".rx-radio-group-sm > .rx-radio-item": {
+        "gap": "0.5rem",
+        "font-size": "0.8125rem",
+        "letter-spacing": "-0.15px"
+      },
+      ".rx-radio-group-lg > .rx-radio-item": {
+        "font-size": "1rem",
+        "line-height": "1.5rem"
+      },
+      ".rx-radio-item:active:not(:has(:disabled)) > .rx-radio": {
+        "scale": "0.92"
+      },
+      ".rx-radio-item:has(:disabled)": {
+        "cursor": "not-allowed"
+      },
+      ".rx-radio-item:has(:disabled) > .rx-radio-text": {
+        "opacity": "0.5"
+      },
+      ".rx-radio-text": {
+        "display": "flex",
+        "min-width": "0",
+        "flex-direction": "column",
+        "gap": "0.125rem"
+      },
+      ".rx-radio-description": {
+        "color": "var(--muted-foreground)",
+        "font-size": "0.75rem",
+        "line-height": "1rem",
+        "letter-spacing": "0"
+      },
+      ".rx-radio-group-card": {
+        "gap": "0.5rem"
+      },
+      ".rx-radio-group-card[data-orientation=\"horizontal\"]": {
+        "gap": "0.5rem"
+      },
+      ".rx-radio-group-card[data-orientation=\"horizontal\"] > .rx-radio-item": {
+        "flex": "1 1 10rem"
+      },
+      ".rx-radio-group-card > .rx-radio-item": {
+        "--_card-edge": "var(--input)",
+        "--_card-fill": "var(--card)",
+        "position": "relative",
+        "display": "flex",
+        "padding": "0.75rem 1rem",
+        "border": "1px solid var(--_card-edge)",
+        "border-radius": "var(--radius-control)",
+        "background-color": "var(--_card-fill)",
+        "box-shadow": "0 0 0 1px transparent",
+        "transition": "border-color 150ms var(--motion-ease), background-color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press)"
+      },
+      ".rx-radio-group-card > .rx-radio-item > .rx-radio": {
+        "order": "1"
+      },
+      ".rx-radio-group-card > .rx-radio-item > .rx-radio-text": {
+        "flex": "1"
+      },
+      ".rx-radio-group-card > .rx-radio-item:has(:checked)": {
+        "--_card-edge": "var(--primary)",
+        "--_card-fill": "color-mix(in oklab, var(--primary) 6%, var(--card))",
+        "box-shadow": "0 0 0 1px var(--primary)"
+      },
+      ".rx-radio-group-card > .rx-radio-item:has(:focus-visible)": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-radio-group-card > .rx-radio-item:has(:focus-visible) > .rx-radio": {
+        "outline": "none"
+      },
+      ".rx-radio-group-card > .rx-radio-item:active:not(:has(:disabled))": {
+        "scale": "0.985"
+      },
+      ".rx-radio-group-card > .rx-radio-item:active:not(:has(:disabled)) > .rx-radio": {
+        "scale": "none"
+      },
+      ".rx-radio-group-card > .rx-radio-item:has(:disabled)": {
+        "opacity": "0.5"
+      },
+      ".rx-radio-group-card > .rx-radio-item:has(:disabled) > .rx-radio, .rx-radio-group-card > .rx-radio-item:has(:disabled) > .rx-radio-text": {
+        "opacity": "1"
+      },
+      ".rx-radio-group-card.rx-radio-group-sm > .rx-radio-item": {
+        "padding": "0.5rem 0.75rem"
+      },
+      ".rx-radio-group-card.rx-radio-group-lg > .rx-radio-item": {
+        "padding": "1rem 1.25rem"
+      },
+      ".rx-radio-group-card[aria-invalid=\"true\"]:not(:has(:checked)) > .rx-radio-item": {
+        "--_card-edge": "var(--destructive)"
+      },
+      "@supports (anchor-name: --a) and (anchor-scope: all)": {
+        ".rx-radio-group": {
+          "anchor-scope": "--_radio-chosen"
+        },
+        ".rx-radio-group::after": {
+          "content": "\"\"",
+          "position": "absolute",
+          "position-anchor": "--_radio-chosen",
+          "top": "anchor(center)",
+          "left": "anchor(center)",
+          "z-index": "2",
+          "width": "var(--_dot)",
+          "height": "var(--_dot)",
+          "border-radius": "50%",
+          "background-color": "var(--primary)",
+          "pointer-events": "none",
+          "translate": "-50% -50%",
+          "transition": "top var(--spring-glide-duration) var(--spring-glide), left var(--spring-glide-duration) var(--spring-glide), opacity calc(var(--spring-swap-duration) * 0.5) var(--motion-ease), scale var(--spring-swap-duration) var(--spring-swap)"
+        },
+        ".rx-radio-group:not(:has(.rx-radio-input:checked))::after": {
+          "opacity": "0",
+          "scale": "0",
+          "transition": "opacity 160ms var(--motion-ease), scale 160ms var(--motion-ease)"
+        },
+        ".rx-radio-group:has(.rx-radio-input:checked:disabled)::after": {
+          "opacity": "0.5"
+        },
+        ".rx-radio-group:has(.rx-radio-item:active .rx-radio-input:checked:not(:disabled))::after": {
+          "scale": "0.92"
+        },
+        ".rx-radio:has(> :checked), .rx-radio-group:not(:has(.rx-radio-input:checked)) > .rx-radio-item:first-of-type > .rx-radio": {
+          "anchor-name": "--_radio-chosen"
+        },
+        ".rx-radio::after": {
+          "visibility": "hidden"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-radio, .rx-radio-group-card > .rx-radio-item": {
+          "scale": "none"
+        },
+        ".rx-radio::after, .rx-radio-group::after": {
+          "scale": "none",
+          "transition": "opacity 100ms var(--motion-ease)"
+        }
+      },
+      "[data-motion=\"off\"] .rx-radio, [data-motion=\"off\"] .rx-radio::after, [data-motion=\"off\"] .rx-radio-group::after, [data-motion=\"off\"] .rx-radio-group-card > .rx-radio-item": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

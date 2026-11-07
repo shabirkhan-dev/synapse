@@ -1,0 +1,199 @@
+---
+title: Dialog
+description: A native modal dialog in shadcn's parts, with sizes, right and bottom sheets and a morph from its trigger. Every animation is CSS.
+---
+
+<ComponentPreview name="dialog/default" />
+
+## Installation
+
+<Installation name="dialog" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/dialog`; inside this monorepo, from
+`@rabtx/ui/dialog`.
+
+```tsx
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@rabtx/ui/dialog";
+
+export function Share() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="secondary">Share</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Share project</DialogTitle>
+          <DialogDescription>Anyone with the link can view it.</DialogDescription>
+        </DialogHeader>
+        …
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost">Cancel</Button>
+          </DialogClose>
+          <Button>Copy link</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+The parts are shadcn's, with the same `data-slot` names. `DialogContent` is a real `<dialog>`
+opened with `showModal()`, so the browser does the hard parts: the panel sits in the top layer
+above everything, the rest of the page is inert, focus moves in and stays in, Escape closes it and
+focus goes back to the trigger. `closedby="any"` adds a press on the backdrop (light dismiss). The
+panel is named by `DialogTitle` and described by `DialogDescription` without ids passed by hand.
+
+## Form
+
+Wrap the fields and the footer in a `form`. Control `open` to close it after a successful submit;
+an invalid field keeps it open and the browser points at the field.
+
+<ComponentPreview name="dialog/form" />
+
+## Destructive confirm
+
+`showClose={false}` and `dismissible={false}` leave the two buttons as the only way out (Escape
+still cancels). The safe action comes first, so it takes the first focus.
+
+<ComponentPreview name="dialog/destructive" />
+
+## Morph
+
+`<Dialog morph>` grows the panel out of its trigger and folds it back on close. It is a View
+Transition: the trigger and the panel share a `view-transition-name` for the change, the box moves
+on the panel spring, and the trigger hides while the panel is open. Without View Transitions,
+with reduced motion or `data-motion="off"`, it opens with the usual scale and fade (or at once).
+
+<ComponentPreview name="dialog/morph" />
+
+## Sheet
+
+`side="right"` is a full-height panel against the right edge; `side="bottom"` rises from the
+bottom, full width on a phone and capped on a wide screen. Same parts, same behavior.
+
+<ComponentPreview name="dialog/sheet" />
+
+## Long content
+
+The panel never grows past the viewport less 1rem a side; past that it scrolls. To keep the
+header and the actions in view, give the middle its own scroll area, focusable so the keyboard can
+scroll it.
+
+<ComponentPreview name="dialog/scrollable" />
+
+## Nested
+
+A dialog opened from a dialog stacks above it with its own backdrop. Escape and a backdrop press
+close only the top one, and focus returns to the button in the first dialog.
+
+<ComponentPreview name="dialog/nested" />
+
+## API
+
+`Dialog` holds the state and renders nothing itself:
+
+<TypeTable
+  type={{
+    open: { type: "boolean", description: "Controlled, with onOpenChange." },
+    defaultOpen: { type: "boolean", default: "false" },
+    onOpenChange: { type: "(open: boolean) => void", description: "Every change: buttons, Escape, the backdrop." },
+    modal: { type: "boolean", default: "true", description: "false opens with show(): no backdrop, the page stays usable." },
+    morph: { type: "boolean", default: "false", description: "Grow out of the trigger with a View Transition." },
+  }}
+/>
+
+`DialogContent` takes everything a `<dialog>` takes, plus:
+
+<TypeTable
+  type={{
+    size: { type: '"sm" | "md" | "lg"', default: '"md"' },
+    side: { type: '"center" | "right" | "bottom"', default: '"center"' },
+    showClose: { type: "boolean", default: "true", description: "The close button in the top corner." },
+    closeLabel: { type: "string", default: '"Close"', description: "Its accessible name." },
+    dismissible: { type: "boolean", default: "true", description: "Close on a backdrop press." },
+  }}
+/>
+
+`DialogTrigger` and `DialogClose` render a `button`, or with `asChild` pass their props to the one
+child (our `Button`, a link styled as a button). `DialogTitle` is an `h2`, `DialogDescription` a
+`p`, and `DialogHeader` and `DialogFooter` are `div`s.
+
+Outside React, `dialogClass()` and `dialogParts` from `@rabtx/ui/dialog/styles` give the class
+names, and the Invoker Commands API opens it with no script at all:
+
+```html
+<button command="show-modal" commandfor="share">Share</button>
+<dialog id="share" class="rx-surface rx-dialog rx-dialog-md" closedby="any" aria-labelledby="share-title">
+  <div class="rx-dialog-header">
+    <h2 id="share-title" class="rx-dialog-title">Share project</h2>
+  </div>
+  <div class="rx-dialog-footer">
+    <button command="close" commandfor="share">Done</button>
+  </div>
+</dialog>
+```
+
+`DialogTrigger` renders those same `command` attributes until the page hydrates, so a modal dialog
+already opens before React is running.
+
+## Theming
+
+The Dialog reads only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Panel | fill `--popover`, text `--popover-foreground`, Flat edge `--border` |
+| Floating depth | `--surface-ring`, `--surface-edge-top`, `--surface-edge-bottom`, `--surface-sheen`, `--surface-shade` |
+| Description, close button | `--muted-foreground`; close hover `--accent`, `--accent-foreground` |
+| Backdrop | `--background` pulled toward black at 45%, with a 2px blur |
+| Focus | `--ring` |
+| Corners | `--radius-box`; the close button `--radius-item` |
+| Motion | `--spring-panel`, `--spring-press`, `--motion-ease` |
+
+There is no cast shadow: the raised edge and the backdrop separate the panel from the page.
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Enter | `@starting-style` gives `[open]` its first frame (opacity 0, scale 0.96, 8px down; a sheet starts off-screen) and `opacity`, `scale` and `translate` transition on the panel spring |
+| Exit | shorter (160ms, sheets 220ms) and eased; `display` and `overlay` transition with `allow-discrete`, so the panel stays in the top layer until it has faded |
+| Backdrop | `::backdrop` fades its color and blur in the same way |
+| Close button | pops in from 0.8 just after the panel, and presses down on the press spring |
+| Morph | `document.startViewTransition()`; the group moves on `--spring-panel` and each picture keeps its own size, clipped by the box |
+| Scroll lock | `:root:has(.rx-dialog:modal) { overflow: hidden }` |
+
+JavaScript only calls `showModal()` and `close()` and, for the morph, starts the View Transition.
+Reduced motion and `data-motion="off"` drop every transition and the morph.
+
+## Browser support
+
+- **Chromium 135+:** everything, including light dismiss with `closedby`, the invoker before
+  hydration, the exit animation and the morph.
+- **Safari 18 and Firefox 129+:** the dialog, its enter animation, focus and Escape work; light
+  dismiss falls back to a small click handler; without `overlay` the exit is shorter or instant;
+  the morph uses the View Transitions API where present and the scale and fade elsewhere.
+
+## Accessibility
+
+- The panel is a native modal `dialog`: role, `aria-modal`, the inert page, the focus move and its
+  return come from the browser. `aria-labelledby` and `aria-describedby` point at the title and the
+  description when they are present.
+- The trigger has `aria-haspopup="dialog"`, `aria-expanded` and `aria-controls`.
+- The close button is a real button named "Close" (`closeLabel`). It is last in the panel, so the
+  first focus lands on the content, not on the corner.
+- Give every dialog a `DialogTitle`. A dialog that must be answered can turn off light dismiss
+  and the close button, but Escape always cancels.

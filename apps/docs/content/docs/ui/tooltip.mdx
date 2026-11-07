@@ -1,0 +1,190 @@
+---
+title: Tooltip
+description: A short label on hover and keyboard focus, on the native Popover API and placed by CSS anchor positioning, in shadcn's parts. Every animation is CSS.
+---
+
+<ComponentPreview name="tooltip/default" />
+
+## Installation
+
+<Installation name="tooltip" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/tooltip`; inside this monorepo, from
+`@rabtx/ui/tooltip`.
+
+```tsx
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@rabtx/ui/tooltip";
+
+export function Publish() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="secondary">Publish</Button>
+        </TooltipTrigger>
+        <TooltipContent>Make this page public</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+```
+
+The parts are shadcn's, with the same `data-slot` names. `TooltipContent` is a
+`popover="hint"` element with `role="tooltip"`: it opens in the top layer above everything
+(dialogs included), it is not clipped by any `overflow`, and opening it never closes a menu or
+another popover that is already open. It stays in the page while closed, so the trigger's
+`aria-describedby` always points at it.
+
+It opens when the pointer rests on the trigger for `delayDuration` (120ms), at once on keyboard
+focus, and with a tap on a touch screen (a finger has no hover; a second tap or a tap elsewhere
+hides it). It closes when the pointer leaves both the trigger and the label (you can move onto the
+label to read or select it), on blur, on Escape, on a press, and when the window loses focus.
+
+`TooltipProvider` is optional. Put one around a group of tooltips (a toolbar, or the whole app) to
+share the timing: once one label has shown, the next one opens with no delay until
+`skipDelayDuration` has passed since the last one closed. Only one tooltip shows at a time.
+
+## Sides
+
+`side` is the preferred side. When there is no room there, CSS flips it to the opposite side
+(`position-try-fallbacks`), and the arrow and the grow origin follow. `arrow` draws a small arrow
+that points at the center of the trigger, even when the label is shifted along the edge to stay
+8px inside the viewport.
+
+<ComponentPreview name="tooltip/sides" />
+
+## Alignment
+
+`align` lines the label up with the start, the center (default) or the end of the trigger along
+that side. `sideOffset` sets the gap in px (6 by default, plus the arrow).
+
+<ComponentPreview name="tooltip/align" />
+
+## Toolbar and shortcuts
+
+For an icon-only button whose only label is the tooltip, `<Tooltip asLabel>` makes the tooltip
+the trigger's accessible name (`aria-labelledby`) instead of its description, so the button is
+named even while the tooltip is closed. `TooltipKbd` draws a shortcut as key caps; it is hidden
+from assistive technology, so put the shortcut on the trigger as `aria-keyshortcuts`. Hover one
+button, then slide along: the next labels open at once.
+
+<ComponentPreview name="tooltip/toolbar" />
+
+## Controlled
+
+`open` and `onOpenChange` control it. `onOpenChange` is called for every change: hover, focus,
+Escape, a press elsewhere.
+
+<ComponentPreview name="tooltip/controlled" />
+
+## In text
+
+The trigger can be any focusable element; here it is a button styled as a dotted term, inside a
+paragraph (the label is a `span`, so it is valid inside a `p`). Long labels wrap at 20rem.
+
+<ComponentPreview name="tooltip/inline" />
+
+## API
+
+`TooltipProvider` (optional) shares the timing:
+
+<TypeTable
+  type={{
+    delayDuration: { type: "number", default: "120", description: "Hover time before a tooltip opens, in ms." },
+    skipDelayDuration: { type: "number", default: "300", description: "After one closes, the next opens instantly for this long, in ms." },
+  }}
+/>
+
+`Tooltip` holds one tooltip's state and renders nothing itself:
+
+<TypeTable
+  type={{
+    open: { type: "boolean", description: "Controlled, with onOpenChange." },
+    defaultOpen: { type: "boolean", default: "false" },
+    onOpenChange: { type: "(open: boolean) => void", description: "Every change." },
+    delayDuration: { type: "number", description: "Overrides the provider's delay for this tooltip." },
+    disabled: { type: "boolean", default: "false", description: "Never show." },
+    asLabel: { type: "boolean", default: "false", description: "Name the trigger with the tooltip instead of describing it." },
+  }}
+/>
+
+`TooltipTrigger` renders a `button`, or with `asChild` passes its props to the one child (our
+`Button`, a link). `TooltipContent` takes everything a `span` takes, plus:
+
+<TypeTable
+  type={{
+    side: { type: '"top" | "right" | "bottom" | "left"', default: '"top"', description: "The preferred side; flips when there is no room." },
+    align: { type: '"start" | "center" | "end"', default: '"center"' },
+    sideOffset: { type: "number", default: "6", description: "The gap to the trigger, in px." },
+    arrow: { type: "boolean", default: "false", description: "Point at the trigger." },
+  }}
+/>
+
+`TooltipKbd` is a `kbd` key cap. Outside React, `tooltipClass()` and `tooltipParts` from
+`@rabtx/ui/tooltip/styles` give the class names, and Interest Invokers show it with no script at
+all:
+
+```html
+<button interestfor="save-tip" style="anchor-name: --save">Save</button>
+<span id="save-tip" popover="hint" role="tooltip" class="rx-tooltip"
+  data-side="top" data-align="center" style="position-anchor: --save">Save the draft</span>
+```
+
+`TooltipTrigger` renders that same `interestfor` until the page hydrates, so a tooltip already
+shows before React is running where the browser supports it.
+
+## Theming
+
+The Tooltip reads only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Label | fill `--popover`, text `--popover-foreground`, Flat edge `--border` |
+| Floating depth | `--surface-ring`, `--surface-edge-top`, `--surface-edge-bottom`, `--surface-sheen`, `--surface-shade` |
+| Key cap | `--muted`, `--muted-foreground`, `--border`, `--radius-badge` |
+| Corners | `--radius-control` |
+| Motion | `--spring-unfold`, `--motion-ease` |
+
+There is no cast shadow: the raised edge and its hairline ring separate the label from the page,
+and the arrow continues the same edge.
+
+## How it works
+
+| Piece | Platform feature |
+| --- | --- |
+| Layering | `popover="hint"` (an unknown value falls back to `manual`); shown with `showPopover()` |
+| Placement | the trigger's `anchor-name`, the label's `position-anchor` and a `position-area` per side and alignment |
+| Flipping | `position-try-fallbacks: flip-block, flip-inline, …`; an inline margin keeps it 8px inside the viewport |
+| Out of view | `position-visibility: anchors-visible` hides it while the trigger is scrolled away |
+| Enter | `@starting-style` (opacity 0, scale 0.94) and the unfold spring, from the trigger's side |
+| Exit | 100ms eased; `display` and `overlay` transition with `allow-discrete` |
+| Before hydration | Interest Invokers (`interestfor`) with `interest-delay` |
+
+JavaScript keeps the timing (the delay, the skip delay, the grace while the pointer crosses onto
+the label), calls `showPopover()` and `hidePopover()`, and reads which side CSS chose once the
+label is shown, so it can set `data-placed` and the arrow's offset. Reduced motion keeps a 100ms
+fade; `data-motion="off"` shows and hides it at once.
+
+## Browser support
+
+- **Chromium 142+:** everything, including `hint`, anchor positioning with fallbacks and Interest
+  Invokers before hydration.
+- **Safari 26 and Firefox 147+:** anchor positioning and the enter animation; without `hint` the
+  label is a `manual` popover and the component handles Escape and presses elsewhere itself.
+- **Older engines:** without anchor positioning, the component measures the trigger and places the
+  label itself, with the same flip and viewport margin.
+
+## Accessibility
+
+- The label has `role="tooltip"` and the trigger points `aria-describedby` at it (or, with
+  `asLabel`, `aria-labelledby`, and the label is hidden from the tree so it is not read twice).
+- Keyboard focus shows it at once and blur hides it; a focus that comes from a mouse press does
+  not (`:focus-visible`).
+- Escape hides it without closing a dialog around it. The pointer can move onto the label without
+  it closing (WCAG 1.4.13: dismissible, hoverable, persistent).
+- A tooltip only adds to a control. Do not put links or buttons in it, and do not hide anything a
+  touch user needs only in a tooltip.
+- A `disabled` button gets no pointer or focus events, so it cannot show a tooltip: use
+  `aria-disabled` instead, or wrap it.

@@ -1,0 +1,186 @@
+---
+title: Sign-up
+description: A three-step sign-up card (details, an emailed code, done) and a compact sign-in card, made of the Rabtx components. Every animation is CSS.
+---
+
+<ComponentPreview name="blocks/signup" block />
+
+## Installation
+
+<Installation name="signup-block" />
+
+## Usage
+
+Installed from the registry, import from `@/components/blocks/signup/signup-block`; inside this
+monorepo, from `@rabtx/ui/blocks/signup`.
+
+```tsx
+import { SignupBlock } from "@rabtx/ui/blocks/signup";
+
+export function SignupPage() {
+  return (
+    <SignupBlock
+      onSubmit={async (values) => {
+        const res = await fetch("/api/signup", { method: "POST", body: JSON.stringify(values) });
+        if (res.status === 409) return { email: "That email already has an account." };
+        if (!res.ok) throw new Error("We could not create your account. Try again.");
+      }}
+      onVerify={async (code, values) => {
+        const res = await fetch("/api/verify", {
+          method: "POST",
+          body: JSON.stringify({ email: values.email, code }),
+        });
+        if (!res.ok) return "That code is not right.";
+      }}
+      onResend={(values) => fetch("/api/resend", { method: "POST", body: values.email }).then(() => {})}
+      onFinish={() => location.assign("/dashboard")}
+      footer={<a href="/sign-in">Already have an account? Sign in</a>}
+    />
+  );
+}
+```
+
+The flow is three steps, with a progress indicator over them:
+
+1. **Account**: name and email (Inputs with icons), a PasswordInput with a strength meter, Selects
+   for role and country, a Checkbox to accept the terms and a Switch for product email.
+   **Continue** is a StatefulButton that shows its progress while `onSubmit` runs.
+2. **Verify**: an InputOTP for the emailed code. Filling the last digit submits it. **Resend
+   code** unlocks after a countdown (`resendSeconds`, 30 by default); **Back** keeps everything
+   typed in step 1.
+3. **Done**: a tick that draws itself, and your `onFinish` button.
+
+Without `onSubmit`, `onVerify` and `onResend` the block only waits a moment, so the flow can be
+tried as is. There is no fake network and nothing is stored.
+
+## Validation
+
+The block is one native `<form>` with `noValidate`. The rules are the browser's constraints:
+`required`, `type="email"` with a `pattern` that asks for a dot in the domain, `pattern` on the
+name so spaces alone do not count, and a custom validity for the password's minimum length. The
+block reads `ValidityState` and shows a message through each control's `Field`, so the CSS
+`:user-invalid` state, `aria-invalid` and the words always agree.
+
+- A filled field is checked when focus leaves it; an empty one only on **Continue**. An error
+  clears the moment the field is fixed.
+- **Continue** checks every field, shows every message and focuses the first field that failed.
+- `onSubmit` can return field errors (`{ email: "…" }`) to show them the same way, or throw to
+  show the error's message above the button.
+- `onVerify` returns a message to reject the code (the code clears and takes focus), or throws.
+
+## Sign-in
+
+A compact card for returning users: social buttons, email and password, remember me and a
+forgot-password link. It ships in the same registry item.
+
+<ComponentPreview name="blocks/signin" block />
+
+```tsx
+import { SigninBlock } from "@rabtx/ui/blocks/signup";
+
+<SigninBlock
+  providers={["google", "github"]}
+  onProvider={(provider) => location.assign(`/auth/${provider}`)}
+  onSubmit={async (values) => {
+    const res = await fetch("/api/sign-in", { method: "POST", body: JSON.stringify(values) });
+    if (!res.ok) throw new Error("Wrong email or password.");
+  }}
+/>;
+```
+
+## API
+
+`SignupBlock`:
+
+<TypeTable
+  type={{
+    onSubmit: {
+      type: "(values: SignupValues) => Promise<SignupErrors | void> | SignupErrors | void",
+      description: "Step 1. Return field errors to stay, or throw for a form error.",
+    },
+    onVerify: {
+      type: "(code: string, values: SignupValues) => Promise<string | void> | string | void",
+      description: "Step 2. Return a message to reject the code, or throw.",
+    },
+    onResend: { type: "(values: SignupValues) => Promise<void> | void" },
+    onFinish: {
+      type: "(values: SignupValues, actions: { restart: () => void }) => void",
+      description: "The last step's button. Without it, the button starts over.",
+    },
+    finishLabel: { type: "string", default: '"Get started"' },
+    title: { type: "ReactNode", default: '"Create your account"' },
+    description: { type: "ReactNode" },
+    roles: { type: "{ value: string; label: string }[]" },
+    countries: { type: "{ value: string; label: string }[]" },
+    defaultValues: { type: "Partial<SignupValues>" },
+    termsLabel: { type: "ReactNode", description: "Put your terms and privacy links in it." },
+    codeLength: { type: "number", default: "6" },
+    resendSeconds: { type: "number", default: "30" },
+    footer: { type: "ReactNode", description: "Under the steps, such as a sign-in link." },
+    headingLevel: {
+      type: "2 | 3 | 4",
+      default: "2",
+      description: "The title's level; step headings are one below.",
+    },
+  }}
+/>
+
+`SignupValues` is `{ name, email, password, role, country, terms, updates }`.
+
+`SigninBlock`:
+
+<TypeTable
+  type={{
+    onSubmit: {
+      type: "(values: { email; password; remember }) => Promise<SigninErrors | void> | SigninErrors | void",
+    },
+    providers: { type: '("google" | "github")[]', default: '["google", "github"]' },
+    onProvider: { type: "(provider) => void" },
+    forgotHref: { type: "string", default: '"#"' },
+    title: { type: "ReactNode", default: '"Welcome back"' },
+    description: { type: "ReactNode" },
+    footer: { type: "ReactNode" },
+    headingLevel: { type: "2 | 3 | 4", default: "2" },
+  }}
+/>
+
+`passwordStrength(password)` (0 to 4) and `validityMessage(control, messages)` are exported too.
+
+## Theming
+
+The block reads only the [theme tokens](/docs/ui/theming), through its components and
+`signup-block.css`.
+
+| Part | Tokens |
+| --- | --- |
+| Progress | done and current `--primary` / `--primary-foreground`, to come `--input` / `--muted` / `--muted-foreground` |
+| Strength meter | weak `--destructive`, fair `--warning`, good `--primary`, strong `--success`, empty `--muted` |
+| Done tick | `--success` |
+| Form error | `--destructive` |
+| Motion | `--spring-panel`, `--spring-check`, `--spring-swap`, `--motion-ease` |
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Step in | `@starting-style` gives the new step `opacity: 0`, a 2rem `translate` toward the side it comes from (`--_dir`, mirrored in RTL) and a 4px blur; it transitions to rest on the `panel` spring |
+| Step out | the leaving step stays for 240ms, `inert`, and plays a keyframe the other way |
+| Card height | the steps share one grid cell; the viewport's `height` follows `--_h`, the current step's height from a `ResizeObserver`, on the `panel` spring, so errors appearing grow the card smoothly too |
+| Progress | the track's fill is a `scale` to `--_progress`; a finished dot fills and its tick draws with `stroke-dashoffset` |
+| Strength | each bar's fill is a `scale` on the `swap` spring and takes the score's tone |
+| Done tick | the ring, then the check, draw with `stroke-dashoffset` keyframes |
+
+The first step does not animate in on load. Reduced motion and `data-motion="off"` switch steps at
+once and stop every slide, fill and draw; every state still shows.
+
+## Accessibility
+
+- One `<form>`; each step is a `fieldset` named by its heading. Labels, hints and errors come from
+  `Field`, so every control is named and described, and errors are announced.
+- When a step opens, its heading takes focus and a polite live region says "Step 2 of 3: Check
+  your email". The progress list marks the current step with `aria-current="step"` and says which
+  are done.
+- Continue moves focus to the first field that failed. A rejected code clears and takes focus.
+- The leaving step is `inert` and disabled, so it cannot be focused or submitted.
+- Enter submits the current step; the code submits itself when full. The resend countdown is not
+  announced every second; a new code is.

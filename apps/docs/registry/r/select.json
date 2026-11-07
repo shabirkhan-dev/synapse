@@ -1,0 +1,325 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "select",
+  "title": "Select",
+  "description": "A native select that unfolds a styled list where the customizable select is supported.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "{{origin}}/r/use-base-select.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/select.styles.ts",
+      "content": "export type SelectSize = \"sm\" | \"md\" | \"lg\";\n\nexport const selectSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly SelectSize[];\n\n/**\n * The class list for a Select's wrapper. The look lives in `select.css` (your global CSS, when\n * installed from the registry), so React and plain HTML get the same control from these names:\n *\n *   <div class=\"rx-select-field rx-select-md\">\n *     <select class=\"rx-select\">…</select>\n *     <span class=\"rx-select-chevron\" aria-hidden=\"true\"></span>\n *   </div>\n */\nexport function selectClass(size: SelectSize = \"md\") {\n\treturn `rx-select-field rx-select-${size}`;\n}\n\n/** Class names for the parts of a Select, for markup written by hand. */\nexport const selectParts = {\n\t/** The native `<select>`. It draws the trigger and, where supported, the styled list. */\n\tselect: \"rx-select\",\n\t/** The arrow on the trailing edge. It turns over while the list is open. */\n\tchevron: \"rx-select-chevron\",\n\t/** An icon before the value. Add `data-leading` to the select so the text makes room. */\n\tleading: \"rx-select-leading\",\n\t/** An icon inside one option, shown only in the styled list. */\n\titemIcon: \"rx-select-item-icon\",\n\tseparator: \"rx-select-separator\",\n} as const;\n\n/** Where the list opens. Set on the select as `data-side` just before it opens. */\nexport type SelectSide = \"bottom\" | \"top\";\n\n/**\n * Below unless the list would not fit there and there is more room above. `height` is the list's\n * expected height and `margin` the space it keeps from the viewport edge.\n */\nexport function chooseSide({\n\tabove,\n\tbelow,\n\theight,\n\tmargin = 16,\n}: {\n\tabove: number;\n\tbelow: number;\n\theight: number;\n\tmargin?: number;\n}): SelectSide {\n\treturn below < height + margin && above > below ? \"top\" : \"bottom\";\n}\n\n/**\n * The list's expected height before it opens, from what it will show: visible options, group\n * labels and separators, plus the list's padding and border.\n */\nexport function estimateListHeight({\n\toptions,\n\tgroups = 0,\n\tseparators = 0,\n\trow = 32,\n\tgroupLabel = 28,\n\tseparator = 9,\n\tchrome = 10,\n}: {\n\toptions: number;\n\tgroups?: number;\n\tseparators?: number;\n\trow?: number;\n\tgroupLabel?: number;\n\tseparator?: number;\n\tchrome?: number;\n}) {\n\treturn options * row + groups * groupLabel + separators * separator + chrome;\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/select.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ChangeEvent,\n\ttype KeyboardEvent,\n\ttype OptgroupHTMLAttributes,\n\ttype OptionHTMLAttributes,\n\ttype PointerEvent,\n\ttype ReactNode,\n\ttype Ref,\n\ttype SelectHTMLAttributes,\n\tuseContext,\n} from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { useBaseSelect } from \"@/hooks/use-base-select\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\ttype SelectSize,\n\tchooseSide,\n\testimateListHeight,\n\tselectClass,\n\tselectParts,\n} from \"./select.styles\";\n\nexport type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, \"size\" | \"multiple\"> & {\n\t/** Trigger height: 32, 40 (default) or 48. */\n\tsize?: SelectSize;\n\t/** Shown, in the placeholder color, until an option is chosen. */\n\tplaceholder?: string;\n\t/** An icon before the value, such as a globe for a language. */\n\tleadingIcon?: ReactNode;\n\t/** The chosen value, after every change. `onChange` still receives the native event. */\n\tonValueChange?: (value: string) => void;\n\t/** Applied to the wrapper, so width utilities size the whole control. */\n\tclassName?: string;\n\tref?: Ref<HTMLSelectElement>;\n};\n\n/**\n * A native `<select>` with `SelectItem` (or plain `<option>`) children. The browser supplies the\n * keyboard, typeahead, form value, screen reader semantics and the phone picker. Where the\n * customizable select exists (`appearance: base-select`), the list is drawn and animated by\n * `select.css`: it unfolds from the trigger and the rows fade in. Elsewhere the system list opens\n * and the trigger still looks the same.\n *\n * Put it in a `Field` to get a label, a hint and an error wired up, or give it an `aria-label`.\n */\nexport function Select({\n\tsize,\n\tplaceholder,\n\tleadingIcon,\n\tonValueChange,\n\tonChange,\n\tonPointerDown,\n\tonKeyDown,\n\tclassName,\n\tchildren,\n\tvalue,\n\tdefaultValue,\n\tref,\n\t...rest\n}: SelectProps) {\n\tconst field = useContext(FieldContext);\n\tconst initial =\n\t\tvalue === undefined\n\t\t\t? { defaultValue: defaultValue ?? (placeholder === undefined ? undefined : \"\") }\n\t\t\t: { value };\n\n\treturn (\n\t\t<div className={cn(selectClass(size), className)}>\n\t\t\t{leadingIcon ? (\n\t\t\t\t<span className={selectParts.leading} aria-hidden=\"true\">\n\t\t\t\t\t{leadingIcon}\n\t\t\t\t</span>\n\t\t\t) : null}\n\t\t\t<select\n\t\t\t\tid={field?.id}\n\t\t\t\taria-describedby={field?.describedBy}\n\t\t\t\taria-invalid={field?.invalid || undefined}\n\t\t\t\t{...rest}\n\t\t\t\t{...initial}\n\t\t\t\tref={ref}\n\t\t\t\tclassName={selectParts.select}\n\t\t\t\tdata-leading={leadingIcon ? \"\" : undefined}\n\t\t\t\tonChange={(event: ChangeEvent<HTMLSelectElement>) => {\n\t\t\t\t\tonChange?.(event);\n\t\t\t\t\tonValueChange?.(event.target.value);\n\t\t\t\t}}\n\t\t\t\tonPointerDown={(event: PointerEvent<HTMLSelectElement>) => {\n\t\t\t\t\tplace(event.currentTarget);\n\t\t\t\t\tonPointerDown?.(event);\n\t\t\t\t}}\n\t\t\t\tonKeyDown={(event: KeyboardEvent<HTMLSelectElement>) => {\n\t\t\t\t\tplace(event.currentTarget);\n\t\t\t\t\tonKeyDown?.(event);\n\t\t\t\t}}\n\t\t\t>\n\t\t\t\t{placeholder !== undefined && (\n\t\t\t\t\t<option value=\"\" disabled hidden>\n\t\t\t\t\t\t{placeholder}\n\t\t\t\t\t</option>\n\t\t\t\t)}\n\t\t\t\t{children}\n\t\t\t</select>\n\t\t\t<span className={selectParts.chevron} aria-hidden=\"true\" />\n\t\t</div>\n\t);\n}\n\n/**\n * Just before the list can open, decide whether it opens below or above, so the CSS can unfold it\n * from the edge that touches the trigger. Only attributes change; nothing re-renders.\n */\nfunction place(select: HTMLSelectElement) {\n\tconst rect = select.getBoundingClientRect();\n\tconst row = Number.parseFloat(getComputedStyle(select).getPropertyValue(\"--_row\")) || 32;\n\tconst height = estimateListHeight({\n\t\toptions: select.querySelectorAll(\"option:not([hidden])\").length,\n\t\tgroups: select.querySelectorAll(\"optgroup\").length,\n\t\tseparators: select.querySelectorAll(\"hr\").length,\n\t\trow,\n\t});\n\tselect.dataset.side = chooseSide({\n\t\tabove: rect.top,\n\t\tbelow: window.innerHeight - rect.bottom,\n\t\theight,\n\t});\n\t// From now on a close is a real close, so the trigger may animate back.\n\tselect.dataset.seen = \"\";\n}\n\nexport type SelectItemProps = Omit<OptionHTMLAttributes<HTMLOptionElement>, \"value\"> & {\n\tvalue: string;\n\t/** An icon before the label in the styled list. Browsers with a system list show the label. */\n\ticon?: ReactNode;\n\tref?: Ref<HTMLOptionElement>;\n};\n\n/** One choice: a native `<option>`. The chosen one gets a tick in the styled list. */\nexport function SelectItem({ icon, children, ref, ...rest }: SelectItemProps) {\n\t// Rich option content (icons) only where the styled list renders it, and only after hydration.\n\tconst rich = useBaseSelect();\n\treturn (\n\t\t<option {...rest} ref={ref}>\n\t\t\t{icon && rich ? (\n\t\t\t\t<span className={selectParts.itemIcon} aria-hidden=\"true\">\n\t\t\t\t\t{icon}\n\t\t\t\t</span>\n\t\t\t) : null}\n\t\t\t{children}\n\t\t</option>\n\t);\n}\n\nexport type SelectGroupProps = OptgroupHTMLAttributes<HTMLOptGroupElement> & {\n\t/** The group's heading. Required: a group without one is not announced. */\n\tlabel: string;\n};\n\n/** A labelled group of items: a native `<optgroup>`. */\nexport function SelectGroup(props: SelectGroupProps) {\n\treturn <optgroup {...props} />;\n}\n\n/** A line between items: an `<hr>`, which a select draws in its list. */\nexport function SelectSeparator() {\n\treturn <hr className={selectParts.separator} />;\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-select-field": {
+        "--_h": "2.5rem",
+        "--_pad": "0.75rem",
+        "--_icon": "16px",
+        "--_font": "0.875rem",
+        "--_row": "32px",
+        "--_r": "var(--radius-box)",
+        "position": "relative",
+        "display": "flex",
+        "align-items": "center",
+        "width": "100%",
+        "font-family": "var(--font-sans)"
+      },
+      ".rx-select-field:has(> .rx-select:disabled)": {
+        "opacity": "0.5"
+      },
+      ".rx-select-sm": {
+        "--_h": "2rem",
+        "--_pad": "0.625rem",
+        "--_font": "0.8125rem",
+        "--_row": "28px"
+      },
+      ".rx-select-lg": {
+        "--_h": "3rem",
+        "--_pad": "1rem",
+        "--_icon": "18px",
+        "--_font": "1rem",
+        "--_row": "36px"
+      },
+      ".rx-select": {
+        "--_pinch": "var(--_r) var(--_r) 0 0",
+        "appearance": "none",
+        "box-sizing": "border-box",
+        "width": "100%",
+        "height": "var(--_h)",
+        "padding-block": "0",
+        "padding-inline": "var(--_pad) calc(var(--_pad) + var(--_icon) + 0.5rem)",
+        "border": "1px solid var(--input)",
+        "border-radius": "var(--_r)",
+        "background-color": "var(--card)",
+        "color": "var(--card-foreground)",
+        "font": "inherit",
+        "font-size": "var(--_font)",
+        "line-height": "1.25rem",
+        "letter-spacing": "-0.15px",
+        "cursor": "pointer",
+        "outline": "none",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "border-color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease)"
+      },
+      ".rx-select[data-leading]": {
+        "padding-inline-start": "calc(var(--_pad) + var(--_icon) + 0.5rem)"
+      },
+      ".rx-select[data-side=\"top\"]": {
+        "--_pinch": "0 0 var(--_r) var(--_r)"
+      },
+      "@media (hover: hover)": {
+        ".rx-select:hover": {
+          "border-color": "color-mix(in oklab, var(--foreground) 24%, var(--card))"
+        }
+      },
+      ".rx-select:focus-visible": {
+        "border-color": "var(--ring)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent)"
+      },
+      ".rx-select[aria-invalid=\"true\"]": {
+        "border-color": "var(--destructive)",
+        "box-shadow": "0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent)"
+      },
+      ".rx-select:has(option[value=\"\"]:checked)": {
+        "color": "var(--subtle-foreground)"
+      },
+      ".rx-select:disabled": {
+        "cursor": "not-allowed"
+      },
+      ".rx-select :is(option, optgroup)": {
+        "color": "var(--card-foreground)"
+      },
+      ".rx-select-chevron, .rx-select-leading": {
+        "position": "absolute",
+        "display": "inline-flex",
+        "width": "var(--_icon)",
+        "height": "var(--_icon)",
+        "color": "var(--muted-foreground)",
+        "pointer-events": "none"
+      },
+      ".rx-select-chevron svg, .rx-select-leading svg": {
+        "width": "100%",
+        "height": "100%"
+      },
+      ".rx-select-leading": {
+        "inset-inline-start": "var(--_pad)"
+      },
+      ".rx-select-chevron": {
+        "inset-inline-end": "var(--_pad)",
+        "background": "currentColor",
+        "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 9C18 9 13.5811 15 12 15C10.4188 15 6 9 6 9'/%3E%3C/svg%3E\") center / contain no-repeat",
+        "transition": "rotate 200ms cubic-bezier(0.16, 1, 0.3, 1)"
+      },
+      ".rx-select-field:has(> .rx-select:open) > .rx-select-chevron": {
+        "rotate": "180deg",
+        "transition": "rotate var(--spring-unfold-duration) var(--spring-unfold)"
+      },
+      "@supports (appearance: base-select)": {
+        ".rx-select, .rx-select::picker(select)": {
+          "appearance": "base-select"
+        },
+        ".rx-select": {
+          "display": "flex",
+          "align-items": "center"
+        },
+        ".rx-select::picker-icon": {
+          "display": "none"
+        },
+        ".rx-select::picker(select)": {
+          "--_gap": "8px",
+          "--_lip": "8px",
+          "--_lift": "calc(var(--_gap) * -1)",
+          "--_near": "0 0 var(--_r) var(--_r)",
+          "--_clip-from": "inset(0 0 calc(100% - var(--_lip)) 0 round var(--_near))",
+          "box-sizing": "border-box",
+          "position-area": "block-end span-inline-end",
+          "position-try-fallbacks": "flip-inline",
+          "min-inline-size": "anchor-size(width)",
+          "margin": "var(--_gap) 0 0",
+          "padding": "4px",
+          "border": "1px solid var(--input)",
+          "border-radius": "var(--_r)",
+          "background": "var(--popover)",
+          "color": "var(--popover-foreground)",
+          "box-shadow": "var(--shadow-popover)",
+          "font-family": "var(--font-sans)",
+          "animation": "rx-select-fold 200ms cubic-bezier(0.16, 1, 0.3, 1) both",
+          "transition": "display 200ms allow-discrete, overlay 200ms allow-discrete"
+        },
+        ".rx-select[data-side=\"top\"]::picker(select)": {
+          "--_lift": "var(--_gap)",
+          "--_near": "var(--_r) var(--_r) 0 0",
+          "--_clip-from": "inset(calc(100% - var(--_lip)) 0 0 0 round var(--_near))",
+          "position-area": "block-start span-inline-end",
+          "margin": "0 0 var(--_gap)"
+        },
+        ".rx-select:open::picker(select)": {
+          "animation": "rx-select-reveal var(--spring-unfold-duration) var(--spring-unfold), rx-select-detach calc(var(--spring-unfold-duration) * 0.6) var(--spring-unfold) calc(var(--spring-unfold-duration) * 0.4) backwards, rx-select-appear 40ms linear backwards"
+        },
+        ".rx-select:open": {
+          "animation": "rx-select-pinch-open var(--spring-unfold-duration) linear"
+        },
+        ".rx-select[data-seen]:not(:open)": {
+          "animation": "rx-select-pinch-close 200ms linear"
+        },
+        ".rx-select option": {
+          "display": "flex",
+          "align-items": "center",
+          "gap": "0.5rem",
+          "min-block-size": "var(--_row)",
+          "padding": "0 0.625rem",
+          "border-radius": "var(--radius-item)",
+          "font-size": "var(--_font)",
+          "font-weight": "400",
+          "line-height": "1.25rem",
+          "color": "var(--muted-foreground)",
+          "outline": "none",
+          "transition": "background-color 150ms var(--motion-ease), color 150ms var(--motion-ease)"
+        },
+        ".rx-select option:is(:hover, :focus-visible, :checked)": {
+          "background-color": "var(--accent)",
+          "color": "var(--accent-foreground)"
+        },
+        ".rx-select option:disabled": {
+          "opacity": "0.5"
+        },
+        ".rx-select option::checkmark": {
+          "content": "\"\"",
+          "order": "1",
+          "flex": "none",
+          "margin-inline-start": "auto",
+          "inline-size": "14px",
+          "block-size": "14px",
+          "background": "currentColor",
+          "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 14L8.5 17.5L19 6.5'/%3E%3C/svg%3E\") center / contain no-repeat"
+        },
+        ".rx-select:open option": {
+          "animation": "rx-select-row 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards"
+        },
+        ".rx-select-item-icon": {
+          "display": "inline-flex",
+          "flex": "none",
+          "width": "var(--_icon)",
+          "height": "var(--_icon)"
+        },
+        ".rx-select-item-icon svg": {
+          "width": "100%",
+          "height": "100%"
+        },
+        ".rx-select optgroup": {
+          "padding-block-start": "0.25rem",
+          "font-size": "0.75rem",
+          "font-weight": "500",
+          "line-height": "1.5rem",
+          "color": "var(--subtle-foreground)"
+        },
+        ".rx-select hr, .rx-select .rx-select-separator": {
+          "margin": "4px -4px",
+          "border": "0",
+          "border-block-start": "1px solid var(--input)"
+        },
+        "[data-depth=\"flat\"] .rx-select::picker(select)": {
+          "box-shadow": "none"
+        }
+      },
+      "@keyframes rx-select-reveal": {
+        "from": {
+          "clip-path": "var(--_clip-from)"
+        },
+        "to": {
+          "clip-path": "inset(0 round var(--_r))"
+        }
+      },
+      "@keyframes rx-select-detach": {
+        "from": {
+          "translate": "0 var(--_lift)",
+          "border-radius": "var(--_near)"
+        }
+      },
+      "@keyframes rx-select-appear": {
+        "from": {
+          "opacity": "0"
+        }
+      },
+      "@keyframes rx-select-fold": {
+        "0%": {
+          "clip-path": "inset(0 round var(--_r))"
+        },
+        "40%": {
+          "translate": "0 var(--_lift)",
+          "border-radius": "var(--_near)"
+        },
+        "85%": {
+          "opacity": "1"
+        },
+        "100%": {
+          "clip-path": "var(--_clip-from)",
+          "translate": "0 var(--_lift)",
+          "border-radius": "var(--_near)",
+          "opacity": "0"
+        }
+      },
+      "@keyframes rx-select-pinch-open": {
+        "8%, 20%": {
+          "border-radius": "var(--_pinch)"
+        }
+      },
+      "@keyframes rx-select-pinch-close": {
+        "12%, 25%": {
+          "border-radius": "var(--_pinch)"
+        }
+      },
+      "@keyframes rx-select-row": {
+        "from": {
+          "opacity": "0",
+          "translate": "0 -4px"
+        }
+      },
+      "@keyframes rx-select-fade": {
+        "to": {
+          "opacity": "0"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        "@supports (appearance: base-select)": {
+          ".rx-select::picker(select)": {
+            "animation": "rx-select-fade 120ms linear both",
+            "transition-duration": "120ms"
+          },
+          ".rx-select:open::picker(select)": {
+            "animation": "rx-select-appear 120ms linear backwards"
+          },
+          ".rx-select:open, .rx-select[data-seen]:not(:open), .rx-select:open option": {
+            "animation": "none"
+          }
+        },
+        ".rx-select-chevron, .rx-select-field:has(> .rx-select:open) > .rx-select-chevron": {
+          "transition": "none"
+        }
+      },
+      "[data-motion=\"off\"]": {},
+      "[data-motion=\"off\"] .rx-select::picker(select), [data-motion=\"off\"] .rx-select:open::picker(select), [data-motion=\"off\"] .rx-select:open, [data-motion=\"off\"] .rx-select[data-seen]:not(:open), [data-motion=\"off\"] .rx-select:open option": {
+        "animation": "none",
+        "transition": "none"
+      },
+      "[data-motion=\"off\"] .rx-select, [data-motion=\"off\"] .rx-select-chevron, [data-motion=\"off\"] .rx-select-field:has(> .rx-select:open) > .rx-select-chevron": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

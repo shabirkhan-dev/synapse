@@ -1,0 +1,165 @@
+/*
+ * Collapsible: a <details>. The browser does the toggling; this file animates it.
+ *
+ * Height: `interpolate-size: allow-keywords` lets `::details-content` (the slot that holds
+ * everything after the summary) transition its `block-size` from 0 to `auto`. Closing keeps the
+ * slot rendered to the end because `content-visibility` transitions with `allow-discrete`. Where
+ * `interpolate-size` is missing (Safari, Firefox today) the slot is a one-row grid whose row goes
+ * from `0fr` to `1fr`, which every engine with `::details-content` can transition. Where
+ * `::details-content` is missing too, the content appears at once and still fades in.
+ *
+ * Opening rides `--_open-ease` / `--_open-time` and closing `--_close-*`; the Collapsible glides
+ * both ways (glide spring, no overshoot) and the Accordion swaps in its bouncier open. The content
+ * rises 4px out of a 4px blur, the chevron turns over on the swap spring.
+ */
+@layer components {
+	.rx-collapsible {
+		--_open-ease: var(--spring-glide);
+		--_open-time: var(--spring-glide-duration);
+		--_close-ease: var(--spring-glide);
+		--_close-time: var(--spring-glide-duration);
+
+		display: block;
+		interpolate-size: allow-keywords;
+
+		&::details-content {
+			block-size: 0;
+			overflow: clip;
+			transition:
+				block-size var(--_close-time) var(--_close-ease),
+				content-visibility var(--_close-time) allow-discrete;
+		}
+		&[open]::details-content {
+			block-size: auto;
+			transition:
+				block-size var(--_open-time) var(--_open-ease),
+				content-visibility var(--_open-time) allow-discrete;
+		}
+	}
+
+	@supports not (interpolate-size: allow-keywords) {
+		.rx-collapsible {
+			&::details-content {
+				display: grid;
+				grid-template-rows: 0fr;
+				block-size: auto;
+				transition:
+					grid-template-rows var(--_close-time) var(--_close-ease),
+					content-visibility var(--_close-time) allow-discrete;
+			}
+			&[open]::details-content {
+				grid-template-rows: 1fr;
+				transition:
+					grid-template-rows var(--_open-time) var(--_open-ease),
+					content-visibility var(--_open-time) allow-discrete;
+			}
+			& > .rx-collapsible-content {
+				min-block-size: 0;
+				overflow: hidden;
+			}
+		}
+	}
+
+	.rx-collapsible-trigger {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		box-sizing: border-box;
+		min-block-size: 2.5rem;
+		padding: 0.5rem 0.75rem;
+		border-radius: var(--radius-control);
+		color: var(--foreground);
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 500;
+		letter-spacing: -0.15px;
+		list-style: none;
+		cursor: pointer;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+		transition: background-color 150ms var(--motion-ease);
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+		&[data-disabled] {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+		@media (hover: hover) and (pointer: fine) {
+			&:hover:not([data-disabled]) {
+				background-color: color-mix(in oklab, var(--foreground) 5%, transparent);
+			}
+		}
+	}
+
+	.rx-collapsible-chevron {
+		flex: none;
+		inline-size: 16px;
+		block-size: 16px;
+		margin-inline-start: auto;
+		background: currentColor;
+		color: var(--muted-foreground);
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 9L12 15L6 9'/%3E%3C/svg%3E")
+			center / 16px no-repeat;
+		transition: rotate var(--spring-swap-duration) var(--spring-swap);
+
+		[open] > .rx-collapsible-trigger > & {
+			rotate: 180deg;
+		}
+	}
+
+	/* Closing fades out quickly; opening rises out of a blur, a beat after the height starts. */
+	.rx-collapsible-content {
+		opacity: 0;
+		filter: blur(4px);
+		translate: 0 -4px;
+		transition:
+			opacity 120ms var(--motion-ease),
+			filter 120ms var(--motion-ease),
+			translate 120ms var(--motion-ease);
+
+		[open] > & {
+			opacity: 1;
+			filter: blur(0);
+			translate: 0 0;
+			transition:
+				opacity 220ms var(--motion-ease) 50ms,
+				filter 220ms var(--motion-ease) 50ms,
+				translate var(--_open-time) var(--_open-ease);
+
+			@starting-style {
+				opacity: 0;
+				filter: blur(4px);
+				translate: 0 -4px;
+			}
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/* Less motion: nothing grows, turns, blurs or rises; the content still fades in quickly. */
+	@media (prefers-reduced-motion: reduce) {
+		.rx-collapsible::details-content,
+		.rx-collapsible[open]::details-content,
+		.rx-collapsible-chevron {
+			transition-duration: 0ms;
+		}
+		.rx-collapsible-content,
+		[open] > .rx-collapsible-content {
+			filter: none;
+			translate: none;
+			transition: opacity 100ms var(--motion-ease);
+		}
+	}
+	/* Motion off: every state changes at once. */
+	[data-motion="off"] :is(.rx-collapsible-chevron, .rx-collapsible-content),
+	[data-motion="off"] .rx-collapsible::details-content,
+	[data-motion="off"] .rx-collapsible[open]::details-content {
+		transition: none;
+	}
+}

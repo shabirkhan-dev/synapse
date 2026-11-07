@@ -1,0 +1,330 @@
+/*
+ * The sign-up and sign-in blocks: the step indicator, the step transitions, the password strength
+ * meter, the drawn tick on the last step and the "or" divider. Everything else is the components
+ * the blocks are made of, and Tailwind for layout.
+ *
+ *   - A new step slides in from the side it comes from (`--_dir`: 1 forward, -1 back) and fades
+ *     and unblurs, with `@starting-style`, on the panel spring. Only after the first step change
+ *     (`data-moved`), so the block does not animate in on load.
+ *   - The step leaving plays a short keyframe the other way, then the block removes it.
+ *   - The viewport eases its height to the current step's (`--_h`, measured in script), so the card
+ *     grows and shrinks with the steps and with errors that appear.
+ *   - The progress track fills to `--_progress` and each dot fills when its step is done, its tick
+ *     drawing in.
+ *
+ * Colors come only from the theme: --primary for progress and the strong meter, --destructive,
+ * --warning and --success for the meter's tones, --success for the tick, --muted and
+ * --muted-foreground for what is still to come.
+ */
+@layer components {
+	.rx-signup-heading {
+		margin: 0;
+		font-size: 15px;
+		line-height: 22px;
+		font-weight: 590;
+		letter-spacing: -0.2px;
+		color: var(--card-foreground);
+		outline: none;
+		scroll-margin-block: 4rem;
+	}
+
+	/* Steps: dots on a track, labels under them. */
+	.rx-signup-progress {
+		--_dot: 1.5rem;
+		position: relative;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		margin: 0;
+		padding-block: 0;
+		list-style: none;
+
+		/* The track runs from the first dot's center to the last's; the fill grows over it. */
+		&::before,
+		&::after {
+			content: "";
+			position: absolute;
+			inset-block-start: calc(var(--_dot) / 2 - 1px);
+			inset-inline: calc(100% / 6 + var(--_pad, 0px) * 2 / 3);
+			height: 2px;
+			border-radius: 999px;
+			background-color: var(--muted);
+		}
+		&::after {
+			background-color: var(--primary);
+			transform-origin: left center;
+			scale: var(--_progress, 0) 1;
+			transition: scale var(--spring-panel-duration) var(--spring-panel);
+		}
+		&:dir(rtl)::after {
+			transform-origin: right center;
+		}
+	}
+
+	.rx-signup-progress-step {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		justify-items: center;
+		gap: 6px;
+	}
+
+	.rx-signup-progress-dot {
+		display: grid;
+		place-items: center;
+		width: var(--_dot);
+		height: var(--_dot);
+		border: 2px solid var(--input);
+		border-radius: 999px;
+		background-color: var(--card);
+		color: var(--muted-foreground);
+		font-size: 11px;
+		line-height: 1;
+		font-weight: 590;
+		font-variant-numeric: tabular-nums;
+		transition:
+			background-color 200ms var(--motion-ease),
+			border-color 200ms var(--motion-ease),
+			color 200ms var(--motion-ease),
+			box-shadow 200ms var(--motion-ease);
+
+		& > * {
+			grid-area: 1 / 1;
+			transition:
+				opacity 160ms var(--motion-ease),
+				scale var(--spring-check-duration) var(--spring-check);
+		}
+		& svg {
+			width: 0.75rem;
+			height: 0.75rem;
+			opacity: 0;
+			scale: 0.5;
+
+			& path {
+				stroke-dasharray: 1;
+				stroke-dashoffset: 1;
+				transition: stroke-dashoffset var(--spring-check-duration) var(--spring-check) 80ms;
+			}
+		}
+	}
+
+	.rx-signup-progress-label {
+		font-size: 12px;
+		line-height: 16px;
+		letter-spacing: -0.1px;
+		color: var(--muted-foreground);
+		transition: color 200ms var(--motion-ease);
+	}
+
+	.rx-signup-progress-step[data-state="current"] {
+		& .rx-signup-progress-dot {
+			border-color: var(--primary);
+			color: var(--primary);
+			box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 15%, transparent);
+		}
+		& .rx-signup-progress-label {
+			color: var(--foreground);
+			font-weight: 510;
+		}
+	}
+
+	.rx-signup-progress-step[data-state="complete"] {
+		& .rx-signup-progress-dot {
+			border-color: var(--primary);
+			background-color: var(--primary);
+			color: var(--primary-foreground);
+
+			& > span {
+				opacity: 0;
+				scale: 0.5;
+			}
+			& svg {
+				opacity: 1;
+				scale: 1;
+			}
+			& svg path {
+				stroke-dashoffset: 0;
+			}
+		}
+		& .rx-signup-progress-label {
+			color: var(--foreground);
+		}
+	}
+
+	/* The steps share one grid cell; the viewport's height follows the current one. */
+	.rx-signup-viewport {
+		display: grid;
+		height: var(--_h, auto);
+		overflow: clip;
+		/* Room for focus rings and the shake of an invalid field. */
+		overflow-clip-margin: 8px;
+		transition: height var(--spring-panel-duration) var(--spring-panel);
+	}
+
+	.rx-signup-panel {
+		--_flip: 1;
+		grid-area: 1 / 1;
+		align-self: start;
+		min-width: 0;
+
+		&:dir(rtl) {
+			--_flip: -1;
+		}
+	}
+
+	.rx-signup[data-moved] .rx-signup-panel[data-current] {
+		transition:
+			opacity 220ms var(--motion-ease) 40ms,
+			translate var(--spring-panel-duration) var(--spring-panel),
+			filter 220ms var(--motion-ease) 40ms;
+	}
+	@starting-style {
+		.rx-signup[data-moved] .rx-signup-panel[data-current] {
+			opacity: 0;
+			translate: calc(var(--_dir, 1) * var(--_flip) * 2rem) 0;
+			filter: blur(4px);
+		}
+	}
+
+	.rx-signup-panel[data-leaving] {
+		pointer-events: none;
+		animation: rx-signup-leave 200ms var(--motion-ease) forwards;
+	}
+
+	@keyframes rx-signup-leave {
+		to {
+			opacity: 0;
+			translate: calc(var(--_dir, 1) * var(--_flip) * -2rem) 0;
+			filter: blur(4px);
+		}
+	}
+
+	/* Password strength: four bars that fill in order and take the score's tone. */
+	.rx-signup-strength {
+		--_tone: var(--muted-foreground);
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 4px;
+		margin-block-start: 2px;
+
+		&[data-score="1"] {
+			--_tone: var(--destructive);
+		}
+		&[data-score="2"] {
+			--_tone: var(--warning);
+		}
+		&[data-score="3"] {
+			--_tone: var(--primary);
+		}
+		&[data-score="4"] {
+			--_tone: var(--success);
+		}
+	}
+
+	.rx-signup-strength-bar {
+		position: relative;
+		height: 4px;
+		overflow: hidden;
+		border-radius: 999px;
+		background-color: var(--muted);
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			border-radius: inherit;
+			background-color: var(--_tone);
+			transform-origin: left center;
+			scale: 0 1;
+			transition:
+				scale var(--spring-swap-duration) var(--spring-swap),
+				background-color 200ms var(--motion-ease);
+		}
+		&[data-filled]::after {
+			scale: 1 1;
+		}
+		&:dir(rtl)::after {
+			transform-origin: right center;
+		}
+	}
+
+	/* The last step's tick: the ring draws, then the check, in --success. */
+	.rx-signup-done-mark {
+		width: 3.5rem;
+		height: 3.5rem;
+		border-radius: 999px;
+		background-color: color-mix(in oklab, var(--success) 12%, transparent);
+		fill: none;
+		stroke: var(--success);
+		stroke-width: 2.5;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+
+		& :is(circle, path) {
+			stroke-dasharray: 1;
+			stroke-dashoffset: 0;
+		}
+		& circle {
+			rotate: -90deg;
+			transform-origin: center;
+			animation: rx-signup-draw 520ms var(--motion-ease) both;
+		}
+		& path {
+			animation: rx-signup-draw var(--spring-check-duration) var(--spring-check) 360ms both;
+		}
+	}
+
+	@keyframes rx-signup-draw {
+		from {
+			stroke-dashoffset: 1;
+		}
+	}
+
+	/* "or" between two rules. */
+	.rx-signup-divider {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin: 0;
+		font-size: 12px;
+		line-height: 16px;
+		color: var(--muted-foreground);
+
+		&::before,
+		&::after {
+			content: "";
+			flex: 1;
+			height: 1px;
+			background-color: var(--border);
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/* Less motion: steps switch at once and nothing slides, draws or grows. */
+	@media (prefers-reduced-motion: reduce) {
+		.rx-signup :is(.rx-signup-viewport, .rx-signup-panel, .rx-signup-progress-dot),
+		.rx-signup .rx-signup-progress-dot *,
+		.rx-signup .rx-signup-progress::after,
+		.rx-signup .rx-signup-strength-bar::after {
+			transition: none;
+		}
+		.rx-signup .rx-signup-panel[data-leaving] {
+			display: none;
+		}
+		.rx-signup .rx-signup-done-mark :is(circle, path) {
+			animation: none;
+		}
+	}
+	[data-motion="off"] .rx-signup :is(.rx-signup-viewport, .rx-signup-panel, .rx-signup-progress-dot),
+	[data-motion="off"] .rx-signup .rx-signup-progress-dot *,
+	[data-motion="off"] .rx-signup .rx-signup-progress::after,
+	[data-motion="off"] .rx-signup .rx-signup-strength-bar::after {
+		transition: none;
+	}
+	[data-motion="off"] .rx-signup .rx-signup-panel[data-leaving] {
+		display: none;
+	}
+	[data-motion="off"] .rx-signup .rx-signup-done-mark :is(circle, path) {
+		animation: none;
+	}
+}

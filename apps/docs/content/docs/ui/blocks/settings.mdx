@@ -1,0 +1,165 @@
+---
+title: Settings
+description: A settings page in five sections (profile, account, notifications, appearance, danger zone) with an unsaved changes bar and two dialogs, made of the Rabtx components. Every animation is CSS.
+---
+
+<ComponentPreview name="blocks/settings" block />
+
+## Installation
+
+<Installation name="settings-block" />
+
+## Usage
+
+Installed from the registry, import from `@/components/blocks/settings/settings-block`; inside
+this monorepo, from `@rabtx/ui/blocks/settings`.
+
+```tsx
+import { SettingsBlock } from "@rabtx/ui/blocks/settings";
+
+export function SettingsPage({ user }) {
+  return (
+    <SettingsBlock
+      email={user.email}
+      plan={user.plan}
+      defaultValues={user.settings}
+      onSave={async (values, { changed }) => {
+        const res = await fetch("/api/settings", { method: "PATCH", body: JSON.stringify(values) });
+        if (res.status === 409) return { username: "That username is taken." };
+        if (!res.ok) throw new Error("We could not save your settings. Try again.");
+      }}
+      onChangeEmail={async (email) => {
+        const res = await fetch("/api/email", { method: "POST", body: JSON.stringify({ email }) });
+        if (!res.ok) return "That email is already in use.";
+      }}
+      onDeleteAccount={async () => {
+        await fetch("/api/account", { method: "DELETE" });
+        location.assign("/goodbye");
+      }}
+    />
+  );
+}
+```
+
+The sections are Tabs, each panel a stack of Cards:
+
+1. **Profile**: an avatar with the name's initials (or `avatarUrl`), the plan Badge, then Field +
+   Input for the display name, the username and the website, and a Textarea for the bio.
+2. **Account**: the sign-in email with a **Change email** Dialog, the plan, and Selects for the
+   language and the time zone.
+3. **Notifications**: Switch rows for pushes, and Checkboxes for the email digests.
+4. **Appearance**: RadioGroup choice cards for the theme (light, dark, system), each with a small
+   drawing of it, and for the density.
+5. **Danger zone**: **Delete account** opens a Dialog that asks for a typed phrase.
+
+Change anything and a bar slides in at the bottom with the count, **Discard** and **Save
+changes** (a StatefulButton). `Ctrl+S` or `⌘S` saves from anywhere in the block. Without
+`onSave`, `onChangeEmail` and `onDeleteAccount` the block only waits a moment, so it can be tried
+as is. There is no fake network and nothing is stored.
+
+## Narrow
+
+The layout follows the block's own width, not the window's: it is a size container, and below
+40rem the section list is a row of tabs that scrolls sideways above the panel. The tabs' arrow
+keys follow (left and right on top, up and down beside).
+
+<ComponentPreview name="blocks/settings-narrow" block />
+
+## Validation
+
+The saved controls belong to one native `<form>` through their `form` attribute, so the dialogs,
+which have forms of their own, can sit inside the cards. The rules are the browser's constraints:
+`required` and a `pattern` on the name so spaces alone do not count, `pattern="[a-z0-9_]{3,20}"`
+on the username, `type="url"` on the website and `maxLength` on the bio. The block reads
+`ValidityState` and shows a message through each control's `Field`.
+
+- A filled field is checked when focus leaves it; an empty one only on **Save**. An error clears
+  the moment the field is fixed.
+- **Save** checks every section. The first failing field's section opens and the field takes focus;
+  a red dot marks every tab with an error.
+- `onSave` receives the values and the changed field names. Return field errors
+  (`{ username: "…" }`) to show them the same way, or throw to show the message on the bar.
+- **Change email** rejects a malformed address and your current one; `onChangeEmail` can return a
+  message. **Delete account** needs the phrase typed exactly: it is the field's `pattern`.
+
+## API
+
+<TypeTable
+  type={{
+    onSave: {
+      type: "(values: SettingsValues, info: { changed: SettingsField[] }) => Promise<SettingsErrors | void> | SettingsErrors | void",
+      description: "Return field errors to keep the changes unsaved, or throw for a bar error.",
+    },
+    onChangeEmail: {
+      type: "(email: string) => Promise<string | void> | string | void",
+      description: "Return a message to reject the address, or throw.",
+    },
+    onDeleteAccount: {
+      type: "() => Promise<string | void> | string | void",
+      description: "Return a message to refuse, or throw.",
+    },
+    defaultValues: { type: "Partial<SettingsValues>", description: "The saved settings." },
+    email: { type: "string", default: '"you@example.com"' },
+    plan: { type: "string", default: '"Free"' },
+    planTone: { type: "BadgeTone", default: '"accent"' },
+    avatarUrl: { type: "string" },
+    languages: { type: "{ value: string; label: string }[]" },
+    timezones: { type: "{ value: string; label: string }[]" },
+    defaultSection: { type: "SettingsSection", default: '"profile"' },
+    section: { type: "SettingsSection", description: "Controlled; pair with onSectionChange." },
+    onSectionChange: { type: "(section: SettingsSection) => void" },
+    deletePhrase: { type: "string", default: '"delete my account"' },
+    title: { type: "ReactNode", default: '"Settings"' },
+    description: { type: "ReactNode" },
+    headingLevel: {
+      type: "2 | 3 | 4",
+      default: "2",
+      description: "The title's level; card titles are one below.",
+    },
+  }}
+/>
+
+`SettingsValues` is `{ name, username, website, bio, language, timezone, mentions, comments,
+security, dailyDigest, weeklyDigest, productNews, theme, density }`; `SETTINGS_DEFAULTS` has the
+defaults. `SettingsSection` is `"profile" | "account" | "notifications" | "appearance" | "danger"`.
+`ChangeEmailDialog` and `DeleteAccountDialog` are exported for use on their own.
+
+## Theming
+
+The block reads only the [theme tokens](/docs/ui/theming), through its components and
+`settings-block.css`.
+
+| Part | Tokens |
+| --- | --- |
+| Avatar, unsaved dot, chosen density | `--primary`, `--card` |
+| Danger zone, delete buttons, error dot | `--destructive`, `--primary-foreground`, `--border` |
+| Bar | `--popover` / `--popover-foreground`, `--border`; `--success` once saved |
+| Drawings | `--background`, `--foreground`, `--muted`, `--muted-foreground`, `--primary` in the `rabtx light` and `rabtx dark` scopes |
+| Motion | `--spring-panel`, `--spring-swap`, `--motion-ease` |
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Layout | `container: rx-settings / inline-size`; `@container rx-settings (width >= 40rem)` turns the tab row into a sticky column beside the panels |
+| Section | the Tabs indicator glides on its spring; after the first change (`data-moved`) the new panel's cards rise 0.75rem and fade in from `@starting-style`, 60ms apart (`--_i`) |
+| Bar in | `.rx-settings:has(> form[data-dirty]) > .rx-settings-bar` turns `display: flex`; `@starting-style` gives the first frame, 1rem lower, faded and at 0.98, and it springs up on `panel` |
+| Bar out | `display` transitions with `allow-discrete`, so the bar fades down before it leaves the layout, the tab order and the accessibility tree |
+| Tab dots | a tab whose section has changes (`data-dirty`) or errors (`data-invalid`) scales a dot in on the `swap` spring |
+| Density | the drawing's rows close up on the `swap` spring, and the first takes `--primary` when chosen |
+
+Reduced motion and `data-motion="off"` stop every rise, slide and scale (the bar only fades with
+reduced motion); every state still shows.
+
+## Accessibility
+
+- The sections are WAI-ARIA tabs; `aria-orientation` and the arrow keys follow the layout the
+  container query picked. Each panel is a tab stop and holds Cards named by their headings.
+- Every control is named and described through `Field`, or by its row's text (the Switches) and
+  its group's heading (the Checkboxes and RadioGroups). Errors are announced.
+- A polite live region says when there are unsaved changes, when they are saved or discarded and
+  which section needs attention. Tabs with changes or errors say so to screen readers too.
+- The bar is a region named "Unsaved changes". When it leaves after a save or a discard, focus
+  moves to the open panel instead of being lost. The Save button carries `aria-keyshortcuts`.
+- The dialogs are native modal `<dialog>`s named by their titles; focus moves in and returns to
+  the trigger. While they work, Escape and the backdrop do not close them.

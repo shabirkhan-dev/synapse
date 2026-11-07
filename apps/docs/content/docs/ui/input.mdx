@@ -1,0 +1,203 @@
+---
+title: Input
+description: A native text input drawn like the Select trigger, with icons, addons, a floating label, clear and password buttons, and a one-time code. Every animation is CSS.
+---
+
+<ComponentPreview name="input/default" />
+
+## Installation
+
+<Installation name="input" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/input`; inside this monorepo, from
+`@rabtx/ui/input`.
+
+```tsx
+import { Field } from "@rabtx/ui/field";
+import { Input } from "@rabtx/ui/input";
+
+export function EmailField() {
+  return (
+    <Field label="Email" hint="We only use it to sign you in.">
+      <Input type="email" placeholder="you@example.com" />
+    </Field>
+  );
+}
+```
+
+It is a real `<input>` inside a wrapper that draws the field, so type, autocomplete, native
+validation and phone keyboards all work. Inside a `Field` it receives its id, its description and
+the invalid state. Outside one, give it a floating `label` or an `aria-label`.
+
+## With a Select and a Button
+
+The default look is the Select trigger's: the same fill, edge, corners, hover, focus ring and
+error, so an Input, a Select and a Button of one size line up in a row.
+
+<ComponentPreview name="input/alignment" />
+
+## Variants
+
+`outline` (the default) matches the Select. `filled` is the recessed field from the design
+system: a soft fill with a dark top edge fading to a light bottom edge. In `data-depth="flat"` it
+becomes one plain border.
+
+<ComponentPreview name="input/variants" />
+
+## Icons and shape
+
+`leadingIcon` and `trailingIcon` are decorative (hidden from screen readers) and sized for you.
+`pill` makes the field fully round, for search bars, independent of the radius mode. Clicking an
+icon or the padding focuses the input.
+
+<ComponentPreview name="input/icons" />
+
+## Addons
+
+`startAddon` and `endAddon` are segments at either end, divided from the text by a line. Their
+text is part of the page, so screen readers read it.
+
+<ComponentPreview name="input/addons" />
+
+## Search and clear
+
+`clearable` adds a clear button that is there only while the input has text. It empties the input
+the way typing would, so a controlled input gets its `onChange`, then returns focus. `onClear`
+runs afterwards; `clearLabel` names the button (default "Clear").
+
+<ComponentPreview name="input/search" />
+
+## Password
+
+`PasswordInput` adds an eye button. Its name stays "Show password" and its `aria-pressed` says
+whether the password is showing; the two eyes cross-fade with a little blur.
+
+<ComponentPreview name="input/password" />
+
+## Floating label
+
+`label` puts the label inside the field. It rests where the text goes and floats to the top edge,
+at 80%, on focus or once the input has a value (including autofill). A `placeholder` then shows
+only while focused. Use it at `md` or `lg`; `sm` grows to `md`. Use it instead of a `Field`
+label, not with one.
+
+<ComponentPreview name="input/floating" />
+
+## States
+
+- **Error:** a `Field` `error` (or `aria-invalid`) turns the edge red and shakes the field once.
+  Native constraints (`required`, `type="email"`, `pattern`, `minLength`) do the same through
+  `:user-invalid`, only after the person has edited the field and left it.
+- **Success:** `success` draws a green tick at the end. Say why in the hint, since the tick is
+  decorative.
+- **Disabled** fades to 50%. **Read-only** tints the fill and hides the clear button.
+
+<ComponentPreview name="input/states" />
+
+## One-time code
+
+`InputOTP` is one real input shown as a row of slots, so typing, backspace, paste and SMS autofill
+(`autocomplete="one-time-code"`) work as usual. A single focus ring glides to the next slot, a
+caret blinks there, and each character rolls up into its slot. `onComplete` fires when the last
+slot fills. It sets a `pattern`, so an incomplete code is `:user-invalid` after the person leaves
+it.
+
+<ComponentPreview name="input/otp" />
+
+## API
+
+`Input` takes everything a native `<input>` takes, except the numeric `size`, plus:
+
+<TypeTable
+  type={{
+    size: { type: '"sm" | "md" | "lg"', default: '"md"' },
+    variant: { type: '"outline" | "filled"', default: '"outline"' },
+    pill: { type: "boolean", description: "Fully round." },
+    leadingIcon: { type: "ReactNode", description: "A decorative icon before the text." },
+    trailingIcon: { type: "ReactNode", description: "A decorative icon after the text." },
+    startAddon: { type: "ReactNode", description: "A segment at the start, such as https://." },
+    endAddon: { type: "ReactNode", description: "A segment at the end, such as .com or a unit." },
+    label: { type: "ReactNode", description: "A floating label. Needs md or lg." },
+    clearable: { type: "boolean", description: "A clear button while there is text." },
+    onClear: { type: "() => void", description: "After the clear button empties the input." },
+    clearLabel: { type: "string", default: '"Clear"' },
+    success: { type: "boolean", description: "A green tick that draws itself in." },
+    action: { type: "ReactNode", description: "Your own trailing button; give it inputParts.action." },
+    className: { type: "string", description: "On the wrapper, so width utilities size the control." },
+  }}
+/>
+
+`PasswordInput` takes the same props (no `type` or `action`) plus `revealLabel`
+(default "Show password").
+
+`InputOTP` takes the native input props plus:
+
+<TypeTable
+  type={{
+    length: { type: "number", default: "6" },
+    size: { type: '"sm" | "md" | "lg"', default: '"md"' },
+    charset: { type: '"digits" | "alphanumeric"', default: '"digits"' },
+    mask: { type: "boolean", description: "Dots instead of characters." },
+    value: { type: "string" },
+    defaultValue: { type: "string" },
+    onValueChange: { type: "(value: string) => void", description: "The code after every change." },
+    onComplete: { type: "(value: string) => void", description: "When the last slot fills." },
+  }}
+/>
+
+Outside React, the class names are exported from `@rabtx/ui/input/styles`:
+
+```html
+<div class="rx-input-field rx-input-md">
+  <span class="rx-input-icon" aria-hidden="true"><svg>…</svg></span>
+  <input class="rx-input" aria-label="Search" placeholder="Search" />
+</div>
+```
+
+Give the input a placeholder (a single space will do): `:placeholder-shown` is how the CSS knows
+it is empty, for the clear button and the floating label.
+
+## Theming
+
+The Input reads only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Field | fill `--card`, text `--card-foreground`, edge `--input`, corners `--radius-box` |
+| Filled variant | `--field`, `--field-edge-top`, `--field-edge-bottom`, `--field-shade`, `--field-disabled` |
+| Icons and addons | `--muted-foreground`, addon fill `--secondary` |
+| Placeholder and resting label | `--subtle-foreground` |
+| Focus, error, success | `--ring`, `--destructive`, `--success` |
+| Buttons inside | hover `--accent` / `--accent-foreground`, corners `--radius-item` |
+| Font and motion | `--font-sans`, `--spring-label`, `--spring-swap`, `--motion-ease` |
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Focus and error | the wrapper reads the input with `:has(.rx-input:focus-visible)` and `:has(.rx-input:is([aria-invalid="true"], :user-invalid))`, and transitions its edge and a 3px `color-mix()` halo |
+| Shake | the error rule also sets a 400ms `translate` keyframe, so it plays each time the field turns invalid, with no JavaScript |
+| Floating label | `.rx-input:is(:focus, :not(:placeholder-shown), :autofill) + label` moves and scales it on the `label` spring (a `linear()` easing) |
+| Clear button | hidden by `:has(.rx-input:placeholder-shown)`; it pops in on the `swap` spring |
+| Password eye | both glyphs are always there; `aria-pressed` cross-fades them with scale and a 4px blur, shorter on the way out |
+| Success tick | the path has `pathLength="1"` and a `stroke-dashoffset` keyframe draws it |
+| Code slots | the ring's `translate` follows `--_at` (the next slot, set by React) on the `swap` spring; each new character mounts with a roll-up keyframe; the caret is a `step-end` blink |
+
+Reduced motion and `data-motion="off"` drop the shake, float, glide and roll; every state still
+shows.
+
+## Browser support
+
+- `:has()`, `:user-invalid`, `:autofill` and `linear()` easings: current Chrome, Edge, Safari and
+  Firefox. Without `:user-invalid` native errors simply do not turn red; `Field` errors still do.
+
+## Accessibility
+
+- A real input: its role, value, validation and autocomplete come from the browser.
+- Decorative icons are hidden; addons, the clear button ("Clear") and the eye ("Show password",
+  pressed or not) are named.
+- The code input is a single text field with `autocomplete="one-time-code"`, so screen readers
+  read and edit one value; the slots are hidden from them.
+- Focus shows a blue edge and a soft ring. Error shows a red edge and ring.

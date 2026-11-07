@@ -1,0 +1,371 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "command-block",
+  "title": "Command palette block",
+  "description": "A ⌘K command palette in a native dialog: fuzzy search over grouped commands, an ARIA combobox and listbox, recent items, nested pages, loading and empty states, keyboard hints and a highlight that slides by CSS anchor positioning. Made of the Rabtx components. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/button.json",
+    "{{origin}}/r/dialog.json",
+    "{{origin}}/r/badge.json",
+    "{{origin}}/r/input.json",
+    "utils",
+    "{{origin}}/r/tabs.json"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/blocks/command/command-block.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ReactElement,\n\tuseCallback,\n\tuseEffect,\n\tuseLayoutEffect,\n\tuseRef,\n\tuseState,\n\tuseSyncExternalStore,\n} from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport { Dialog, DialogContent, DialogTitle, DialogTrigger } from \"@/components/ui/dialog\";\nimport { type CommandPanelProps, CommandPanel } from \"./command-panel\";\nimport { commandParts } from \"./command.styles\";\nimport { SearchIcon } from \"./icons\";\n\nexport type CommandBlockProps = Omit<\n\tCommandPanelProps,\n\t\"onClose\" | \"surface\" | \"focusOnMount\" | \"escapeHint\" | \"ref\"\n> & {\n\t/** Controlled open state; pair it with `onOpenChange`. */\n\topen?: boolean;\n\tdefaultOpen?: boolean;\n\tonOpenChange?: (open: boolean) => void;\n\t/**\n\t * The key that opens and closes the palette with ⌘ (Mac) or Ctrl (elsewhere). Default \"k\".\n\t * `false` binds nothing, such as for a second palette on the page.\n\t */\n\tshortcut?: string | false;\n\t/**\n\t * The button that opens it. Default: a search button showing the shortcut. Pass your own element\n\t * (it gets the dialog trigger's props) or `false` for none.\n\t */\n\ttrigger?: ReactElement | false;\n\t/** The default trigger's text. Default \"Search…\". */\n\ttriggerLabel?: string;\n\t/** The dialog's accessible name. Default \"Command palette\". */\n\ttitle?: string;\n};\n\nconst NONE: string[] = [];\nconst noop = () => () => {};\n/** Apple keyboards say ⌘; the server and everything else say Ctrl until the page hydrates. */\nconst useApple = () =>\n\tuseSyncExternalStore(\n\t\tnoop,\n\t\t() => /Mac|iPhone|iPad|iPod/.test(navigator.userAgent),\n\t\t() => false,\n\t);\n\n/** Whether a key press is ⌘ or Ctrl plus `key` and nothing else. */\nexport function isShortcut(\n\tevent: Pick<KeyboardEvent, \"key\" | \"metaKey\" | \"ctrlKey\" | \"altKey\" | \"shiftKey\">,\n\tkey: string,\n) {\n\treturn (\n\t\t(event.metaKey || event.ctrlKey) &&\n\t\t!event.altKey &&\n\t\t!event.shiftKey &&\n\t\tevent.key.toLowerCase() === key.toLowerCase()\n\t);\n}\n\n/**\n * A command palette: a trigger button, ⌘K / Ctrl+K anywhere on the page, and a `CommandPanel` in a\n * native modal `<dialog>`, so the top layer, the inert page, Escape, light dismiss and focus return\n * are the browser's. Each opening starts fresh on the first page with an empty search; recent\n * commands are kept across openings.\n */\nexport function CommandBlock({\n\topen: openProp,\n\tdefaultOpen = false,\n\tonOpenChange,\n\tshortcut = \"k\",\n\ttrigger,\n\ttriggerLabel = \"Search…\",\n\ttitle = \"Command palette\",\n\trecent: recentProp,\n\tdefaultRecent = NONE,\n\tonRecentChange,\n\t...panel\n}: CommandBlockProps) {\n\tconst [inner, setInner] = useState(defaultOpen);\n\tconst controlled = openProp !== undefined;\n\tconst open = controlled ? openProp : inner;\n\tconst apple = useApple();\n\n\t// A new session (a fresh panel) on every opening, however it was opened.\n\tconst [session, setSession] = useState(0);\n\tconst [wasOpen, setWasOpen] = useState(open);\n\tif (open !== wasOpen) {\n\t\tsetWasOpen(open);\n\t\tif (open) setSession((n) => n + 1);\n\t}\n\n\tconst [innerRecent, setInnerRecent] = useState(defaultRecent);\n\tconst recent = recentProp ?? innerRecent;\n\n\tconst current = useRef(open);\n\tuseLayoutEffect(() => {\n\t\tcurrent.current = open;\n\t}, [open]);\n\n\tconst setOpen = useCallback(\n\t\t(next: boolean) => {\n\t\t\tif (next === current.current) return;\n\t\t\tif (!controlled) setInner(next);\n\t\t\tonOpenChange?.(next);\n\t\t},\n\t\t[controlled, onOpenChange],\n\t);\n\n\tuseEffect(() => {\n\t\tif (!shortcut) return;\n\t\tconst onKey = (event: KeyboardEvent) => {\n\t\t\tif (event.defaultPrevented || event.repeat || !isShortcut(event, shortcut)) return;\n\t\t\tevent.preventDefault();\n\t\t\tsetOpen(!current.current);\n\t\t};\n\t\twindow.addEventListener(\"keydown\", onKey);\n\t\treturn () => window.removeEventListener(\"keydown\", onKey);\n\t}, [shortcut, setOpen]);\n\n\tconst keys = shortcut ? [apple ? \"⌘\" : \"Ctrl\", shortcut.toUpperCase()] : [];\n\n\treturn (\n\t\t<Dialog open={open} onOpenChange={setOpen}>\n\t\t\t{trigger === false ? null : (\n\t\t\t\t<DialogTrigger\n\t\t\t\t\tasChild\n\t\t\t\t\taria-keyshortcuts={\n\t\t\t\t\t\tshortcut\n\t\t\t\t\t\t\t? `Meta+${shortcut.toUpperCase()} Control+${shortcut.toUpperCase()}`\n\t\t\t\t\t\t\t: undefined\n\t\t\t\t\t}\n\t\t\t\t>\n\t\t\t\t\t{trigger ?? (\n\t\t\t\t\t\t<Button variant=\"outline\" className={commandParts.trigger}>\n\t\t\t\t\t\t\t<SearchIcon />\n\t\t\t\t\t\t\t<span className=\"flex-1 text-start\">{triggerLabel}</span>\n\t\t\t\t\t\t\t{keys.length ? (\n\t\t\t\t\t\t\t\t<span aria-hidden=\"true\" className=\"flex items-center gap-1\">\n\t\t\t\t\t\t\t\t\t{keys.map((key) => (\n\t\t\t\t\t\t\t\t\t\t<kbd key={key} className={commandParts.kbd}>\n\t\t\t\t\t\t\t\t\t\t\t{key}\n\t\t\t\t\t\t\t\t\t\t</kbd>\n\t\t\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t</Button>\n\t\t\t\t\t)}\n\t\t\t\t</DialogTrigger>\n\t\t\t)}\n\t\t\t<DialogContent showClose={false} className={commandParts.dialog}>\n\t\t\t\t<DialogTitle className=\"sr-only\">{title}</DialogTitle>\n\t\t\t\t<CommandPanel\n\t\t\t\t\tkey={session}\n\t\t\t\t\t{...panel}\n\t\t\t\t\trecent={recent}\n\t\t\t\t\tonRecentChange={(next) => {\n\t\t\t\t\t\tif (recentProp === undefined) setInnerRecent(next);\n\t\t\t\t\t\tonRecentChange?.(next);\n\t\t\t\t\t}}\n\t\t\t\t\tsurface={false}\n\t\t\t\t\tescapeHint\n\t\t\t\t\tfocusOnMount\n\t\t\t\t\tonClose={() => setOpen(false)}\n\t\t\t\t/>\n\t\t\t</DialogContent>\n\t\t</Dialog>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/command/command-block.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/command/command-panel.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype CSSProperties,\n\ttype KeyboardEvent,\n\ttype ReactNode,\n\ttype Ref,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { Badge } from \"@/components/ui/badge\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { cn } from \"@/lib/utils\";\nimport { Tabs, TabsList, TabsTrigger } from \"@/components/ui/tabs\";\nimport {\n\ttype CommandItem,\n\ttype CommandRow,\n\tcommandGroups,\n\tcommandSections,\n\tlabels,\n\tpushRecent,\n} from \"./command-search\";\nimport { SKELETON_ROWS, commandParts } from \"./command.styles\";\nimport {\n\tArrowDownIcon,\n\tArrowUpIcon,\n\tChevronLeftIcon,\n\tChevronRightIcon,\n\tClockIcon,\n\tEnterIcon,\n\tSearchIcon,\n} from \"./icons\";\n\nexport type CommandPanelProps = {\n\t/** The commands on the first page. Give one `items` to make it open a page of its own. */\n\tcommands: CommandItem[];\n\t/** Runs after a command's own `onSelect`, with the page items above it. */\n\tonSelect?: (item: CommandItem, parents: CommandItem[]) => void;\n\t/** Called after a command runs, unless it has `keepOpen`. The block closes its dialog here. */\n\tonClose?: () => void;\n\t/** The accessible name of the search field and the list. Default \"Commands\". */\n\tlabel?: string;\n\tplaceholder?: string;\n\t/** The search text (controlled). It is cleared on every page change. */\n\tquery?: string;\n\tdefaultQuery?: string;\n\t/** The new search text, and the page it is on, such as to fetch results for it. */\n\tonQueryChange?: (query: string, page: CommandItem | undefined) => void;\n\t/** `false` lists `commands` as given, for results your own search filtered. Default true. */\n\tfilter?: boolean;\n\t/** Results are on their way: skeleton rows while the list is empty, a spinner while it is not. */\n\tloading?: boolean;\n\t/** What to show when nothing matches. A function gets the query. */\n\tempty?: ReactNode | ((query: string) => ReactNode);\n\t/** Recent command ids, newest first (controlled). */\n\trecent?: string[];\n\tdefaultRecent?: string[];\n\tonRecentChange?: (recent: string[]) => void;\n\t/** How many recent commands to keep and list above the rest. 0 turns them off. Default 5. */\n\trecentLimit?: number;\n\trecentLabel?: string;\n\t/** Tabs to narrow the list to one group of the current page. */\n\tscopes?: boolean;\n\t/** The first scope tab's label. Default \"All\". */\n\tallLabel?: string;\n\t/** The keyboard hints along the bottom. Default true. */\n\thints?: boolean;\n\t/** Show the Escape key in the field and the hints, for a palette in a dialog. */\n\tescapeHint?: boolean;\n\t/** Draw the raised popover surface around the panel. Default true; the dialog draws its own. */\n\tsurface?: boolean;\n\t/** Focus the search field when the panel mounts. */\n\tfocusOnMount?: boolean;\n\tclassName?: string;\n\tref?: Ref<HTMLDivElement>;\n};\n\nconst NONE: string[] = [];\nconst NO_ITEMS: CommandItem[] = [];\n\n/** The scope tab for every group; no group name can be it. */\nconst ALL = \"\\u0000all\";\n\n/** One controlled-or-uncontrolled value, the way the other components hold theirs. */\nfunction useControllable<T>(value: T | undefined, initial: T, onChange?: (next: T) => void) {\n\tconst [inner, setInner] = useState(initial);\n\tconst controlled = value !== undefined;\n\tconst current = controlled ? value : inner;\n\tconst set = (next: T) => {\n\t\tif (!controlled) setInner(next);\n\t\tonChange?.(next);\n\t};\n\treturn [current, set] as const;\n}\n\n/** The label with its matched letters in `<mark>`, one per run. */\nfunction Highlighted({ text, match }: { text: string; match: number[] }) {\n\tif (!match.length) return text;\n\tconst marked = new Set(match);\n\tconst parts: ReactNode[] = [];\n\tlet start = 0;\n\tfor (let i = 1; i <= text.length; i++) {\n\t\tif (i < text.length && marked.has(i) === marked.has(start)) continue;\n\t\tconst piece = text.slice(start, i);\n\t\tparts.push(\n\t\t\tmarked.has(start) ? (\n\t\t\t\t<mark key={start} className={commandParts.match}>\n\t\t\t\t\t{piece}\n\t\t\t\t</mark>\n\t\t\t) : (\n\t\t\t\tpiece\n\t\t\t),\n\t\t);\n\t\tstart = i;\n\t}\n\treturn parts;\n}\n\nfunction Keys({ keys }: { keys: ReactNode[] }) {\n\treturn (\n\t\t<span className=\"flex shrink-0 items-center gap-1\">\n\t\t\t{keys.map((key, i) => (\n\t\t\t\t// oxlint-disable-next-line react/no-array-index-key -- keys can repeat, such as ⇧ ⇧\n\t\t\t\t<kbd key={i} className={commandParts.kbd}>\n\t\t\t\t\t{key}\n\t\t\t\t</kbd>\n\t\t\t))}\n\t\t</span>\n\t);\n}\n\n/**\n * A searchable list of commands: a combobox field over a listbox (`aria-activedescendant`), fuzzy\n * filtering, groups, recent commands, nested pages, loading and empty states, and keyboard hints.\n * Use it inline, or let `CommandBlock` put it in a dialog behind ⌘K.\n */\nexport function CommandPanel({\n\tcommands,\n\tonSelect,\n\tonClose,\n\tlabel = \"Commands\",\n\tplaceholder = \"Type a command or search…\",\n\tquery: queryProp,\n\tdefaultQuery = \"\",\n\tonQueryChange,\n\tfilter = true,\n\tloading = false,\n\tempty,\n\trecent: recentProp,\n\tdefaultRecent = NONE,\n\tonRecentChange,\n\trecentLimit = 5,\n\trecentLabel = \"Recent\",\n\tscopes = false,\n\tallLabel = \"All\",\n\thints = true,\n\tescapeHint = false,\n\tsurface = true,\n\tfocusOnMount = false,\n\tclassName,\n\tref,\n}: CommandPanelProps) {\n\tconst base = useId();\n\tconst listId = `${base}-list`;\n\tconst hintId = `${base}-hint`;\n\tconst inputRef = useRef<HTMLInputElement>(null);\n\tconst viewportRef = useRef<HTMLDivElement>(null);\n\tconst measureRef = useRef<HTMLDivElement>(null);\n\t// Only the arrow keys scroll the active row into view; the pointer is already on it.\n\tconst scrollOnMove = useRef(false);\n\n\tconst [pages, setPages] = useState<CommandItem[]>([]);\n\tconst page = pages.at(-1);\n\tconst [query, setQueryValue] = useControllable(queryProp, defaultQuery);\n\tconst [recent, setRecent] = useControllable(recentProp, defaultRecent, onRecentChange);\n\tconst [scope, setScope] = useState(\"\");\n\tconst [activeKey, setActiveKey] = useState<string | null>(null);\n\tconst [loaded, setLoaded] = useState<Record<string, CommandItem[]>>({});\n\tconst [errors, setErrors] = useState<Record<string, string>>({});\n\n\tconst setQuery = (next: string, on: CommandItem | undefined = page) => {\n\t\tsetQueryValue(next);\n\t\tsetActiveKey(null);\n\t\tonQueryChange?.(next, on);\n\t};\n\n\tconst pageItems = useMemo(\n\t\t() =>\n\t\t\t!page ? commands : Array.isArray(page.items) ? page.items : (loaded[page.id] ?? NO_ITEMS),\n\t\t[page, commands, loaded],\n\t);\n\tconst error = page ? errors[page.id] : undefined;\n\tconst pageLoading = !!page && typeof page.items === \"function\" && !(page.id in loaded) && !error;\n\tconst busy = loading || pageLoading;\n\n\tconst groups = useMemo(() => (scopes ? commandGroups(pageItems) : []), [scopes, pageItems]);\n\tconst activeScope = groups.includes(scope) ? scope : \"\";\n\n\tconst sections = useMemo(\n\t\t() =>\n\t\t\tcommandSections({\n\t\t\t\titems: pageItems,\n\t\t\t\tquery,\n\t\t\t\troot: !page,\n\t\t\t\trecent: recentLimit > 0 ? recent : [],\n\t\t\t\trecentLabel,\n\t\t\t\tscope: activeScope || undefined,\n\t\t\t\tfilter,\n\t\t\t}),\n\t\t[pageItems, query, page, recentLimit, recent, recentLabel, activeScope, filter],\n\t);\n\tconst rows = useMemo(() => sections.flatMap((section) => section.rows), [sections]);\n\tconst enabled = rows.filter((row) => !row.item.disabled);\n\tconst active = enabled.find((row) => row.key === activeKey) ?? enabled[0];\n\tconst optionId = (row: CommandRow) => `${base}-o${rows.indexOf(row)}`;\n\tconst hasIcons = rows.some((row) => row.item.icon || row.key.startsWith(\"recent:\"));\n\n\tuseEffect(() => {\n\t\tif (focusOnMount) inputRef.current?.focus();\n\t}, [focusOnMount]);\n\n\t// The viewport eases its height to the content's: script measures, CSS animates `--_h`.\n\tuseLayoutEffect(() => {\n\t\tconst viewport = viewportRef.current;\n\t\tconst content = measureRef.current;\n\t\tif (!viewport || !content || typeof ResizeObserver === \"undefined\") return;\n\t\tconst observer = new ResizeObserver(() => {\n\t\t\tconst height = content.offsetHeight;\n\t\t\t// A closed dialog measures 0; keep the last height so reopening does not grow from 0.\n\t\t\tif (height > 0) viewport.style.setProperty(\"--_h\", `${height}px`);\n\t\t});\n\t\tobserver.observe(content);\n\t\treturn () => observer.disconnect();\n\t}, []);\n\n\tuseLayoutEffect(() => {\n\t\tif (!scrollOnMove.current || !active) return;\n\t\tscrollOnMove.current = false;\n\t\tif (active === enabled[0]) viewportRef.current?.scrollTo({ top: 0 });\n\t\telse document.getElementById(optionId(active))?.scrollIntoView({ block: \"nearest\" });\n\t});\n\n\tconst load = (item: CommandItem) => {\n\t\tif (typeof item.items !== \"function\") return;\n\t\tsetErrors((all) => {\n\t\t\tconst next = { ...all };\n\t\t\tdelete next[item.id];\n\t\t\treturn next;\n\t\t});\n\t\titem.items().then(\n\t\t\t(list) => setLoaded((all) => ({ ...all, [item.id]: list })),\n\t\t\t(reason: unknown) =>\n\t\t\t\tsetErrors((all) => ({\n\t\t\t\t\t...all,\n\t\t\t\t\t[item.id]: reason instanceof Error ? reason.message : \"These commands did not load.\",\n\t\t\t\t})),\n\t\t);\n\t};\n\n\tconst goTo = (next: CommandItem[]) => {\n\t\tsetPages(next);\n\t\tsetScope(\"\");\n\t\tsetQuery(\"\", next.at(-1));\n\t\tviewportRef.current?.scrollTo({ top: 0 });\n\t\tinputRef.current?.focus();\n\t};\n\n\tconst run = (row: CommandRow) => {\n\t\tconst { item, parents } = row;\n\t\tif (item.disabled) return;\n\t\tif (item.items) {\n\t\t\tgoTo([...pages, ...parents, item]);\n\t\t\tif (typeof item.items === \"function\" && !(item.id in loaded)) load(item);\n\t\t\treturn;\n\t\t}\n\t\titem.onSelect?.(item);\n\t\tonSelect?.(item, [...pages, ...parents]);\n\t\tif (recentLimit > 0) setRecent(pushRecent(recent, item.id, recentLimit));\n\t\tif (!item.keepOpen) onClose?.();\n\t};\n\n\tconst move = (to: CommandRow | undefined) => {\n\t\tif (!to) return;\n\t\tscrollOnMove.current = true;\n\t\tsetActiveKey(to.key);\n\t};\n\n\tconst onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {\n\t\tif (event.nativeEvent.isComposing) return;\n\t\tconst at = active ? enabled.indexOf(active) : -1;\n\t\tconst count = enabled.length;\n\t\tlet handled = true;\n\t\tif (event.key === \"ArrowDown\") move(enabled[(at + 1) % count]);\n\t\telse if (event.key === \"ArrowUp\") move(enabled[(at - 1 + count) % count]);\n\t\telse if (event.key === \"Home\") move(enabled[0]);\n\t\telse if (event.key === \"End\") move(enabled[count - 1]);\n\t\telse if (event.key === \"Enter\") {\n\t\t\tif (active) run(active);\n\t\t} else if ((event.key === \"Backspace\" || event.key === \"Escape\") && pages.length && !query) {\n\t\t\t// On a page, Escape steps back instead of closing (a handled keydown is no close request).\n\t\t\tgoTo(pages.slice(0, -1));\n\t\t} else handled = false;\n\t\tif (handled) event.preventDefault();\n\t};\n\n\tconst announcement = busy\n\t\t? \"Loading…\"\n\t\t: error\n\t\t\t? error\n\t\t\t: query\n\t\t\t\t? rows.length\n\t\t\t\t\t? `${rows.length} ${rows.length === 1 ? \"result\" : \"results\"}`\n\t\t\t\t\t: \"No results\"\n\t\t\t\t: page\n\t\t\t\t\t? `${page.label}, ${rows.length} ${rows.length === 1 ? \"command\" : \"commands\"}`\n\t\t\t\t\t: \"\";\n\n\tconst emptyContent = error ? (\n\t\t<>\n\t\t\t<p className=\"m-0\">{error}</p>\n\t\t\t<Button variant=\"secondary\" size=\"sm\" onClick={() => page && load(page)}>\n\t\t\t\tTry again\n\t\t\t</Button>\n\t\t</>\n\t) : typeof empty === \"function\" ? (\n\t\tempty(query)\n\t) : (\n\t\t(empty ?? <p className=\"m-0\">{query ? `No results for “${query}”.` : \"No commands here.\"}</p>)\n\t);\n\n\treturn (\n\t\t<div\n\t\t\tref={ref}\n\t\t\tdata-slot=\"command\"\n\t\t\tclassName={cn(commandParts.root, surface && `rx-surface ${commandParts.surface}`, className)}\n\t\t>\n\t\t\t{pages.length ? (\n\t\t\t\t<nav aria-label=\"Pages\" className={commandParts.crumbs}>\n\t\t\t\t\t<Button\n\t\t\t\t\t\tvariant=\"ghost\"\n\t\t\t\t\t\tsize=\"sm\"\n\t\t\t\t\t\tonClick={() => goTo(pages.slice(0, -1))}\n\t\t\t\t\t\taria-label={`Back to ${pages.at(-2)?.label ?? label}`}\n\t\t\t\t\t>\n\t\t\t\t\t\t<ChevronLeftIcon />\n\t\t\t\t\t\tBack\n\t\t\t\t\t</Button>\n\t\t\t\t\t<ol className=\"m-0 flex min-w-0 list-none items-center gap-1 p-0\">\n\t\t\t\t\t\t{pages.map((item, i) => (\n\t\t\t\t\t\t\t<li key={item.id} className=\"flex min-w-0 items-center gap-1\">\n\t\t\t\t\t\t\t\t{i > 0 ? <ChevronRightIcon className=\"size-3 shrink-0 opacity-60\" /> : null}\n\t\t\t\t\t\t\t\t<Badge\n\t\t\t\t\t\t\t\t\ttone={i === pages.length - 1 ? \"accent\" : \"neutral\"}\n\t\t\t\t\t\t\t\t\taria-current={i === pages.length - 1 ? \"page\" : undefined}\n\t\t\t\t\t\t\t\t\tclassName=\"truncate\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t\t\t</Badge>\n\t\t\t\t\t\t\t</li>\n\t\t\t\t\t\t))}\n\t\t\t\t\t</ol>\n\t\t\t\t</nav>\n\t\t\t) : null}\n\n\t\t\t<div className={commandParts.search}>\n\t\t\t\t<Input\n\t\t\t\t\tref={inputRef}\n\t\t\t\t\tsize=\"lg\"\n\t\t\t\t\tvariant=\"filled\"\n\t\t\t\t\tleadingIcon={<SearchIcon />}\n\t\t\t\t\ttrailingIcon={\n\t\t\t\t\t\tbusy && rows.length ? (\n\t\t\t\t\t\t\t<span className={commandParts.spinner} />\n\t\t\t\t\t\t) : escapeHint ? (\n\t\t\t\t\t\t\t<kbd className={commandParts.kbd}>esc</kbd>\n\t\t\t\t\t\t) : undefined\n\t\t\t\t\t}\n\t\t\t\t\trole=\"combobox\"\n\t\t\t\t\taria-label={page ? `${label}: ${page.label}` : label}\n\t\t\t\t\taria-expanded=\"true\"\n\t\t\t\t\taria-controls={listId}\n\t\t\t\t\taria-activedescendant={active ? optionId(active) : undefined}\n\t\t\t\t\taria-autocomplete=\"list\"\n\t\t\t\t\taria-describedby={hintId}\n\t\t\t\t\taria-busy={busy || undefined}\n\t\t\t\t\tautoComplete=\"off\"\n\t\t\t\t\tautoCorrect=\"off\"\n\t\t\t\t\tspellCheck={false}\n\t\t\t\t\tenterKeyHint=\"go\"\n\t\t\t\t\tplaceholder={page?.placeholder ?? placeholder}\n\t\t\t\t\tvalue={query}\n\t\t\t\t\tonChange={(event) => setQuery(event.target.value)}\n\t\t\t\t\tonKeyDown={onKeyDown}\n\t\t\t\t/>\n\t\t\t\t<span id={hintId} hidden>\n\t\t\t\t\tUp and down arrows move through the results, Enter chooses one\n\t\t\t\t\t{pages.length ? \", Backspace in an empty field goes back\" : \"\"}.\n\t\t\t\t</span>\n\t\t\t</div>\n\n\t\t\t{groups.length > 1 ? (\n\t\t\t\t<Tabs\n\t\t\t\t\tvalue={activeScope || ALL}\n\t\t\t\t\tonValueChange={(value) => {\n\t\t\t\t\t\tsetScope(value === ALL ? \"\" : value);\n\t\t\t\t\t\tsetActiveKey(null);\n\t\t\t\t\t}}\n\t\t\t\t\tclassName={commandParts.scopes}\n\t\t\t\t>\n\t\t\t\t\t<TabsList variant=\"underline\" size=\"sm\" aria-label=\"Scope\">\n\t\t\t\t\t\t<TabsTrigger value={ALL}>{allLabel}</TabsTrigger>\n\t\t\t\t\t\t{groups.map((name) => (\n\t\t\t\t\t\t\t<TabsTrigger key={name} value={name}>\n\t\t\t\t\t\t\t\t{name}\n\t\t\t\t\t\t\t</TabsTrigger>\n\t\t\t\t\t\t))}\n\t\t\t\t\t</TabsList>\n\t\t\t\t</Tabs>\n\t\t\t) : null}\n\n\t\t\t<div ref={viewportRef} className={commandParts.viewport}>\n\t\t\t\t<div ref={measureRef}>\n\t\t\t\t\t<div\n\t\t\t\t\t\trole=\"listbox\"\n\t\t\t\t\t\tid={listId}\n\t\t\t\t\t\taria-label={label}\n\t\t\t\t\t\taria-busy={busy || undefined}\n\t\t\t\t\t\tclassName={commandParts.list}\n\t\t\t\t\t>\n\t\t\t\t\t\t{sections.map((section, s) => {\n\t\t\t\t\t\t\tconst headingId = `${base}-g${s}`;\n\t\t\t\t\t\t\treturn (\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tkey={section.key}\n\t\t\t\t\t\t\t\t\trole={section.heading ? \"group\" : \"presentation\"}\n\t\t\t\t\t\t\t\t\taria-labelledby={section.heading ? headingId : undefined}\n\t\t\t\t\t\t\t\t\tclassName={commandParts.group}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{section.heading ? (\n\t\t\t\t\t\t\t\t\t\t<div id={headingId} aria-hidden=\"true\" className={commandParts.heading}>\n\t\t\t\t\t\t\t\t\t\t\t{section.heading}\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t\t\t\t{section.rows.map((row) => {\n\t\t\t\t\t\t\t\t\t\tconst { item } = row;\n\t\t\t\t\t\t\t\t\t\tconst isActive = row === active;\n\t\t\t\t\t\t\t\t\t\tconst trail = labels(row.parents).join(\" › \");\n\t\t\t\t\t\t\t\t\t\tconst description = [trail, item.description].filter(Boolean).join(\" · \");\n\t\t\t\t\t\t\t\t\t\treturn (\n\t\t\t\t\t\t\t\t\t\t\t// Keyboard users stay in the field (aria-activedescendant); a click runs it.\n\t\t\t\t\t\t\t\t\t\t\t// oxlint-disable-next-line jsx-a11y/click-events-have-key-events\n\t\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\t\tkey={row.key}\n\t\t\t\t\t\t\t\t\t\t\t\tid={optionId(row)}\n\t\t\t\t\t\t\t\t\t\t\t\trole=\"option\"\n\t\t\t\t\t\t\t\t\t\t\t\ttabIndex={-1}\n\t\t\t\t\t\t\t\t\t\t\t\taria-selected={isActive}\n\t\t\t\t\t\t\t\t\t\t\t\taria-disabled={item.disabled || undefined}\n\t\t\t\t\t\t\t\t\t\t\t\tdata-active={isActive ? \"\" : undefined}\n\t\t\t\t\t\t\t\t\t\t\t\tdata-page={item.items ? \"\" : undefined}\n\t\t\t\t\t\t\t\t\t\t\t\tclassName={commandParts.item}\n\t\t\t\t\t\t\t\t\t\t\t\tonPointerMove={() => {\n\t\t\t\t\t\t\t\t\t\t\t\t\tif (!item.disabled && !isActive) setActiveKey(row.key);\n\t\t\t\t\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\t\t\t\t\tonMouseDown={(event) => event.preventDefault()}\n\t\t\t\t\t\t\t\t\t\t\t\tonClick={() => run(row)}\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t{hasIcons ? (\n\t\t\t\t\t\t\t\t\t\t\t\t\t<span className={commandParts.itemIcon} aria-hidden=\"true\">\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t{item.icon ?? (row.key.startsWith(\"recent:\") ? <ClockIcon /> : null)}\n\t\t\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t\t\t\t\t\t\t<span className={commandParts.itemText}>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<span className={commandParts.itemLabel}>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<Highlighted text={item.label} match={row.match} />\n\t\t\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t\t\t{description ? (\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<span className={commandParts.itemDescription}>{description}</span>\n\t\t\t\t\t\t\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t\t{item.badge ? <Badge tone={item.badgeTone}>{item.badge}</Badge> : null}\n\t\t\t\t\t\t\t\t\t\t\t\t{item.shortcut?.length ? (\n\t\t\t\t\t\t\t\t\t\t\t\t\t<span aria-hidden=\"true\">\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<Keys keys={item.shortcut} />\n\t\t\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t\t\t\t\t\t\t{item.items ? (\n\t\t\t\t\t\t\t\t\t\t\t\t\t<ChevronRightIcon className={commandParts.itemChevron} />\n\t\t\t\t\t\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t);\n\t\t\t\t\t\t\t\t\t})}\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t);\n\t\t\t\t\t\t})}\n\t\t\t\t\t\t<span className={commandParts.highlight} aria-hidden=\"true\" />\n\t\t\t\t\t</div>\n\t\t\t\t\t{busy && !rows.length ? (\n\t\t\t\t\t\t<div aria-hidden=\"true\">\n\t\t\t\t\t\t\t{Array.from({ length: SKELETON_ROWS }, (_, i) => (\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tkey={i}\n\t\t\t\t\t\t\t\t\tclassName={commandParts.skeleton}\n\t\t\t\t\t\t\t\t\tstyle={{ \"--_i\": i } as CSSProperties}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t<span />\n\t\t\t\t\t\t\t\t\t<span />\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t) : null}\n\t\t\t\t\t{!busy && !rows.length ? <div className={commandParts.empty}>{emptyContent}</div> : null}\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t{hints ? (\n\t\t\t\t<div className={commandParts.footer} aria-hidden=\"true\">\n\t\t\t\t\t<span>\n\t\t\t\t\t\t<Keys keys={[<ArrowUpIcon key=\"up\" />, <ArrowDownIcon key=\"down\" />]} />\n\t\t\t\t\t\tNavigate\n\t\t\t\t\t</span>\n\t\t\t\t\t<span>\n\t\t\t\t\t\t<Keys keys={[<EnterIcon key=\"enter\" />]} />\n\t\t\t\t\t\t{active?.item.items ? \"Open\" : \"Select\"}\n\t\t\t\t\t</span>\n\t\t\t\t\t{pages.length ? (\n\t\t\t\t\t\t<span>\n\t\t\t\t\t\t\t<Keys keys={[\"⌫\"]} />\n\t\t\t\t\t\t\tBack\n\t\t\t\t\t\t</span>\n\t\t\t\t\t) : escapeHint ? (\n\t\t\t\t\t\t<span>\n\t\t\t\t\t\t\t<Keys keys={[\"esc\"]} />\n\t\t\t\t\t\t\tClose\n\t\t\t\t\t\t</span>\n\t\t\t\t\t) : null}\n\t\t\t\t</div>\n\t\t\t) : null}\n\n\t\t\t<p className=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\">\n\t\t\t\t{announcement}\n\t\t\t</p>\n\t\t</div>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/command/command-panel.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/command/command-search.ts",
+      "content": "import type { ReactNode } from \"react\";\nimport type { BadgeTone } from \"@/components/ui/badge.styles\";\n\n/** One command. Give it `onSelect` to run it, or `items` to open a page of more commands. */\nexport type CommandItem = {\n\t/** Unique among the commands; also the key for recent items. */\n\tid: string;\n\tlabel: string;\n\t/** The heading it is listed under. Items without one are listed under no heading. */\n\tgroup?: string;\n\t/** A second line, muted. Searched too. */\n\tdescription?: string;\n\t/** Extra words that find it, such as synonyms. Not shown. */\n\tkeywords?: string[];\n\t/** A decorative 16px icon, such as a HugeIcons element. */\n\ticon?: ReactNode;\n\t/** Keys to show at the end, such as `[\"⌘\", \"N\"]`. Only a hint: the block does not bind them. */\n\tshortcut?: string[];\n\t/** A short label in a Badge, such as \"New\". */\n\tbadge?: string;\n\tbadgeTone?: BadgeTone;\n\tdisabled?: boolean;\n\t/** A page of commands, or a function that loads them (the list shows a loading state). */\n\titems?: CommandItem[] | (() => Promise<CommandItem[]>);\n\t/** The search placeholder on this item's page. */\n\tplaceholder?: string;\n\t/** Runs when the command is chosen with Enter or a click. */\n\tonSelect?: (item: CommandItem) => void;\n\t/** Keep the palette open after it runs, such as a toggle. */\n\tkeepOpen?: boolean;\n};\n\n/** A row in the list: the item, the page items above it, and the label's matched letters. */\nexport type CommandRow = {\n\tkey: string;\n\titem: CommandItem;\n\t/** The pages the item sits in below the current one, when a search on the first page finds it. */\n\tparents: CommandItem[];\n\tmatch: number[];\n};\n\nexport type CommandSection = { key: string; heading?: string; rows: CommandRow[] };\n\nconst BOUNDARY = /[\\s\\-_/.:()[\\]]/;\n\n/** Lowercase without accents, one character per character so match positions still line up. */\nfunction fold(text: string) {\n\tconst folded = text.normalize(\"NFKD\").replace(/\\p{M}/gu, \"\").toLowerCase();\n\treturn folded.length === text.length ? folded : text.toLowerCase();\n}\n\nconst atBoundary = (text: string, i: number) => i === 0 || BOUNDARY.test(text[i - 1]);\n\n/** The query's letters in order, each at its earliest place after the last (always finds one). */\nfunction earliest(text: string, query: string) {\n\tconst indices: number[] = [];\n\tlet from = 0;\n\tfor (const char of query) {\n\t\tconst i = text.indexOf(char, from);\n\t\tif (i < 0) return null;\n\t\tindices.push(i);\n\t\tfrom = i + 1;\n\t}\n\treturn indices;\n}\n\n/** Like `earliest`, but a letter that starts a word wins over one inside a word (\"gs\" → Git Status). */\nfunction preferWords(text: string, query: string) {\n\tconst indices: number[] = [];\n\tlet from = 0;\n\tlet prev = -2;\n\tfor (const char of query) {\n\t\tlet first = -1;\n\t\tlet word = -1;\n\t\tfor (let i = from; i < text.length; i++) {\n\t\t\tif (text[i] !== char) continue;\n\t\t\tif (first < 0) first = i;\n\t\t\tif (atBoundary(text, i)) {\n\t\t\t\tword = i;\n\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\t\tif (first < 0) return null;\n\t\tconst i = first === prev + 1 || word < 0 ? first : word;\n\t\tindices.push(i);\n\t\tprev = i;\n\t\tfrom = i + 1;\n\t}\n\treturn indices;\n}\n\n/**\n * How well `query` matches `text`, and which letters of `text` matched, or `null`. A run of the\n * query's letters (best at the start, or at a word's start) beats letters spread over the text; a\n * spread match counts only when most of its letters start a word or follow the previous one, so\n * \"nf\" finds \"New file\" but two random letters do not find everything.\n */\nexport function fuzzyMatch(\n\ttext: string,\n\tquery: string,\n): { score: number; indices: number[] } | null {\n\tconst t = fold(text);\n\tconst q = fold(query).replace(/\\s+/g, \" \").trim();\n\tif (!q) return { score: 0, indices: [] };\n\n\tconst at = t.indexOf(q);\n\tif (at >= 0) {\n\t\tconst score =\n\t\t\t1000 +\n\t\t\t(t.length === q.length ? 1000 : 0) +\n\t\t\t(at === 0 ? 400 : 0) +\n\t\t\t(atBoundary(t, at) ? 200 : 0) -\n\t\t\tat;\n\t\treturn { score, indices: Array.from({ length: q.length }, (_, k) => at + k) };\n\t}\n\n\tconst letters = q.replace(/ /g, \"\");\n\tif (letters.length < 2) return null;\n\tconst indices = preferWords(t, letters) ?? earliest(t, letters);\n\tif (!indices) return null;\n\tlet score = 0;\n\tlet good = 0;\n\tindices.forEach((i, k) => {\n\t\tconst run = k > 0 && i === indices[k - 1] + 1;\n\t\tconst word = atBoundary(t, i);\n\t\tif (run || word) good++;\n\t\tscore += run ? 30 : word ? 24 : 2;\n\t});\n\tif (good / indices.length < 0.6) return null;\n\treturn { score: score - (indices.at(-1)! - indices[0]), indices };\n}\n\n/** Score an item against a query: the label counts most, then keywords, description, group, path. */\nexport function scoreItem(item: CommandItem, query: string, path: string[] = []) {\n\tconst whole = fuzzyMatch(item.label, query);\n\tif (whole && whole.indices.length && whole.score >= 1000) return whole;\n\n\tconst tokens = query.trim().split(/\\s+/).filter(Boolean);\n\tif (!tokens.length) return { score: 0, indices: [] };\n\tconst others = [...(item.keywords ?? []), item.description ?? \"\", item.group ?? \"\", ...path];\n\tconst indices = new Set<number>();\n\tlet score = 0;\n\tfor (const token of tokens) {\n\t\tconst label = fuzzyMatch(item.label, token);\n\t\tconst other = Math.max(-1, ...others.map((text) => fuzzyMatch(text, token)?.score ?? -1));\n\t\tif (!label && other < 0) return whole;\n\t\tif (label && label.score >= other / 2) {\n\t\t\tscore += label.score;\n\t\t\tfor (const i of label.indices) indices.add(i);\n\t\t} else score += other / 2;\n\t}\n\tconst best = { score, indices: [...indices].toSorted((a, b) => a - b) };\n\treturn whole && whole.score > best.score ? whole : best;\n}\n\n/** The labels of a row's parents, for its breadcrumb. */\nexport const labels = (parents: CommandItem[]) => parents.map((parent) => parent.label);\n\ntype Entry = { item: CommandItem; parents: CommandItem[] };\n\n/** Every item in `items` and, below it, in the pages that are already arrays (not loaders). */\nexport function flatten(items: CommandItem[], parents: CommandItem[] = []): Entry[] {\n\treturn items.flatMap((item) => [\n\t\t{ item, parents },\n\t\t...(Array.isArray(item.items) ? flatten(item.items, [...parents, item]) : []),\n\t]);\n}\n\nexport type SectionOptions = {\n\titems: CommandItem[];\n\tquery: string;\n\t/** On the first page, a query also searches the pages below it. */\n\troot: boolean;\n\t/** Recent ids, newest first; listed first while the query is empty on the first page. */\n\trecent?: string[];\n\trecentLabel?: string;\n\t/** Only this group (a scope), or every group. */\n\tscope?: string;\n\t/** `false` lists the items as given, for results filtered by your own search. */\n\tfilter?: boolean;\n};\n\n/** Group rows under their headings, in the order the headings first appear. */\nfunction group(rows: CommandRow[], heading: (row: CommandRow) => string | undefined) {\n\tconst sections = new Map<string, CommandSection>();\n\tfor (const row of rows) {\n\t\tconst name = heading(row);\n\t\tconst key = `group:${name ?? \"\"}`;\n\t\tconst section = sections.get(key) ?? { key, heading: name, rows: [] };\n\t\tsection.rows.push(row);\n\t\tsections.set(key, section);\n\t}\n\treturn [...sections.values()];\n}\n\nconst row = (prefix: string, { item, parents }: Entry, match: number[] = []): CommandRow => ({\n\tkey: `${prefix}:${item.id}`,\n\titem,\n\tparents,\n\tmatch,\n});\n\n/** The sections to list for a page, a query, the recent ids and a scope. */\nexport function commandSections({\n\titems,\n\tquery,\n\troot,\n\trecent = [],\n\trecentLabel = \"Recent\",\n\tscope,\n\tfilter = true,\n}: SectionOptions): CommandSection[] {\n\tconst inScope = (item: CommandItem) => !scope || item.group === scope;\n\n\tif (!query.trim() || !filter) {\n\t\tconst sections = group(\n\t\t\titems.filter(inScope).map((item) => row(\"item\", { item, parents: [] })),\n\t\t\t(r) => r.item.group,\n\t\t);\n\t\tif (!root || scope || !recent.length || query.trim()) return sections;\n\t\tconst known = new Map(flatten(items).map((entry) => [entry.item.id, entry]));\n\t\tconst rows = recent.flatMap((id) => {\n\t\t\tconst entry = known.get(id);\n\t\t\treturn entry && !entry.item.items ? [row(\"recent\", entry)] : [];\n\t\t});\n\t\treturn rows.length ? [{ key: \"recent\", heading: recentLabel, rows }, ...sections] : sections;\n\t}\n\n\tconst entries = root ? flatten(items) : items.map((item) => ({ item, parents: [] }));\n\tconst scored = entries\n\t\t.filter(({ item }) => inScope(item))\n\t\t.flatMap((entry) => {\n\t\t\tconst match = scoreItem(entry.item, query, labels(entry.parents));\n\t\t\treturn match ? [{ entry, match }] : [];\n\t\t})\n\t\t// Shallower first on a tie, so a page's own item beats the same words deeper down.\n\t\t.toSorted(\n\t\t\t(a, b) => b.match.score - a.match.score || a.entry.parents.length - b.entry.parents.length,\n\t\t);\n\treturn group(\n\t\tscored.map(({ entry, match }) => row(\"item\", entry, match.indices)),\n\t\t(r) => r.item.group ?? r.parents.at(-1)?.label,\n\t);\n}\n\n/** The groups on a page, in order, for scope tabs. */\nexport function commandGroups(items: CommandItem[]) {\n\treturn [...new Set(items.flatMap((item) => (item.group ? [item.group] : [])))];\n}\n\n/** Put `id` first in a recent list, without repeats, capped at `limit`. */\nexport function pushRecent(recent: string[], id: string, limit: number) {\n\treturn [id, ...recent.filter((other) => other !== id)].slice(0, Math.max(0, limit));\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/command/command-search.ts"
+    },
+    {
+      "path": "registry/rabtx/blocks/command/command.styles.ts",
+      "content": "/**\n * Class names for the command block. Its look and motion live in `command-block.css` (your global\n * CSS, when installed from the registry); the field, badges, buttons and tabs are the components'.\n */\nexport const commandParts = {\n\t/** The panel: field, scopes, list and footer in a column. */\n\troot: \"rx-command\",\n\t/** Added to the root when it stands alone (not in the dialog): the raised popover surface. */\n\tsurface: \"rx-command-surface\",\n\t/** The Dialog panel holding a palette: narrower, higher up, no padding of its own. */\n\tdialog: \"rx-command-dialog\",\n\t/** The search field's row. */\n\tsearch: \"rx-command-search\",\n\t/** The pages above the current one, with a back button. */\n\tcrumbs: \"rx-command-crumbs\",\n\t/** The scope tabs' row. */\n\tscopes: \"rx-command-scopes\",\n\t/** Scrolls the list and eases its height to the content's (`--_h`, measured in script). */\n\tviewport: \"rx-command-viewport\",\n\t/** The `listbox`. Scopes the highlight's anchor, so two palettes never share one. */\n\tlist: \"rx-command-list\",\n\t/** A `group` of options under a heading. */\n\tgroup: \"rx-command-group\",\n\theading: \"rx-command-heading\",\n\t/** One `option`. `data-active` on the one the arrow keys are on: it becomes the anchor. */\n\titem: \"rx-command-item\",\n\titemIcon: \"rx-command-item-icon\",\n\titemText: \"rx-command-item-text\",\n\titemLabel: \"rx-command-item-label\",\n\titemDescription: \"rx-command-item-description\",\n\t/** The arrow on an option that opens a page. */\n\titemChevron: \"rx-command-item-chevron\",\n\t/** The matched letters in a label. */\n\tmatch: \"rx-command-match\",\n\t/** The list's last child: the highlight that slides to the anchored option. */\n\thighlight: \"rx-command-highlight\",\n\t/** A key cap, such as ⌘ or K. */\n\tkbd: \"rx-command-kbd\",\n\t/** Turns in the field while more results load. */\n\tspinner: \"rx-command-spinner\",\n\t/** Placeholder rows while commands load. */\n\tskeleton: \"rx-command-skeleton\",\n\t/** The message when nothing matches, or a page failed to load. */\n\tempty: \"rx-command-empty\",\n\t/** The keyboard hints along the bottom. */\n\tfooter: \"rx-command-footer\",\n\t/** The trigger button's key caps. */\n\ttrigger: \"rx-command-trigger\",\n} as const;\n\n/** How many placeholder rows the loading state shows. */\nexport const SKELETON_ROWS = 4;\n",
+      "type": "registry:component",
+      "target": "components/blocks/command/command.styles.ts"
+    },
+    {
+      "path": "registry/rabtx/blocks/command/icons.tsx",
+      "content": "import type { SVGProps } from \"react\";\n\n// HugeIcons (MIT) glyphs, inlined so the block needs no icon package. Decorative: aria-hidden.\ntype IconProps = SVGProps<SVGSVGElement>;\n\nfunction Icon({ children, ...props }: IconProps) {\n\treturn (\n\t\t<svg\n\t\t\tviewBox=\"0 0 24 24\"\n\t\t\tfill=\"none\"\n\t\t\tstroke=\"currentColor\"\n\t\t\tstrokeWidth={1.5}\n\t\t\tstrokeLinecap=\"round\"\n\t\t\tstrokeLinejoin=\"round\"\n\t\t\taria-hidden=\"true\"\n\t\t\t{...props}\n\t\t>\n\t\t\t{children}\n\t\t</svg>\n\t);\n}\n\nexport function SearchIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M17 17L21 21\" />\n\t\t\t<path d=\"M19 11C19 6.582 15.418 3 11 3C6.582 3 3 6.582 3 11C3 15.418 6.582 19 11 19C15.418 19 19 15.418 19 11Z\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ChevronRightIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M9 6C9 6 15 10.419 15 12C15 13.581 9 18 9 18\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ChevronLeftIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M15 6C15 6 9 10.419 9 12C9 13.581 15 18 15 18\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ClockIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<circle cx=\"12\" cy=\"12\" r=\"10\" />\n\t\t\t<path d=\"M12 8V12L14 14\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ArrowUpIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M18 15C18 15 13.581 9 12 9C10.419 9 6 15 6 15\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ArrowDownIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M18 9C18 9 13.581 15 12 15C10.419 15 6 9 6 9\" />\n\t\t</Icon>\n\t);\n}\n\n/** The Return key. */\nexport function EnterIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M11 6H15.5C17.985 6 20 8.015 20 10.5C20 12.985 17.985 15 15.5 15H4\" />\n\t\t\t<path d=\"M7 12C7 12 4 14.21 4 15C4 15.791 7 18 7 18\" />\n\t\t</Icon>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/command/icons.tsx"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-command": {
+        "display": "flex",
+        "flex-direction": "column",
+        "gap": "6px",
+        "box-sizing": "border-box",
+        "min-width": "0",
+        "padding": "8px",
+        "color": "var(--popover-foreground)",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px"
+      },
+      ".rx-command-surface": {
+        "--_fill": "var(--popover)",
+        "--_flat": "var(--border)",
+        "--_ring": "var(--surface-ring)",
+        "--_edge-a": "var(--surface-edge-top)",
+        "--_edge-b": "var(--surface-edge-bottom)",
+        "--_sheen": "var(--surface-sheen)",
+        "--_shade": "var(--surface-shade)",
+        "width": "100%",
+        "max-width": "36rem",
+        "border-radius": "var(--radius-box)",
+        "overflow": "hidden"
+      },
+      ".rx-dialog.rx-command-dialog": {
+        "--_w": "36rem",
+        "--_pad": "0px",
+        "--_from-y": "-8px",
+        "--_from-scale": "0.97",
+        "margin-block-start": "min(14dvh, 8rem)",
+        "overflow": "hidden"
+      },
+      ".rx-dialog.rx-command-dialog[open]": {
+        "display": "block"
+      },
+      ".rx-command-crumbs": {
+        "display": "flex",
+        "align-items": "center",
+        "gap": "6px",
+        "min-width": "0"
+      },
+      ".rx-command-crumbs .rx-btn": {
+        "flex-shrink": "0",
+        "padding-inline": "0.5rem 0.75rem"
+      },
+      ".rx-command-search .rx-input-icon kbd": {
+        "font-size": "11px"
+      },
+      ".rx-command-scopes": {
+        "margin-inline": "4px",
+        "overflow-x": "auto",
+        "scrollbar-width": "none"
+      },
+      ".rx-command-viewport": {
+        "height": "var(--_h, auto)",
+        "max-height": "min(22rem, 50dvh)",
+        "overflow-y": "auto",
+        "overscroll-behavior": "contain",
+        "scroll-padding-block": "4px",
+        "scrollbar-width": "thin",
+        "transition": "height var(--spring-panel-duration) var(--spring-panel)"
+      },
+      ".rx-command-list": {
+        "position": "relative",
+        "isolation": "isolate",
+        "display": "grid",
+        "gap": "4px",
+        "outline": "none"
+      },
+      ".rx-command-group": {
+        "display": "grid",
+        "gap": "1px"
+      },
+      ".rx-command-heading": {
+        "padding": "8px 8px 4px",
+        "font-size": "12px",
+        "line-height": "16px",
+        "font-weight": "510",
+        "color": "var(--muted-foreground)",
+        "user-select": "none"
+      },
+      ".rx-command-item": {
+        "position": "relative",
+        "display": "flex",
+        "align-items": "center",
+        "gap": "10px",
+        "min-height": "36px",
+        "box-sizing": "border-box",
+        "padding": "6px 8px",
+        "border-radius": "var(--radius-item)",
+        "color": "var(--popover-foreground)",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent",
+        "scroll-margin-block": "28px 4px",
+        "transition": "color 150ms var(--motion-ease)"
+      },
+      ".rx-command-item[data-active]": {
+        "color": "var(--accent-foreground)"
+      },
+      ".rx-command-item[aria-disabled=\"true\"]": {
+        "opacity": "0.5",
+        "cursor": "default"
+      },
+      ".rx-command-item:active:not([aria-disabled=\"true\"]) .rx-command-item-text": {
+        "scale": "0.99"
+      },
+      ".rx-command-item-icon": {
+        "display": "grid",
+        "flex-shrink": "0",
+        "place-items": "center",
+        "width": "16px",
+        "height": "16px",
+        "color": "var(--muted-foreground)",
+        "transition": "color 150ms var(--motion-ease)"
+      },
+      ".rx-command-item-icon svg": {
+        "width": "16px",
+        "height": "16px"
+      },
+      ".rx-command-item[data-active] .rx-command-item-icon": {
+        "color": "var(--accent-foreground)"
+      },
+      ".rx-command-item-text": {
+        "display": "grid",
+        "flex": "1",
+        "min-width": "0",
+        "transition": "scale var(--spring-press-duration) var(--spring-press)"
+      },
+      ".rx-command-item-label, .rx-command-item-description": {
+        "overflow": "hidden",
+        "text-overflow": "ellipsis",
+        "white-space": "nowrap"
+      },
+      ".rx-command-item-label": {
+        "font-size": "14px",
+        "line-height": "20px"
+      },
+      ".rx-command-item-description": {
+        "font-size": "12px",
+        "line-height": "16px",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-command-match": {
+        "background": "none",
+        "color": "inherit",
+        "font-weight": "650"
+      },
+      ".rx-command-item-chevron": {
+        "flex-shrink": "0",
+        "width": "14px",
+        "height": "14px",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-command-kbd": {
+        "display": "inline-grid",
+        "place-items": "center",
+        "box-sizing": "border-box",
+        "min-width": "20px",
+        "height": "20px",
+        "padding-inline": "5px",
+        "border": "1px solid var(--border)",
+        "border-radius": "var(--radius-badge)",
+        "background-color": "var(--background)",
+        "color": "var(--muted-foreground)",
+        "font-family": "inherit",
+        "font-size": "11px",
+        "line-height": "1",
+        "font-weight": "510",
+        "letter-spacing": "0"
+      },
+      ".rx-command-kbd svg": {
+        "width": "12px",
+        "height": "12px"
+      },
+      "@supports (anchor-scope: all)": {
+        ".rx-command-list": {
+          "anchor-scope": "--_command-active"
+        },
+        ".rx-command-item[data-active]": {
+          "anchor-name": "--_command-active"
+        },
+        ".rx-command-highlight": {
+          "position": "absolute",
+          "position-anchor": "--_command-active",
+          "top": "anchor(top)",
+          "right": "anchor(right)",
+          "bottom": "anchor(bottom)",
+          "left": "anchor(left)",
+          "z-index": "-1",
+          "display": "block",
+          "border-radius": "var(--radius-item)",
+          "background-color": "var(--accent)",
+          "pointer-events": "none",
+          "transition": "top var(--spring-unfold-duration) var(--spring-unfold), right var(--spring-unfold-duration) var(--spring-unfold), bottom var(--spring-unfold-duration) var(--spring-unfold), left var(--spring-unfold-duration) var(--spring-unfold)"
+        },
+        ".rx-command-list:not(:has([data-active])) > .rx-command-highlight": {
+          "display": "none"
+        }
+      },
+      "@supports not (anchor-scope: all)": {
+        ".rx-command-highlight": {
+          "display": "none"
+        },
+        ".rx-command-item[data-active]": {
+          "background-color": "var(--accent)"
+        }
+      },
+      ".rx-command-skeleton": {
+        "display": "flex",
+        "align-items": "center",
+        "gap": "10px",
+        "height": "36px",
+        "padding-inline": "8px",
+        "animation": "rx-command-breathe 1.2s var(--motion-ease) calc(var(--_i, 0) * 120ms) infinite alternate"
+      },
+      ".rx-command-skeleton span": {
+        "height": "10px",
+        "border-radius": "999px",
+        "background-color": "color-mix(in oklab, var(--muted-foreground) 16%, transparent)"
+      },
+      ".rx-command-skeleton span:first-child": {
+        "width": "16px",
+        "height": "16px",
+        "border-radius": "var(--radius-badge)"
+      },
+      ".rx-command-skeleton span:last-child": {
+        "width": "calc(70% - var(--_i, 0) * 12%)"
+      },
+      "@keyframes rx-command-breathe": {
+        "to": {
+          "opacity": "0.45"
+        }
+      },
+      ".rx-command-spinner": {
+        "display": "block",
+        "width": "14px",
+        "height": "14px",
+        "box-sizing": "border-box",
+        "border": "2px solid var(--muted)",
+        "border-top-color": "var(--muted-foreground)",
+        "border-radius": "999px",
+        "animation": "rx-command-spin 700ms linear infinite"
+      },
+      "@keyframes rx-command-spin": {
+        "to": {
+          "rotate": "1turn"
+        }
+      },
+      ".rx-command-empty": {
+        "display": "grid",
+        "justify-items": "center",
+        "gap": "12px",
+        "padding": "28px 16px",
+        "color": "var(--muted-foreground)",
+        "text-align": "center",
+        "text-wrap": "pretty"
+      },
+      ".rx-command-footer": {
+        "display": "flex",
+        "flex-wrap": "wrap",
+        "align-items": "center",
+        "gap": "6px 16px",
+        "margin": "2px -8px -8px",
+        "padding": "8px 12px",
+        "border-top": "1px solid var(--border)",
+        "color": "var(--muted-foreground)",
+        "font-size": "12px",
+        "line-height": "16px",
+        "user-select": "none"
+      },
+      ".rx-command-footer > span": {
+        "display": "inline-flex",
+        "align-items": "center",
+        "gap": "6px"
+      },
+      "@media (hover: none) and (pointer: coarse)": {
+        ".rx-command .rx-command-footer, .rx-command-search .rx-input-icon:has(> .rx-command-kbd)": {
+          "display": "none"
+        }
+      },
+      ".rx-btn.rx-command-trigger": {
+        "justify-content": "flex-start",
+        "gap": "8px",
+        "min-width": "16rem",
+        "max-width": "100%",
+        "padding-inline": "0.875rem 0.5rem",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-btn.rx-command-trigger > svg": {
+        "width": "16px",
+        "height": "16px"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-command :is(.rx-command-viewport, .rx-command-highlight, .rx-command-item-text)": {
+          "transition": "none"
+        },
+        ".rx-command .rx-command-skeleton": {
+          "animation": "none"
+        },
+        ".rx-command .rx-command-spinner": {
+          "animation-duration": "2400ms"
+        }
+      },
+      "[data-motion=\"off\"] .rx-command :is(.rx-command-viewport, .rx-command-highlight, .rx-command-item-text)": {
+        "transition": "none"
+      },
+      "[data-motion=\"off\"] .rx-command .rx-command-skeleton": {
+        "animation": "none"
+      },
+      "[data-motion=\"off\"] .rx-command .rx-command-spinner": {
+        "animation-duration": "2400ms"
+      }
+    }
+  },
+  "categories": [
+    "navigation"
+  ],
+  "type": "registry:block"
+}

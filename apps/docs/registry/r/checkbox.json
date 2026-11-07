@@ -1,0 +1,203 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "checkbox",
+  "title": "Checkbox",
+  "description": "A native checkbox whose tick pops in and draws itself, an indeterminate dash and three sizes. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/field-context.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/checkbox.styles.ts",
+      "content": "export type CheckboxSize = \"sm\" | \"md\" | \"lg\";\n\nexport const checkboxSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly CheckboxSize[];\n\n/**\n * The class list for a Checkbox's box. The look lives in `checkbox.css` (your global CSS, when\n * installed from the registry), so React and plain HTML get the same control from these names:\n *\n *   <label class=\"rx-checkbox-label\">\n *     <span class=\"rx-checkbox rx-checkbox-md\">\n *       <input type=\"checkbox\" class=\"rx-checkbox-input\" />\n *       <svg class=\"rx-checkbox-mark rx-checkbox-check\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n *         <path d=\"M5 13l4 4L19 7\" pathLength=\"1\" />\n *       </svg>\n *       <svg class=\"rx-checkbox-mark rx-checkbox-dash\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">\n *         <path d=\"M6 12h12\" pathLength=\"1\" />\n *       </svg>\n *     </span>\n *     <span class=\"rx-checkbox-text\"><span>Email me updates</span></span>\n *   </label>\n */\nexport function checkboxClass(size: CheckboxSize = \"md\") {\n\treturn `rx-checkbox rx-checkbox-${size}`;\n}\n\n/** Class names for the parts of a Checkbox, for markup written by hand. */\nexport const checkboxParts = {\n\t/** The native checkbox. Invisible, it covers the box and a 24px target around it. */\n\tinput: \"rx-checkbox-input\",\n\t/** Both glyphs. Each is an SVG whose path draws itself in with `stroke-dashoffset`. */\n\tmark: \"rx-checkbox-mark\",\n\t/** The tick, shown while checked. */\n\tcheck: \"rx-checkbox-check\",\n\t/** The dash, shown while indeterminate. */\n\tdash: \"rx-checkbox-dash\",\n\t/** The row around the box and its text, so the text names it and is clickable. */\n\tlabel: \"rx-checkbox-label\",\n\t/** The label text and the description, stacked. */\n\ttext: \"rx-checkbox-text\",\n\t/** A quieter line under the label, announced as the description. */\n\tdescription: \"rx-checkbox-description\",\n} as const;\n\n/** The glyphs' paths, on a 24px grid. `pathLength=\"1\"` lets the CSS draw them from 1 to 0. */\nexport const checkboxPaths = {\n\tcheck: \"M5 13l4 4L19 7\",\n\tdash: \"M6 12h12\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/checkbox.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ChangeEvent,\n\ttype InputHTMLAttributes,\n\ttype ReactNode,\n\ttype Ref,\n\tuseContext,\n\tuseEffect,\n\tuseId,\n\tuseRef,\n} from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport { type CheckboxSize, checkboxClass, checkboxParts, checkboxPaths } from \"./checkbox.styles\";\n\n/** shadcn's checked state: on, off, or partly on. */\nexport type CheckedState = boolean | \"indeterminate\";\n\nexport type CheckboxProps = Omit<\n\tInputHTMLAttributes<HTMLInputElement>,\n\t\"type\" | \"size\" | \"checked\" | \"defaultChecked\"\n> & {\n\t/** Controlled state. `\"indeterminate\"` is the same as `indeterminate` with `checked={false}`. */\n\tchecked?: CheckedState;\n\tdefaultChecked?: boolean;\n\t/** The partly-checked look, such as a \"select all\" with some of its rows chosen. */\n\tindeterminate?: boolean;\n\t/** The new state after every click or Space. `onChange` still receives the native event. */\n\tonCheckedChange?: (checked: boolean) => void;\n\t/** Box size: 16, 20 (default) or 24. */\n\tsize?: CheckboxSize;\n\t/** A quieter line under the label. Needs children (the label). */\n\tdescription?: ReactNode;\n\tref?: Ref<HTMLInputElement>;\n};\n\n/**\n * A native checkbox whose tick draws itself in. With children it renders a `<label>` around the box,\n * so the text names it and the whole row is clickable; without children, give it an `aria-label`\n * or put it in a `Field`. Indeterminate always follows the prop (the browser would clear it on a\n * click), so keep it in your own state and compute it on every render.\n */\nexport function Checkbox({\n\tchecked,\n\tdefaultChecked,\n\tindeterminate,\n\tonCheckedChange,\n\tonChange,\n\tsize,\n\tdescription,\n\tclassName,\n\tchildren,\n\tid: idProp,\n\t\"aria-describedby\": describedByProp,\n\t\"aria-invalid\": invalidProp,\n\tref,\n\t...rest\n}: CheckboxProps) {\n\tconst field = useContext(FieldContext);\n\tconst autoId = useId();\n\tconst inner = useRef<HTMLInputElement>(null);\n\tconst mixed = indeterminate === true || checked === \"indeterminate\";\n\n\t// No dependency list: the prop wins after every render, whatever the browser did meanwhile.\n\tuseEffect(() => {\n\t\tif (inner.current) inner.current.indeterminate = mixed;\n\t});\n\n\tconst id = idProp ?? field?.id ?? autoId;\n\tconst labelled = children !== undefined && children !== null;\n\tconst descriptionId = labelled && description ? `${id}-description` : undefined;\n\t// A wrapping label would read the description as part of the name, so name it by the text alone.\n\tconst labelId = descriptionId && !rest[\"aria-label\"] ? `${id}-label` : undefined;\n\tconst describedBy =\n\t\t[field?.describedBy, describedByProp, descriptionId].filter(Boolean).join(\" \") || undefined;\n\n\tconst box = (\n\t\t<span className={cn(checkboxClass(size), labelled ? undefined : className)}>\n\t\t\t<input\n\t\t\t\t{...rest}\n\t\t\t\tid={id}\n\t\t\t\ttype=\"checkbox\"\n\t\t\t\taria-describedby={describedBy}\n\t\t\t\taria-labelledby={rest[\"aria-labelledby\"] ?? labelId}\n\t\t\t\taria-invalid={invalidProp ?? (field?.invalid || undefined)}\n\t\t\t\t{...(checked === undefined ? { defaultChecked } : { checked: checked === true })}\n\t\t\t\tref={(node) => {\n\t\t\t\t\tinner.current = node;\n\t\t\t\t\tif (node) node.indeterminate = mixed;\n\t\t\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\t\t\telse if (ref) ref.current = node;\n\t\t\t\t}}\n\t\t\t\tclassName={checkboxParts.input}\n\t\t\t\tonChange={(event: ChangeEvent<HTMLInputElement>) => {\n\t\t\t\t\tonChange?.(event);\n\t\t\t\t\tonCheckedChange?.(event.target.checked);\n\t\t\t\t\t// The click cleared it; keep the prop's value until a render brings a new one.\n\t\t\t\t\tevent.target.indeterminate = mixed;\n\t\t\t\t}}\n\t\t\t/>\n\t\t\t<svg\n\t\t\t\tclassName={cn(checkboxParts.mark, checkboxParts.check)}\n\t\t\t\tviewBox=\"0 0 24 24\"\n\t\t\t\taria-hidden=\"true\"\n\t\t\t>\n\t\t\t\t<path d={checkboxPaths.check} pathLength={1} />\n\t\t\t</svg>\n\t\t\t<svg\n\t\t\t\tclassName={cn(checkboxParts.mark, checkboxParts.dash)}\n\t\t\t\tviewBox=\"0 0 24 24\"\n\t\t\t\taria-hidden=\"true\"\n\t\t\t>\n\t\t\t\t<path d={checkboxPaths.dash} pathLength={1} />\n\t\t\t</svg>\n\t\t</span>\n\t);\n\n\tif (!labelled) return box;\n\treturn (\n\t\t<label className={cn(checkboxParts.label, className)}>\n\t\t\t{box}\n\t\t\t<span className={checkboxParts.text}>\n\t\t\t\t<span id={labelId}>{children}</span>\n\t\t\t\t{description ? (\n\t\t\t\t\t<span id={descriptionId} className={checkboxParts.description}>\n\t\t\t\t\t\t{description}\n\t\t\t\t\t</span>\n\t\t\t\t) : null}\n\t\t\t</span>\n\t\t</label>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-checkbox": {
+        "--_size": "1.25rem",
+        "--_glyph": "0.75rem",
+        "--_edge-w": "2px",
+        "--_r": "calc(var(--radius-check) * 1.25)",
+        "--_edge": "color-mix(in oklab, var(--muted-foreground) 50%, transparent)",
+        "--_fill": "var(--background)",
+        "--_halo": "transparent",
+        "position": "relative",
+        "display": "inline-grid",
+        "flex": "none",
+        "place-items": "center",
+        "box-sizing": "border-box",
+        "width": "var(--_size)",
+        "height": "var(--_size)",
+        "border": "var(--_edge-w) solid var(--_edge)",
+        "border-radius": "var(--_r)",
+        "background-color": "var(--_fill)",
+        "box-shadow": "0 0 0 3px var(--_halo)",
+        "color": "var(--primary-foreground)",
+        "vertical-align": "middle",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "background-color 200ms var(--motion-ease), border-color 200ms var(--motion-ease), box-shadow 200ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press)"
+      },
+      "@media (hover: hover)": {
+        ".rx-checkbox:hover:not(:has(> :disabled, > :checked, > :indeterminate))": {
+          "--_edge": "var(--muted-foreground)"
+        }
+      },
+      ".rx-checkbox:has(> :checked), .rx-checkbox:has(> :indeterminate)": {
+        "--_fill": "var(--primary)",
+        "--_edge": "var(--primary)"
+      },
+      ".rx-checkbox:has(> [aria-invalid=\"true\"]:not(:checked, :indeterminate))": {
+        "--_edge": "var(--destructive)",
+        "--_halo": "color-mix(in oklab, var(--destructive) 15%, transparent)"
+      },
+      ".rx-checkbox:has(> :focus-visible)": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-checkbox:has(> [aria-invalid=\"true\"]:focus-visible)": {
+        "outline-color": "var(--destructive)"
+      },
+      ".rx-checkbox:has(> :active:not(:disabled))": {
+        "scale": "0.92"
+      },
+      ".rx-checkbox:has(> :disabled)": {
+        "opacity": "0.5"
+      },
+      ".rx-checkbox-sm": {
+        "--_size": "1rem",
+        "--_glyph": "0.625rem",
+        "--_edge-w": "1.5px",
+        "--_r": "var(--radius-check)"
+      },
+      ".rx-checkbox-lg": {
+        "--_size": "1.5rem",
+        "--_glyph": "0.875rem",
+        "--_r": "calc(var(--radius-check) * 1.5)"
+      },
+      ".rx-checkbox-input": {
+        "position": "absolute",
+        "top": "50%",
+        "left": "50%",
+        "width": "max(24px, var(--_size))",
+        "height": "max(24px, var(--_size))",
+        "translate": "-50% -50%",
+        "z-index": "1",
+        "margin": "0",
+        "appearance": "none",
+        "opacity": "0",
+        "cursor": "pointer"
+      },
+      ".rx-checkbox-input:disabled": {
+        "cursor": "not-allowed"
+      },
+      ".rx-checkbox-mark": {
+        "grid-area": "1 / 1",
+        "width": "var(--_glyph)",
+        "height": "var(--_glyph)",
+        "overflow": "visible",
+        "fill": "none",
+        "stroke": "currentColor",
+        "stroke-width": "3",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "pointer-events": "none",
+        "opacity": "0",
+        "scale": "0.5",
+        "filter": "blur(4px)",
+        "transition": "opacity 160ms var(--motion-ease), scale 160ms var(--motion-ease), filter 160ms var(--motion-ease)"
+      },
+      ".rx-checkbox-mark path": {
+        "stroke-dasharray": "1",
+        "stroke-dashoffset": "1",
+        "transition": "stroke-dashoffset 0s 160ms"
+      },
+      ".rx-checkbox:has(> :checked:not(:indeterminate)) > .rx-checkbox-check, .rx-checkbox:has(> :indeterminate) > .rx-checkbox-dash": {
+        "--_draw": "var(--spring-check-duration)",
+        "opacity": "1",
+        "scale": "1",
+        "filter": "blur(0)",
+        "transition": "opacity calc(var(--spring-check-duration) * 0.5) var(--spring-check), scale calc(var(--spring-check-duration) * 0.5) var(--spring-check), filter calc(var(--spring-check-duration) * 0.5) var(--spring-check)"
+      },
+      ".rx-checkbox:has(> :checked:not(:indeterminate)) > .rx-checkbox-check path, .rx-checkbox:has(> :indeterminate) > .rx-checkbox-dash path": {
+        "stroke-dashoffset": "0",
+        "transition": "stroke-dashoffset var(--_draw) var(--spring-check) 40ms"
+      },
+      ".rx-checkbox:has(> :indeterminate) > .rx-checkbox-dash": {
+        "--_draw": "calc(var(--spring-check-duration) * 0.66)"
+      },
+      ".rx-checkbox-label": {
+        "display": "inline-flex",
+        "align-items": "flex-start",
+        "gap": "0.75rem",
+        "color": "var(--foreground)",
+        "font-size": "0.875rem",
+        "line-height": "1.25rem",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent"
+      },
+      ".rx-checkbox-label > .rx-checkbox": {
+        "margin-block": "calc((1lh - var(--_size)) / 2)"
+      },
+      ".rx-checkbox-label:has(> .rx-checkbox-sm)": {
+        "gap": "0.5rem",
+        "font-size": "0.8125rem",
+        "letter-spacing": "-0.15px"
+      },
+      ".rx-checkbox-label:has(> .rx-checkbox-lg)": {
+        "font-size": "1rem",
+        "line-height": "1.5rem"
+      },
+      ".rx-checkbox-label:active:not(:has(:disabled)) > .rx-checkbox": {
+        "scale": "0.92"
+      },
+      ".rx-checkbox-label:has(:disabled)": {
+        "cursor": "not-allowed"
+      },
+      ".rx-checkbox-label:has(:disabled) > .rx-checkbox-text": {
+        "opacity": "0.5"
+      },
+      ".rx-checkbox-text": {
+        "display": "flex",
+        "min-width": "0",
+        "flex-direction": "column",
+        "gap": "0.125rem"
+      },
+      ".rx-checkbox-description": {
+        "color": "var(--muted-foreground)",
+        "font-size": "0.75rem",
+        "line-height": "1rem",
+        "letter-spacing": "0"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-checkbox": {
+          "scale": "none"
+        },
+        ".rx-checkbox-mark": {
+          "scale": "none",
+          "filter": "none",
+          "transition": "opacity 100ms var(--motion-ease)"
+        },
+        ".rx-checkbox-mark path": {
+          "stroke-dashoffset": "0",
+          "transition": "none"
+        }
+      },
+      "[data-motion=\"off\"] .rx-checkbox, [data-motion=\"off\"] .rx-checkbox-mark, [data-motion=\"off\"] .rx-checkbox-mark path": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

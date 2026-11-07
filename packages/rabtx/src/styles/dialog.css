@@ -1,0 +1,319 @@
+/*
+ * The Dialog: a native <dialog> opened with showModal(). The browser supplies the top layer, the
+ * inert page behind it, the focus move and return, Escape and (with `closedby="any"`) a press on the
+ * backdrop. This file draws the panel and the backdrop and animates both.
+ *
+ * Motion is CSS only. Entering, `@starting-style` gives the first frame and the panel spring
+ * (`--spring-panel`) carries it in; leaving is shorter and plain eased, and `display` and `overlay`
+ * transition with `allow-discrete` so the panel stays in the top layer until it has faded. Browsers
+ * without them open and close at once. The morph variant is a View Transition started by the
+ * component; while it runs (`data-morphing`) these transitions stand down.
+ *
+ * Colors come only from the theme: the panel is --popover / --popover-foreground on the shared
+ * raised surface (control.css), the description --muted-foreground, the backdrop a dimmed
+ * --background and the focus ring --ring. No cast shadows: the edge and the backdrop separate it.
+ */
+@layer components {
+	.rx-dialog {
+		--_fill: var(--popover);
+		--_flat: var(--border);
+		--_ring: var(--surface-ring);
+		--_edge-a: var(--surface-edge-top);
+		--_edge-b: var(--surface-edge-bottom);
+		--_sheen: var(--surface-sheen);
+		--_shade: var(--surface-shade);
+		--_w: 32rem;
+		--_pad: 19px;
+		--_exit: 160ms;
+		--_from-scale: 0.96;
+		--_from-x: 0px;
+		--_from-y: 8px;
+
+		container: rx-dialog / inline-size;
+		position: fixed;
+		inset: 0;
+		box-sizing: border-box;
+		width: min(calc(100% - 2rem), var(--_w));
+		max-width: none;
+		height: fit-content;
+		max-height: calc(100dvh - 2rem);
+		margin: auto;
+		padding: var(--_pad);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		border-radius: var(--radius-box);
+		color: var(--popover-foreground);
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+		outline: none;
+		view-transition-class: rx-morph;
+
+		/* Closed, and the frame the panel leaves to. */
+		opacity: 0;
+		scale: var(--_from-scale);
+		translate: var(--_from-x) var(--_from-y);
+		transition:
+			opacity var(--_exit) var(--motion-ease),
+			scale var(--_exit) var(--motion-ease),
+			translate var(--_exit) var(--motion-ease),
+			display var(--_exit) allow-discrete,
+			overlay var(--_exit) allow-discrete;
+
+		&[open] {
+			display: grid;
+			align-content: start;
+			gap: 16px;
+			opacity: 1;
+			scale: 1;
+			translate: 0 0;
+			transition:
+				opacity 200ms var(--motion-ease),
+				scale var(--spring-panel-duration) var(--spring-panel),
+				translate var(--spring-panel-duration) var(--spring-panel),
+				display var(--spring-panel-duration) allow-discrete,
+				overlay var(--spring-panel-duration) allow-discrete;
+		}
+
+		/* The backdrop dims the page: --background pulled toward black, with a light blur. */
+		&::backdrop {
+			background-color: transparent;
+			backdrop-filter: blur(0);
+			transition:
+				background-color var(--_exit) var(--motion-ease),
+				backdrop-filter var(--_exit) var(--motion-ease),
+				display var(--_exit) allow-discrete,
+				overlay var(--_exit) allow-discrete;
+		}
+		&[open]::backdrop {
+			background-color: color-mix(in oklab, var(--foreground) 30%, transparent);
+			background-color: oklch(from var(--background) calc(l * 0.25) c h / 0.45);
+			backdrop-filter: blur(2px);
+			transition-duration: 240ms;
+		}
+	}
+
+	/* Widths: 24, 32 and 42rem, never wider than the viewport less 1rem a side. */
+	.rx-dialog-sm {
+		--_w: 24rem;
+	}
+	.rx-dialog-md {
+		--_w: 32rem;
+	}
+	.rx-dialog-lg {
+		--_w: 42rem;
+	}
+
+	/* A sheet on the right: full height, three quarters of the size's width, slides in. */
+	.rx-dialog-right {
+		--_from-scale: 1;
+		--_from-x: 100%;
+		--_from-y: 0px;
+		--_exit: 220ms;
+		width: min(calc(100% - 3rem), calc(var(--_w) * 0.75));
+		height: 100dvh;
+		max-height: 100dvh;
+		margin: 0;
+		margin-inline-start: auto;
+		border-start-end-radius: 0;
+		border-end-end-radius: 0;
+		opacity: 1;
+
+		&[open] {
+			grid-template-rows: auto 1fr auto;
+		}
+	}
+
+	/* A sheet on the bottom: full width on a phone, centered and capped on a wide screen. */
+	.rx-dialog-bottom {
+		--_from-scale: 1;
+		--_from-y: 100%;
+		--_exit: 220ms;
+		width: min(100%, calc(var(--_w) * 1.25));
+		max-height: 85dvh;
+		margin-block-end: 0;
+		padding-block-end: calc(var(--_pad) + env(safe-area-inset-bottom, 0px));
+		border-end-start-radius: 0;
+		border-end-end-radius: 0;
+		opacity: 1;
+	}
+
+	.rx-dialog-header {
+		display: grid;
+		gap: 4px;
+	}
+	/* Room for the close button beside the title. */
+	.rx-dialog:has(> .rx-dialog-close) > .rx-dialog-header {
+		padding-inline-end: 28px;
+	}
+	.rx-dialog-title {
+		margin: 0;
+		font-size: 14px;
+		line-height: 20px;
+		font-weight: 510;
+		letter-spacing: -0.15px;
+		color: var(--popover-foreground);
+		text-wrap: balance;
+	}
+	.rx-dialog-description {
+		margin: 0;
+		font-size: 13px;
+		line-height: 20px;
+		letter-spacing: -0.15px;
+		color: var(--muted-foreground);
+		text-wrap: pretty;
+	}
+	.rx-dialog-footer {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 8px;
+	}
+	/* A narrow panel (a phone) stacks the actions, the primary one on top, each full width. */
+	@container rx-dialog (width < 20rem) {
+		.rx-dialog-footer {
+			flex-direction: column-reverse;
+			align-items: stretch;
+		}
+	}
+
+	/* The close button: a cross drawn by two bars, so it needs no icon set. */
+	.rx-dialog-close {
+		position: absolute;
+		inset-block-start: 11px;
+		inset-inline-end: 11px;
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-item);
+		background-color: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			background-color 150ms var(--motion-ease),
+			color 150ms var(--motion-ease),
+			opacity 200ms var(--motion-ease) 120ms,
+			scale var(--spring-press-duration) var(--spring-press) 120ms;
+
+		&::before,
+		&::after {
+			content: "";
+			grid-area: 1 / 1;
+			width: 14px;
+			height: 1.5px;
+			border-radius: 1px;
+			background-color: currentColor;
+			rotate: 45deg;
+		}
+		&::after {
+			rotate: -45deg;
+		}
+		@media (hover: hover) and (pointer: fine) {
+			&:hover {
+				background-color: var(--accent);
+				color: var(--accent-foreground);
+			}
+		}
+		&:active {
+			scale: 0.9;
+			transition-delay: 0ms;
+		}
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 1px;
+		}
+	}
+
+	/*
+	 * The first frame of an opening: the panel at its closed pose, the backdrop clear and the close
+	 * button small, so it pops in just after the panel. One block, after the rules it overrides.
+	 */
+	@starting-style {
+		.rx-dialog[open] {
+			opacity: 0;
+			scale: var(--_from-scale);
+			translate: var(--_from-x) var(--_from-y);
+		}
+		.rx-dialog[open]::backdrop {
+			background-color: transparent;
+			backdrop-filter: blur(0);
+		}
+		.rx-dialog[open] .rx-dialog-close {
+			opacity: 0;
+			scale: 0.8;
+		}
+	}
+
+	/* The page behind a modal dialog does not scroll. */
+	:root:has(.rx-dialog:modal) {
+		overflow: hidden;
+	}
+
+	/* Morph: the trigger hands its place to the panel, so it hides while the panel is open. */
+	[data-slot="dialog-trigger"][data-morph] {
+		view-transition-class: rx-morph;
+	}
+	[data-slot="dialog-trigger"][data-morph][aria-expanded="true"] {
+		opacity: 0;
+	}
+	.rx-dialog[data-morphing],
+	.rx-dialog[data-morphing]::backdrop {
+		transition: none;
+	}
+	/* The box grows on the panel spring; each picture keeps its own size and is clipped by it. */
+	::view-transition-group(*.rx-morph) {
+		animation-duration: var(--spring-panel-duration);
+		animation-timing-function: var(--spring-panel);
+	}
+	::view-transition-image-pair(*.rx-morph) {
+		overflow: clip;
+		border-radius: var(--radius-box);
+	}
+	::view-transition-old(*.rx-morph),
+	::view-transition-new(*.rx-morph) {
+		inset: 50% auto auto 50%;
+		inline-size: auto;
+		block-size: auto;
+		translate: -50% -50%;
+		animation-duration: 200ms;
+		animation-timing-function: var(--motion-ease);
+	}
+	/*
+	 * Where the transition is typed, the picture being arrived at turns solid almost at once and
+	 * the growing (or shrinking) box reveals it, while the one being left fades out under it. No
+	 * additive blend, so the page never shows through the box.
+	 */
+	:root:active-view-transition-type(rx-morph-open, rx-morph-close) {
+		&::view-transition-old(*.rx-morph),
+		&::view-transition-new(*.rx-morph) {
+			mix-blend-mode: normal;
+		}
+	}
+	:root:active-view-transition-type(rx-morph-open)::view-transition-new(*.rx-morph) {
+		animation-duration: 100ms;
+	}
+	:root:active-view-transition-type(rx-morph-close)::view-transition-new(*.rx-morph) {
+		animation: none;
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-dialog,
+		.rx-dialog::backdrop,
+		.rx-dialog-close {
+			transition-duration: 0ms;
+			transition-delay: 0ms;
+		}
+	}
+	/* Motion off, or the OS asks for less: the panel and backdrop appear and go at once. */
+	[data-motion="off"] :is(.rx-dialog, .rx-dialog-close),
+	[data-motion="off"] .rx-dialog::backdrop {
+		transition-duration: 0ms;
+		transition-delay: 0ms;
+	}
+}

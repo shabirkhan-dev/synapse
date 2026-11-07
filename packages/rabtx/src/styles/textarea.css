@@ -1,0 +1,67 @@
+/*
+ * The Textarea: the <textarea> itself is the field, drawn like the Input and the Select trigger
+ * (--card fill, --input edge, --radius-box corners, the same hover, focus and error). It grows with
+ * its text where `field-sizing: content` exists, from a 96px minimum; elsewhere it keeps the
+ * minimum and resizes by hand. An error is `aria-invalid` (set by Field) or `:user-invalid`.
+ */
+@layer components {
+	.rx-textarea {
+		box-sizing: border-box;
+		display: block;
+		width: 100%;
+		min-height: 6rem;
+		field-sizing: content;
+		margin: 0;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--input);
+		border-radius: var(--radius-box);
+		background-color: var(--card);
+		color: var(--card-foreground);
+		font: inherit;
+		font-family: var(--font-sans);
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		letter-spacing: -0.15px;
+		resize: vertical;
+		outline: none;
+		transition:
+			border-color 150ms var(--motion-ease),
+			box-shadow 150ms var(--motion-ease);
+
+		&::placeholder {
+			color: var(--subtle-foreground);
+			opacity: 1;
+		}
+		@media (hover: hover) {
+			&:hover {
+				border-color: color-mix(in oklab, var(--foreground) 24%, var(--card));
+			}
+		}
+		&:focus-visible {
+			border-color: var(--ring);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent);
+		}
+		&:is([aria-invalid="true"], :user-invalid) {
+			border-color: var(--destructive);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent);
+		}
+		&:read-only:not(:disabled) {
+			background-color: color-mix(in oklab, var(--muted) 50%, var(--card));
+		}
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-textarea {
+			transition-duration: 0ms;
+		}
+	}
+	[data-motion="off"] .rx-textarea {
+		transition-duration: 0ms;
+	}
+}

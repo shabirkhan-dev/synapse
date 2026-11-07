@@ -1,0 +1,228 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "dropdown-menu",
+  "title": "Dropdown Menu",
+  "description": "A WAI-ARIA menu on the native Popover API: icons, shortcuts, checkbox and radio rows, submenus, typeahead and a highlight that glides between rows, plus a right-click ContextMenu. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/popover.json",
+    "{{origin}}/r/use-popover.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/context-menu.tsx",
+      "content": "\"use client\";\n\nimport {\n\tcloneElement,\n\tcreateContext,\n\ttype HTMLAttributes,\n\tisValidElement,\n\ttype MouseEvent,\n\ttype ReactElement,\n\ttype ReactNode,\n\ttype Ref,\n\ttype RefObject,\n\tuse,\n\tuseMemo,\n\tuseRef,\n} from \"react\";\nimport { mergeRefs, type PopoverStateOptions } from \"@/hooks/use-popover\";\nimport {\n\ttype MenuContentProps,\n\tMenuPanel,\n\tMenuProvider,\n\ttype MenuRoot,\n\tuseMenuState,\n} from \"./dropdown-menu\";\nimport { menuParts } from \"./dropdown-menu.styles\";\n\nconst ContextMenuContext = createContext<{\n\troot: MenuRoot;\n\tpoint: RefObject<HTMLSpanElement | null>;\n} | null>(null);\n\nfunction useContextMenu(part: string) {\n\tconst context = use(ContextMenuContext);\n\tif (!context) throw new Error(`${part} must be used inside <ContextMenu>`);\n\treturn context;\n}\n\nexport type ContextMenuProps = PopoverStateOptions & { children?: ReactNode };\n\n/**\n * A menu that opens at the pointer on a right-click (or the keyboard's menu key, Shift+F10) over\n * its trigger area. The same menu as DropdownMenu, with the same rows, keys and motion; it is\n * anchored to an invisible point where the press was, and unfolds from it.\n */\nexport function ContextMenu({ children, ...options }: ContextMenuProps) {\n\tconst root = useMenuState(options, false);\n\tconst point = useRef<HTMLSpanElement>(null);\n\tconst { anchorRef } = root.state;\n\tconst value = useMemo(() => ({ root, point }), [root]);\n\treturn (\n\t\t<ContextMenuContext value={value}>\n\t\t\t<MenuProvider root={root}>\n\t\t\t\t{children}\n\t\t\t\t<span\n\t\t\t\t\tref={mergeRefs(point, anchorRef)}\n\t\t\t\t\tclassName={menuParts.point}\n\t\t\t\t\tstyle={{ anchorName: root.anchor }}\n\t\t\t\t\taria-hidden=\"true\"\n\t\t\t\t/>\n\t\t\t</MenuProvider>\n\t\t</ContextMenuContext>\n\t);\n}\n\nexport type ContextMenuTriggerProps = HTMLAttributes<HTMLDivElement> & {\n\t/** Use the one child element as the area instead of a `<div>`. */\n\tasChild?: boolean;\n\t/** Leave the browser's own context menu in place. */\n\tdisabled?: boolean;\n\tref?: Ref<HTMLDivElement>;\n};\n\n/** The area a right-click opens the menu over. */\nexport function ContextMenuTrigger({\n\tasChild,\n\tdisabled,\n\tonContextMenu,\n\tchildren,\n\tref,\n\t...rest\n}: ContextMenuTriggerProps) {\n\tconst { root, point } = useContextMenu(\"ContextMenuTrigger\");\n\tconst open = (event: MouseEvent<HTMLElement>) => {\n\t\tif (disabled || event.defaultPrevented) return;\n\t\tevent.preventDefault();\n\t\t// The menu key and Shift+F10 fire with no pointer: open below the focused element instead,\n\t\t// and land on the first row.\n\t\tconst native = event.nativeEvent as { pointerType?: string };\n\t\tconst keyboard = event.button < 0 || native.pointerType === \"\";\n\t\tlet { clientX: x, clientY: y } = event;\n\t\tif (keyboard || (x === 0 && y === 0)) {\n\t\t\tconst rect = (event.target as Element).getBoundingClientRect();\n\t\t\tx = rect.left;\n\t\t\ty = rect.bottom;\n\t\t}\n\t\tconst at = point.current;\n\t\tif (at) {\n\t\t\tat.style.left = `${x}px`;\n\t\t\tat.style.top = `${y}px`;\n\t\t}\n\t\troot.landing.current = keyboard ? \"first\" : \"menu\";\n\t\troot.state.triggerRef.current = event.currentTarget;\n\t\t// A second right-click moves an open menu to the new point.\n\t\troot.state.contentRef.current?.hidePopover?.();\n\t\troot.state.setOpen(true);\n\t};\n\tconst shared = {\n\t\t...rest,\n\t\t\"data-state\": root.state.open ? \"open\" : \"closed\",\n\t\t\"data-slot\": \"context-menu-trigger\",\n\t};\n\tif (asChild && isValidElement(children)) {\n\t\tconst child = children as ReactElement<\n\t\t\tHTMLAttributes<HTMLElement> & { ref?: Ref<HTMLElement> }\n\t\t>;\n\t\treturn cloneElement(child, {\n\t\t\t...shared,\n\t\t\t// oxlint-disable-next-line react/refs -- the child's own ref prop, merged, not a ref's value\n\t\t\tref: mergeRefs(ref as Ref<HTMLElement>, child.props.ref),\n\t\t\tonContextMenu: (event: MouseEvent<HTMLElement>) => {\n\t\t\t\tchild.props.onContextMenu?.(event);\n\t\t\t\tonContextMenu?.(event as MouseEvent<HTMLDivElement>);\n\t\t\t\topen(event);\n\t\t\t},\n\t\t});\n\t}\n\treturn (\n\t\t<div\n\t\t\t{...shared}\n\t\t\tref={ref}\n\t\t\tonContextMenu={(event) => {\n\t\t\t\tonContextMenu?.(event);\n\t\t\t\topen(event);\n\t\t\t}}\n\t\t>\n\t\t\t{children}\n\t\t</div>\n\t);\n}\n\nexport type ContextMenuContentProps = MenuContentProps;\n\n/** The menu: opens below and after the pointer, and flips when it would not fit. */\nexport function ContextMenuContent({\n\tside = \"bottom\",\n\talign = \"start\",\n\tsideOffset = 2,\n\t...rest\n}: ContextMenuContentProps) {\n\tconst { root } = useContextMenu(\"ContextMenuContent\");\n\treturn (\n\t\t<MenuPanel\n\t\t\taria-label=\"Context menu\"\n\t\t\t{...rest}\n\t\t\troot={root}\n\t\t\tside={side}\n\t\t\talign={align}\n\t\t\tsideOffset={sideOffset}\n\t\t\tslot=\"context-menu-content\"\n\t\t/>\n\t);\n}\n\n// The rows are the dropdown menu's own.\nexport {\n\tDropdownMenuCheckboxItem as ContextMenuCheckboxItem,\n\ttype DropdownMenuCheckboxItemProps as ContextMenuCheckboxItemProps,\n\tDropdownMenuGroup as ContextMenuGroup,\n\tDropdownMenuItem as ContextMenuItem,\n\ttype DropdownMenuItemProps as ContextMenuItemProps,\n\tDropdownMenuLabel as ContextMenuLabel,\n\tDropdownMenuRadioGroup as ContextMenuRadioGroup,\n\ttype DropdownMenuRadioGroupProps as ContextMenuRadioGroupProps,\n\tDropdownMenuRadioItem as ContextMenuRadioItem,\n\ttype DropdownMenuRadioItemProps as ContextMenuRadioItemProps,\n\tDropdownMenuSeparator as ContextMenuSeparator,\n\tDropdownMenuShortcut as ContextMenuShortcut,\n\tDropdownMenuSub as ContextMenuSub,\n\tDropdownMenuSubContent as ContextMenuSubContent,\n\tDropdownMenuSubTrigger as ContextMenuSubTrigger,\n} from \"./dropdown-menu\";\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/dropdown-menu.styles.ts",
+      "content": "/**\n * Class names for a menu, for markup written by hand. A menu is a popover (`popover.css` places\n * and animates it) whose panel also carries `rx-menu`; `dropdown-menu.css` draws the rows and the\n * highlight that glides between them:\n *\n *   <div id=\"m\" popover role=\"menu\" class=\"rx-popover\" data-side=\"bottom\" data-align=\"start\">\n *     <div class=\"rx-surface rx-popover-surface rx-menu\">\n *       <div role=\"menuitem\" tabindex=\"-1\" class=\"rx-menu-item\">…</div>\n *       <span class=\"rx-menu-highlight\" aria-hidden=\"true\"></span>\n *     </div>\n *   </div>\n */\nexport const menuParts = {\n\t/** The panel, added to the popover surface. */\n\tmenu: \"rx-menu\",\n\titem: \"rx-menu-item\",\n\ticon: \"rx-menu-icon\",\n\tlabel: \"rx-menu-text\",\n\tshortcut: \"rx-menu-shortcut\",\n\t/** The box a checkbox or radio item draws its tick or dot in. */\n\tindicator: \"rx-menu-indicator\",\n\tcheck: \"rx-menu-check\",\n\tdot: \"rx-menu-dot\",\n\tsubTrigger: \"rx-menu-subtrigger\",\n\theading: \"rx-menu-label\",\n\tseparator: \"rx-menu-separator\",\n\t/** The last child of the panel: the highlight, placed on the active row by anchor positioning. */\n\thighlight: \"rx-menu-highlight\",\n\t/** The invisible point a context menu is anchored to. */\n\tpoint: \"rx-menu-point\",\n} as const;\n\n/** Item tones: the default, or a destructive action drawn in --destructive. */\nexport type MenuItemVariant = \"default\" | \"destructive\";\n\n/** The enabled rows of a menu, in order, leaving out the rows of any submenu inside it. */\nexport function menuItems(menu: Element): HTMLElement[] {\n\treturn [\n\t\t...menu.querySelectorAll<HTMLElement>(\n\t\t\t'[role=\"menuitem\"], [role=\"menuitemcheckbox\"], [role=\"menuitemradio\"]',\n\t\t),\n\t].filter(\n\t\t(item) =>\n\t\t\titem.closest('[role=\"menu\"]') === menu && item.getAttribute(\"aria-disabled\") !== \"true\",\n\t);\n}\n\n/** The index to move to for a navigation key, wrapping at both ends; -1 when the key is not one. */\nexport function nextIndex(key: string, current: number, count: number): number {\n\tif (count === 0) return -1;\n\tswitch (key) {\n\t\tcase \"ArrowDown\":\n\t\t\treturn current < 0 ? 0 : (current + 1) % count;\n\t\tcase \"ArrowUp\":\n\t\t\treturn current < 0 ? count - 1 : (current - 1 + count) % count;\n\t\tcase \"Home\":\n\t\tcase \"PageUp\":\n\t\t\treturn 0;\n\t\tcase \"End\":\n\t\tcase \"PageDown\":\n\t\t\treturn count - 1;\n\t\tdefault:\n\t\t\treturn -1;\n\t}\n}\n\n/**\n * Typeahead: the next row (after the current one, wrapping) whose text starts with what was typed.\n * A run of one repeated letter cycles through the rows starting with it.\n */\nexport function typeaheadMatch(labels: string[], current: number, typed: string): number {\n\tconst query = typed.toLocaleLowerCase();\n\tconst repeated = query.length > 1 && [...query].every((char) => char === query[0]);\n\tconst search = repeated ? query[0] : query;\n\t// A new run starts after the current row; a growing one may stay on it.\n\tconst start = search.length === 1 ? current + 1 : Math.max(current, 0);\n\tfor (let offset = 0; offset < labels.length; offset++) {\n\t\tconst index = (start + offset) % labels.length;\n\t\tif (labels[index].trim().toLocaleLowerCase().startsWith(search)) return index;\n\t}\n\treturn -1;\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/dropdown-menu.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ButtonHTMLAttributes,\n\tcreateContext,\n\ttype CSSProperties,\n\ttype HTMLAttributes,\n\ttype KeyboardEvent,\n\ttype MouseEvent,\n\ttype PointerEvent,\n\ttype ReactNode,\n\ttype Ref,\n\ttype RefObject,\n\tuse,\n\tuseCallback,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport {\n\tanchorName,\n\tmergeRefs,\n\ttype PopoverAlign,\n\ttype PopoverSide,\n\ttype PopoverState,\n\ttype PopoverStateOptions,\n\tSlot,\n\tusePopoverState,\n} from \"@/hooks/use-popover\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\ttype MenuItemVariant,\n\tmenuItems,\n\tmenuParts,\n\tnextIndex,\n\ttypeaheadMatch,\n} from \"./dropdown-menu.styles\";\n\n/**\n * Where focus goes when a menu opens: its first or last row (keyboard), the menu itself (a click),\n * or nowhere (a submenu opened by hover keeps focus on its row).\n */\ntype Landing = \"first\" | \"last\" | \"menu\" | \"stay\";\n\n/** One menu that opens from something: a dropdown's trigger, a pointer, or a submenu's row. */\nexport type MenuRoot = {\n\tstate: PopoverState;\n\tcontentId: string;\n\ttriggerId?: string;\n\tanchor: string;\n\tlanding: RefObject<Landing>;\n};\n\n/** The top menu: every row closes it after it runs. */\nconst RootContext = createContext<{ close: () => void } | null>(null);\n/** The dropdown (or context menu) whose content renders next. */\nconst MenuRootContext = createContext<MenuRoot | null>(null);\n\ntype LevelValue = {\n\tmenuRef: RefObject<HTMLElement | null>;\n\t/** The id of the submenu open from this menu, if any. */\n\topenSub: string | null;\n\tsetOpenSub: (id: string | null) => void;\n\t/** The pointer is over a row: open its submenu, or close the open one, after a short grace. */\n\thover: (sub: string | null) => void;\n\t/** The pointer reached the open submenu: keep it. */\n\thold: () => void;\n\t/** Close this menu, when it is a submenu, and focus its row in the parent. */\n\tback?: () => void;\n};\n/** The menu a row belongs to. */\nconst LevelContext = createContext<LevelValue | null>(null);\n\nfunction useLevel(part: string) {\n\tconst level = use(LevelContext);\n\tif (!level) throw new Error(`${part} must be used inside a menu's content`);\n\treturn level;\n}\n\nfunction useMenuRoot(part: string) {\n\tconst root = use(MenuRootContext);\n\tif (!root) throw new Error(`${part} must be used inside <DropdownMenu>`);\n\treturn root;\n}\n\n/** The state of one menu that opens from something; shared by dropdowns and context menus. */\nexport function useMenuState(options: PopoverStateOptions, triggered: boolean): MenuRoot {\n\tconst id = useId();\n\tconst state = usePopoverState(options);\n\tconst landing = useRef<Landing>(\"menu\");\n\treturn useMemo(\n\t\t() => ({\n\t\t\tstate,\n\t\t\tcontentId: `${id}-menu`,\n\t\t\ttriggerId: triggered ? `${id}-trigger` : undefined,\n\t\t\tanchor: anchorName(id),\n\t\t\tlanding,\n\t\t}),\n\t\t[state, id, triggered],\n\t);\n}\n\n/** Provides a top menu to its trigger and content. */\nexport function MenuProvider({ root, children }: { root: MenuRoot; children?: ReactNode }) {\n\tconst { setOpen } = root.state;\n\tconst top = useMemo(() => ({ close: () => setOpen(false) }), [setOpen]);\n\treturn (\n\t\t<RootContext value={top}>\n\t\t\t<MenuRootContext value={root}>{children}</MenuRootContext>\n\t\t</RootContext>\n\t);\n}\n\nexport type DropdownMenuProps = PopoverStateOptions & { children?: ReactNode };\n\n/**\n * A menu of actions that opens from a button: WAI-ARIA's menu button pattern on the native Popover\n * API. Arrow keys, Home and End, typeahead and Escape work as in a desktop menu; a press outside\n * closes it and focus goes back to the button.\n */\nexport function DropdownMenu({ children, ...options }: DropdownMenuProps) {\n\tconst root = useMenuState(options, true);\n\treturn <MenuProvider root={root}>{children}</MenuProvider>;\n}\n\nexport type DropdownMenuTriggerProps = ButtonHTMLAttributes<HTMLButtonElement> & {\n\t/**\n\t * Merge into the one child element instead of rendering a button, such as our `Button`. The\n\t * child must forward its props and ref to a `<button>`.\n\t */\n\tasChild?: boolean;\n\tref?: Ref<HTMLButtonElement>;\n};\n\n/**\n * The menu button: a native invoker (`popovertarget`), so it opens the menu before hydration, and\n * the anchor the menu is placed against. Enter, Space and ArrowDown open it on the first row,\n * ArrowUp on the last; a click opens it with focus on the menu.\n */\nexport function DropdownMenuTrigger({\n\tref,\n\tstyle,\n\tonClick,\n\tonKeyDown,\n\t...rest\n}: DropdownMenuTriggerProps) {\n\tconst root = useMenuRoot(\"DropdownMenuTrigger\");\n\treturn (\n\t\t<Slot\n\t\t\tid={root.triggerId}\n\t\t\t{...rest}\n\t\t\tref={mergeRefs(ref as Ref<HTMLElement>, (node: HTMLElement | null) => {\n\t\t\t\troot.state.triggerRef.current = node;\n\t\t\t})}\n\t\t\tstyle={{ ...style, anchorName: root.anchor }}\n\t\t\tpopoverTarget={root.contentId}\n\t\t\taria-haspopup=\"menu\"\n\t\t\taria-expanded={root.state.open}\n\t\t\taria-controls={root.contentId}\n\t\t\tdata-state={root.state.open ? \"open\" : \"closed\"}\n\t\t\tdata-slot=\"dropdown-menu-trigger\"\n\t\t\tonClick={(event: MouseEvent<HTMLButtonElement>) => {\n\t\t\t\tonClick?.(event);\n\t\t\t\t// A click from Enter or Space has no pointer detail: land on the first row.\n\t\t\t\troot.landing.current = event.detail === 0 ? \"first\" : \"menu\";\n\t\t\t}}\n\t\t\tonKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {\n\t\t\t\tonKeyDown?.(event);\n\t\t\t\tif (event.defaultPrevented) return;\n\t\t\t\tif (event.key === \"ArrowDown\" || event.key === \"ArrowUp\") {\n\t\t\t\t\tevent.preventDefault();\n\t\t\t\t\troot.landing.current = event.key === \"ArrowDown\" ? \"first\" : \"last\";\n\t\t\t\t\tif (root.state.open) {\n\t\t\t\t\t\tconst menu = root.state.contentRef.current;\n\t\t\t\t\t\tconst items = menu ? menuItems(menu) : [];\n\t\t\t\t\t\titems.at(event.key === \"ArrowDown\" ? 0 : -1)?.focus();\n\t\t\t\t\t} else root.state.setOpen(true);\n\t\t\t\t}\n\t\t\t}}\n\t\t/>\n\t);\n}\n\nexport type MenuContentProps = Omit<HTMLAttributes<HTMLDivElement>, \"popover\"> & {\n\t/** The side of the anchor it opens on. Flips to the other side when it would not fit. */\n\tside?: PopoverSide;\n\t/** Line up with the anchor's start edge (default), center or end edge. */\n\talign?: PopoverAlign;\n\t/** The gap to the anchor, in px. Default 8. */\n\tsideOffset?: number;\n\t/** Classes for the panel (width). Props other than these go on the `role=\"menu\"` element. */\n\tclassName?: string;\n\tref?: Ref<HTMLDivElement>;\n};\n\nconst TYPEAHEAD_MS = 500;\nconst OPEN_DELAY = 90;\nconst CLOSE_DELAY = 260;\n\n/** The menu panel shared by dropdowns, submenus and context menus. */\nexport function MenuPanel({\n\troot,\n\tback,\n\tside,\n\talign,\n\tsideOffset,\n\tclassName,\n\tstyle,\n\tchildren,\n\tref,\n\tonKeyDown,\n\tonPointerEnter,\n\tslot,\n\t...rest\n}: MenuContentProps & { root: MenuRoot; back?: () => void; slot: string }) {\n\tconst { state, landing } = root;\n\tconst [openSub, setOpenSubState] = useState<string | null>(null);\n\tconst openSubRef = useRef(openSub);\n\tconst timer = useRef<ReturnType<typeof setTimeout>>(undefined);\n\tconst typed = useRef(\"\");\n\tconst typedAt = useRef(0);\n\n\tconst setOpenSub = useCallback((id: string | null) => {\n\t\tclearTimeout(timer.current);\n\t\topenSubRef.current = id;\n\t\tsetOpenSubState(id);\n\t}, []);\n\tconst hover = useCallback(\n\t\t(sub: string | null) => {\n\t\t\tclearTimeout(timer.current);\n\t\t\tif (sub === openSubRef.current) return;\n\t\t\ttimer.current = setTimeout(() => setOpenSub(sub), sub ? OPEN_DELAY : CLOSE_DELAY);\n\t\t},\n\t\t[setOpenSub],\n\t);\n\tconst hold = useCallback(() => clearTimeout(timer.current), []);\n\tuseEffect(() => () => clearTimeout(timer.current), []);\n\t// A closed menu forgets its open submenu.\n\tif (!state.open && openSub !== null) setOpenSubState(null);\n\tuseLayoutEffect(() => {\n\t\topenSubRef.current = openSub;\n\t}, [openSub]);\n\n\tconst level = useMemo<LevelValue>(\n\t\t() => ({ menuRef: state.contentRef, openSub, setOpenSub, hover, hold, back }),\n\t\t[state.contentRef, openSub, setOpenSub, hover, hold, back],\n\t);\n\n\tconst { onShown } = state;\n\tuseLayoutEffect(() => {\n\t\tonShown.current = (menu) => {\n\t\t\tconst items = menuItems(menu);\n\t\t\tconst target =\n\t\t\t\tlanding.current === \"first\"\n\t\t\t\t\t? items[0]\n\t\t\t\t\t: landing.current === \"last\"\n\t\t\t\t\t\t? items.at(-1)\n\t\t\t\t\t\t: undefined;\n\t\t\tif (landing.current !== \"stay\") (target ?? menu).focus({ preventScroll: true });\n\t\t\tlanding.current = \"menu\";\n\t\t};\n\t}, [onShown, landing]);\n\n\tconst handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {\n\t\tonKeyDown?.(event);\n\t\tconst menu = event.currentTarget;\n\t\t// Keys pressed in a submenu bubble through this one in the DOM; they are not ours.\n\t\tif (event.defaultPrevented || (event.target as Element).closest('[role=\"menu\"]') !== menu)\n\t\t\treturn;\n\t\tconst items = menuItems(menu);\n\t\tconst current = items.indexOf(document.activeElement as HTMLElement);\n\t\tconst next = nextIndex(event.key, current, items.length);\n\t\tif (next >= 0) {\n\t\t\tevent.preventDefault();\n\t\t\titems[next].focus();\n\t\t\treturn;\n\t\t}\n\t\tif (event.key === \"Tab\") {\n\t\t\t// Close the whole menu; the browser hands focus back to the trigger and Tab moves on.\n\t\t\tlet top: HTMLElement = menu;\n\t\t\tfor (let el = menu.parentElement?.closest<HTMLElement>('[role=\"menu\"]'); el;) {\n\t\t\t\ttop = el;\n\t\t\t\tel = el.parentElement?.closest<HTMLElement>('[role=\"menu\"]');\n\t\t\t}\n\t\t\ttop.hidePopover();\n\t\t\treturn;\n\t\t}\n\t\tif (event.key === \"ArrowLeft\" && back) {\n\t\t\tevent.preventDefault();\n\t\t\tback();\n\t\t\treturn;\n\t\t}\n\t\tif (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {\n\t\t\tif (event.key === \" \" && typed.current === \"\") return;\n\t\t\tevent.preventDefault();\n\t\t\tconst now = event.timeStamp;\n\t\t\ttyped.current = now - typedAt.current > TYPEAHEAD_MS ? event.key : typed.current + event.key;\n\t\t\ttypedAt.current = now;\n\t\t\tconst match = typeaheadMatch(\n\t\t\t\titems.map((item) => item.dataset.textValue ?? item.textContent ?? \"\"),\n\t\t\t\tcurrent,\n\t\t\t\ttyped.current,\n\t\t\t);\n\t\t\tif (match >= 0) items[match].focus();\n\t\t}\n\t};\n\n\treturn (\n\t\t<LevelContext value={level}>\n\t\t\t<div\n\t\t\t\trole=\"menu\"\n\t\t\t\taria-labelledby={root.triggerId}\n\t\t\t\taria-orientation=\"vertical\"\n\t\t\t\ttabIndex={-1}\n\t\t\t\t{...rest}\n\t\t\t\tid={root.contentId}\n\t\t\t\tref={mergeRefs(ref, (node: HTMLDivElement | null) => {\n\t\t\t\t\tstate.contentRef.current = node;\n\t\t\t\t})}\n\t\t\t\tpopover=\"auto\"\n\t\t\t\tclassName=\"rx-popover\"\n\t\t\t\tdata-side={side}\n\t\t\t\tdata-align={align}\n\t\t\t\tstyle={\n\t\t\t\t\t{\n\t\t\t\t\t\t...style,\n\t\t\t\t\t\tpositionAnchor: root.anchor,\n\t\t\t\t\t\t...(sideOffset === undefined ? null : { \"--_offset\": `${sideOffset}px` }),\n\t\t\t\t\t} as CSSProperties\n\t\t\t\t}\n\t\t\t\tdata-state={state.open ? \"open\" : \"closed\"}\n\t\t\t\tdata-slot={slot}\n\t\t\t\tonToggle={state.onToggle}\n\t\t\t\tonBeforeToggle={state.onBeforeToggle}\n\t\t\t\tonKeyDown={handleKeyDown}\n\t\t\t\tonPointerEnter={onPointerEnter}\n\t\t\t\tonContextMenu={(event) => event.preventDefault()}\n\t\t\t>\n\t\t\t\t<div className={cn(\"rx-surface rx-popover-surface\", menuParts.menu, className)}>\n\t\t\t\t\t{children}\n\t\t\t\t\t{/* Last, so the rows are laid out before the highlight that anchors to them. */}\n\t\t\t\t\t<span className={menuParts.highlight} aria-hidden=\"true\" />\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</LevelContext>\n\t);\n}\n\nexport type DropdownMenuContentProps = MenuContentProps;\n\n/**\n * The menu: a `role=\"menu\"` `[popover]` in the top layer, anchored to the trigger. Below it and\n * lined up with its start edge by default; it flips when it would not fit.\n */\nexport function DropdownMenuContent({\n\tside = \"bottom\",\n\talign = \"start\",\n\t...rest\n}: DropdownMenuContentProps) {\n\tconst root = useMenuRoot(\"DropdownMenuContent\");\n\treturn <MenuPanel {...rest} root={root} side={side} align={align} slot=\"dropdown-menu-content\" />;\n}\n\ntype ItemBaseProps = Omit<HTMLAttributes<HTMLDivElement>, \"onSelect\"> & {\n\t/** Runs when the row is chosen (click, Enter or Space). Call `event.preventDefault()` to keep the menu open. */\n\tonSelect?: (event: Event) => void;\n\t/** Not chosen, skipped by the arrow keys, drawn at half strength. */\n\tdisabled?: boolean;\n\t/** `destructive` draws the row (and its highlight) in the destructive color. */\n\tvariant?: MenuItemVariant;\n\t/** Indent the row to line up with rows that have a tick or an icon. */\n\tinset?: boolean;\n\t/** An icon before the label, such as a HugeIcons icon. Hidden from screen readers. */\n\ticon?: ReactNode;\n\t/** A keyboard shortcut drawn at the end of the row, such as \"⌘C\". It does not bind the keys. */\n\tshortcut?: ReactNode;\n\t/** The text typeahead matches, when the row's text is not plain (an icon, a badge). */\n\ttextValue?: string;\n\tref?: Ref<HTMLDivElement>;\n};\n\nfunction ItemBase({\n\trole = \"menuitem\",\n\tonSelect,\n\tdisabled,\n\tvariant = \"default\",\n\tinset,\n\ticon,\n\tshortcut,\n\ttextValue,\n\tclassName,\n\tchildren,\n\tbefore,\n\tafter,\n\tkeepOpen,\n\tonClick,\n\tonKeyDown,\n\tonPointerMove,\n\tonPointerLeave,\n\tref,\n\t...rest\n}: ItemBaseProps & {\n\tbefore?: ReactNode;\n\tafter?: ReactNode;\n\t/** A submenu's row opens its menu instead of closing this one. */\n\tkeepOpen?: boolean;\n}) {\n\tconst level = useLevel(\"A menu item\");\n\tconst top = use(RootContext);\n\treturn (\n\t\t// oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- role is menuitem, menuitemcheckbox or menuitemradio\n\t\t<div\n\t\t\trole={role}\n\t\t\ttabIndex={-1}\n\t\t\taria-disabled={disabled || undefined}\n\t\t\tdata-disabled={disabled ? \"\" : undefined}\n\t\t\tdata-variant={variant === \"default\" ? undefined : variant}\n\t\t\tdata-inset={inset ? \"\" : undefined}\n\t\t\tdata-text-value={textValue}\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\tclassName={cn(menuParts.item, className)}\n\t\t\tonClick={(event: MouseEvent<HTMLDivElement>) => {\n\t\t\t\tif (disabled) {\n\t\t\t\t\tevent.preventDefault();\n\t\t\t\t\treturn;\n\t\t\t\t}\n\t\t\t\tonClick?.(event);\n\t\t\t\tif (event.defaultPrevented) return;\n\t\t\t\tonSelect?.(event.nativeEvent);\n\t\t\t\tif (!keepOpen && !event.nativeEvent.defaultPrevented) top?.close();\n\t\t\t}}\n\t\t\tonKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {\n\t\t\t\tonKeyDown?.(event);\n\t\t\t\tif (event.defaultPrevented) return;\n\t\t\t\tif (event.key === \"Enter\" || event.key === \" \") {\n\t\t\t\t\tevent.preventDefault();\n\t\t\t\t\tevent.currentTarget.click();\n\t\t\t\t}\n\t\t\t}}\n\t\t\tonPointerMove={(event: PointerEvent<HTMLDivElement>) => {\n\t\t\t\tonPointerMove?.(event);\n\t\t\t\tif (event.defaultPrevented || event.pointerType === \"touch\") return;\n\t\t\t\tconst item = event.currentTarget;\n\t\t\t\tif (disabled) level.menuRef.current?.focus({ preventScroll: true });\n\t\t\t\telse if (document.activeElement !== item) item.focus({ preventScroll: true });\n\t\t\t\tif (!keepOpen) level.hover(null);\n\t\t\t}}\n\t\t\tonPointerLeave={(event: PointerEvent<HTMLDivElement>) => {\n\t\t\t\tonPointerLeave?.(event);\n\t\t\t\tif (event.pointerType === \"touch\") return;\n\t\t\t\tif (document.activeElement === event.currentTarget && !keepOpen)\n\t\t\t\t\tlevel.menuRef.current?.focus({ preventScroll: true });\n\t\t\t}}\n\t\t>\n\t\t\t{before}\n\t\t\t{icon ? (\n\t\t\t\t<span className={menuParts.icon} aria-hidden=\"true\">\n\t\t\t\t\t{icon}\n\t\t\t\t</span>\n\t\t\t) : null}\n\t\t\t<span className={menuParts.label}>{children}</span>\n\t\t\t{shortcut ? <DropdownMenuShortcut>{shortcut}</DropdownMenuShortcut> : null}\n\t\t\t{after}\n\t\t</div>\n\t);\n}\n\nexport type DropdownMenuItemProps = ItemBaseProps;\n\n/** A row that runs an action and closes the menu. */\nexport function DropdownMenuItem(props: DropdownMenuItemProps) {\n\treturn <ItemBase {...props} data-slot=\"dropdown-menu-item\" />;\n}\n\n/** The tick a checkbox row draws itself with (HugeIcons \"tick 02\", MIT). */\nfunction Check() {\n\treturn (\n\t\t<span className={menuParts.indicator} aria-hidden=\"true\">\n\t\t\t<svg className={menuParts.check} viewBox=\"0 0 24 24\" fill=\"none\">\n\t\t\t\t<path d=\"M5 14L8.5 17.5L19 6.5\" pathLength={1} />\n\t\t\t</svg>\n\t\t</span>\n\t);\n}\n\nexport type DropdownMenuCheckboxItemProps = ItemBaseProps & {\n\t/** Controlled, with `onCheckedChange`. */\n\tchecked?: boolean;\n\tdefaultChecked?: boolean;\n\tonCheckedChange?: (checked: boolean) => void;\n};\n\n/** A row that turns a setting on and off (`menuitemcheckbox`). The tick draws itself in. */\nexport function DropdownMenuCheckboxItem({\n\tchecked: checkedProp,\n\tdefaultChecked = false,\n\tonCheckedChange,\n\tonSelect,\n\t...rest\n}: DropdownMenuCheckboxItemProps) {\n\tconst [internal, setInternal] = useState(defaultChecked);\n\tconst checked = checkedProp ?? internal;\n\treturn (\n\t\t<ItemBase\n\t\t\t{...rest}\n\t\t\trole=\"menuitemcheckbox\"\n\t\t\taria-checked={checked}\n\t\t\tdata-slot=\"dropdown-menu-checkbox-item\"\n\t\t\tbefore={<Check />}\n\t\t\tonSelect={(event) => {\n\t\t\t\tonSelect?.(event);\n\t\t\t\tif (checkedProp === undefined) setInternal(!checked);\n\t\t\t\tonCheckedChange?.(!checked);\n\t\t\t}}\n\t\t/>\n\t);\n}\n\nconst RadioContext = createContext<{ value: string; select: (value: string) => void } | null>(null);\n\nexport type DropdownMenuRadioGroupProps = Omit<HTMLAttributes<HTMLDivElement>, \"defaultValue\"> & {\n\t/** Controlled, with `onValueChange`. */\n\tvalue?: string;\n\tdefaultValue?: string;\n\tonValueChange?: (value: string) => void;\n};\n\n/** A set of rows of which one is chosen (`menuitemradio`). */\nexport function DropdownMenuRadioGroup({\n\tvalue: valueProp,\n\tdefaultValue = \"\",\n\tonValueChange,\n\tclassName,\n\t...rest\n}: DropdownMenuRadioGroupProps) {\n\tconst [internal, setInternal] = useState(defaultValue);\n\tconst value = valueProp ?? internal;\n\tconst radio = useMemo(\n\t\t() => ({\n\t\t\tvalue,\n\t\t\tselect: (next: string) => {\n\t\t\t\tif (valueProp === undefined) setInternal(next);\n\t\t\t\tonValueChange?.(next);\n\t\t\t},\n\t\t}),\n\t\t[value, valueProp, onValueChange],\n\t);\n\treturn (\n\t\t<RadioContext value={radio}>\n\t\t\t<DropdownMenuGroup {...rest} className={className} data-slot=\"dropdown-menu-radio-group\" />\n\t\t</RadioContext>\n\t);\n}\n\nexport type DropdownMenuRadioItemProps = ItemBaseProps & { value: string };\n\n/** One choice in a `DropdownMenuRadioGroup`. Its dot pops in when chosen. */\nexport function DropdownMenuRadioItem({ value, onSelect, ...rest }: DropdownMenuRadioItemProps) {\n\tconst radio = use(RadioContext);\n\tif (!radio) throw new Error(\"DropdownMenuRadioItem must be used inside <DropdownMenuRadioGroup>\");\n\treturn (\n\t\t<ItemBase\n\t\t\t{...rest}\n\t\t\trole=\"menuitemradio\"\n\t\t\taria-checked={radio.value === value}\n\t\t\tdata-slot=\"dropdown-menu-radio-item\"\n\t\t\tbefore={\n\t\t\t\t<span className={menuParts.indicator} aria-hidden=\"true\">\n\t\t\t\t\t<span className={menuParts.dot} />\n\t\t\t\t</span>\n\t\t\t}\n\t\t\tonSelect={(event) => {\n\t\t\t\tonSelect?.(event);\n\t\t\t\tradio.select(value);\n\t\t\t}}\n\t\t/>\n\t);\n}\n\nconst GroupContext = createContext<{ labelId: string; setHasLabel: (has: boolean) => void } | null>(\n\tnull,\n);\n\n/** Groups related rows (`role=\"group\"`), named by a `DropdownMenuLabel` inside it. */\nexport function DropdownMenuGroup({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {\n\tconst labelId = useId();\n\tconst [hasLabel, setHasLabel] = useState(false);\n\tconst group = useMemo(() => ({ labelId, setHasLabel }), [labelId]);\n\treturn (\n\t\t<GroupContext value={group}>\n\t\t\t<div\n\t\t\t\trole=\"group\"\n\t\t\t\taria-labelledby={hasLabel ? labelId : undefined}\n\t\t\t\tdata-slot=\"dropdown-menu-group\"\n\t\t\t\t{...rest}\n\t\t\t\tclassName={className}\n\t\t\t/>\n\t\t</GroupContext>\n\t);\n}\n\n/** A heading in the menu. Inside a group it names the group. */\nexport function DropdownMenuLabel({\n\tinset,\n\tclassName,\n\t...rest\n}: HTMLAttributes<HTMLDivElement> & { inset?: boolean }) {\n\tconst group = use(GroupContext);\n\tconst setHasLabel = group?.setHasLabel;\n\tuseLayoutEffect(() => {\n\t\tif (!setHasLabel) return;\n\t\tsetHasLabel(true);\n\t\treturn () => setHasLabel(false);\n\t}, [setHasLabel]);\n\treturn (\n\t\t<div\n\t\t\tid={group?.labelId}\n\t\t\tdata-inset={inset ? \"\" : undefined}\n\t\t\tdata-slot=\"dropdown-menu-label\"\n\t\t\t{...rest}\n\t\t\tclassName={cn(menuParts.heading, className)}\n\t\t/>\n\t);\n}\n\n/** A line between groups of rows. */\nexport function DropdownMenuSeparator({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {\n\treturn (\n\t\t<div\n\t\t\trole=\"separator\"\n\t\t\taria-orientation=\"horizontal\"\n\t\t\tdata-slot=\"dropdown-menu-separator\"\n\t\t\t{...rest}\n\t\t\tclassName={cn(menuParts.separator, className)}\n\t\t/>\n\t);\n}\n\n/** A shortcut hint at the end of a row (or use the item's `shortcut` prop). */\nexport function DropdownMenuShortcut({ className, ...rest }: HTMLAttributes<HTMLSpanElement>) {\n\treturn (\n\t\t<span\n\t\t\tdata-slot=\"dropdown-menu-shortcut\"\n\t\t\t{...rest}\n\t\t\tclassName={cn(menuParts.shortcut, className)}\n\t\t/>\n\t);\n}\n\nconst SubContext = createContext<(MenuRoot & { id: string; back: () => void }) | null>(null);\n\nfunction useSub(part: string) {\n\tconst sub = use(SubContext);\n\tif (!sub) throw new Error(`${part} must be used inside <DropdownMenuSub>`);\n\treturn sub;\n}\n\nexport type DropdownMenuSubProps = {\n\t/** Called when the submenu opens or closes. Its state belongs to the menu it is in. */\n\tonOpenChange?: (open: boolean) => void;\n\tchildren?: ReactNode;\n};\n\n/**\n * A submenu: a `DropdownMenuSubTrigger` row and the `DropdownMenuSubContent` it opens beside it.\n * One submenu per menu is open at a time; it is a nested popover, so Escape and a press outside it\n * close it first.\n */\nexport function DropdownMenuSub({ onOpenChange, children }: DropdownMenuSubProps) {\n\tconst level = useLevel(\"DropdownMenuSub\");\n\tconst id = useId();\n\tconst { setOpenSub } = level;\n\tconst open = level.openSub === id;\n\tconst root = useMenuState(\n\t\t{\n\t\t\topen,\n\t\t\tonOpenChange: (next) => {\n\t\t\t\tif (next) setOpenSub(id);\n\t\t\t\telse if (level.openSub === id) setOpenSub(null);\n\t\t\t\tonOpenChange?.(next);\n\t\t\t},\n\t\t},\n\t\ttrue,\n\t);\n\tconst back = useCallback(() => {\n\t\tsetOpenSub(null);\n\t\troot.state.triggerRef.current?.focus({ preventScroll: true });\n\t}, [setOpenSub, root.state.triggerRef]);\n\tconst sub = useMemo(() => ({ ...root, id, back }), [root, id, back]);\n\treturn <SubContext value={sub}>{children}</SubContext>;\n}\n\nexport type DropdownMenuSubTriggerProps = Omit<ItemBaseProps, \"shortcut\" | \"onSelect\">;\n\n/** The row that opens a submenu: on hover, a click, Enter, Space or ArrowRight. */\nexport function DropdownMenuSubTrigger({\n\tstyle,\n\tclassName,\n\tref,\n\tonKeyDown,\n\tonClick,\n\tonPointerMove,\n\t...rest\n}: DropdownMenuSubTriggerProps) {\n\tconst sub = useSub(\"DropdownMenuSubTrigger\");\n\tconst level = useLevel(\"DropdownMenuSubTrigger\");\n\tconst open = sub.state.open;\n\tconst show = (landing: Landing) => {\n\t\tsub.landing.current = landing;\n\t\tlevel.setOpenSub(sub.id);\n\t};\n\treturn (\n\t\t<ItemBase\n\t\t\t{...rest}\n\t\t\tid={sub.triggerId}\n\t\t\tref={mergeRefs(ref, (node: HTMLDivElement | null) => {\n\t\t\t\tsub.state.triggerRef.current = node;\n\t\t\t})}\n\t\t\t// The CSS names the row with this anchor, and with the highlight's while it is active.\n\t\t\tstyle={{ ...style, \"--_anchor\": sub.anchor } as CSSProperties}\n\t\t\tclassName={cn(menuParts.subTrigger, className)}\n\t\t\taria-haspopup=\"menu\"\n\t\t\taria-expanded={open}\n\t\t\taria-controls={sub.contentId}\n\t\t\tdata-state={open ? \"open\" : \"closed\"}\n\t\t\tdata-slot=\"dropdown-menu-sub-trigger\"\n\t\t\tkeepOpen\n\t\t\tonKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {\n\t\t\t\tonKeyDown?.(event);\n\t\t\t\tif (event.defaultPrevented || rest.disabled) return;\n\t\t\t\tif (event.key === \"ArrowRight\" || event.key === \"Enter\" || event.key === \" \") {\n\t\t\t\t\tevent.preventDefault();\n\t\t\t\t\tif (open) {\n\t\t\t\t\t\tconst menu = sub.state.contentRef.current;\n\t\t\t\t\t\tif (menu) menuItems(menu)[0]?.focus();\n\t\t\t\t\t} else show(\"first\");\n\t\t\t\t}\n\t\t\t}}\n\t\t\tonClick={(event: MouseEvent<HTMLDivElement>) => {\n\t\t\t\tonClick?.(event);\n\t\t\t\tif (!event.defaultPrevented && !rest.disabled && !open) show(\"stay\");\n\t\t\t}}\n\t\t\tonPointerMove={(event: PointerEvent<HTMLDivElement>) => {\n\t\t\t\tonPointerMove?.(event);\n\t\t\t\tif (!event.defaultPrevented && event.pointerType !== \"touch\" && !rest.disabled) {\n\t\t\t\t\tsub.landing.current = \"stay\";\n\t\t\t\t\tlevel.hover(sub.id);\n\t\t\t\t}\n\t\t\t}}\n\t\t/>\n\t);\n}\n\nexport type DropdownMenuSubContentProps = MenuContentProps;\n\n/** The submenu: beside its row, lined up with it, flipping to the other side when needed. */\nexport function DropdownMenuSubContent({\n\tside = \"right\",\n\talign = \"start\",\n\tsideOffset = 6,\n\tonPointerEnter,\n\t...rest\n}: DropdownMenuSubContentProps) {\n\tconst sub = useSub(\"DropdownMenuSubContent\");\n\tconst level = useLevel(\"DropdownMenuSubContent\");\n\treturn (\n\t\t<MenuPanel\n\t\t\t{...rest}\n\t\t\troot={sub}\n\t\t\tback={sub.back}\n\t\t\tside={side}\n\t\t\talign={align}\n\t\t\tsideOffset={sideOffset}\n\t\t\tslot=\"dropdown-menu-sub-content\"\n\t\t\tonPointerEnter={(event) => {\n\t\t\t\tonPointerEnter?.(event);\n\t\t\t\tlevel.hold();\n\t\t\t}}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-menu": {
+        "--_row": "32px",
+        "--_pad": "8px",
+        "--_indent": "32px",
+        "min-inline-size": "11rem",
+        "padding": "4px",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px"
+      },
+      ".rx-menu-item": {
+        "position": "relative",
+        "display": "flex",
+        "align-items": "center",
+        "gap": "8px",
+        "box-sizing": "border-box",
+        "min-block-size": "var(--_row)",
+        "padding-inline": "var(--_pad)",
+        "border-radius": "var(--radius-item)",
+        "color": "var(--popover-foreground)",
+        "cursor": "default",
+        "outline": "none",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "color 150ms var(--motion-ease)"
+      },
+      ".rx-menu-item[data-inset]": {
+        "padding-inline-start": "var(--_indent)"
+      },
+      ".rx-menu-item[aria-disabled=\"true\"]": {
+        "opacity": "0.5"
+      },
+      ".rx-menu-item[data-variant=\"destructive\"]": {
+        "color": "var(--destructive)"
+      },
+      ".rx-menu-item[data-variant=\"destructive\"] .rx-menu-icon": {
+        "color": "currentColor"
+      },
+      ".rx-menu-item:has(> .rx-menu-indicator)": {
+        "padding-inline-start": "var(--_indent)"
+      },
+      ".rx-menu-icon, .rx-menu-indicator": {
+        "display": "inline-flex",
+        "flex": "none",
+        "align-items": "center",
+        "justify-content": "center",
+        "inline-size": "16px",
+        "block-size": "16px",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-menu-icon svg, .rx-menu-indicator svg": {
+        "inline-size": "100%",
+        "block-size": "100%"
+      },
+      ".rx-menu-item:focus .rx-menu-icon": {
+        "color": "currentColor"
+      },
+      ".rx-menu-text": {
+        "flex": "1",
+        "min-inline-size": "0",
+        "overflow": "hidden",
+        "text-overflow": "ellipsis",
+        "white-space": "nowrap"
+      },
+      ".rx-menu-shortcut": {
+        "margin-inline-start": "auto",
+        "padding-inline-start": "16px",
+        "font-size": "12px",
+        "letter-spacing": "0.02em",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-menu-indicator": {
+        "position": "absolute",
+        "inset-inline-start": "var(--_pad)",
+        "color": "currentColor"
+      },
+      ".rx-menu-check": {
+        "stroke": "currentColor",
+        "stroke-width": "2",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "stroke-dasharray": "1",
+        "stroke-dashoffset": "1",
+        "transition": "stroke-dashoffset 120ms var(--motion-ease)"
+      },
+      ".rx-menu-item[aria-checked=\"true\"] .rx-menu-check": {
+        "stroke-dashoffset": "0",
+        "transition": "stroke-dashoffset var(--spring-check-duration) var(--spring-check)"
+      },
+      ".rx-menu-dot": {
+        "inline-size": "6px",
+        "block-size": "6px",
+        "border-radius": "999px",
+        "background": "currentColor",
+        "scale": "0",
+        "transition": "scale 120ms var(--motion-ease)"
+      },
+      ".rx-menu-item[aria-checked=\"true\"] .rx-menu-dot": {
+        "scale": "1",
+        "transition": "scale var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-menu-subtrigger": {
+        "anchor-name": "var(--_anchor)"
+      },
+      ".rx-menu-subtrigger::after": {
+        "content": "\"\"",
+        "flex": "none",
+        "margin-inline-start": "auto",
+        "inline-size": "14px",
+        "block-size": "14px",
+        "background": "var(--muted-foreground)",
+        "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6C9 6 15 10.4189 15 12C15 13.5812 9 18 9 18'/%3E%3C/svg%3E\") center / contain no-repeat"
+      },
+      ".rx-menu-label": {
+        "padding": "6px var(--_pad) 4px",
+        "font-size": "12px",
+        "line-height": "16px",
+        "font-weight": "510",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-menu-label[data-inset]": {
+        "padding-inline-start": "var(--_indent)"
+      },
+      ".rx-menu-separator": {
+        "block-size": "1px",
+        "margin": "4px -4px",
+        "background": "var(--border)"
+      },
+      ".rx-menu-point": {
+        "position": "fixed",
+        "inline-size": "0",
+        "block-size": "0",
+        "pointer-events": "none"
+      },
+      ".rx-menu-highlight": {
+        "display": "none"
+      },
+      "@supports (anchor-scope: all)": {
+        ".rx-menu": {
+          "anchor-scope": "--_rx-row"
+        },
+        ".rx-menu-item:is(:focus, [aria-expanded=\"true\"])": {
+          "anchor-name": "--_rx-row"
+        },
+        ".rx-menu-subtrigger:is(:focus, [aria-expanded=\"true\"])": {
+          "anchor-name": "var(--_anchor), --_rx-row"
+        },
+        ".rx-menu-highlight": {
+          "position": "absolute",
+          "position-anchor": "--_rx-row",
+          "top": "anchor(top)",
+          "right": "anchor(right)",
+          "bottom": "anchor(bottom)",
+          "left": "anchor(left)",
+          "z-index": "-1",
+          "display": "block",
+          "border-radius": "var(--radius-item)",
+          "background-color": "var(--accent)",
+          "pointer-events": "none",
+          "transition": "top 160ms var(--motion-ease), bottom 160ms var(--motion-ease), background-color 160ms var(--motion-ease), opacity 100ms linear"
+        },
+        "@starting-style ": {
+          ".rx-menu-highlight": {
+            "opacity": "0"
+          }
+        },
+        ".rx-menu:not(:has(.rx-menu-item:is(:focus, [aria-expanded=\"true\"]))) > .rx-menu-highlight": {
+          "display": "none"
+        },
+        ".rx-menu:has(.rx-menu-item[data-variant=\"destructive\"]:focus) > .rx-menu-highlight": {
+          "background-color": "color-mix(in oklab, var(--destructive) 12%, transparent)"
+        }
+      },
+      "@supports not (anchor-scope: all)": {
+        ".rx-menu-item:is(:focus, [aria-expanded=\"true\"])": {
+          "background-color": "var(--accent)"
+        },
+        ".rx-menu-item[data-variant=\"destructive\"]:focus": {
+          "background-color": "color-mix(in oklab, var(--destructive) 12%, transparent)"
+        }
+      },
+      ".rx-menu-item:is(:focus, [aria-expanded=\"true\"]):not([data-variant=\"destructive\"])": {
+        "color": "var(--accent-foreground)"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-menu-highlight, .rx-menu-check, .rx-menu-dot, .rx-menu-item[aria-checked=\"true\"] :is(.rx-menu-check, .rx-menu-dot)": {
+          "transition-duration": "0ms"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-menu-item, .rx-menu-highlight, .rx-menu-check, .rx-menu-dot)": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

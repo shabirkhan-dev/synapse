@@ -1,0 +1,12 @@
+{
+	"extends": "../typescript-config/base.json",
+	"compilerOptions": {
+		"types": ["react"],
+		"ignoreDeprecations": "6.0",
+		"paths": {
+			"@starter/ui/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"exclude": ["node_modules"]
+}

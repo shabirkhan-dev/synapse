@@ -1,0 +1,43 @@
+---
+title: Project Structure
+description: A clear map of the monorepo layout and responsibilities.
+---
+
+## Repository layout
+
+```text
+starter/
+├── apps/
+│   ├── web/
+│   ├── mobile/
+│   ├── docs/          # Fumadocs site; MDX in apps/docs/content/docs/
+│   ├── nest-api/
+│   └── rust/
+├── packages/
+│   ├── ui/
+│   ├── typescript-config/
+│   └── logger/
+├── scripts/
+├── docker/
+├── turbo.json
+└── .oxlintrc.json
+```
+
+## Core principles
+
+- Keep app-specific code inside each app folder.
+- Move reusable logic into `packages/*`.
+- Prefer workspace imports (`@starter/*`) over copy-paste.
+- Keep tooling centralized at repository root.
+
+## Where to add new code
+
+- New product surface: `apps/<new-app>`
+- Shared UI/utilities/types: `packages/<new-package>`
+- Docs pages: `apps/docs/content/docs/` (served at `/docs/...`)
+- Automation scripts: `scripts/`
+
+## Why this works
+
+This structure keeps local iteration fast while preserving consistency at scale. Teams can ship
+independently inside each app, without losing shared standards across the repo.

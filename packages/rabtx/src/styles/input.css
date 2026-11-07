@@ -1,0 +1,496 @@
+/*
+ * The Input: a wrapper (`rx-input-field`) that draws the control around a native <input>, so icons,
+ * addons, a floating label and buttons can sit inside one edge. It matches the Select trigger
+ * (same heights, fill, edge, radius, hover, focus and error) so the two line up in a row.
+ *
+ * The platform carries the state; CSS reads it:
+ *   - focus is `:focus-visible` on the input, read by the wrapper with `:has()`,
+ *   - an error is `aria-invalid` (set by Field) or `:user-invalid` (native validation, only after the
+ *     person has interacted), and the wrapper shakes once each time it turns invalid,
+ *   - "has a value" is `:placeholder-shown` (the component always sets a placeholder), which shows
+ *     the clear button and floats the label with no JavaScript,
+ *   - the password eye swaps on `aria-pressed`.
+ *
+ * Colors come only from the theme: the field is --card with an --input edge (the filled variant is
+ * the recessed --field look), icons use --muted-foreground, the placeholder --subtle-foreground,
+ * focus --ring, an error --destructive and the success tick --success. Corners use --radius-box
+ * (--radius-item for the small buttons). Motion uses the label and swap springs.
+ */
+@layer components {
+	.rx-input-field {
+		--_h: 2.5rem;
+		--_pad: 0.75rem;
+		--_px: var(--_pad);
+		--_icon: 16px;
+		--_font: 0.875rem;
+		--_r: var(--radius-box);
+		--_bg: var(--card);
+
+		position: relative;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		min-width: 0;
+		height: var(--_h);
+		padding-inline: var(--_px);
+		overflow: clip;
+		border: 1px solid var(--input);
+		border-radius: var(--_r);
+		background-color: var(--_bg);
+		color: var(--card-foreground);
+		font-family: var(--font-sans);
+		font-size: var(--_font);
+		line-height: 1.25rem;
+		letter-spacing: -0.15px;
+		cursor: text;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			border-color 150ms var(--motion-ease),
+			box-shadow 150ms var(--motion-ease);
+
+		@media (hover: hover) {
+			&:hover {
+				border-color: color-mix(in oklab, var(--foreground) 24%, var(--card));
+			}
+		}
+		&:has(.rx-input:focus-visible) {
+			border-color: var(--ring);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent);
+		}
+		&:has(.rx-input:is([aria-invalid="true"], :user-invalid)) {
+			border-color: var(--destructive);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent);
+			animation: rx-input-shake 400ms cubic-bezier(0.25, 1, 0.5, 1);
+		}
+		&:has(.rx-input:read-only:not(:disabled)) {
+			--_bg: color-mix(in oklab, var(--muted) 50%, var(--card));
+		}
+		&:has(.rx-input:disabled) {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+
+	/* Sizes: 32, 40 (default) and 48, the same as the Button and the Select. */
+	.rx-input-sm {
+		--_h: 2rem;
+		--_pad: 0.625rem;
+		--_font: 0.8125rem;
+	}
+	.rx-input-lg {
+		--_h: 3rem;
+		--_pad: 1rem;
+		--_icon: 18px;
+		--_font: 1rem;
+	}
+	.rx-input-pill {
+		--_r: 999px;
+		--_px: calc(var(--_pad) + 0.25rem);
+	}
+
+	/* Filled: Figma's recessed field, a dark top edge fading to a light bottom edge. */
+	.rx-input-filled {
+		--_bg: var(--field);
+		border-color: transparent;
+		background:
+			linear-gradient(180deg, var(--field-shade), transparent 40%) padding-box,
+			linear-gradient(var(--_bg), var(--_bg)) padding-box,
+			linear-gradient(180deg, var(--field-edge-top), var(--field-edge-bottom)) border-box;
+
+		&:has(.rx-input:disabled) {
+			--_bg: var(--field-disabled);
+		}
+	}
+	[data-depth="flat"] .rx-input-filled {
+		border-color: var(--input);
+		background: var(--_bg);
+	}
+
+	.rx-input {
+		/* Zero width plus flex grow: the input fills the field but never sets its minimum size. */
+		flex: 1 1 auto;
+		align-self: stretch;
+		width: 0;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		letter-spacing: inherit;
+		text-overflow: ellipsis;
+		outline: none;
+
+		&::placeholder {
+			color: var(--subtle-foreground);
+			opacity: 1;
+		}
+		&:disabled {
+			cursor: not-allowed;
+		}
+		/* Keep the browser's autofill tint off; the field keeps its own fill. */
+		&:autofill {
+			-webkit-text-fill-color: var(--card-foreground);
+			box-shadow: inset 0 0 0 100vmax var(--_bg);
+		}
+	}
+	/* Our clear button replaces the browser's search cancel button. */
+	.rx-input-field:has(.rx-input-clear) .rx-input::-webkit-search-cancel-button {
+		appearance: none;
+	}
+
+	.rx-input-icon {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		color: var(--muted-foreground);
+
+		& svg {
+			width: var(--_icon);
+			height: var(--_icon);
+		}
+	}
+
+	/* Addons: a segment at either end, divided from the text by a line. */
+	.rx-input-addon {
+		display: flex;
+		flex: none;
+		align-items: center;
+		align-self: stretch;
+		padding-inline: var(--_pad);
+		background-color: var(--secondary);
+		color: var(--muted-foreground);
+		white-space: nowrap;
+
+		&:first-child {
+			margin-inline-start: calc(var(--_px) * -1);
+			border-inline-end: 1px solid var(--input);
+		}
+		&:last-child {
+			margin-inline-end: calc(var(--_px) * -1);
+			border-inline-start: 1px solid var(--input);
+		}
+	}
+
+	/* A small button on the trailing edge: clear, the password eye, or your own. */
+	.rx-input-action {
+		display: inline-grid;
+		flex: none;
+		place-items: center;
+		width: calc(var(--_icon) + 0.5rem);
+		height: calc(var(--_icon) + 0.5rem);
+		margin-inline: -0.25rem;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-item);
+		background: transparent;
+		color: var(--muted-foreground);
+		cursor: pointer;
+		transition:
+			background-color 150ms var(--motion-ease),
+			color 150ms var(--motion-ease),
+			opacity 150ms var(--motion-ease),
+			visibility 150ms,
+			scale var(--spring-swap-duration) var(--spring-swap);
+
+		& svg {
+			grid-area: 1 / 1;
+			width: var(--_icon);
+			height: var(--_icon);
+		}
+		@media (hover: hover) {
+			&:hover {
+				background-color: var(--accent);
+				color: var(--accent-foreground);
+			}
+		}
+		&:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 0;
+		}
+		&:disabled {
+			pointer-events: none;
+		}
+	}
+
+	/* Clear: there only while the input has a value and can be edited. */
+	.rx-input-field:has(.rx-input:is(:placeholder-shown, :read-only)) .rx-input-clear {
+		visibility: hidden;
+		opacity: 0;
+		scale: 0.5;
+		transition-duration: 120ms;
+	}
+
+	/* The password eye: both glyphs are always there and cross-fade with a little blur. */
+	.rx-input-reveal svg {
+		transition:
+			opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+			scale 300ms cubic-bezier(0.2, 0, 0, 1),
+			filter 300ms cubic-bezier(0.2, 0, 0, 1);
+	}
+	.rx-input-reveal[aria-pressed="true"] > [data-when="hidden"],
+	.rx-input-reveal[aria-pressed="false"] > [data-when="shown"] {
+		opacity: 0;
+		scale: 0.25;
+		filter: blur(4px);
+		transition-duration: 150ms;
+	}
+
+	/* Success: a tick that draws itself in. */
+	.rx-input-check {
+		color: var(--success);
+
+		& path {
+			stroke-dasharray: 1;
+			animation: rx-input-draw 350ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards;
+		}
+	}
+
+	/*
+	 * Floating label: it rests where the text goes and floats to the top edge, smaller, once the
+	 * input is focused or has a value. The text always sits a little low to leave it room, so a
+	 * floating label needs md or lg; sm grows to md.
+	 */
+	.rx-input-field:has(.rx-input-float) {
+		--_lift: calc(var(--_h) / 4 - 0.125rem);
+	}
+	.rx-input-sm:has(.rx-input-float) {
+		--_h: 2.5rem;
+	}
+	.rx-input-float {
+		position: relative;
+		display: flex;
+		flex: 1 1 auto;
+		align-self: stretch;
+		min-width: 0;
+
+		& > .rx-input {
+			padding-block-start: var(--_lift);
+
+			&::placeholder {
+				color: transparent;
+				transition: color 150ms var(--motion-ease);
+			}
+			&:focus::placeholder {
+				color: var(--subtle-foreground);
+			}
+		}
+	}
+	.rx-input-label {
+		position: absolute;
+		inset-inline-start: 0;
+		top: 50%;
+		max-width: 100%;
+		overflow: hidden;
+		color: var(--subtle-foreground);
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		pointer-events: none;
+		translate: 0 -50%;
+		transform-origin: 0 50%;
+		transition:
+			translate var(--spring-label-duration) var(--spring-label),
+			scale var(--spring-label-duration) var(--spring-label),
+			color 150ms var(--motion-ease);
+	}
+	.rx-input:is(:focus, :not(:placeholder-shown), :autofill) + .rx-input-label {
+		translate: 0 calc(-50% - var(--_lift));
+		scale: 0.8;
+		color: var(--muted-foreground);
+	}
+	.rx-input:focus + .rx-input-label {
+		color: var(--ring);
+	}
+	.rx-input:is([aria-invalid="true"], :user-invalid) + .rx-input-label {
+		color: var(--destructive);
+	}
+
+	/*
+	 * One-time code: one real input (so typing, paste, backspace and SMS autofill are native) laid
+	 * invisibly over the slots that show its value. A single focus ring glides to the next slot on
+	 * the swap spring; each character rolls up into its slot.
+	 */
+	.rx-otp {
+		--_h: 2.5rem;
+		--_w: 2.25rem;
+		--_gap: 0.5rem;
+		--_font: 1.125rem;
+		--_r: var(--radius-box);
+
+		position: relative;
+		display: inline-flex;
+		font-family: var(--font-sans);
+
+		&:has(.rx-otp-input:disabled) {
+			opacity: 0.5;
+		}
+	}
+	.rx-otp-sm {
+		--_h: 2rem;
+		--_w: 1.75rem;
+		--_gap: 0.375rem;
+		--_font: 0.9375rem;
+	}
+	.rx-otp-lg {
+		--_h: 3rem;
+		--_w: 2.75rem;
+		--_gap: 0.625rem;
+		--_font: 1.375rem;
+	}
+	.rx-otp-input {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: transparent;
+		caret-color: transparent;
+		/* 16px keeps phones from zooming in on focus. */
+		font-size: 16px;
+		-webkit-text-fill-color: transparent;
+		outline: none;
+		cursor: text;
+
+		&::selection {
+			background: transparent;
+		}
+		&:autofill {
+			transition:
+				background-color 600000s,
+				color 600000s;
+		}
+		&:disabled {
+			cursor: not-allowed;
+		}
+	}
+	.rx-otp-slots {
+		display: flex;
+		gap: var(--_gap);
+	}
+	.rx-otp-slot {
+		position: relative;
+		box-sizing: border-box;
+		display: grid;
+		place-items: center;
+		width: var(--_w);
+		height: var(--_h);
+		overflow: clip;
+		border: 1px solid var(--input);
+		border-radius: var(--_r);
+		background-color: var(--card);
+		color: var(--card-foreground);
+		font-size: var(--_font);
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
+		transition: border-color 150ms var(--motion-ease);
+
+		&[data-filled] {
+			border-color: color-mix(in oklab, var(--foreground) 24%, var(--card));
+		}
+	}
+	.rx-otp-char {
+		grid-area: 1 / 1;
+		animation: rx-otp-roll var(--spring-label-duration) var(--spring-label) backwards;
+	}
+	.rx-otp-ring {
+		position: absolute;
+		top: 0;
+		left: 0;
+		box-sizing: border-box;
+		width: var(--_w);
+		height: var(--_h);
+		border: 1px solid var(--ring);
+		border-radius: var(--_r);
+		box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent);
+		opacity: 0;
+		pointer-events: none;
+		translate: calc(var(--_at, 0) * (var(--_w) + var(--_gap))) 0;
+		transition:
+			translate var(--spring-swap-duration) var(--spring-swap),
+			opacity 150ms var(--motion-ease);
+	}
+	.rx-otp:has(.rx-otp-input:focus-visible) {
+		& .rx-otp-ring {
+			opacity: 1;
+		}
+		/* A blinking caret in the next empty slot. */
+		& .rx-otp-slot[data-active]:not([data-filled])::after {
+			content: "";
+			grid-area: 1 / 1;
+			width: 1px;
+			height: 45%;
+			background: currentColor;
+			animation: rx-otp-blink 1.1s step-end infinite;
+		}
+	}
+	.rx-otp:has(.rx-otp-input:is([aria-invalid="true"], :user-invalid)) {
+		& .rx-otp-slot {
+			border-color: var(--destructive);
+		}
+		& .rx-otp-ring {
+			border-color: var(--destructive);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 12%, transparent);
+		}
+		& .rx-otp-slots {
+			animation: rx-input-shake 400ms cubic-bezier(0.25, 1, 0.5, 1);
+		}
+	}
+
+	@keyframes rx-input-shake {
+		15% {
+			translate: -5px 0;
+		}
+		30% {
+			translate: 4px 0;
+		}
+		45% {
+			translate: -3px 0;
+		}
+		60% {
+			translate: 2px 0;
+		}
+		75% {
+			translate: -1px 0;
+		}
+	}
+	@keyframes rx-input-draw {
+		from {
+			stroke-dashoffset: 1;
+		}
+	}
+	@keyframes rx-otp-roll {
+		from {
+			translate: 0 60%;
+			opacity: 0;
+			filter: blur(4px);
+		}
+	}
+	@keyframes rx-otp-blink {
+		50% {
+			opacity: 0;
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	/* Less motion: no shake, roll, glide or float; colors still change and the caret still blinks. */
+	@media (prefers-reduced-motion: reduce) {
+		:is(.rx-input-field, .rx-input-field *, .rx-otp *) {
+			animation-name: none;
+			transition-duration: 0ms;
+		}
+	}
+	/* Motion off: every state still shows, at once. */
+	[data-motion="off"] :is(.rx-input-field, .rx-input-field *, .rx-otp *) {
+		animation: none;
+		transition-duration: 0ms;
+	}
+}

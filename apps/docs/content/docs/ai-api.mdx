@@ -1,0 +1,116 @@
+---
+title: AI API
+description: Bun + Hono service for RAG on pgvector and streaming, tool-calling chat.
+---
+
+`apps/ai-api` is a small TypeScript service on **Bun + Hono**. It owns two things:
+
+- **RAG** — ingest documents (chunk → embed → store in Postgres with pgvector), then query them
+  (top-k cosine search, optionally answered by the chat model with numbered citations).
+- **Chat** — a streaming, tool-calling endpoint built on the [Vercel AI SDK](https://ai-sdk.dev)
+  (`ai`). It speaks the AI SDK UI message stream protocol, so `useChat` from `@ai-sdk/react` works
+  against it directly.
+
+It runs on port **8000** (`bun run dev:ai`). OpenAPI 3.1 lives at `/api/openapi.json` and a Scalar API
+reference at `/api/docs`.
+
+## Endpoints
+
+All routes except health need `Authorization: Bearer <access token from nest-api>`. Responses use the
+same envelopes as nest-api (`{ success, statusCode, requestId, timestamp, data }` and the error shape
+with `code` / `message` / `errors`).
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | Liveness (no dependencies) |
+| `GET` | `/api/v1/health/ready` | Readiness (pings Postgres) |
+| `POST` | `/api/v1/rag/documents` | Ingest `{ title, content, source?, metadata? }` (max 2 MB) |
+| `GET` | `/api/v1/rag/documents` | List your documents (`?limit=`) |
+| `DELETE` | `/api/v1/rag/documents/{id}` | Delete a document and its chunks |
+| `POST` | `/api/v1/rag/query` | `{ query, topK?, answer? }` → `{ answer, matches[] }` |
+| `POST` | `/api/v1/chat` | `{ messages: UIMessage[] }` → SSE UI message stream |
+
+Every document and chunk carries `owner_id` = the token's `sub`, and every query filters on it, so users
+only ever see their own data.
+
+## Auth: nest-api access tokens
+
+ai-api verifies the access tokens nest-api already issues: **HS256** signed with the shared
+`JWT_SECRET`, with `sub` (user id) and `sid` (session id) claims, using `jose` exactly like
+`AuthCryptoService.verifyAccessToken`.
+
+Why this over a service token: the web and mobile clients can call ai-api directly with the token
+they already hold, streaming chat does not need a proxy hop through Nest, and per-user scoping comes
+for free from `sub`. The trade-off is that the check is **stateless** — nest-api also looks the
+session up in its database, ai-api does not — so a revoked session keeps working here until its
+access token expires (`JWT_ACCESS_EXPIRES_IN`, 15 minutes by default). If you need instant revocation,
+put ai-api behind a Nest proxy route with a service token instead.
+
+## Provider
+
+One OpenAI-compatible provider (`@ai-sdk/openai-compatible`) configured from env. The defaults follow
+the OpenRouter setup in `apps/docs/src/app/api/chat/route.ts`:
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `AI_BASE_URL` | `https://openrouter.ai/api/v1` | OpenAI, Groq, Together, LiteLLM, Ollama (`http://localhost:11434/v1`), … |
+| `AI_API_KEY` | — | Required in production. Never commit it |
+| `AI_CHAT_MODEL` | `openai/gpt-4o-mini` | Must support tool calling for `/chat` |
+| `AI_EMBEDDING_MODEL` | `openai/text-embedding-3-small` | Must return **1536** dimensions |
+| `AI_EMBEDDING_BASE_URL` / `AI_EMBEDDING_API_KEY` | chat provider | Use a different endpoint for embeddings |
+
+The embedding size is fixed by the `vector(1536)` column. A model with another size is rejected with
+`RAG_EMBEDDING_DIMENSION_MISMATCH`; switching needs a new migration and a re-ingest.
+
+## Database
+
+Drizzle schema in `src/database/schema/rag.schema.ts`:
+
+- `rag_documents` — `id`, `owner_id`, `title`, `source`, `metadata` (jsonb), `chunk_count`, timestamps.
+- `rag_chunks` — `document_id` (cascade delete), `owner_id`, `chunk_index`, `content`,
+  `embedding vector(1536)`, with an **HNSW** `vector_cosine_ops` index.
+
+The first migration runs `CREATE EXTENSION IF NOT EXISTS vector`. Migrations use their own journal
+table (`drizzle.__drizzle_migrations_ai_api`), so ai-api can share nest-api's database without the two
+migration histories colliding. Docker Compose runs `pgvector/pgvector:0.8.7-pg18-trixie`; Neon
+supports `vector` natively.
+
+```bash
+bun --cwd=apps/ai-api run db:migrate    # apply
+bun --cwd=apps/ai-api run db:generate   # after editing the schema
+```
+
+## Chat tools
+
+| Tool | Does |
+| --- | --- |
+| `searchDocuments` | Vector search over the caller's documents (scoped to `sub`) |
+| `currentTime` | Current time, optionally in an IANA time zone |
+
+Tools are created per request, the loop stops after `CHAT_MAX_STEPS` (5) steps, and the request's abort
+signal cancels the model call when the client disconnects.
+
+```ts
+// apps/web: point useChat at ai-api with the nest access token
+const { messages, sendMessage } = useChat({
+	transport: new DefaultChatTransport({
+		api: "http://localhost:8000/api/v1/chat",
+		headers: () => ({ Authorization: `Bearer ${accessToken}` }),
+	}),
+});
+```
+
+## Tests
+
+`bun --cwd=apps/ai-api test` runs everything with the LLM and embeddings mocked (`ai/test`
+`MockLanguageModelV4` / `MockEmbeddingModelV4`, a deterministic bag-of-words embedder and an
+in-memory repository). Set `AI_API_TEST_DATABASE_URL` to a throwaway database on a server with
+pgvector to also run the Drizzle repository against real Postgres; CI does this with a pgvector
+service container.
+
+## Deploy
+
+- Docker: `apps/ai-api/Dockerfile` (`oven/bun:1.4.4-alpine`, build context = repo root). The image
+  holds only the bundled `dist/` (~2 MB) and runs migrations on start unless `RUN_MIGRATIONS=false`.
+- Compose: `docker/compose/ai-api.yml` (needs `AI_API_KEY` in `.env`).
+- Render: `starter-ai-api` in `render.yaml`, which takes `JWT_SECRET` from `starter-nest-api`.

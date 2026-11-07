@@ -1,0 +1,35 @@
+export const NAV = [
+	{ title: "Getting started", links: [{ href: "/ui", label: "Introduction" }] },
+	{
+		title: "Components",
+		links: [
+			{ href: "/ui/button", label: "Button" },
+			{ href: "/ui/input", label: "Input" },
+			{ href: "/ui/field", label: "Field" },
+			{ href: "/ui/textarea", label: "Textarea" },
+			{ href: "/ui/select", label: "Select" },
+			{ href: "/ui/checkbox", label: "Checkbox" },
+			{ href: "/ui/toggle", label: "Toggle" },
+			{ href: "/ui/switch", label: "Switch" },
+			{ href: "/ui/radio-group", label: "Radio Group" },
+			{ href: "/ui/slider", label: "Slider" },
+			{ href: "/ui/tabs", label: "Tabs" },
+			{ href: "/ui/accordion", label: "Accordion" },
+			{ href: "/ui/card", label: "Card" },
+			{ href: "/ui/dialog", label: "Dialog" },
+			{ href: "/ui/tooltip", label: "Tooltip" },
+			{ href: "/ui/popover", label: "Popover" },
+			{ href: "/ui/dropdown-menu", label: "Dropdown Menu" },
+			{ href: "/ui/toast", label: "Toast" },
+			{ href: "/ui/badge", label: "Badge" },
+		],
+	},
+	{
+		title: "Blocks",
+		links: [
+			{ href: "/ui/blocks/signup", label: "Sign-up" },
+			{ href: "/ui/blocks/command", label: "Command palette" },
+			{ href: "/ui/blocks/settings", label: "Settings" },
+		],
+	},
+];

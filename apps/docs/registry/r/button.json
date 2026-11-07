@@ -1,0 +1,414 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button",
+  "title": "Button",
+  "description": "A pill button with spring press, ripple, stateful, magnetic and metallic variants. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/button.styles.ts",
+      "content": "export type ButtonVariant = \"primary\" | \"secondary\" | \"ghost\" | \"outline\";\nexport type ButtonSize = \"sm\" | \"md\" | \"lg\" | \"icon\";\nexport type ButtonState = \"idle\" | \"loading\" | \"success\" | \"error\";\n\nexport const buttonVariants = [\n\t\"primary\",\n\t\"secondary\",\n\t\"ghost\",\n\t\"outline\",\n] as const satisfies readonly ButtonVariant[];\nexport const buttonSizes = [\"sm\", \"md\", \"lg\", \"icon\"] as const satisfies readonly ButtonSize[];\n\ntype ButtonStyle = {\n\tvariant?: ButtonVariant;\n\tsize?: ButtonSize;\n\t/** One of the special looks. `metallic` ignores `variant`. */\n\tlook?: \"magnetic\" | \"metallic\";\n};\n\n/**\n * The class list for a Button. The look lives in `button.css` (your global CSS, when installed from\n * the registry): tones, sizes, press, hover, ripple and label swaps. So React, Solid and plain HTML\n * all get the same button from these names:\n *\n *   <button class=\"rx-btn rx-btn-primary rx-btn-md\">Save</button>\n */\nexport function buttonClass({ variant = \"primary\", size = \"md\", look }: ButtonStyle = {}) {\n\tconst tone = look === \"metallic\" ? \"rx-btn-metal\" : `rx-btn-${variant}`;\n\treturn `rx-btn ${tone} rx-btn-${size}${look === \"magnetic\" ? \" rx-btn-magnet\" : \"\"}`;\n}\n\n/** Class names for the parts inside a Button, for markup written by hand. */\nexport const buttonParts = {\n\t/** Holds the ripples; clipped to the button's shape. */\n\tripples: \"rx-btn-ripples\",\n\tripple: \"rx-btn-ripple\",\n\t/** An icon that widens in and out next to the label. Shown with `data-shown`. */\n\tslot: \"rx-btn-slot\",\n\t/** The built-in status glyphs: add `data-glyph=\"spinner\" | \"check\" | \"cross\"`. */\n\tglyph: \"rx-btn-glyph\",\n\t/** The label box. Its width follows `--_btn-text-w` so a label swap resizes smoothly. */\n\ttext: \"rx-btn-text\",\n\t/** One label. `data-enter` rolls it in letter by letter, `data-exit` rolls it out. */\n\tlabel: \"rx-btn-label\",\n\tletter: \"rx-btn-letter\",\n\tsrOnly: \"rx-btn-sr\",\n\t/** The chrome rim, its sweeping highlight, the face over them and the face's bevel. */\n\tmetalRim: \"rx-btn-metal-rim\",\n\tmetalSheen: \"rx-btn-metal-sheen\",\n\tmetalFace: \"rx-btn-metal-face\",\n\tmetalBevel: \"rx-btn-metal-bevel\",\n\tcontent: \"rx-btn-content\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/button.tsx",
+      "content": "\"use client\";\n\nimport type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref } from \"react\";\nimport type { ButtonSize } from \"./button.styles\";\nimport { type ButtonLookProps, useButtonLook } from \"./use-button\";\n\n/** An icon-only button has no visible text, so its type asks for an accessible name. */\nexport type IconOnly<P> =\n\t| (P & { size?: Exclude<ButtonSize, \"icon\"> })\n\t| (P & { size: \"icon\"; \"aria-label\": string });\n\nexport type ButtonProps = IconOnly<\n\tOmit<ButtonHTMLAttributes<HTMLButtonElement>, \"size\"> &\n\t\tOmit<ButtonLookProps, \"size\"> & { ref?: Ref<HTMLButtonElement> }\n>;\n\n/**\n * A native `<button>`. Hover grows it a touch on devices with a real pointer, pressing springs it\n * down to `pressScale`, and `ripple` spreads a disc from the press. Icons are children, so the\n * package depends on no icon set.\n */\nexport function Button({\n\tvariant,\n\tsize,\n\tpressScale,\n\tripple,\n\tclassName,\n\tstyle,\n\tonPointerDown,\n\ttype = \"button\",\n\tchildren,\n\tref,\n\t...rest\n}: ButtonProps) {\n\tconst look = useButtonLook<HTMLButtonElement>(\n\t\t{ variant, size, pressScale, ripple },\n\t\t{ className, style, onPointerDown },\n\t);\n\treturn (\n\t\t<button\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\ttype={type}\n\t\t\tclassName={look.className}\n\t\t\tstyle={look.style}\n\t\t\tonPointerDown={look.onPointerDown}\n\t\t>\n\t\t\t{look.ripples}\n\t\t\t{children}\n\t\t</button>\n\t);\n}\n\nexport type ButtonLinkProps = IconOnly<\n\tOmit<AnchorHTMLAttributes<HTMLAnchorElement>, \"size\"> &\n\t\tOmit<ButtonLookProps, \"size\"> & { ref?: Ref<HTMLAnchorElement> }\n>;\n\n/** A link that looks like a Button. It navigates, so it stays an `<a>` for the browser and readers. */\nexport function ButtonLink({\n\tvariant,\n\tsize,\n\tpressScale,\n\tripple,\n\tclassName,\n\tstyle,\n\tonPointerDown,\n\tchildren,\n\tref,\n\t...rest\n}: ButtonLinkProps) {\n\tconst look = useButtonLook<HTMLAnchorElement>(\n\t\t{ variant, size, pressScale, ripple },\n\t\t{ className, style, onPointerDown },\n\t);\n\treturn (\n\t\t<a\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\tclassName={look.className}\n\t\t\tstyle={look.style}\n\t\t\tonPointerDown={look.onPointerDown}\n\t\t>\n\t\t\t{look.ripples}\n\t\t\t{children}\n\t\t</a>\n\t);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/magnetic-button.tsx",
+      "content": "\"use client\";\n\nimport type { PointerEvent } from \"react\";\nimport { Button, type ButtonProps } from \"./button\";\nimport { magneticOffset } from \"./magnetic\";\nimport { cn } from \"@/lib/utils\";\n\nexport type MagneticButtonProps = ButtonProps & {\n\t/** How strongly the button leans toward the pointer, 0 to 1. Default 0.25. */\n\tstrength?: number;\n};\n\n/**\n * A Button that leans toward a mouse pointer and springs back when it leaves. The pointer only\n * writes two CSS variables; the CSS `translate` transition on the magnetic spring does the motion,\n * and turns itself off for touch, reduced motion and `data-motion=\"off\"`.\n */\nexport function MagneticButton({\n\tstrength = 0.25,\n\tonPointerMove,\n\tonPointerLeave,\n\tclassName,\n\t...rest\n}: MagneticButtonProps) {\n\tconst follow = (event: PointerEvent<HTMLButtonElement>) => {\n\t\tonPointerMove?.(event);\n\t\tif (event.pointerType !== \"mouse\") return;\n\t\tconst node = event.currentTarget;\n\t\t// Measure without the current lean, or the button would chase its own offset.\n\t\tconst rect = node.getBoundingClientRect();\n\t\tconst now = currentOffset(node);\n\t\tconst { x, y } = magneticOffset(\n\t\t\t// DOMRect fields are getters, so they are copied by name, not spread.\n\t\t\t{ left: rect.left - now.x, top: rect.top - now.y, width: rect.width, height: rect.height },\n\t\t\tevent.clientX,\n\t\t\tevent.clientY,\n\t\t\tstrength,\n\t\t);\n\t\tnode.style.setProperty(\"--_btn-mx\", `${x}px`);\n\t\tnode.style.setProperty(\"--_btn-my\", `${y}px`);\n\t};\n\n\tconst release = (event: PointerEvent<HTMLButtonElement>) => {\n\t\tonPointerLeave?.(event);\n\t\tevent.currentTarget.style.removeProperty(\"--_btn-mx\");\n\t\tevent.currentTarget.style.removeProperty(\"--_btn-my\");\n\t};\n\n\treturn (\n\t\t<Button\n\t\t\t{...(rest as ButtonProps)}\n\t\t\tclassName={cn(\"rx-btn-magnet\", className)}\n\t\t\tonPointerMove={follow}\n\t\t\tonPointerLeave={release}\n\t\t/>\n\t);\n}\n\nfunction currentOffset(node: HTMLElement) {\n\tconst read = (name: string) => Number.parseFloat(node.style.getPropertyValue(name)) || 0;\n\treturn { x: read(\"--_btn-mx\"), y: read(\"--_btn-my\") };\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/magnetic.ts",
+      "content": "/**\n * How far a magnetic button leans toward the pointer: the pointer's distance from the button's\n * centre, scaled by `strength`. 0 stays put, 1 would put the centre under the pointer.\n */\nexport function magneticOffset(\n\trect: { left: number; top: number; width: number; height: number },\n\tclientX: number,\n\tclientY: number,\n\tstrength: number,\n) {\n\treturn {\n\t\tx: (clientX - (rect.left + rect.width / 2)) * strength,\n\t\ty: (clientY - (rect.top + rect.height / 2)) * strength,\n\t};\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/metallic-button.tsx",
+      "content": "\"use client\";\n\nimport { Button, type ButtonProps } from \"./button\";\nimport { buttonParts } from \"./button.styles\";\nimport { cn } from \"@/lib/utils\";\n\nexport type MetallicButtonProps = Omit<ButtonProps, \"variant\" | \"ripple\"> & {\n\t/** Holds the chrome still; the rim keeps its polish. */\n\tpaused?: boolean;\n};\n\n/**\n * A Button with a polished chrome rim. The rim's gradient drifts on a slow loop and hovering\n * sweeps a highlight across it, both in CSS. The face is the page color, so the label reads as\n * on a ghost button.\n */\nexport function MetallicButton({ paused, children, className, ...rest }: MetallicButtonProps) {\n\treturn (\n\t\t<Button\n\t\t\t{...(rest as ButtonProps)}\n\t\t\tvariant=\"ghost\"\n\t\t\tclassName={cn(\"rx-btn-metal\", className)}\n\t\t\tdata-paused={paused ? \"\" : undefined}\n\t\t>\n\t\t\t<span className={buttonParts.metalRim} aria-hidden=\"true\" />\n\t\t\t<span className={buttonParts.metalSheen} aria-hidden=\"true\" />\n\t\t\t<span className={buttonParts.metalFace} aria-hidden=\"true\" />\n\t\t\t<span className={buttonParts.metalBevel} aria-hidden=\"true\" />\n\t\t\t{children}\n\t\t</Button>\n\t);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/stateful-button.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype CSSProperties,\n\ttype ReactNode,\n\ttype Ref,\n\tuseEffect,\n\tuseLayoutEffect,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { Button, type ButtonProps } from \"./button\";\nimport { type ButtonState, buttonParts } from \"./button.styles\";\nimport { exitMs, splitLetters } from \"./stateful-label\";\n\nexport type StatefulButtonProps = ButtonProps & {\n\t/** `loading` blocks clicks and marks the button busy; the others only change the label. */\n\tstate?: ButtonState;\n\t/** The idle label. */\n\tchildren: ReactNode;\n\tloadingText?: ReactNode;\n\tsuccessText?: ReactNode;\n\terrorText?: ReactNode;\n\t/** An icon after the idle label. It folds away while any other state shows. */\n\ticon?: ReactNode;\n};\n\nconst useIsomorphicLayoutEffect = typeof window === \"undefined\" ? useEffect : useLayoutEffect;\n\n/**\n * A button for an action that takes a moment. Changing `state` folds the old status icon away,\n * widens the new one in, and rolls the label over letter by letter while the button eases to the\n * new width. All of that is CSS; this component only says which label is arriving and which is\n * leaving, and measures the arriving one.\n */\nexport function StatefulButton({\n\tstate = \"idle\",\n\tchildren,\n\tloadingText = \"Loading\",\n\tsuccessText = \"Done\",\n\terrorText = \"Try again\",\n\ticon,\n\tonClick,\n\t...rest\n}: StatefulButtonProps) {\n\tconst busy = state === \"loading\";\n\tconst text = { idle: children, loading: loadingText, success: successText, error: errorText }[\n\t\tstate\n\t];\n\n\treturn (\n\t\t<Button\n\t\t\t{...rest}\n\t\t\taria-busy={busy || undefined}\n\t\t\taria-live=\"polite\"\n\t\t\tdata-state={state}\n\t\t\tonClick={(event) => (busy ? event.preventDefault() : onClick?.(event))}\n\t\t>\n\t\t\t<Slot shown={state === \"loading\"}>\n\t\t\t\t<span className={buttonParts.glyph} data-glyph=\"spinner\" />\n\t\t\t</Slot>\n\t\t\t<Slot shown={state === \"success\"}>\n\t\t\t\t<span className={buttonParts.glyph} data-glyph=\"check\" />\n\t\t\t</Slot>\n\t\t\t<Slot shown={state === \"error\"}>\n\t\t\t\t<span className={buttonParts.glyph} data-glyph=\"cross\" />\n\t\t\t</Slot>\n\t\t\t<LabelSwap id={state}>{text}</LabelSwap>\n\t\t\t{icon ? <Slot shown={state === \"idle\"}>{icon}</Slot> : null}\n\t\t</Button>\n\t);\n}\n\nfunction Slot({ shown, children }: { shown: boolean; children: ReactNode }) {\n\treturn (\n\t\t<span className={buttonParts.slot} data-shown={shown ? \"\" : undefined} aria-hidden=\"true\">\n\t\t\t{children}\n\t\t</span>\n\t);\n}\n\ntype Shown = { id: string; node: ReactNode; enter: boolean };\n\n/**\n * One label at a time, plus the one leaving. A new `id` (or new text) keeps the old label for the\n * length of its exit, marks the new one to roll in, and sets the box width to the new label's.\n * The first render does not animate.\n */\nfunction LabelSwap({ id, children }: { id: string; children: ReactNode }) {\n\tconst key =\n\t\ttypeof children === \"string\" || typeof children === \"number\" ? `${id}:${children}` : id;\n\tconst [shown, setShown] = useState<Shown>({ id: key, node: children, enter: false });\n\tconst [leaving, setLeaving] = useState<Shown[]>([]);\n\tconst [width, setWidth] = useState<number>();\n\t// The keyed `<Label>` below remounts per label, so its roll-in keyframes start over each swap.\n\tconst current = useRef<HTMLSpanElement>(null);\n\n\tif (shown.id !== key) {\n\t\tsetLeaving((list) => [...list.filter((item) => item.id !== key), { ...shown, enter: false }]);\n\t\tsetShown({ id: key, node: children, enter: true });\n\t}\n\n\t// Measure the letters as laid out, not the plain string: kerning can make the string narrower\n\t// than its inline-block letters, which would clip the last one.\n\tuseIsomorphicLayoutEffect(() => {\n\t\tconst next = current.current?.offsetWidth;\n\t\tif (next) setWidth((before) => (before === next ? before : next));\n\t});\n\n\tuseEffect(() => {\n\t\tif (leaving.length === 0) return;\n\t\tconst longest = Math.max(...leaving.map((item) => letterCount(item.node)));\n\t\tconst timer = setTimeout(() => setLeaving([]), exitMs(longest) + 40);\n\t\treturn () => clearTimeout(timer);\n\t}, [leaving]);\n\n\treturn (\n\t\t<span\n\t\t\tclassName={buttonParts.text}\n\t\t\tstyle={width ? ({ \"--_btn-text-w\": `${width}px` } as CSSProperties) : undefined}\n\t\t>\n\t\t\t{typeof children === \"string\" ? <span className={buttonParts.srOnly}>{children}</span> : null}\n\t\t\t<Label key={shown.id} ref={current} node={children} enter={shown.enter} />\n\t\t\t{leaving.map((item) => (\n\t\t\t\t<Label key={`out:${item.id}`} node={item.node} exit />\n\t\t\t))}\n\t\t</span>\n\t);\n}\n\nfunction letterCount(node: ReactNode): number {\n\treturn typeof node === \"string\" ? splitLetters(node).length : 1;\n}\n\nfunction Label({\n\tnode,\n\tenter,\n\texit,\n\tref,\n}: {\n\tnode: ReactNode;\n\tenter?: boolean;\n\texit?: boolean;\n\tref?: Ref<HTMLSpanElement>;\n}) {\n\tconst text = typeof node === \"string\";\n\treturn (\n\t\t<span\n\t\t\tref={ref}\n\t\t\tclassName={buttonParts.label}\n\t\t\tdata-enter={enter ? \"\" : undefined}\n\t\t\tdata-exit={exit ? \"\" : undefined}\n\t\t\taria-hidden={text || exit ? \"true\" : undefined}\n\t\t>\n\t\t\t{text ? (\n\t\t\t\tsplitLetters(node).map((letter, index) => (\n\t\t\t\t\t<span\n\t\t\t\t\t\t// Position is the letter's identity within one label.\n\t\t\t\t\t\t// oxlint-disable-next-line react/no-array-index-key\n\t\t\t\t\t\tkey={index}\n\t\t\t\t\t\tclassName={buttonParts.letter}\n\t\t\t\t\t\tstyle={{ \"--_i\": index } as CSSProperties}\n\t\t\t\t\t>\n\t\t\t\t\t\t{letter}\n\t\t\t\t\t</span>\n\t\t\t\t))\n\t\t\t) : (\n\t\t\t\t<span className={buttonParts.letter}>{node}</span>\n\t\t\t)}\n\t\t</span>\n\t);\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/stateful-label.ts",
+      "content": "/**\n * The letters a label rolls in as. Split by code point so an emoji or accented letter stays whole,\n * and a space keeps its width once it sits in its own inline-block.\n */\nexport function splitLetters(text: string): string[] {\n\treturn Array.from(text);\n}\n\n/** How long a leaving label needs before it can be removed: the last letter's delay plus 160ms. */\nexport function exitMs(letters: number): number {\n\treturn 160 + Math.max(0, letters - 1) * 12.5;\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/use-button.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype CSSProperties,\n\ttype PointerEvent,\n\ttype PointerEventHandler,\n\ttype ReactNode,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { type ButtonSize, type ButtonVariant, buttonClass, buttonParts } from \"./button.styles\";\nimport { cn } from \"@/lib/utils\";\n\nexport type ButtonLookProps = {\n\tvariant?: ButtonVariant;\n\tsize?: ButtonSize;\n\t/** Scale while pressed. 1 turns the press off. Default 0.93. */\n\tpressScale?: number;\n\t/** A soft disc spreads from where the button was pressed. */\n\tripple?: boolean;\n};\n\ntype Ripple = { id: number; x: number; y: number; d: number };\n\n/** Whether the user or an ancestor asked for no motion. Ripples are skipped then, not hidden. */\nexport function motionReduced(node: Element): boolean {\n\tif (node.closest('[data-motion=\"off\"]')) return true;\n\treturn typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n}\n\n/**\n * Where a ripple starts and how big it grows: centred on the press, and twice the longer side so\n * it covers the button from any corner.\n */\nexport function ripplePlacement(\n\trect: { left: number; top: number; width: number; height: number },\n\tclientX: number,\n\tclientY: number,\n) {\n\treturn {\n\t\tx: clientX - rect.left,\n\t\ty: clientY - rect.top,\n\t\td: Math.max(rect.width, rect.height) * 2,\n\t};\n}\n\n/** The class, style, ripple layer and pointer handler every button element shares. */\nexport function useButtonLook<E extends HTMLElement>(\n\t{ variant, size, pressScale, ripple }: ButtonLookProps,\n\t{\n\t\tlook,\n\t\tclassName,\n\t\tstyle,\n\t\tonPointerDown,\n\t}: {\n\t\tlook?: \"magnetic\" | \"metallic\";\n\t\tclassName?: string;\n\t\tstyle?: CSSProperties;\n\t\tonPointerDown?: PointerEventHandler<E>;\n\t},\n): {\n\tclassName: string;\n\tstyle: CSSProperties | undefined;\n\tonPointerDown: PointerEventHandler<E>;\n\tripples: ReactNode;\n} {\n\tconst [ripples, setRipples] = useState<Ripple[]>([]);\n\tconst nextId = useRef(0);\n\n\tconst handlePointerDown = (event: PointerEvent<E>) => {\n\t\tonPointerDown?.(event);\n\t\tif (!ripple || event.button !== 0 || motionReduced(event.currentTarget)) return;\n\t\tconst placed = ripplePlacement(\n\t\t\tevent.currentTarget.getBoundingClientRect(),\n\t\t\tevent.clientX,\n\t\t\tevent.clientY,\n\t\t);\n\t\tconst id = nextId.current++;\n\t\tsetRipples((current) => [...current, { id, ...placed }]);\n\t};\n\n\treturn {\n\t\tclassName: cn(buttonClass({ variant, size, look }), className),\n\t\tstyle:\n\t\t\tpressScale === undefined\n\t\t\t\t? style\n\t\t\t\t: ({ ...style, \"--_btn-press\": String(pressScale) } as CSSProperties),\n\t\tonPointerDown: handlePointerDown,\n\t\tripples: ripple ? (\n\t\t\t<span className={buttonParts.ripples} aria-hidden=\"true\">\n\t\t\t\t{ripples.map(({ id, x, y, d }) => (\n\t\t\t\t\t<span\n\t\t\t\t\t\tkey={id}\n\t\t\t\t\t\tclassName={buttonParts.ripple}\n\t\t\t\t\t\tstyle={\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\"--_ripple-x\": `${x}px`,\n\t\t\t\t\t\t\t\t\"--_ripple-y\": `${y}px`,\n\t\t\t\t\t\t\t\t\"--_ripple-d\": `${d}px`,\n\t\t\t\t\t\t\t} as CSSProperties\n\t\t\t\t\t\t}\n\t\t\t\t\t\tonAnimationEnd={() => setRipples((current) => current.filter((r) => r.id !== id))}\n\t\t\t\t\t/>\n\t\t\t\t))}\n\t\t\t</span>\n\t\t) : null,\n\t};\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-btn": {
+        "--_bg": "transparent",
+        "--_bg-hover": "var(--_bg)",
+        "--_fg": "var(--foreground)",
+        "--_fg-hover": "var(--_fg)",
+        "--_edge": "transparent",
+        "--_icon": "16px",
+        "--_gap": "0.5rem",
+        "position": "relative",
+        "isolation": "isolate",
+        "display": "inline-flex",
+        "flex-shrink": "0",
+        "align-items": "center",
+        "justify-content": "center",
+        "gap": "var(--_gap)",
+        "border": "1px solid var(--_edge)",
+        "border-radius": "var(--radius-button)",
+        "background-color": "var(--_bg)",
+        "color": "var(--_fg)",
+        "font": "inherit",
+        "font-family": "var(--font-sans)",
+        "font-weight": "500",
+        "white-space": "nowrap",
+        "text-decoration": "none",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent",
+        "translate": "var(--_btn-mx, 0px) var(--_btn-my, 0px)",
+        "transition": "background-color 150ms var(--motion-ease), border-color 150ms var(--motion-ease), color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease), opacity 150ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press), translate var(--spring-magnetic-duration) var(--spring-magnetic)"
+      },
+      ".rx-btn svg": {
+        "flex": "none",
+        "width": "var(--_icon)",
+        "height": "var(--_icon)"
+      },
+      ".rx-btn:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-btn:hover": {
+          "background-color": "var(--_bg-hover)",
+          "color": "var(--_fg-hover)",
+          "scale": "1.02"
+        },
+        ".rx-btn-metal:hover > .rx-btn-metal-sheen": {
+          "translate": "310% 0"
+        }
+      },
+      ".rx-btn:active": {
+        "scale": "var(--_btn-press, 0.93)"
+      },
+      ".rx-btn:disabled, .rx-btn[aria-disabled=\"true\"]": {
+        "opacity": "0.5",
+        "pointer-events": "none"
+      },
+      ".rx-btn[aria-busy=\"true\"]": {
+        "pointer-events": "none"
+      },
+      ".rx-btn-primary": {
+        "--_bg": "var(--primary)",
+        "--_bg-hover": "color-mix(in oklab, var(--primary) 90%, transparent)",
+        "--_fg": "var(--primary-foreground)"
+      },
+      ".rx-btn-secondary": {
+        "--_bg": "var(--secondary)",
+        "--_bg-hover": "color-mix(in oklab, var(--secondary) 80%, transparent)",
+        "--_fg": "var(--secondary-foreground)",
+        "--_edge": "var(--input)"
+      },
+      ".rx-btn-ghost": {
+        "--_fg": "var(--muted-foreground)",
+        "--_fg-hover": "var(--accent-foreground)",
+        "--_bg-hover": "var(--accent)"
+      },
+      ".rx-btn-outline": {
+        "--_edge": "var(--input)",
+        "--_bg-hover": "var(--accent)"
+      },
+      ".rx-btn-sm": {
+        "--_gap": "0.375rem",
+        "--_icon": "14px",
+        "height": "2rem",
+        "padding-inline": "0.75rem",
+        "font-size": "0.75rem",
+        "line-height": "1rem"
+      },
+      ".rx-btn-md": {
+        "height": "2.5rem",
+        "padding-inline": "1.25rem",
+        "font-size": "0.875rem",
+        "line-height": "1.25rem"
+      },
+      ".rx-btn-lg": {
+        "--_icon": "18px",
+        "height": "3rem",
+        "padding-inline": "1.5rem",
+        "font-size": "1rem",
+        "line-height": "1.5rem"
+      },
+      ".rx-btn-icon": {
+        "width": "2rem",
+        "height": "2rem",
+        "padding": "0",
+        "border-radius": "var(--radius-item)"
+      },
+      ".rx-btn-ripples": {
+        "position": "absolute",
+        "inset": "-1px",
+        "z-index": "-1",
+        "overflow": "hidden",
+        "border-radius": "inherit",
+        "pointer-events": "none"
+      },
+      ".rx-btn-ripple": {
+        "position": "absolute",
+        "left": "var(--_ripple-x)",
+        "top": "var(--_ripple-y)",
+        "width": "var(--_ripple-d)",
+        "aspect-ratio": "1",
+        "border-radius": "50%",
+        "background": "currentColor",
+        "translate": "-50% -50%",
+        "opacity": "0",
+        "animation": "rx-btn-ripple 1.6s cubic-bezier(0.16, 1, 0.3, 1)"
+      },
+      "@keyframes rx-btn-ripple": {
+        "from": {
+          "scale": "0.05",
+          "opacity": "0.3"
+        },
+        "to": {
+          "scale": "1",
+          "opacity": "0"
+        }
+      },
+      ".rx-btn:has(> .rx-btn-text)": {
+        "gap": "0"
+      },
+      ".rx-btn-slot": {
+        "display": "inline-flex",
+        "align-items": "center",
+        "justify-content": "flex-start",
+        "width": "0",
+        "height": "var(--_icon)",
+        "opacity": "0",
+        "scale": "0.7",
+        "filter": "blur(6px)",
+        "transition": "width 160ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms cubic-bezier(0.16, 1, 0.3, 1), scale 160ms cubic-bezier(0.16, 1, 0.3, 1), filter 160ms cubic-bezier(0.16, 1, 0.3, 1)"
+      },
+      ".rx-btn-slot[data-shown]": {
+        "width": "calc(var(--_icon) + var(--_gap))",
+        "opacity": "1",
+        "scale": "1",
+        "filter": "blur(0)",
+        "transition": "width var(--spring-label-duration) var(--spring-label), opacity var(--spring-label-duration) var(--spring-label), scale var(--spring-label-duration) var(--spring-label), filter var(--spring-label-duration) var(--spring-label)"
+      },
+      ".rx-btn-text ~ .rx-btn-slot": {
+        "justify-content": "flex-end"
+      },
+      ".rx-btn-glyph": {
+        "flex": "none",
+        "width": "var(--_icon)",
+        "height": "var(--_icon)",
+        "background": "currentColor",
+        "mask": "var(--_glyph) center / contain no-repeat"
+      },
+      ".rx-btn-glyph[data-glyph=\"spinner\"]": {
+        "--_glyph": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M12 3a9 9 0 1 0 9 9'/%3E%3C/svg%3E\")",
+        "animation": "rx-btn-spin 0.8s linear infinite"
+      },
+      ".rx-btn-glyph[data-glyph=\"check\"]": {
+        "--_glyph": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E\")"
+      },
+      ".rx-btn-glyph[data-glyph=\"cross\"]": {
+        "--_glyph": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E\")"
+      },
+      "@keyframes rx-btn-spin": {
+        "to": {
+          "rotate": "1turn"
+        }
+      },
+      ".rx-btn-text": {
+        "position": "relative",
+        "display": "inline-flex",
+        "width": "var(--_btn-text-w, auto)",
+        "overflow": "clip",
+        "overflow-clip-margin": "2px",
+        "transition": "width var(--spring-label-duration) var(--spring-label)"
+      },
+      ".rx-btn-label": {
+        "display": "inline-flex",
+        "flex": "none",
+        "white-space": "pre"
+      },
+      ".rx-btn-label[data-exit]": {
+        "position": "absolute",
+        "inset-block": "0",
+        "inset-inline-start": "0"
+      },
+      ".rx-btn-letter": {
+        "display": "inline-block"
+      },
+      "[data-enter] > .rx-btn-letter": {
+        "animation": "rx-btn-roll-in var(--spring-label-duration) var(--spring-label) both",
+        "animation-delay": "calc(var(--_i, 0) * 25ms)"
+      },
+      "[data-exit] > .rx-btn-letter": {
+        "animation": "rx-btn-roll-out 160ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "animation-delay": "calc(var(--_i, 0) * 12.5ms)"
+      },
+      "@keyframes rx-btn-roll-in": {
+        "from": {
+          "translate": "0 105%",
+          "opacity": "0",
+          "filter": "blur(6px)"
+        }
+      },
+      "@keyframes rx-btn-roll-out": {
+        "to": {
+          "translate": "0 -105%",
+          "opacity": "0",
+          "filter": "blur(6px)"
+        }
+      },
+      ".rx-btn-sr": {
+        "position": "absolute",
+        "width": "1px",
+        "height": "1px",
+        "overflow": "hidden",
+        "clip-path": "inset(50%)",
+        "white-space": "nowrap"
+      },
+      ".rx-btn.rx-btn-metal": {
+        "--_bg": "transparent",
+        "--_bg-hover": "transparent",
+        "--_fg": "var(--foreground)",
+        "--_fg-hover": "var(--foreground)",
+        "--_edge": "transparent",
+        "border": "0",
+        "overflow": "hidden",
+        "box-shadow": "var(--shadow-raised)"
+      },
+      ".rx-btn.rx-btn-metal.rx-btn-icon": {
+        "border-radius": "var(--radius-button)"
+      },
+      ".rx-btn.rx-btn-metal > :is(.rx-btn-metal-rim, .rx-btn-metal-sheen, .rx-btn-metal-face, .rx-btn-metal-bevel)": {
+        "position": "absolute",
+        "pointer-events": "none"
+      },
+      ".rx-btn-metal-rim": {
+        "inset-block": "0",
+        "left": "-18%",
+        "width": "136%",
+        "z-index": "-4",
+        "border-radius": "inherit",
+        "background": "linear-gradient( 105deg, #141414 0%, #767676 13%, #f7f7f7 25%, #575757 37%, #0b0b0b 50%, #a6a6a6 63%, #ffffff 74%, #444444 86%, #141414 100% )",
+        "animation": "rx-btn-drift 8s cubic-bezier(0.77, 0, 0.175, 1) infinite"
+      },
+      "[data-paused] > .rx-btn-metal-rim": {
+        "animation-play-state": "paused"
+      },
+      "@keyframes rx-btn-drift": {
+        "50%": {
+          "translate": "13% 0"
+        }
+      },
+      ".rx-btn-metal-sheen": {
+        "inset-block": "0",
+        "left": "-58%",
+        "width": "52%",
+        "z-index": "-3",
+        "background": "linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5) 48%, transparent)",
+        "opacity": "0.5",
+        "filter": "blur(3px)",
+        "mix-blend-mode": "screen",
+        "transform": "skewX(-12deg)",
+        "transition": "translate 2.4s cubic-bezier(0.77, 0, 0.175, 1)"
+      },
+      "[data-paused] > .rx-btn-metal-sheen": {
+        "transition": "none"
+      },
+      ".rx-btn-metal-face, .rx-btn-metal-bevel": {
+        "inset": "2px",
+        "border-radius": "inherit"
+      },
+      ".rx-btn-metal-face": {
+        "z-index": "-2",
+        "background": "var(--background)",
+        "transition": "background-color 150ms var(--motion-ease)"
+      },
+      ".rx-btn-metal:hover > .rx-btn-metal-face": {
+        "background": "color-mix(in oklab, var(--background) 94%, var(--foreground))"
+      },
+      ".rx-btn-metal-bevel": {
+        "z-index": "-1",
+        "box-shadow": "inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 -1px 0 rgb(0 0 0 / 0.16)"
+      },
+      "@keyframes rx-btn-fade": {
+        "from": {
+          "opacity": "0"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-btn": {
+          "translate": "none"
+        },
+        ".rx-btn:hover:not(:active)": {
+          "scale": "none"
+        },
+        ".rx-btn-ripple": {
+          "display": "none"
+        },
+        ".rx-btn-metal-rim": {
+          "animation": "none"
+        },
+        ".rx-btn-metal-sheen": {
+          "transition": "none"
+        },
+        ".rx-btn-slot, .rx-btn-slot[data-shown], .rx-btn-text": {
+          "transition-property": "opacity",
+          "transition-duration": "150ms"
+        },
+        ".rx-btn-slot": {
+          "scale": "none",
+          "filter": "none"
+        },
+        "[data-enter] > .rx-btn-letter, [data-exit] > .rx-btn-letter": {
+          "animation-name": "rx-btn-fade",
+          "animation-duration": "150ms",
+          "animation-delay": "0ms"
+        },
+        "[data-exit] > .rx-btn-letter": {
+          "animation-direction": "reverse"
+        }
+      },
+      "[data-motion=\"off\"] .rx-btn": {
+        "translate": "none",
+        "transition-duration": "0ms"
+      },
+      "[data-motion=\"off\"] .rx-btn:hover:not(:active)": {
+        "scale": "none"
+      },
+      "[data-motion=\"off\"] .rx-btn-slot, [data-motion=\"off\"] .rx-btn-slot[data-shown], [data-motion=\"off\"] .rx-btn-text": {
+        "transition": "none"
+      },
+      "[data-motion=\"off\"] .rx-btn-ripple, [data-motion=\"off\"] .rx-btn-label[data-exit]": {
+        "display": "none"
+      },
+      "[data-motion=\"off\"] .rx-btn-letter, [data-motion=\"off\"] .rx-btn-metal-rim": {
+        "animation": "none"
+      },
+      "[data-motion=\"off\"] .rx-btn-metal-sheen": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

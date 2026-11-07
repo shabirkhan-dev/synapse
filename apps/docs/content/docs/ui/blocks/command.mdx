@@ -1,0 +1,197 @@
+---
+title: Command palette
+description: A Cmd+K command palette in a native dialog, made of the Rabtx components. Fuzzy search, groups, recent items, nested pages, loading and empty states. Every animation is CSS.
+---
+
+<ComponentPreview name="blocks/command" />
+
+Press <kbd>⌘ J</kbd> (or <kbd>Ctrl J</kbd>) anywhere on the page, or the button. The block's
+default is ⌘K; this page uses `shortcut="j"` because ⌘K opens the docs search. Try "nf", "dark",
+**Change theme** (a page) and **Switch team** (a page that loads).
+
+## Installation
+
+<Installation name="command-block" />
+
+## Usage
+
+Installed from the registry, import from `@/components/blocks/command/command-block`; inside this
+monorepo, from `@rabtx/ui/blocks/command`.
+
+```tsx
+import { CommandBlock, type CommandItem } from "@rabtx/ui/blocks/command";
+
+const commands: CommandItem[] = [
+  { id: "home", label: "Go to Home", group: "Navigation", shortcut: ["G", "H"], onSelect: () => router.push("/") },
+  { id: "new", label: "New project", group: "Actions", badge: "New", onSelect: createProject },
+  {
+    id: "theme",
+    label: "Change theme",
+    group: "Preferences",
+    placeholder: "Choose a theme…",
+    items: [
+      { id: "light", label: "Light", onSelect: () => setTheme("light") },
+      { id: "dark", label: "Dark", onSelect: () => setTheme("dark") },
+    ],
+  },
+  { id: "team", label: "Switch team", group: "Preferences", items: () => fetchTeams() },
+];
+
+export function AppCommands() {
+  return <CommandBlock commands={commands} onSelect={(item) => track("command", item.id)} />;
+}
+```
+
+The block is data: each command is an object.
+
+- **Run.** Enter or a click runs the command's `onSelect`, then the block's `onSelect` (with the
+  pages above it), adds it to the recent list and closes the palette. `keepOpen` keeps it open.
+- **Pages.** A command with `items` opens a page of its own. The pages show as badges over the
+  field with a Back button; Backspace in an empty field, or Escape, steps back. When `items` is a
+  function, the page shows skeleton rows while it loads, and a Try again button if it fails.
+- **Search.** Typing filters with a fuzzy match on the label (best), then keywords, description
+  and group. A run of letters beats scattered ones and word starts count: "nf" finds **New file**.
+  On the first page a query also searches the pages below it, so "dark" finds **Change theme ›
+  Dark**. Matched letters are bold.
+- **Recent.** The last five commands run (`recentLimit`) are listed first while the field is
+  empty. They are kept in memory across openings; pass `recent` and `onRecentChange` to store them.
+- **Shortcut.** ⌘K on Apple keyboards, Ctrl+K elsewhere; `shortcut="j"` changes the key and
+  `shortcut={false}` binds none (do that for a second palette on one page).
+
+Each opening starts fresh: the first page, an empty field, the first command active.
+
+## Inline, with scopes
+
+`CommandPanel` is the same list without the dialog and the shortcut, for a sidebar or a page.
+`scopes` adds Tabs that narrow it to one group of the current page.
+
+<ComponentPreview name="blocks/command-inline" block />
+
+```tsx
+import { CommandPanel } from "@rabtx/ui/blocks/command";
+
+<CommandPanel commands={commands} label="Inline commands" scopes recentLimit={0} />;
+```
+
+## Your own search
+
+For results from your API, pass them as `commands` with `filter={false}` (they are listed as
+given) and `loading` while a request runs: skeleton rows while the list is empty, a spinner in the
+field once results show. `onQueryChange` tells you what to search for.
+
+<ComponentPreview name="blocks/command-search" />
+
+## API
+
+`CommandBlock` takes every `CommandPanel` prop below except `surface`, plus:
+
+<TypeTable
+  type={{
+    open: { type: "boolean", description: "Controlled open state." },
+    defaultOpen: { type: "boolean", default: "false" },
+    onOpenChange: { type: "(open: boolean) => void" },
+    shortcut: {
+      type: "string | false",
+      default: '"k"',
+      description: "With ⌘ or Ctrl, toggles the palette anywhere on the page.",
+    },
+    trigger: {
+      type: "ReactElement | false",
+      description: "Your own button (it gets the dialog trigger's props), or none.",
+    },
+    triggerLabel: { type: "string", default: '"Search…"' },
+    title: { type: "string", default: '"Command palette"', description: "The dialog's name." },
+  }}
+/>
+
+`CommandPanel`:
+
+<TypeTable
+  type={{
+    commands: { type: "CommandItem[]", description: "The first page." },
+    onSelect: { type: "(item: CommandItem, parents: CommandItem[]) => void" },
+    onClose: { type: "() => void", description: "After a command runs, unless it keeps open." },
+    label: { type: "string", default: '"Commands"', description: "The field and list's name." },
+    placeholder: { type: "string", default: '"Type a command or search…"' },
+    query: { type: "string", description: "Controlled search text." },
+    defaultQuery: { type: "string" },
+    onQueryChange: { type: "(query: string, page: CommandItem | undefined) => void" },
+    filter: { type: "boolean", default: "true", description: "false lists commands as given." },
+    loading: { type: "boolean", default: "false" },
+    empty: { type: "ReactNode | ((query: string) => ReactNode)" },
+    recent: { type: "string[]", description: "Recent ids, newest first (controlled)." },
+    defaultRecent: { type: "string[]" },
+    onRecentChange: { type: "(recent: string[]) => void" },
+    recentLimit: { type: "number", default: "5", description: "0 turns recent off." },
+    recentLabel: { type: "string", default: '"Recent"' },
+    scopes: { type: "boolean", default: "false" },
+    allLabel: { type: "string", default: '"All"' },
+    hints: { type: "boolean", default: "true", description: "The keyboard hints footer." },
+    surface: { type: "boolean", default: "true", description: "The raised popover surface." },
+  }}
+/>
+
+`CommandItem`:
+
+<TypeTable
+  type={{
+    id: { type: "string", description: "Unique; also the recent key." },
+    label: { type: "string" },
+    group: { type: "string", description: "The heading it is listed under." },
+    description: { type: "string" },
+    keywords: { type: "string[]", description: "Extra words that find it." },
+    icon: { type: "ReactNode", description: "Decorative, 16px." },
+    shortcut: { type: "string[]", description: "Keys shown at the end; not bound." },
+    badge: { type: "string" },
+    badgeTone: { type: '"neutral" | "accent" | "success" | "warning" | "danger" | "violet"' },
+    disabled: { type: "boolean" },
+    items: { type: "CommandItem[] | (() => Promise<CommandItem[]>)", description: "A page." },
+    placeholder: { type: "string", description: "The field's placeholder on its page." },
+    onSelect: { type: "(item: CommandItem) => void" },
+    keepOpen: { type: "boolean" },
+  }}
+/>
+
+`fuzzyMatch(text, query)`, `commandSections(options)` and `pushRecent(recent, id, limit)` are
+exported for your own lists.
+
+## Theming
+
+The block reads only the [theme tokens](/docs/ui/theming), through its components and
+`command-block.css`.
+
+| Part | Tokens |
+| --- | --- |
+| Panel | `--popover` / `--popover-foreground` on the raised surface (`--surface-*`), `--radius-box` |
+| Highlight | `--accent` / `--accent-foreground`, `--radius-item` |
+| Headings, hints, descriptions | `--muted-foreground` |
+| Key caps | `--border`, `--background`, `--radius-badge` |
+| Skeleton, spinner | `--muted`, `--muted-foreground` |
+| Motion | `--spring-unfold`, `--spring-panel`, `--spring-press`, `--motion-ease` |
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Highlight | the list's last child, placed on the active option by anchor positioning: `data-active` sets `anchor-name`, the list sets `anchor-scope`, and the highlight's four `anchor()` insets transition on the `unfold` spring, so it slides from row to row. Without `anchor-scope` the active row paints its own fill |
+| List height | the viewport's `height` follows `--_h`, the content's height from a `ResizeObserver`, on the `panel` spring, capped where it scrolls |
+| Open and close | the Dialog's own: `@starting-style` from 8px above at 0.97, the `panel` spring in, a shorter fade out with `display` and `overlay` `allow-discrete` |
+| Loading | skeleton rows breathe one after another; the spinner turns |
+
+Reduced motion and `data-motion="off"` stop the highlight and the height from moving and the
+skeleton from breathing; the spinner slows. Every state still shows.
+
+## Accessibility
+
+- The field is a `combobox` with `aria-expanded`, `aria-autocomplete="list"` and `aria-controls`
+  pointing at the `listbox`. Focus stays in the field; `aria-activedescendant` names the active
+  `option`, which has `aria-selected`.
+- Up and Down move (and wrap), Home and End jump, Enter runs or opens. Disabled options have
+  `aria-disabled` and are skipped. The field's description says so.
+- Groups are `group`s named by their headings. A polite live region says how many results there
+  are, "No results", "Loading…" or the page that opened.
+- The dialog is a native modal `<dialog>` named "Command palette": the page is inert, Escape closes
+  it (on a page it steps back first) and focus returns to the trigger. The trigger has
+  `aria-keyshortcuts`.
+- Matched letters are bold, not colored; the highlight is a fill, and the active row's text and
+  icon take the accent foreground.

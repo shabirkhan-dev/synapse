@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "use-base-select",
+  "title": "useBaseSelect",
+  "description": "Whether the browser draws a customizable select list (appearance: base-select).",
+  "files": [
+    {
+      "path": "registry/rabtx/hooks/use-base-select.ts",
+      "content": "import { useSyncExternalStore } from \"react\";\n\nconst subscribe = () => () => {};\nconst supported = () => typeof CSS !== \"undefined\" && CSS.supports(\"appearance\", \"base-select\");\n\n/**\n * Whether this browser draws a customizable `<select>` list (`appearance: base-select`). Always false\n * on the server and during hydration, so server and client markup match; true right after, where\n * supported.\n */\nexport function useBaseSelect() {\n\treturn useSyncExternalStore(subscribe, supported, () => false);\n}\n",
+      "type": "registry:hook"
+    }
+  ],
+  "type": "registry:hook"
+}

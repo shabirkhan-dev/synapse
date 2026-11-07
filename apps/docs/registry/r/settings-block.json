@@ -1,0 +1,356 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "settings-block",
+  "title": "Settings block",
+  "description": "A settings page in sections (profile, account, notifications, appearance, danger zone) on Tabs that turn vertical when the block is wide, with an unsaved changes bar and dialogs to change the email and delete the account, made of the Rabtx components. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/badge.json",
+    "{{origin}}/r/button.json",
+    "{{origin}}/r/card.json",
+    "{{origin}}/r/checkbox.json",
+    "{{origin}}/r/field.json",
+    "{{origin}}/r/input.json",
+    "utils",
+    "{{origin}}/r/radio-group.json",
+    "{{origin}}/r/select.json",
+    "{{origin}}/r/switch.json",
+    "{{origin}}/r/tabs.json",
+    "{{origin}}/r/textarea.json",
+    "{{origin}}/r/dialog.json"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/blocks/settings/icons.tsx",
+      "content": "import type { SVGProps } from \"react\";\n\n// Line glyphs in the HugeIcons style, inlined so the block needs no icon package. Decorative.\ntype IconProps = SVGProps<SVGSVGElement>;\n\nfunction Icon({ children, ...props }: IconProps) {\n\treturn (\n\t\t<svg\n\t\t\tviewBox=\"0 0 24 24\"\n\t\t\tfill=\"none\"\n\t\t\tstroke=\"currentColor\"\n\t\t\tstrokeWidth={1.5}\n\t\t\tstrokeLinecap=\"round\"\n\t\t\tstrokeLinejoin=\"round\"\n\t\t\taria-hidden=\"true\"\n\t\t\t{...props}\n\t\t>\n\t\t\t{children}\n\t\t</svg>\n\t);\n}\n\nexport function UserIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<circle cx=\"12\" cy=\"7.5\" r=\"3.5\" />\n\t\t\t<path d=\"M4.5 20c.6-3.6 3.7-6 7.5-6s6.9 2.4 7.5 6\" />\n\t\t</Icon>\n\t);\n}\n\nexport function KeyIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<circle cx=\"8\" cy=\"15\" r=\"4.5\" />\n\t\t\t<path d=\"M11.2 11.8L20 3M17 6l2.5 2.5M14.5 8.5L16.5 10.5\" />\n\t\t</Icon>\n\t);\n}\n\nexport function BellIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M5.2 15.5c.9-1 1.3-2.2 1.3-3.6V10a5.5 5.5 0 0 1 11 0v1.9c0 1.4.4 2.6 1.3 3.6.5.6.1 1.5-.7 1.5H5.9c-.8 0-1.2-.9-.7-1.5Z\" />\n\t\t\t<path d=\"M10 20a2.2 2.2 0 0 0 4 0\" />\n\t\t</Icon>\n\t);\n}\n\nexport function PaletteIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M12 21a9 9 0 1 1 9-9c0 2.2-1.8 3.5-3.8 3.5h-1.7c-1 0-1.8.8-1.8 1.8 0 .5.2.9.5 1.2.3.3.5.7.5 1.2 0 .7-.6 1.3-1.3 1.3H12Z\" />\n\t\t\t<circle cx=\"7.5\" cy=\"11\" r=\"1\" />\n\t\t\t<circle cx=\"10.5\" cy=\"7\" r=\"1\" />\n\t\t\t<circle cx=\"15\" cy=\"7.5\" r=\"1\" />\n\t\t</Icon>\n\t);\n}\n\nexport function AlertIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M10.3 4.2c.8-1.4 2.6-1.4 3.4 0l7 12.3c.8 1.4-.2 3-1.7 3H5c-1.5 0-2.5-1.6-1.7-3l7-12.3Z\" />\n\t\t\t<path d=\"M12 9.5v4M12 16.5v.01\" />\n\t\t</Icon>\n\t);\n}\n\nexport function MailIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<rect x=\"2.5\" y=\"4.5\" width=\"19\" height=\"15\" rx=\"3\" />\n\t\t\t<path d=\"M3 7l7.1 4.6c1.2.8 2.6.8 3.8 0L21 7\" />\n\t\t</Icon>\n\t);\n}\n\nexport function GlobeIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<circle cx=\"12\" cy=\"12\" r=\"9\" />\n\t\t\t<path d=\"M3 12h18M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9S9.6 5.5 12 3Z\" />\n\t\t</Icon>\n\t);\n}\n\nexport function ClockIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<circle cx=\"12\" cy=\"12\" r=\"9\" />\n\t\t\t<path d=\"M12 7.5V12l3 2\" />\n\t\t</Icon>\n\t);\n}\n\nexport function LinkIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M10 14a4 4 0 0 0 5.7 0l3.1-3.1a4 4 0 0 0-5.7-5.7l-1 1\" />\n\t\t\t<path d=\"M14 10a4 4 0 0 0-5.7 0l-3.1 3.1a4 4 0 0 0 5.7 5.7l1-1\" />\n\t\t</Icon>\n\t);\n}\n\nexport function TrashIcon(props: IconProps) {\n\treturn (\n\t\t<Icon {...props}>\n\t\t\t<path d=\"M4 6.5h16M9.5 6.5V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v1.5\" />\n\t\t\t<path d=\"M6 6.5l.8 11.6A2 2 0 0 0 8.8 20h6.4a2 2 0 0 0 2-1.9L18 6.5M10 10.5v5.5M14 10.5v5.5\" />\n\t\t</Icon>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/settings/icons.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/settings/settings-block.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype FormEvent,\n\ttype KeyboardEvent,\n\ttype ReactNode,\n\ttype Ref,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { Badge } from \"@/components/ui/badge\";\nimport type { BadgeTone } from \"@/components/ui/badge.styles\";\nimport { Button } from \"@/components/ui/button\";\nimport type { ButtonState } from \"@/components/ui/button.styles\";\nimport { StatefulButton } from \"@/components/ui/stateful-button\";\nimport {\n\tCard,\n\tCardAction,\n\tCardContent,\n\tCardDescription,\n\tCardHeader,\n\tCardTitle,\n} from \"@/components/ui/card\";\nimport { Checkbox } from \"@/components/ui/checkbox\";\nimport { Field } from \"@/components/ui/field\";\nimport { Input } from \"@/components/ui/input\";\nimport { cn } from \"@/lib/utils\";\nimport { RadioGroup, RadioGroupItem } from \"@/components/ui/radio-group\";\nimport { Select, SelectItem } from \"@/components/ui/select\";\nimport { Switch } from \"@/components/ui/switch\";\nimport type { TabsOrientation } from \"@/components/ui/tabs.styles\";\nimport { Tabs, TabsContent, TabsList, TabsTrigger } from \"@/components/ui/tabs\";\nimport { Textarea } from \"@/components/ui/textarea\";\nimport {\n\tAlertIcon,\n\tBellIcon,\n\tClockIcon,\n\tGlobeIcon,\n\tKeyIcon,\n\tLinkIcon,\n\tPaletteIcon,\n\tUserIcon,\n} from \"./icons\";\nimport {\n\tChangeEmailDialog,\n\tDeleteAccountDialog,\n\tSIMULATED_MS,\n\tmessageOf,\n} from \"./settings-dialogs\";\nimport { SAVED_HOLD_MS, settingsParts } from \"./settings.styles\";\nimport { type ValidityMessages, validityMessage } from \"./validity\";\nimport {\n\tDEFAULT_LANGUAGES,\n\tDEFAULT_TIMEZONES,\n\tFIELD_SECTION,\n\tSETTINGS_DEFAULTS,\n\tSETTINGS_SECTIONS,\n\ttype SettingsDensity,\n\ttype SettingsErrors,\n\ttype SettingsField,\n\ttype SettingsOption,\n\ttype SettingsSection,\n\ttype SettingsTheme,\n\ttype SettingsValues,\n\tchangedFields,\n\tinitials,\n} from \"./values\";\n\nexport type SettingsBlockProps = {\n\ttitle?: ReactNode;\n\tdescription?: ReactNode;\n\t/** The saved settings to start from. Missing fields take `SETTINGS_DEFAULTS`. */\n\tdefaultValues?: Partial<SettingsValues>;\n\t/** The sign-in email, shown in Account and changed through its dialog. */\n\temail?: string;\n\t/** The plan's name, shown as a Badge. */\n\tplan?: string;\n\tplanTone?: BadgeTone;\n\t/** A picture for the avatar. Without it, the name's initials show. */\n\tavatarUrl?: string;\n\tlanguages?: SettingsOption[];\n\ttimezones?: SettingsOption[];\n\t/** The section open first (uncontrolled). */\n\tdefaultSection?: SettingsSection;\n\t/** The open section (controlled); pair it with `onSectionChange`. */\n\tsection?: SettingsSection;\n\tonSectionChange?: (section: SettingsSection) => void;\n\t/**\n\t * Save the form. Return field errors to keep the changes unsaved and show them (the block opens\n\t * the section of the first one), or throw to show the error's message on the bar. Without it,\n\t * the block waits a moment and keeps the values.\n\t */\n\tonSave?: (\n\t\tvalues: SettingsValues,\n\t\tinfo: { changed: SettingsField[] },\n\t) => Promise<SettingsErrors | void> | SettingsErrors | void;\n\t/** \"Change email\": return a message to reject the address, or throw. */\n\tonChangeEmail?: (email: string) => Promise<string | void> | string | void;\n\t/** \"Delete account\", once the phrase is typed: return a message to refuse, or throw. */\n\tonDeleteAccount?: () => Promise<string | void> | string | void;\n\t/** What to type to confirm the deletion. Default \"delete my account\". */\n\tdeletePhrase?: string;\n\t/** The title's heading level, to fit the page around it. Card titles are one below. */\n\theadingLevel?: 2 | 3 | 4;\n\tclassName?: string;\n\tref?: Ref<HTMLElement>;\n};\n\nconst SECTION_ICONS: Record<SettingsSection, ReactNode> = {\n\tprofile: <UserIcon />,\n\taccount: <KeyIcon />,\n\tnotifications: <BellIcon />,\n\tappearance: <PaletteIcon />,\n\tdanger: <AlertIcon />,\n};\n\n/** The fields the form checks, in the order an error is looked for. */\nconst CHECKED_FIELDS = [\"name\", \"username\", \"website\", \"bio\", \"language\", \"timezone\"] as const;\ntype CheckedField = (typeof CHECKED_FIELDS)[number];\n\nconst BIO_MAX = 160;\nconst MESSAGES: Record<CheckedField, ValidityMessages> = {\n\tname: { valueMissing: \"Enter your name.\", patternMismatch: \"Enter your name.\" },\n\tusername: {\n\t\tvalueMissing: \"Choose a username.\",\n\t\tpatternMismatch: \"Use 3 to 20 lowercase letters, numbers or underscores.\",\n\t},\n\twebsite: { typeMismatch: \"Enter a full address, like https://example.com.\" },\n\tbio: { tooLong: `Keep it to ${BIO_MAX} characters.` },\n\tlanguage: { valueMissing: \"Choose a language.\" },\n\ttimezone: { valueMissing: \"Choose a time zone.\" },\n};\n\nconst NOTIFICATIONS: { name: \"mentions\" | \"comments\" | \"security\"; label: string; hint: string }[] =\n\t[\n\t\t{ name: \"mentions\", label: \"Mentions\", hint: \"When someone @mentions you.\" },\n\t\t{ name: \"comments\", label: \"Comments\", hint: \"Replies to threads you are in.\" },\n\t\t{ name: \"security\", label: \"Security alerts\", hint: \"New sign-ins and password changes.\" },\n\t];\n\nconst DIGESTS: {\n\tname: \"dailyDigest\" | \"weeklyDigest\" | \"productNews\";\n\tlabel: string;\n\thint: string;\n}[] = [\n\t{ name: \"dailyDigest\", label: \"Daily summary\", hint: \"Every morning, what you missed.\" },\n\t{ name: \"weeklyDigest\", label: \"Weekly report\", hint: \"Activity across your projects.\" },\n\t{ name: \"productNews\", label: \"Product news\", hint: \"New features, a few times a year.\" },\n];\n\nconst THEMES: { value: SettingsTheme; label: string }[] = [\n\t{ value: \"light\", label: \"Light\" },\n\t{ value: \"dark\", label: \"Dark\" },\n\t{ value: \"system\", label: \"System\" },\n];\n\nconst DENSITIES: { value: SettingsDensity; label: string; hint: string }[] = [\n\t{ value: \"comfortable\", label: \"Comfortable\", hint: \"More room around things.\" },\n\t{ value: \"compact\", label: \"Compact\", hint: \"More on screen at once.\" },\n];\n\nconst sectionInfo = (which: SettingsSection) =>\n\tSETTINGS_SECTIONS.find((item) => item.id === which)!;\n\nconst pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));\ntype Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;\nconst isControl = (el: unknown): el is Control =>\n\tel instanceof HTMLInputElement ||\n\tel instanceof HTMLSelectElement ||\n\tel instanceof HTMLTextAreaElement;\n\nfunction check(control: Control): string | undefined {\n\treturn validityMessage(control, MESSAGES[control.name as CheckedField]);\n}\n\n/**\n * A settings page in sections: Profile, Account, Notifications, Appearance and a Danger zone. The\n * section list is vertical beside the panels when the block is wide enough and a scrolling row\n * above them when it is not, decided by a container query (so it follows the block's width, not\n * the window's); the tabs' keyboard axis follows the layout.\n *\n * Everything but the email and the account itself is one native form, checked by the browser's\n * constraints and shown through Field. While anything differs from what was saved, a sticky bar\n * slides in (CSS `:has()` and `@starting-style`) with Discard and Save; Save opens the section of\n * the first error. Change email and Delete account are Dialogs with forms of their own.\n *\n * Nothing is sent anywhere: wire `onSave`, `onChangeEmail` and `onDeleteAccount` to your API.\n */\nexport function SettingsBlock({\n\ttitle = \"Settings\",\n\tdescription = \"Manage your profile, account and preferences.\",\n\tdefaultValues,\n\temail: emailProp = \"you@example.com\",\n\tplan = \"Free\",\n\tplanTone = \"accent\",\n\tavatarUrl,\n\tlanguages = DEFAULT_LANGUAGES,\n\ttimezones = DEFAULT_TIMEZONES,\n\tdefaultSection = \"profile\",\n\tsection: sectionProp,\n\tonSectionChange,\n\tonSave,\n\tonChangeEmail,\n\tonDeleteAccount,\n\tdeletePhrase = \"delete my account\",\n\theadingLevel = 2,\n\tclassName,\n\tref,\n}: SettingsBlockProps) {\n\tconst id = useId();\n\tconst formId = `${id}-form`;\n\tconst [saved, setSaved] = useState<SettingsValues>(() => ({\n\t\t...SETTINGS_DEFAULTS,\n\t\t...defaultValues,\n\t}));\n\tconst [values, setValues] = useState<SettingsValues>(saved);\n\tconst [errors, setErrors] = useState<SettingsErrors>({});\n\tconst [formError, setFormError] = useState<string>();\n\tconst [status, setStatus] = useState<ButtonState>(\"idle\");\n\tconst [internalSection, setInternalSection] = useState<SettingsSection>(defaultSection);\n\tconst section = sectionProp ?? internalSection;\n\tconst [moved, setMoved] = useState(false);\n\tconst [orientation, setOrientation] = useState<TabsOrientation>(\"vertical\");\n\tconst [email, setEmail] = useState(emailProp);\n\tconst [deleted, setDeleted] = useState(false);\n\tconst [announcement, setAnnouncement] = useState(\"\");\n\n\tconst rootRef = useRef<HTMLElement | null>(null);\n\tconst navRef = useRef<HTMLDivElement>(null);\n\tconst formRef = useRef<HTMLFormElement>(null);\n\tconst barRef = useRef<HTMLDivElement>(null);\n\t/** A control to focus after the next render, once its section is shown. */\n\tconst focusNext = useRef<string | null>(null);\n\n\tconst changed = changedFields(values, saved);\n\tconst dirty = changed.length > 0;\n\tconst saving = status === \"loading\";\n\t// The bar stays for \"Saved\", then slides away.\n\tconst showBar = dirty || saving || status === \"success\";\n\tconst H = `h${headingLevel + 1}` as \"h3\";\n\n\t// The tabs' axis follows the layout the container query chose.\n\tuseLayoutEffect(() => {\n\t\tconst root = rootRef.current;\n\t\tconst list = navRef.current;\n\t\tif (!root || !list) return;\n\t\tconst measure = () =>\n\t\t\tsetOrientation(\n\t\t\t\tgetComputedStyle(list).flexDirection.startsWith(\"column\") ? \"vertical\" : \"horizontal\",\n\t\t\t);\n\t\tmeasure();\n\t\tconst observer = new ResizeObserver(measure);\n\t\tobserver.observe(root);\n\t\treturn () => observer.disconnect();\n\t}, []);\n\n\tuseEffect(() => {\n\t\tif (!focusNext.current) return;\n\t\tconst target = formRef.current?.elements.namedItem(focusNext.current);\n\t\tfocusNext.current = null;\n\t\tif (target instanceof HTMLElement) target.focus();\n\t});\n\n\t// \"Saved\" holds a moment; then the bar leaves and focus, if it was on the bar, goes to the panel.\n\tuseEffect(() => {\n\t\tif (status !== \"success\") return;\n\t\tconst timer = setTimeout(() => {\n\t\t\tsetStatus(\"idle\");\n\t\t\tif (barRef.current?.contains(document.activeElement)) panelOf(section)?.focus();\n\t\t}, SAVED_HOLD_MS);\n\t\treturn () => clearTimeout(timer);\n\t}, [status, section]);\n\n\tfunction panelOf(which: SettingsSection) {\n\t\treturn rootRef.current?.querySelector<HTMLElement>(\n\t\t\t`[role=\"tabpanel\"][data-section=\"${which}\"]`,\n\t\t);\n\t}\n\tconst focusPanel = () => panelOf(section)?.focus();\n\n\tfunction openSection(next: SettingsSection) {\n\t\tif (next === section) return;\n\t\tsetMoved(true);\n\t\tif (sectionProp === undefined) setInternalSection(next);\n\t\tonSectionChange?.(next);\n\t}\n\n\tfunction update<K extends SettingsField>(name: K, value: SettingsValues[K], control?: Control) {\n\t\tconst wasDirty = dirty;\n\t\tsetValues((current) => ({ ...current, [name]: value }));\n\t\tsetFormError(undefined);\n\t\tif (status === \"error\") setStatus(\"idle\");\n\t\tif (!wasDirty && value !== saved[name])\n\t\t\tsetAnnouncement(\"You have unsaved changes. Save or discard them at the bottom.\");\n\t\t// Reward early: a field showing an error clears it the moment it is fixed.\n\t\tif (control && errors[name]) setErrors((current) => ({ ...current, [name]: check(control) }));\n\t}\n\n\t/** Punish late: a filled field is checked when focus leaves it, an empty one only on Save. */\n\tfunction onBlurField(event: { currentTarget: Control }) {\n\t\tconst control = event.currentTarget;\n\t\tif (!control.value) return;\n\t\tsetErrors((current) => ({ ...current, [control.name]: check(control) }));\n\t}\n\n\tfunction showErrors(found: SettingsErrors) {\n\t\tsetErrors(found);\n\t\tconst first = (Object.keys(FIELD_SECTION) as SettingsField[]).find((name) => found[name]);\n\t\tif (!first) return;\n\t\tconst where = FIELD_SECTION[first];\n\t\topenSection(where);\n\t\tfocusNext.current = first;\n\t\tconst count = Object.values(found).filter(Boolean).length;\n\t\tsetAnnouncement(\n\t\t\t`${count === 1 ? \"1 setting needs\" : `${count} settings need`} attention in ${\n\t\t\t\tSETTINGS_SECTIONS.find((item) => item.id === where)?.label\n\t\t\t}.`,\n\t\t);\n\t}\n\n\tasync function save(form: HTMLFormElement) {\n\t\tconst found: SettingsErrors = {};\n\t\tfor (const name of CHECKED_FIELDS) {\n\t\t\tconst control = form.elements.namedItem(name);\n\t\t\tif (!isControl(control)) continue;\n\t\t\tconst message = check(control);\n\t\t\tif (message) found[name] = message;\n\t\t}\n\t\tif (Object.keys(found).length > 0) {\n\t\t\tshowErrors(found);\n\t\t\tsetStatus(\"idle\");\n\t\t\treturn;\n\t\t}\n\t\tconst snapshot = values;\n\t\tsetErrors({});\n\t\tsetFormError(undefined);\n\t\tsetStatus(\"loading\");\n\t\ttry {\n\t\t\tconst result = onSave\n\t\t\t\t? await onSave(snapshot, { changed: changedFields(snapshot, saved) })\n\t\t\t\t: await pause(SIMULATED_MS);\n\t\t\tconst fieldErrors = result\n\t\t\t\t? Object.fromEntries(Object.entries(result).filter(([, message]) => message))\n\t\t\t\t: {};\n\t\t\tif (Object.keys(fieldErrors).length > 0) {\n\t\t\t\tsetStatus(\"error\");\n\t\t\t\tshowErrors(fieldErrors);\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tsetSaved(snapshot);\n\t\t\tsetStatus(\"success\");\n\t\t\tsetAnnouncement(\"Settings saved.\");\n\t\t} catch (error) {\n\t\t\tsetFormError(messageOf(error));\n\t\t\tsetStatus(\"error\");\n\t\t}\n\t}\n\n\tfunction onSubmit(event: FormEvent<HTMLFormElement>) {\n\t\tevent.preventDefault();\n\t\tif (saving || !dirty) return;\n\t\tvoid save(event.currentTarget);\n\t}\n\n\tfunction discard() {\n\t\tsetValues(saved);\n\t\tsetErrors({});\n\t\tsetFormError(undefined);\n\t\tsetStatus(\"idle\");\n\t\tsetAnnouncement(\"Changes discarded.\");\n\t\tfocusPanel();\n\t}\n\n\t/** Ctrl+S or Cmd+S saves from anywhere in the block but a dialog. */\n\tfunction onKeyDown(event: KeyboardEvent<HTMLElement>) {\n\t\tif (event.key.toLowerCase() !== \"s\" || !(event.metaKey || event.ctrlKey) || event.altKey)\n\t\t\treturn;\n\t\tif ((event.target as Element).closest(\"dialog\")) return;\n\t\tevent.preventDefault();\n\t\tif (dirty && !saving) formRef.current?.requestSubmit();\n\t}\n\n\tconst field = { form: formId, onBlur: onBlurField };\n\n\tfunction sectionCard(\n\t\tkey: string,\n\t\theading: ReactNode,\n\t\ttext: ReactNode,\n\t\tchildren: ReactNode,\n\t\toptions: { action?: ReactNode; className?: string } = {},\n\t) {\n\t\tconst headingId = `${id}-${key}`;\n\t\treturn (\n\t\t\t<Card\n\t\t\t\tas=\"section\"\n\t\t\t\tsize=\"lg\"\n\t\t\t\taria-labelledby={headingId}\n\t\t\t\tclassName={cn(settingsParts.section, options.className)}\n\t\t\t>\n\t\t\t\t<CardHeader>\n\t\t\t\t\t<CardTitle as={H} id={headingId} className=\"text-[15px]/[22px] font-[590]\">\n\t\t\t\t\t\t{heading}\n\t\t\t\t\t</CardTitle>\n\t\t\t\t\t{text ? <CardDescription>{text}</CardDescription> : null}\n\t\t\t\t\t{options.action ? <CardAction>{options.action}</CardAction> : null}\n\t\t\t\t</CardHeader>\n\t\t\t\t<CardContent>{children}</CardContent>\n\t\t\t</Card>\n\t\t);\n\t}\n\n\tconst profile = (\n\t\t<>\n\t\t\t{sectionCard(\n\t\t\t\t\"profile\",\n\t\t\t\t\"Profile\",\n\t\t\t\tsectionInfo(\"profile\").description,\n\t\t\t\t<div className=\"grid gap-5 @container\">\n\t\t\t\t\t<div className=\"flex items-center gap-3\">\n\t\t\t\t\t\t<span className={settingsParts.avatar} aria-hidden=\"true\">\n\t\t\t\t\t\t\t{avatarUrl ? (\n\t\t\t\t\t\t\t\t// A portable block: the picture can come from any host, so no framework loader.\n\t\t\t\t\t\t\t\t// oxlint-disable-next-line next/no-img-element\n\t\t\t\t\t\t\t\t<img src={avatarUrl} alt=\"\" />\n\t\t\t\t\t\t\t) : (\n\t\t\t\t\t\t\t\tinitials(values.name)\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t\t<div className=\"grid min-w-0\">\n\t\t\t\t\t\t\t<span className=\"truncate text-sm/5 font-[590] text-foreground\">\n\t\t\t\t\t\t\t\t{values.name.trim() || \"Your name\"}\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t<span className=\"truncate text-[13px]/5 text-muted-foreground\">\n\t\t\t\t\t\t\t\t@{values.username || \"username\"}\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<Badge tone={planTone} className=\"ms-auto\">\n\t\t\t\t\t\t\t{plan}\n\t\t\t\t\t\t</Badge>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div className=\"grid items-start gap-4 @md:grid-cols-2\">\n\t\t\t\t\t\t<Field label=\"Display name\" error={errors.name}>\n\t\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\t\t{...field}\n\t\t\t\t\t\t\t\tname=\"name\"\n\t\t\t\t\t\t\t\tautoComplete=\"name\"\n\t\t\t\t\t\t\t\tplaceholder=\"Ada Lovelace\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tmaxLength={50}\n\t\t\t\t\t\t\t\tpattern=\".*\\S.*\"\n\t\t\t\t\t\t\t\tvalue={values.name}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"name\", event.target.value, event.target)}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t<Field\n\t\t\t\t\t\t\tlabel=\"Username\"\n\t\t\t\t\t\t\terror={errors.username}\n\t\t\t\t\t\t\thint=\"Lowercase letters, numbers and _.\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\t\t{...field}\n\t\t\t\t\t\t\t\tname=\"username\"\n\t\t\t\t\t\t\t\tautoComplete=\"username\"\n\t\t\t\t\t\t\t\tautoCapitalize=\"off\"\n\t\t\t\t\t\t\t\tspellCheck={false}\n\t\t\t\t\t\t\t\tplaceholder=\"ada\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tpattern=\"[a-z0-9_]{3,20}\"\n\t\t\t\t\t\t\t\tstartAddon=\"@\"\n\t\t\t\t\t\t\t\tvalue={values.username}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"username\", event.target.value, event.target)}\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t</div>\n\t\t\t\t\t<Field label=\"Website\" error={errors.website}>\n\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\t{...field}\n\t\t\t\t\t\t\tname=\"website\"\n\t\t\t\t\t\t\ttype=\"url\"\n\t\t\t\t\t\t\tinputMode=\"url\"\n\t\t\t\t\t\t\tautoComplete=\"url\"\n\t\t\t\t\t\t\tplaceholder=\"https://example.com\"\n\t\t\t\t\t\t\tleadingIcon={<LinkIcon />}\n\t\t\t\t\t\t\tvalue={values.website}\n\t\t\t\t\t\t\tonChange={(event) => update(\"website\", event.target.value, event.target)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<Field\n\t\t\t\t\t\tlabel=\"Bio\"\n\t\t\t\t\t\terror={errors.bio}\n\t\t\t\t\t\thint={`Up to ${BIO_MAX} characters.`}\n\t\t\t\t\t\tclassName=\"relative\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<Textarea\n\t\t\t\t\t\t\t{...field}\n\t\t\t\t\t\t\tname=\"bio\"\n\t\t\t\t\t\t\trows={3}\n\t\t\t\t\t\t\tmaxLength={BIO_MAX}\n\t\t\t\t\t\t\tplaceholder=\"A line or two about you.\"\n\t\t\t\t\t\t\tvalue={values.bio}\n\t\t\t\t\t\t\tonChange={(event) => update(\"bio\", event.target.value, event.target)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t\t{/* Not live: the hint says the limit once, the count is for the eye. */}\n\t\t\t\t\t\t<span\n\t\t\t\t\t\t\taria-hidden=\"true\"\n\t\t\t\t\t\t\tclassName=\"absolute end-0 top-0.5 text-xs/4 text-muted-foreground tabular-nums\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{values.bio.length}/{BIO_MAX}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t</Field>\n\t\t\t\t</div>,\n\t\t\t)}\n\t\t</>\n\t);\n\n\tconst account = (\n\t\t<>\n\t\t\t{sectionCard(\n\t\t\t\t\"account\",\n\t\t\t\t\"Account\",\n\t\t\t\tsectionInfo(\"account\").description,\n\t\t\t\t<div className=\"grid\">\n\t\t\t\t\t<div className={settingsParts.row}>\n\t\t\t\t\t\t<div className=\"grid min-w-0\">\n\t\t\t\t\t\t\t<span className=\"text-[13px]/5 font-[510] text-foreground\">Email</span>\n\t\t\t\t\t\t\t<span className=\"truncate text-[13px]/5 text-muted-foreground\">{email}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<ChangeEmailDialog\n\t\t\t\t\t\t\temail={email}\n\t\t\t\t\t\t\tonChangeEmail={onChangeEmail}\n\t\t\t\t\t\t\tonChanged={(next) => {\n\t\t\t\t\t\t\t\tsetEmail(next);\n\t\t\t\t\t\t\t\tsetAnnouncement(`We sent a confirmation link to ${next}.`);\n\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div className={settingsParts.row}>\n\t\t\t\t\t\t<div className=\"grid min-w-0\">\n\t\t\t\t\t\t\t<span className=\"text-[13px]/5 font-[510] text-foreground\">Plan</span>\n\t\t\t\t\t\t\t<span className=\"text-[13px]/5 text-muted-foreground\">\n\t\t\t\t\t\t\t\tYou are on the {plan} plan.\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<Badge tone={planTone} dot>\n\t\t\t\t\t\t\t{plan}\n\t\t\t\t\t\t</Badge>\n\t\t\t\t\t</div>\n\t\t\t\t</div>,\n\t\t\t)}\n\t\t\t{sectionCard(\n\t\t\t\t\"region\",\n\t\t\t\t\"Language and region\",\n\t\t\t\t\"Used for dates, times and the interface.\",\n\t\t\t\t<div className=\"grid gap-4 @container\">\n\t\t\t\t\t<div className=\"grid items-start gap-4 @md:grid-cols-2\">\n\t\t\t\t\t\t<Field label=\"Language\" error={errors.language}>\n\t\t\t\t\t\t\t<Select\n\t\t\t\t\t\t\t\t{...field}\n\t\t\t\t\t\t\t\tname=\"language\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tplaceholder=\"Choose a language\"\n\t\t\t\t\t\t\t\tleadingIcon={<GlobeIcon />}\n\t\t\t\t\t\t\t\tvalue={values.language}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"language\", event.target.value, event.target)}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{languages.map((option) => (\n\t\t\t\t\t\t\t\t\t<SelectItem key={option.value} value={option.value}>\n\t\t\t\t\t\t\t\t\t\t{option.label}\n\t\t\t\t\t\t\t\t\t</SelectItem>\n\t\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t\t</Select>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t\t<Field label=\"Time zone\" error={errors.timezone}>\n\t\t\t\t\t\t\t<Select\n\t\t\t\t\t\t\t\t{...field}\n\t\t\t\t\t\t\t\tname=\"timezone\"\n\t\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\t\tplaceholder=\"Choose a time zone\"\n\t\t\t\t\t\t\t\tleadingIcon={<ClockIcon />}\n\t\t\t\t\t\t\t\tvalue={values.timezone}\n\t\t\t\t\t\t\t\tonChange={(event) => update(\"timezone\", event.target.value, event.target)}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{timezones.map((option) => (\n\t\t\t\t\t\t\t\t\t<SelectItem key={option.value} value={option.value}>\n\t\t\t\t\t\t\t\t\t\t{option.label}\n\t\t\t\t\t\t\t\t\t</SelectItem>\n\t\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t\t</Select>\n\t\t\t\t\t\t</Field>\n\t\t\t\t\t</div>\n\t\t\t\t</div>,\n\t\t\t)}\n\t\t</>\n\t);\n\n\tconst digestsId = `${id}-digests`;\n\tconst notifications = (\n\t\t<>\n\t\t\t{sectionCard(\n\t\t\t\t\"notifications\",\n\t\t\t\t\"Notifications\",\n\t\t\t\t\"Pushed to your devices as they happen.\",\n\t\t\t\t<div className=\"grid\">\n\t\t\t\t\t{NOTIFICATIONS.map((item) => {\n\t\t\t\t\t\tconst controlId = `${id}-${item.name}`;\n\t\t\t\t\t\tconst labelId = `${controlId}-label`;\n\t\t\t\t\t\tconst hintId = `${controlId}-hint`;\n\t\t\t\t\t\treturn (\n\t\t\t\t\t\t\t<label key={item.name} htmlFor={controlId} className={settingsParts.row}>\n\t\t\t\t\t\t\t\t<span className=\"grid min-w-0\">\n\t\t\t\t\t\t\t\t\t<span id={labelId} className=\"text-[13px]/5 font-[510] text-foreground\">\n\t\t\t\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t<span id={hintId} className=\"text-[13px]/5 text-muted-foreground\">\n\t\t\t\t\t\t\t\t\t\t{item.hint}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t<Switch\n\t\t\t\t\t\t\t\t\tid={controlId}\n\t\t\t\t\t\t\t\t\tform={formId}\n\t\t\t\t\t\t\t\t\tname={item.name}\n\t\t\t\t\t\t\t\t\tsize=\"sm\"\n\t\t\t\t\t\t\t\t\taria-labelledby={labelId}\n\t\t\t\t\t\t\t\t\taria-describedby={hintId}\n\t\t\t\t\t\t\t\t\tchecked={values[item.name]}\n\t\t\t\t\t\t\t\t\tonCheckedChange={(checked) => update(item.name, checked)}\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t</label>\n\t\t\t\t\t\t);\n\t\t\t\t\t})}\n\t\t\t\t</div>,\n\t\t\t)}\n\t\t\t{sectionCard(\n\t\t\t\t\"digests\",\n\t\t\t\t\"Email digests\",\n\t\t\t\t\"Sent to your sign-in email.\",\n\t\t\t\t<div role=\"group\" aria-labelledby={digestsId} className=\"grid gap-3\">\n\t\t\t\t\t{DIGESTS.map((item) => (\n\t\t\t\t\t\t<Checkbox\n\t\t\t\t\t\t\tkey={item.name}\n\t\t\t\t\t\t\tform={formId}\n\t\t\t\t\t\t\tname={item.name}\n\t\t\t\t\t\t\tdescription={item.hint}\n\t\t\t\t\t\t\tchecked={values[item.name]}\n\t\t\t\t\t\t\tonCheckedChange={(checked) => update(item.name, checked === true)}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t</Checkbox>\n\t\t\t\t\t))}\n\t\t\t\t</div>,\n\t\t\t)}\n\t\t</>\n\t);\n\n\tconst themeId = `${id}-theme`;\n\tconst densityId = `${id}-density`;\n\tconst appearance = (\n\t\t<>\n\t\t\t{sectionCard(\n\t\t\t\t\"theme\",\n\t\t\t\t\"Theme\",\n\t\t\t\t\"System follows your device.\",\n\t\t\t\t<RadioGroup\n\t\t\t\t\tform={formId}\n\t\t\t\t\tname=\"theme\"\n\t\t\t\t\tvariant=\"card\"\n\t\t\t\t\torientation=\"horizontal\"\n\t\t\t\t\taria-labelledby={themeId}\n\t\t\t\t\tvalue={values.theme}\n\t\t\t\t\tonValueChange={(next) => update(\"theme\", next as SettingsTheme)}\n\t\t\t\t\tclassName=\"rx-settings-choices\"\n\t\t\t\t>\n\t\t\t\t\t{THEMES.map((item) => (\n\t\t\t\t\t\t<RadioGroupItem key={item.value} value={item.value}>\n\t\t\t\t\t\t\t<span className={settingsParts.swatch} data-theme={item.value} aria-hidden=\"true\">\n\t\t\t\t\t\t\t\t<span className={item.value === \"dark\" ? \"rabtx dark\" : \"rabtx light\"} />\n\t\t\t\t\t\t\t\t{item.value === \"system\" ? <span className=\"rabtx dark\" /> : null}\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t</RadioGroupItem>\n\t\t\t\t\t))}\n\t\t\t\t</RadioGroup>,\n\t\t\t)}\n\t\t\t{sectionCard(\n\t\t\t\t\"density\",\n\t\t\t\t\"Density\",\n\t\t\t\t\"How tightly lists and tables are packed.\",\n\t\t\t\t<RadioGroup\n\t\t\t\t\tform={formId}\n\t\t\t\t\tname=\"density\"\n\t\t\t\t\tvariant=\"card\"\n\t\t\t\t\torientation=\"horizontal\"\n\t\t\t\t\taria-labelledby={densityId}\n\t\t\t\t\tvalue={values.density}\n\t\t\t\t\tonValueChange={(next) => update(\"density\", next as SettingsDensity)}\n\t\t\t\t\tclassName=\"rx-settings-choices\"\n\t\t\t\t>\n\t\t\t\t\t{DENSITIES.map((item) => (\n\t\t\t\t\t\t<RadioGroupItem key={item.value} value={item.value} description={item.hint}>\n\t\t\t\t\t\t\t<span className={settingsParts.density} data-density={item.value} aria-hidden=\"true\">\n\t\t\t\t\t\t\t\t<span />\n\t\t\t\t\t\t\t\t<span />\n\t\t\t\t\t\t\t\t<span />\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t</RadioGroupItem>\n\t\t\t\t\t))}\n\t\t\t\t</RadioGroup>,\n\t\t\t)}\n\t\t</>\n\t);\n\n\tconst danger = sectionCard(\n\t\t\"danger\",\n\t\t\"Delete account\",\n\t\tdeleted\n\t\t\t? \"Your account is scheduled for deletion. You will get an email when it is gone.\"\n\t\t\t: \"Permanently remove your account and everything in it. This cannot be undone.\",\n\t\tdeleted ? (\n\t\t\t<Badge tone=\"danger\" dot>\n\t\t\t\tScheduled for deletion\n\t\t\t</Badge>\n\t\t) : (\n\t\t\t<DeleteAccountDialog\n\t\t\t\tphrase={deletePhrase}\n\t\t\t\tonDeleteAccount={onDeleteAccount}\n\t\t\t\tonDeleted={() => {\n\t\t\t\t\tsetDeleted(true);\n\t\t\t\t\tsetAnnouncement(\"Your account is scheduled for deletion.\");\n\t\t\t\t\t// The trigger is gone; the panel takes focus instead.\n\t\t\t\t\trequestAnimationFrame(focusPanel);\n\t\t\t\t}}\n\t\t\t/>\n\t\t),\n\t\t{ className: settingsParts.danger },\n\t);\n\n\tconst panels: Record<SettingsSection, ReactNode> = {\n\t\tprofile,\n\t\taccount,\n\t\tnotifications,\n\t\tappearance,\n\t\tdanger,\n\t};\n\n\treturn (\n\t\t// The section only listens for the Ctrl+S / Cmd+S shortcut bubbling up from its controls.\n\t\t// oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions\n\t\t<section\n\t\t\tref={(node) => {\n\t\t\t\trootRef.current = node;\n\t\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\t\telse if (ref) ref.current = node;\n\t\t\t}}\n\t\t\taria-labelledby={`${id}-title`}\n\t\t\tdata-moved={moved ? \"\" : undefined}\n\t\t\tclassName={cn(settingsParts.root, className)}\n\t\t\tonKeyDown={onKeyDown}\n\t\t>\n\t\t\t<header className=\"grid gap-1\">\n\t\t\t\t{(() => {\n\t\t\t\t\tconst Title = `h${headingLevel}` as \"h2\";\n\t\t\t\t\treturn (\n\t\t\t\t\t\t<Title id={`${id}-title`} className=\"m-0 text-xl/7 font-[590] text-foreground\">\n\t\t\t\t\t\t\t{title}\n\t\t\t\t\t\t</Title>\n\t\t\t\t\t);\n\t\t\t\t})()}\n\t\t\t\t{description ? (\n\t\t\t\t\t<p className=\"m-0 text-[13px]/5 text-muted-foreground\">{description}</p>\n\t\t\t\t) : null}\n\t\t\t</header>\n\t\t\t<form\n\t\t\t\tref={formRef}\n\t\t\t\tid={formId}\n\t\t\t\tnoValidate\n\t\t\t\taria-label={typeof title === \"string\" ? title : \"Settings\"}\n\t\t\t\tdata-dirty={showBar ? \"\" : undefined}\n\t\t\t\tonSubmit={onSubmit}\n\t\t\t/>\n\t\t\t<Tabs\n\t\t\t\tvalue={section}\n\t\t\t\tonValueChange={(next) => openSection(next as SettingsSection)}\n\t\t\t\torientation={orientation}\n\t\t\t\tclassName={settingsParts.tabs}\n\t\t\t>\n\t\t\t\t<TabsList ref={navRef} aria-label=\"Settings sections\" className={settingsParts.nav}>\n\t\t\t\t\t{SETTINGS_SECTIONS.map((item) => {\n\t\t\t\t\t\tconst sectionDirty = changed.some((name) => FIELD_SECTION[name] === item.id);\n\t\t\t\t\t\tconst sectionInvalid = (Object.keys(errors) as SettingsField[]).some(\n\t\t\t\t\t\t\t(name) => errors[name] && FIELD_SECTION[name] === item.id,\n\t\t\t\t\t\t);\n\t\t\t\t\t\treturn (\n\t\t\t\t\t\t\t<TabsTrigger\n\t\t\t\t\t\t\t\tkey={item.id}\n\t\t\t\t\t\t\t\tvalue={item.id}\n\t\t\t\t\t\t\t\ticon={SECTION_ICONS[item.id]}\n\t\t\t\t\t\t\t\tdata-section={item.id}\n\t\t\t\t\t\t\t\tdata-dirty={sectionDirty ? \"\" : undefined}\n\t\t\t\t\t\t\t\tdata-invalid={sectionInvalid ? \"\" : undefined}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t{item.label}\n\t\t\t\t\t\t\t\t{sectionInvalid ? (\n\t\t\t\t\t\t\t\t\t<span className=\"sr-only\"> (needs attention)</span>\n\t\t\t\t\t\t\t\t) : sectionDirty ? (\n\t\t\t\t\t\t\t\t\t<span className=\"sr-only\"> (unsaved changes)</span>\n\t\t\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t\t</TabsTrigger>\n\t\t\t\t\t\t);\n\t\t\t\t\t})}\n\t\t\t\t</TabsList>\n\t\t\t\t{SETTINGS_SECTIONS.map((item) => (\n\t\t\t\t\t<TabsContent\n\t\t\t\t\t\tkey={item.id}\n\t\t\t\t\t\tvalue={item.id}\n\t\t\t\t\t\tdata-section={item.id}\n\t\t\t\t\t\taria-busy={saving || undefined}\n\t\t\t\t\t\tclassName={settingsParts.panel}\n\t\t\t\t\t>\n\t\t\t\t\t\t{panels[item.id]}\n\t\t\t\t\t</TabsContent>\n\t\t\t\t))}\n\t\t\t</Tabs>\n\t\t\t<div\n\t\t\t\tref={barRef}\n\t\t\t\trole=\"region\"\n\t\t\t\taria-label=\"Unsaved changes\"\n\t\t\t\tclassName={settingsParts.bar}\n\t\t\t\tdata-state={status}\n\t\t\t>\n\t\t\t\t<p className=\"m-0 min-w-0 text-[13px]/5 text-foreground\">\n\t\t\t\t\t{formError ? (\n\t\t\t\t\t\t<span role=\"alert\" className=\"text-destructive\">\n\t\t\t\t\t\t\t{formError}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t) : status === \"success\" ? (\n\t\t\t\t\t\t\"All changes saved.\"\n\t\t\t\t\t) : (\n\t\t\t\t\t\t<span className=\"font-[590]\">\n\t\t\t\t\t\t\t{changed.length === 1 ? \"1 unsaved change\" : `${changed.length} unsaved changes`}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t)}\n\t\t\t\t</p>\n\t\t\t\t<div className=\"ms-auto flex shrink-0 gap-2\">\n\t\t\t\t\t<Button variant=\"ghost\" size=\"sm\" disabled={saving || !dirty} onClick={discard}>\n\t\t\t\t\t\tDiscard\n\t\t\t\t\t</Button>\n\t\t\t\t\t<StatefulButton\n\t\t\t\t\t\ttype=\"submit\"\n\t\t\t\t\t\tform={formId}\n\t\t\t\t\t\tsize=\"sm\"\n\t\t\t\t\t\tstate={status}\n\t\t\t\t\t\tloadingText=\"Saving\"\n\t\t\t\t\t\tsuccessText=\"Saved\"\n\t\t\t\t\t\terrorText=\"Try again\"\n\t\t\t\t\t\taria-keyshortcuts=\"Control+S Meta+S\"\n\t\t\t\t\t>\n\t\t\t\t\t\tSave changes\n\t\t\t\t\t</StatefulButton>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t\t<p className=\"sr-only\" aria-live=\"polite\" aria-atomic=\"true\">\n\t\t\t\t{announcement}\n\t\t\t</p>\n\t\t</section>\n\t);\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/settings/settings-block.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/settings/settings-dialogs.tsx",
+      "content": "\"use client\";\n\nimport { type FormEvent, type ReactNode, useId, useRef, useState } from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport type { ButtonState } from \"@/components/ui/button.styles\";\nimport { StatefulButton } from \"@/components/ui/stateful-button\";\nimport {\n\tDialog,\n\tDialogClose,\n\tDialogContent,\n\tDialogDescription,\n\tDialogFooter,\n\tDialogHeader,\n\tDialogTitle,\n\tDialogTrigger,\n} from \"@/components/ui/dialog\";\nimport { Field } from \"@/components/ui/field\";\nimport { Input } from \"@/components/ui/input\";\nimport { cn } from \"@/lib/utils\";\nimport { MailIcon, TrashIcon } from \"./icons\";\nimport { settingsParts } from \"./settings.styles\";\nimport { validityMessage } from \"./validity\";\n\n/** Stands in for your API when a callback is left out, so the dialogs can be tried as is. */\nexport const SIMULATED_MS = 900;\n/** How long a dialog shows its success label before it closes. */\nconst DONE_HOLD_MS = 650;\n/** A dialog's close transition, plus a frame. */\nconst CLOSE_MS = 200;\nconst pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));\n\nexport function messageOf(error: unknown): string {\n\treturn error instanceof Error && error.message\n\t\t? error.message\n\t\t: \"Something went wrong. Try again.\";\n}\n\n/** A callback's answer: a message rejects, nothing accepts. Without a callback, wait a moment. */\nasync function run<A extends unknown[]>(\n\tcallback: ((...args: A) => Promise<string | void> | string | void) | undefined,\n\t...args: A\n): Promise<string | undefined> {\n\tif (!callback) {\n\t\tawait pause(SIMULATED_MS);\n\t\treturn undefined;\n\t}\n\tconst result = await callback(...args);\n\treturn typeof result === \"string\" && result ? result : undefined;\n}\n\n/**\n * A dialog that holds one small form: while it works, Escape and the backdrop cannot close it, and\n * it starts clean each time it opens (clearing on open, so nothing empties while it fades out).\n */\nfunction useActionDialog(reset: () => void) {\n\tconst [open, setOpen] = useState(false);\n\tconst [state, setState] = useState<ButtonState>(\"idle\");\n\tconst busy = state === \"loading\" || state === \"success\";\n\tconst onOpenChange = (next: boolean) => {\n\t\tif (busy && !next) return;\n\t\tif (next) {\n\t\t\tsetState(\"idle\");\n\t\t\treset();\n\t\t}\n\t\tsetOpen(next);\n\t};\n\treturn { open, setOpen, onOpenChange, state, setState, busy };\n}\n\nexport type ChangeEmailDialogProps = {\n\t/** The current email. */\n\temail: string;\n\t/** Start the change. Return a message to reject the address, or throw. */\n\tonChangeEmail?: (email: string) => Promise<string | void> | string | void;\n\t/** After `onChangeEmail` accepted the address, with the new email. */\n\tonChanged: (email: string) => void;\n};\n\nconst EMAIL_PATTERN = \"[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+\";\nconst EMAIL_MESSAGES = {\n\tvalueMissing: \"Enter the new email address.\",\n\ttypeMismatch: \"Enter an email address like name@example.com.\",\n\tpatternMismatch: \"Enter an email address like name@example.com.\",\n\tcustomError: \"That is already your email.\",\n};\n\n/** \"Change email\": a dialog with one email field, checked by its native constraints. */\nexport function ChangeEmailDialog({ email, onChangeEmail, onChanged }: ChangeEmailDialogProps) {\n\tconst [value, setValue] = useState(\"\");\n\tconst [error, setError] = useState<string>();\n\tconst dialog = useActionDialog(() => {\n\t\tsetValue(\"\");\n\t\tsetError(undefined);\n\t});\n\tconst inputRef = useRef<HTMLInputElement>(null);\n\n\tfunction check(input: HTMLInputElement) {\n\t\tconst same = input.value.trim().toLowerCase() === email.toLowerCase();\n\t\tinput.setCustomValidity(same ? EMAIL_MESSAGES.customError : \"\");\n\t\treturn validityMessage(input, EMAIL_MESSAGES);\n\t}\n\n\tasync function submit(event: FormEvent<HTMLFormElement>) {\n\t\tevent.preventDefault();\n\t\tconst input = inputRef.current;\n\t\tif (!input || dialog.busy) return;\n\t\tconst message = check(input);\n\t\tif (message) {\n\t\t\tsetError(message);\n\t\t\tinput.focus();\n\t\t\treturn;\n\t\t}\n\t\tconst next = input.value.trim();\n\t\tdialog.setState(\"loading\");\n\t\ttry {\n\t\t\tconst rejected = await run(onChangeEmail, next);\n\t\t\tif (rejected) {\n\t\t\t\tsetError(rejected);\n\t\t\t\tdialog.setState(\"error\");\n\t\t\t\tinput.focus();\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tdialog.setState(\"success\");\n\t\t\tawait pause(DONE_HOLD_MS);\n\t\t\tonChanged(next);\n\t\t\tdialog.setOpen(false);\n\t\t} catch (caught) {\n\t\t\tsetError(messageOf(caught));\n\t\t\tdialog.setState(\"error\");\n\t\t\tinput.focus();\n\t\t}\n\t}\n\n\treturn (\n\t\t<Dialog open={dialog.open} onOpenChange={dialog.onOpenChange}>\n\t\t\t<DialogTrigger asChild>\n\t\t\t\t<Button variant=\"secondary\" size=\"sm\">\n\t\t\t\t\t<MailIcon />\n\t\t\t\t\tChange email\n\t\t\t\t</Button>\n\t\t\t</DialogTrigger>\n\t\t\t<DialogContent size=\"sm\" dismissible={!dialog.busy}>\n\t\t\t\t<DialogHeader>\n\t\t\t\t\t<DialogTitle>Change email</DialogTitle>\n\t\t\t\t\t<DialogDescription>\n\t\t\t\t\t\tWe will send a confirmation link to the new address. Until then you sign in with{\" \"}\n\t\t\t\t\t\t<span className=\"font-[510] text-foreground\">{email}</span>.\n\t\t\t\t\t</DialogDescription>\n\t\t\t\t</DialogHeader>\n\t\t\t\t<form\n\t\t\t\t\tnoValidate\n\t\t\t\t\tonSubmit={submit}\n\t\t\t\t\tclassName=\"grid gap-4\"\n\t\t\t\t\taria-busy={dialog.busy || undefined}\n\t\t\t\t>\n\t\t\t\t\t<Field label=\"New email\" error={error}>\n\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\tref={inputRef}\n\t\t\t\t\t\t\tname=\"email\"\n\t\t\t\t\t\t\ttype=\"email\"\n\t\t\t\t\t\t\tinputMode=\"email\"\n\t\t\t\t\t\t\tautoComplete=\"email\"\n\t\t\t\t\t\t\tplaceholder=\"you@example.com\"\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\tpattern={EMAIL_PATTERN}\n\t\t\t\t\t\t\tleadingIcon={<MailIcon />}\n\t\t\t\t\t\t\tvalue={value}\n\t\t\t\t\t\t\treadOnly={dialog.busy}\n\t\t\t\t\t\t\tonChange={(event) => {\n\t\t\t\t\t\t\t\tsetValue(event.target.value);\n\t\t\t\t\t\t\t\tif (dialog.state === \"error\") dialog.setState(\"idle\");\n\t\t\t\t\t\t\t\tif (error) setError(check(event.target));\n\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<DialogFooter>\n\t\t\t\t\t\t<DialogClose asChild>\n\t\t\t\t\t\t\t<Button variant=\"secondary\" disabled={dialog.busy}>\n\t\t\t\t\t\t\t\tCancel\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t</DialogClose>\n\t\t\t\t\t\t<StatefulButton\n\t\t\t\t\t\t\ttype=\"submit\"\n\t\t\t\t\t\t\tstate={dialog.state}\n\t\t\t\t\t\t\tloadingText=\"Sending link\"\n\t\t\t\t\t\t\tsuccessText=\"Link sent\"\n\t\t\t\t\t\t\terrorText=\"Try again\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tSend link\n\t\t\t\t\t\t</StatefulButton>\n\t\t\t\t\t</DialogFooter>\n\t\t\t\t</form>\n\t\t\t</DialogContent>\n\t\t</Dialog>\n\t);\n}\n\nexport type DeleteAccountDialogProps = {\n\t/** What to type to confirm. */\n\tphrase: string;\n\t/** Delete the account. Return a message to refuse, or throw. */\n\tonDeleteAccount?: () => Promise<string | void> | string | void;\n\t/** After `onDeleteAccount` succeeded. */\n\tonDeleted: () => void;\n\t/** The trigger's label. */\n\tchildren?: ReactNode;\n};\n\n/**\n * \"Delete account\": type the phrase to confirm. The phrase is the field's `pattern`, so the browser\n * decides when it matches, and the delete button reads that with `:has(input:invalid)`.\n */\nexport function DeleteAccountDialog({\n\tphrase,\n\tonDeleteAccount,\n\tonDeleted,\n\tchildren = \"Delete account\",\n}: DeleteAccountDialogProps) {\n\tconst id = useId();\n\tconst [value, setValue] = useState(\"\");\n\tconst [error, setError] = useState<string>();\n\tconst [formError, setFormError] = useState<string>();\n\tconst dialog = useActionDialog(() => {\n\t\tsetValue(\"\");\n\t\tsetError(undefined);\n\t\tsetFormError(undefined);\n\t});\n\tconst inputRef = useRef<HTMLInputElement>(null);\n\tconst mismatch = `Type “${phrase}” exactly to confirm.`;\n\n\tasync function submit(event: FormEvent<HTMLFormElement>) {\n\t\tevent.preventDefault();\n\t\tconst input = inputRef.current;\n\t\tif (!input || dialog.busy) return;\n\t\tconst message = validityMessage(input, { valueMissing: mismatch, patternMismatch: mismatch });\n\t\tif (message) {\n\t\t\tsetError(message);\n\t\t\tinput.focus();\n\t\t\treturn;\n\t\t}\n\t\tsetFormError(undefined);\n\t\tdialog.setState(\"loading\");\n\t\ttry {\n\t\t\tconst refused = await run(onDeleteAccount);\n\t\t\tif (refused) {\n\t\t\t\tsetFormError(refused);\n\t\t\t\tdialog.setState(\"error\");\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tdialog.setState(\"success\");\n\t\t\tawait pause(DONE_HOLD_MS);\n\t\t\tdialog.setOpen(false);\n\t\t\t// After the panel has faded, so the dialog closes before its trigger is replaced.\n\t\t\tawait pause(CLOSE_MS);\n\t\t\tonDeleted();\n\t\t} catch (caught) {\n\t\t\tsetFormError(messageOf(caught));\n\t\t\tdialog.setState(\"error\");\n\t\t}\n\t}\n\n\treturn (\n\t\t<Dialog open={dialog.open} onOpenChange={dialog.onOpenChange}>\n\t\t\t<DialogTrigger asChild>\n\t\t\t\t<Button className={settingsParts.destructive} data-tone=\"soft\">\n\t\t\t\t\t<TrashIcon />\n\t\t\t\t\t{children}\n\t\t\t\t</Button>\n\t\t\t</DialogTrigger>\n\t\t\t<DialogContent size=\"sm\" dismissible={!dialog.busy}>\n\t\t\t\t<DialogHeader>\n\t\t\t\t\t<DialogTitle>Delete your account?</DialogTitle>\n\t\t\t\t\t<DialogDescription>\n\t\t\t\t\t\tThis removes your profile, settings and everything you made, for good. It cannot be\n\t\t\t\t\t\tundone.\n\t\t\t\t\t</DialogDescription>\n\t\t\t\t</DialogHeader>\n\t\t\t\t<form\n\t\t\t\t\tnoValidate\n\t\t\t\t\tonSubmit={submit}\n\t\t\t\t\tclassName=\"rx-settings-confirm grid gap-4\"\n\t\t\t\t\taria-busy={dialog.busy || undefined}\n\t\t\t\t>\n\t\t\t\t\t<Field\n\t\t\t\t\t\tlabel={\n\t\t\t\t\t\t\t<>\n\t\t\t\t\t\t\t\tType <span className=\"font-mono font-[590] select-all\">{phrase}</span> to confirm\n\t\t\t\t\t\t\t</>\n\t\t\t\t\t\t}\n\t\t\t\t\t\terror={error}\n\t\t\t\t\t>\n\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\tref={inputRef}\n\t\t\t\t\t\t\tname=\"confirm\"\n\t\t\t\t\t\t\tautoComplete=\"off\"\n\t\t\t\t\t\t\tautoCapitalize=\"off\"\n\t\t\t\t\t\t\tautoCorrect=\"off\"\n\t\t\t\t\t\t\tspellCheck={false}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\tpattern={escapePattern(phrase)}\n\t\t\t\t\t\t\tvalue={value}\n\t\t\t\t\t\t\treadOnly={dialog.busy}\n\t\t\t\t\t\t\tonChange={(event) => {\n\t\t\t\t\t\t\t\tsetValue(event.target.value);\n\t\t\t\t\t\t\t\tsetFormError(undefined);\n\t\t\t\t\t\t\t\tif (dialog.state === \"error\") dialog.setState(\"idle\");\n\t\t\t\t\t\t\t\tif (error)\n\t\t\t\t\t\t\t\t\tsetError(\n\t\t\t\t\t\t\t\t\t\tvalidityMessage(event.target, {\n\t\t\t\t\t\t\t\t\t\t\tvalueMissing: mismatch,\n\t\t\t\t\t\t\t\t\t\t\tpatternMismatch: mismatch,\n\t\t\t\t\t\t\t\t\t\t}),\n\t\t\t\t\t\t\t\t\t);\n\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>\n\t\t\t\t\t{formError ? (\n\t\t\t\t\t\t<p\n\t\t\t\t\t\t\tid={`${id}-error`}\n\t\t\t\t\t\t\trole=\"alert\"\n\t\t\t\t\t\t\tclassName=\"m-0 rounded-(--radius-control) bg-destructive/10 px-3 py-2 text-[13px]/5 text-destructive\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{formError}\n\t\t\t\t\t\t</p>\n\t\t\t\t\t) : null}\n\t\t\t\t\t<DialogFooter>\n\t\t\t\t\t\t<DialogClose asChild>\n\t\t\t\t\t\t\t<Button variant=\"secondary\" disabled={dialog.busy}>\n\t\t\t\t\t\t\t\tCancel\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t</DialogClose>\n\t\t\t\t\t\t<StatefulButton\n\t\t\t\t\t\t\ttype=\"submit\"\n\t\t\t\t\t\t\tstate={dialog.state}\n\t\t\t\t\t\t\tloadingText=\"Deleting\"\n\t\t\t\t\t\t\tsuccessText=\"Deleted\"\n\t\t\t\t\t\t\terrorText=\"Try again\"\n\t\t\t\t\t\t\tclassName={cn(settingsParts.destructive)}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tDelete account\n\t\t\t\t\t\t</StatefulButton>\n\t\t\t\t\t</DialogFooter>\n\t\t\t\t</form>\n\t\t\t</DialogContent>\n\t\t</Dialog>\n\t);\n}\n\n/** A `pattern` that matches the phrase and nothing else (`pattern` is anchored by the browser). */\nexport function escapePattern(phrase: string): string {\n\treturn phrase.replace(/[\\\\^$.*+?()[\\]{}|/]/g, \"\\\\$&\");\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/settings/settings-dialogs.tsx"
+    },
+    {
+      "path": "registry/rabtx/blocks/settings/settings.styles.ts",
+      "content": "/**\n * Class names for the settings block. Its look and motion live in `settings-block.css` (your global\n * CSS, when installed from the registry); layout inside a section is Tailwind.\n */\nexport const settingsParts = {\n\t/** The block: a size container, so the section list sits beside the panels only when it fits. */\n\troot: \"rx-settings\",\n\t/** The Tabs root: a column on narrow containers, a sidebar and the panels on wide ones. */\n\ttabs: \"rx-settings-tabs\",\n\t/** The section list. A scrolling row on narrow containers, a column on wide ones. */\n\tnav: \"rx-settings-nav\",\n\t/** One section panel. Its cards rise in one after another (`--_i`). */\n\tpanel: \"rx-settings-panel\",\n\t/** A Card inside a panel. */\n\tsection: \"rx-settings-section\",\n\t/** A row of a list of settings: the text and a control at the end, divided by rules. */\n\trow: \"rx-settings-row\",\n\t/** The round avatar with initials, or an image. */\n\tavatar: \"rx-settings-avatar\",\n\t/** A small drawing of a theme in a theme choice card. */\n\tswatch: \"rx-settings-swatch\",\n\t/** The density choice cards' drawing of rows. */\n\tdensity: \"rx-settings-density\",\n\t/** The danger zone card: a --destructive edge. */\n\tdanger: \"rx-settings-danger\",\n\t/** A destructive Button: --destructive fill, or a --destructive outline with `data-tone=\"soft\"`. */\n\tdestructive: \"rx-settings-destructive\",\n\t/** The sticky bar that slides in while the form has unsaved changes (`:has(form[data-dirty])`). */\n\tbar: \"rx-settings-bar\",\n} as const;\n\n/** How long \"Saved\" shows on the bar before it slides away. */\nexport const SAVED_HOLD_MS = 900;\n",
+      "type": "registry:component",
+      "target": "components/blocks/settings/settings.styles.ts"
+    },
+    {
+      "path": "registry/rabtx/blocks/settings/validity.ts",
+      "content": "/** A message for each way a native control can fail its constraints, by `ValidityState` key. */\nexport type ValidityMessages = Partial<Record<Exclude<keyof ValidityState, \"valid\">, string>>;\n\nconst ORDER = [\n\t\"valueMissing\",\n\t\"typeMismatch\",\n\t\"tooShort\",\n\t\"tooLong\",\n\t\"patternMismatch\",\n\t\"rangeUnderflow\",\n\t\"rangeOverflow\",\n\t\"stepMismatch\",\n\t\"badInput\",\n\t\"customError\",\n] as const;\n\ntype Validatable = { validity: ValidityState; validationMessage: string };\n\n/**\n * The first failing constraint of a native control, as a message: yours for that constraint, or\n * the browser's own. Nothing when the control is valid. Constraints come from the markup\n * (`required`, `type=\"email\"`, `minLength`, `pattern`) and `setCustomValidity`, so the CSS\n * `:user-invalid` state and this message always agree.\n */\nexport function validityMessage(\n\tcontrol: Validatable,\n\tmessages: ValidityMessages = {},\n): string | undefined {\n\tconst { validity } = control;\n\tif (validity.valid) return undefined;\n\tfor (const key of ORDER) {\n\t\tif (validity[key]) return messages[key] ?? (control.validationMessage || \"Check this field.\");\n\t}\n\treturn control.validationMessage || \"Check this field.\";\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/settings/validity.ts"
+    },
+    {
+      "path": "registry/rabtx/blocks/settings/values.ts",
+      "content": "export type SettingsTheme = \"light\" | \"dark\" | \"system\";\nexport type SettingsDensity = \"comfortable\" | \"compact\";\n\n/** Everything the main form saves. The email and the account itself change through dialogs. */\nexport type SettingsValues = {\n\t/** Profile. */\n\tname: string;\n\tusername: string;\n\twebsite: string;\n\tbio: string;\n\t/** Account: language and region. */\n\tlanguage: string;\n\ttimezone: string;\n\t/** Notifications: switches. */\n\tmentions: boolean;\n\tcomments: boolean;\n\tsecurity: boolean;\n\t/** Notifications: email digest checkboxes. */\n\tdailyDigest: boolean;\n\tweeklyDigest: boolean;\n\tproductNews: boolean;\n\t/** Appearance. */\n\ttheme: SettingsTheme;\n\tdensity: SettingsDensity;\n};\n\nexport type SettingsField = keyof SettingsValues;\n/** A message per field, to show under it. */\nexport type SettingsErrors = Partial<Record<SettingsField, string>>;\nexport type SettingsOption = { value: string; label: string };\n\nexport type SettingsSection = \"profile\" | \"account\" | \"notifications\" | \"appearance\" | \"danger\";\n\nexport const SETTINGS_SECTIONS: { id: SettingsSection; label: string; description: string }[] = [\n\t{ id: \"profile\", label: \"Profile\", description: \"How others see you.\" },\n\t{ id: \"account\", label: \"Account\", description: \"Your sign-in email, plan and region.\" },\n\t{ id: \"notifications\", label: \"Notifications\", description: \"What we tell you, and where.\" },\n\t{ id: \"appearance\", label: \"Appearance\", description: \"How the app looks on this device.\" },\n\t{ id: \"danger\", label: \"Danger zone\", description: \"Actions you cannot undo.\" },\n];\n\n/** The section each saved field lives in, so a failed save can open the right one. */\nexport const FIELD_SECTION: Record<SettingsField, SettingsSection> = {\n\tname: \"profile\",\n\tusername: \"profile\",\n\twebsite: \"profile\",\n\tbio: \"profile\",\n\tlanguage: \"account\",\n\ttimezone: \"account\",\n\tmentions: \"notifications\",\n\tcomments: \"notifications\",\n\tsecurity: \"notifications\",\n\tdailyDigest: \"notifications\",\n\tweeklyDigest: \"notifications\",\n\tproductNews: \"notifications\",\n\ttheme: \"appearance\",\n\tdensity: \"appearance\",\n};\n\nexport const SETTINGS_DEFAULTS: SettingsValues = {\n\tname: \"\",\n\tusername: \"\",\n\twebsite: \"\",\n\tbio: \"\",\n\tlanguage: \"en\",\n\ttimezone: \"Asia/Karachi\",\n\tmentions: true,\n\tcomments: true,\n\tsecurity: true,\n\tdailyDigest: false,\n\tweeklyDigest: true,\n\tproductNews: false,\n\ttheme: \"system\",\n\tdensity: \"comfortable\",\n};\n\nexport const DEFAULT_LANGUAGES: SettingsOption[] = [\n\t{ value: \"en\", label: \"English\" },\n\t{ value: \"ur\", label: \"اردو (Urdu)\" },\n\t{ value: \"ar\", label: \"العربية (Arabic)\" },\n\t{ value: \"de\", label: \"Deutsch\" },\n\t{ value: \"fr\", label: \"Français\" },\n\t{ value: \"es\", label: \"Español\" },\n];\n\nexport const DEFAULT_TIMEZONES: SettingsOption[] = [\n\t{ value: \"Pacific/Honolulu\", label: \"(UTC−10:00) Honolulu\" },\n\t{ value: \"America/Los_Angeles\", label: \"(UTC−08:00) Los Angeles\" },\n\t{ value: \"America/New_York\", label: \"(UTC−05:00) New York\" },\n\t{ value: \"Europe/London\", label: \"(UTC+00:00) London\" },\n\t{ value: \"Europe/Berlin\", label: \"(UTC+01:00) Berlin\" },\n\t{ value: \"Asia/Dubai\", label: \"(UTC+04:00) Dubai\" },\n\t{ value: \"Asia/Karachi\", label: \"(UTC+05:00) Karachi\" },\n\t{ value: \"Asia/Kolkata\", label: \"(UTC+05:30) Kolkata\" },\n\t{ value: \"Asia/Singapore\", label: \"(UTC+08:00) Singapore\" },\n\t{ value: \"Asia/Tokyo\", label: \"(UTC+09:00) Tokyo\" },\n];\n\n/** The fields whose value differs from `saved`, in form order. */\nexport function changedFields(values: SettingsValues, saved: SettingsValues): SettingsField[] {\n\treturn (Object.keys(values) as SettingsField[]).filter((key) => values[key] !== saved[key]);\n}\n\n/** Up to two initials from a name, for an avatar without a picture. */\nexport function initials(name: string): string {\n\tconst words = name.trim().split(/\\s+/).filter(Boolean);\n\tif (words.length === 0) return \"?\";\n\tconst first = Array.from(words[0])[0] ?? \"\";\n\tconst last = words.length > 1 ? (Array.from(words[words.length - 1])[0] ?? \"\") : \"\";\n\treturn (first + last).toUpperCase();\n}\n",
+      "type": "registry:component",
+      "target": "components/blocks/settings/values.ts"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-settings": {
+        "container": "rx-settings / inline-size",
+        "position": "relative",
+        "display": "grid",
+        "gap": "1.25rem",
+        "width": "100%",
+        "max-width": "64rem",
+        "min-width": "0",
+        "color": "var(--foreground)"
+      },
+      ".rx-settings > form": {
+        "display": "none"
+      },
+      ".rx-settings .rx-tabs.rx-settings-tabs": {
+        "display": "flex",
+        "flex-direction": "column",
+        "align-items": "stretch",
+        "gap": "1rem",
+        "min-width": "0"
+      },
+      ".rx-settings .rx-tabs-list.rx-settings-nav": {
+        "flex-direction": "row",
+        "align-self": "stretch",
+        "align-items": "center",
+        "overflow-x": "auto",
+        "overflow-y": "hidden",
+        "scrollbar-width": "none",
+        "scroll-padding-inline": "0.5rem"
+      },
+      ".rx-settings .rx-tabs-list.rx-settings-nav > .rx-tabs-trigger": {
+        "flex": "1 0 auto",
+        "justify-content": "center"
+      },
+      "@container rx-settings (width >= 40rem)": {
+        ".rx-settings .rx-tabs.rx-settings-tabs": {
+          "display": "grid",
+          "grid-template-columns": "12rem minmax(0, 1fr)",
+          "align-items": "start",
+          "gap": "1.5rem"
+        },
+        ".rx-settings .rx-tabs-list.rx-settings-nav": {
+          "position": "sticky",
+          "top": "1rem",
+          "flex-direction": "column",
+          "align-self": "start",
+          "align-items": "stretch",
+          "overflow": "visible"
+        },
+        ".rx-settings .rx-tabs-list.rx-settings-nav > .rx-tabs-trigger": {
+          "flex": "none",
+          "justify-content": "flex-start"
+        },
+        ".rx-settings .rx-tabs-list.rx-settings-nav > .rx-tabs-trigger[data-section=\"danger\"]": {
+          "margin-block-start": "0.5rem"
+        }
+      },
+      ".rx-settings .rx-settings-nav > .rx-tabs-trigger[data-section=\"danger\"]": {
+        "color": "var(--destructive)"
+      },
+      ".rx-settings .rx-settings-nav > .rx-tabs-trigger::after": {
+        "content": "\"\"",
+        "flex": "none",
+        "width": "6px",
+        "height": "6px",
+        "margin-inline-start": "auto",
+        "border-radius": "999px",
+        "background-color": "var(--primary)",
+        "opacity": "0",
+        "scale": "0",
+        "transition": "opacity 120ms var(--motion-ease), scale var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-settings .rx-settings-nav > .rx-tabs-trigger:is([data-dirty], [data-invalid])::after": {
+        "opacity": "1",
+        "scale": "1"
+      },
+      ".rx-settings .rx-settings-nav > .rx-tabs-trigger[data-invalid]::after": {
+        "background-color": "var(--destructive)"
+      },
+      ".rx-settings-panel:not([hidden])": {
+        "display": "grid",
+        "align-content": "start",
+        "gap": "1rem"
+      },
+      ".rx-settings-panel > *": {
+        "--_i": "0"
+      },
+      ".rx-settings-panel > :nth-child(2)": {
+        "--_i": "1"
+      },
+      ".rx-settings-panel > :nth-child(3)": {
+        "--_i": "2"
+      },
+      ".rx-settings[data-moved] .rx-settings-panel > .rx-settings-section": {
+        "transition": "opacity 220ms var(--motion-ease) calc(var(--_i) * 60ms), translate var(--spring-panel-duration) var(--spring-panel) calc(var(--_i) * 60ms)"
+      },
+      ".rx-settings-row": {
+        "display": "flex",
+        "align-items": "center",
+        "justify-content": "space-between",
+        "gap": "1rem",
+        "padding-block": "0.75rem",
+        "border-block-start": "1px solid var(--border)"
+      },
+      ".rx-settings-row:first-child": {
+        "padding-block-start": "0",
+        "border-block-start": "0"
+      },
+      ".rx-settings-row:last-child": {
+        "padding-block-end": "0"
+      },
+      "label.rx-settings-row": {
+        "cursor": "pointer"
+      },
+      ".rx-settings-avatar": {
+        "display": "grid",
+        "flex": "none",
+        "place-items": "center",
+        "width": "3rem",
+        "height": "3rem",
+        "overflow": "hidden",
+        "border-radius": "999px",
+        "background-color": "color-mix(in oklab, var(--primary) 14%, var(--card))",
+        "outline": "1px solid color-mix(in oklab, var(--primary) 24%, transparent)",
+        "outline-offset": "-1px",
+        "color": "var(--primary)",
+        "font-size": "15px",
+        "line-height": "1",
+        "font-weight": "590",
+        "letter-spacing": "-0.2px"
+      },
+      ".rx-settings-avatar img": {
+        "width": "100%",
+        "height": "100%",
+        "object-fit": "cover"
+      },
+      ".rx-radio-group-card.rx-settings-choices > .rx-radio-item": {
+        "display": "grid",
+        "flex": "1 1 7rem",
+        "grid-template-columns": "minmax(0, 1fr) auto",
+        "align-items": "center",
+        "gap": "0.125rem 0.5rem",
+        "padding": "0.5rem 0.75rem 0.625rem 0.5rem",
+        "font-size": "13px",
+        "line-height": "20px",
+        "font-weight": "510"
+      },
+      ".rx-radio-group-card.rx-settings-choices > .rx-radio-item > .rx-radio": {
+        "grid-row": "2",
+        "grid-column": "2"
+      },
+      ".rx-radio-group-card.rx-settings-choices > .rx-radio-item > .rx-radio-text, .rx-radio-group-card.rx-settings-choices > .rx-radio-item > .rx-radio-text > span:not([class])": {
+        "display": "contents"
+      },
+      ".rx-radio-group-card.rx-settings-choices > .rx-radio-item .rx-radio-description": {
+        "grid-column": "1 / -1",
+        "font-weight": "400"
+      },
+      ".rx-settings-swatch, .rx-settings-density": {
+        "grid-column": "1 / -1",
+        "height": "3.5rem",
+        "margin-block-end": "0.375rem",
+        "overflow": "hidden",
+        "border-radius": "max(4px, calc(var(--radius-control) - 4px))",
+        "outline": "1px solid var(--border)",
+        "outline-offset": "-1px"
+      },
+      ".rx-settings-swatch": {
+        "display": "flex"
+      },
+      ".rx-settings-swatch > span": {
+        "flex": "1",
+        "background": "linear-gradient(var(--primary), var(--primary)) 0.5rem 0.5rem / 1.25rem 0.375rem no-repeat, linear-gradient(var(--foreground), var(--foreground)) 0.5rem 1.25rem / 60% 0.25rem no-repeat, linear-gradient(var(--muted-foreground), var(--muted-foreground)) 0.5rem 1.875rem / 40% 0.25rem no-repeat, linear-gradient(var(--muted), var(--muted)) 0.5rem 2.5rem / calc(100% - 1rem) 0.5rem no-repeat, var(--background)"
+      },
+      ".rx-settings-swatch[data-theme=\"system\"] > span + span": {
+        "background-position": "calc(0.5rem - 100%) 0.5rem, calc(0.5rem - 100%) 1.25rem, calc(0.5rem - 100%) 1.875rem, calc(0.5rem - 100%) 2.5rem, 0 0"
+      },
+      ".rx-settings-density": {
+        "display": "grid",
+        "align-content": "center",
+        "gap": "6px",
+        "padding-inline": "0.75rem",
+        "background-color": "var(--muted)",
+        "transition": "gap var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-settings-density > span": {
+        "height": "6px",
+        "border-radius": "999px",
+        "background-color": "color-mix(in oklab, var(--muted-foreground) 45%, transparent)",
+        "transition": "background-color 150ms var(--motion-ease)"
+      },
+      ".rx-settings-density > span:nth-child(2)": {
+        "width": "80%"
+      },
+      ".rx-settings-density > span:nth-child(3)": {
+        "width": "60%"
+      },
+      ".rx-settings-density[data-density=\"compact\"]": {
+        "gap": "3px"
+      },
+      ".rx-settings-density[data-density=\"compact\"] > span": {
+        "height": "4px"
+      },
+      ".rx-radio-item:has(:checked) .rx-settings-density > span:first-child": {
+        "background-color": "var(--primary)"
+      },
+      ".rx-card.rx-settings-danger": {
+        "--_edge-a": "color-mix(in oklab, var(--destructive) 40%, var(--border))",
+        "--_edge-b": "color-mix(in oklab, var(--destructive) 40%, var(--border))",
+        "--_flat": "color-mix(in oklab, var(--destructive) 40%, var(--border))",
+        "--_ring": "transparent",
+        "--_fill": "color-mix(in oklab, var(--destructive) 3%, var(--card))"
+      },
+      ".rx-btn.rx-settings-destructive": {
+        "--_bg": "var(--destructive)",
+        "--_bg-hover": "color-mix(in oklab, var(--destructive) 88%, transparent)",
+        "--_fg": "var(--primary-foreground)",
+        "transition": "opacity 150ms var(--motion-ease)"
+      },
+      ".rx-btn.rx-settings-destructive[data-tone=\"soft\"]": {
+        "--_bg": "color-mix(in oklab, var(--destructive) 10%, transparent)",
+        "--_bg-hover": "color-mix(in oklab, var(--destructive) 16%, transparent)",
+        "--_fg": "var(--destructive)"
+      },
+      ".rx-settings-confirm:has(input:invalid) .rx-settings-destructive:not([data-state=\"loading\"])": {
+        "opacity": "0.55"
+      },
+      ".rx-settings-bar": {
+        "position": "sticky",
+        "bottom": "1rem",
+        "z-index": "2",
+        "display": "none",
+        "flex-wrap": "wrap",
+        "align-items": "center",
+        "justify-content": "space-between",
+        "gap": "0.5rem 0.75rem",
+        "padding": "0.5rem 0.5rem 0.5rem 1rem",
+        "border": "1px solid var(--border)",
+        "border-radius": "var(--radius-box)",
+        "background-color": "color-mix(in oklab, var(--popover) 90%, transparent)",
+        "backdrop-filter": "blur(12px)",
+        "color": "var(--popover-foreground)",
+        "opacity": "0",
+        "translate": "0 1rem",
+        "scale": "0.98",
+        "transition": "opacity 160ms var(--motion-ease), translate 160ms var(--motion-ease), scale 160ms var(--motion-ease), border-color 200ms var(--motion-ease), display 160ms allow-discrete"
+      },
+      ".rx-settings:has(> form[data-dirty]) > .rx-settings-bar": {
+        "display": "flex",
+        "opacity": "1",
+        "translate": "0 0",
+        "scale": "1",
+        "transition": "opacity 200ms var(--motion-ease), translate var(--spring-panel-duration) var(--spring-panel), scale var(--spring-panel-duration) var(--spring-panel), border-color 200ms var(--motion-ease), display var(--spring-panel-duration) allow-discrete"
+      },
+      "@starting-style ": {
+        ".rx-settings[data-moved] .rx-settings-panel > .rx-settings-section": {
+          "opacity": "0",
+          "translate": "0 0.75rem"
+        },
+        ".rx-settings:has(> form[data-dirty]) > .rx-settings-bar": {
+          "opacity": "0",
+          "translate": "0 1rem",
+          "scale": "0.98"
+        }
+      },
+      ".rx-settings-bar[data-state=\"success\"]": {
+        "border-color": "color-mix(in oklab, var(--success) 50%, var(--border))"
+      },
+      ".rx-settings-bar[data-state=\"error\"]": {
+        "border-color": "color-mix(in oklab, var(--destructive) 50%, var(--border))"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-settings[data-moved] .rx-settings-panel > .rx-settings-section, .rx-settings .rx-settings-nav > .rx-tabs-trigger::after, .rx-settings .rx-settings-density": {
+          "transition": "none"
+        },
+        ".rx-settings .rx-settings-bar, .rx-settings:has(> form[data-dirty]) > .rx-settings-bar": {
+          "translate": "none",
+          "scale": "none",
+          "transition": "opacity 120ms var(--motion-ease), display 120ms allow-discrete"
+        }
+      },
+      "[data-motion=\"off\"] .rx-settings[data-moved] .rx-settings-panel > .rx-settings-section, [data-motion=\"off\"] .rx-settings .rx-settings-nav > .rx-tabs-trigger::after, [data-motion=\"off\"] .rx-settings .rx-settings-density, [data-motion=\"off\"] .rx-settings .rx-settings-bar, [data-motion=\"off\"] .rx-settings:has(> form[data-dirty]) > .rx-settings-bar": {
+        "translate": "none",
+        "scale": "none",
+        "transition": "none"
+      }
+    }
+  },
+  "categories": [
+    "settings",
+    "account"
+  ],
+  "type": "registry:block"
+}

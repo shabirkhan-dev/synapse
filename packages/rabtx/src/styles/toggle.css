@@ -1,0 +1,52 @@
+/*
+ * The toggle: a 28x16 track and a 12px thumb inset 2px (Figma `6:103`, read from its SVGs). The
+ * thumb is a pseudo-element that slides 12px on the switch spring; an invisible `::after` makes the
+ * target 24px tall. The track and thumb share the pill radius, so Sharp gives a square thumb in a
+ * square track. Figma has no hover or focus state; focus uses the shared 2px ring.
+ */
+@source "../toggle";
+
+.rx-toggle {
+	--_track: var(--rx-border-strong);
+	background-color: var(--_track);
+	transition: background-color 150ms var(--rx-ease);
+}
+.rx-toggle:checked {
+	--_track: var(--rx-accent);
+}
+.rx-toggle:disabled {
+	--_track: var(--rx-pressed);
+}
+.rx-toggle:disabled:checked {
+	--_track: var(--rx-accent-soft);
+}
+
+.rx-toggle::before {
+	content: "";
+	position: absolute;
+	inset: 2px auto auto 2px;
+	inline-size: 12px;
+	block-size: 12px;
+	border-radius: inherit;
+	background: #fff;
+	transition: translate var(--rx-spring-switch-d) var(--rx-spring-switch);
+}
+.rx-toggle:checked::before {
+	translate: 12px 0;
+}
+.rx-toggle::after {
+	content: "";
+	position: absolute;
+	inset: -4px 0;
+}
+
+[data-motion="off"] .rx-toggle,
+[data-motion="off"] .rx-toggle::before {
+	transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+	.rx-toggle,
+	.rx-toggle::before {
+		transition: none;
+	}
+}

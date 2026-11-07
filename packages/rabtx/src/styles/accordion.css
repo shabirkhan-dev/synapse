@@ -1,0 +1,223 @@
+/*
+ * Accordion: a stack of Collapsibles (collapsible.css draws the height, the chevron and the content
+ * fade). This file draws the surfaces and opens an item on the bouncier `expand` spring (about 5%
+ * overshoot), so the height lands a touch past its size and settles back. Closing glides.
+ *
+ * `separated` is one joined stack: inner corners square, the items share a 1px seam. The open item
+ * lifts out with a gap on either side, and the items around it round the corners that face it.
+ * Every gap and corner is a margin or a radius picked by sibling selectors (`[open] + *`,
+ * `:has(+ [open])`) and transitioned, so nothing is measured.
+ *
+ * Each variant only sets private variables: the surface (--_fill, --_edge-a/b, --_ring, --_sheen,
+ * --_shade) and the start and end corners (--_rs, --_re). Colors come from the theme.
+ */
+@layer components {
+	.rx-accordion {
+		--_r: var(--radius-box);
+		--_gap: 0.75rem;
+		/* Corners and gaps move on the open spring while anything is open, else they glide. */
+		--_ease: var(--spring-glide);
+		--_time: var(--spring-glide-duration);
+
+		display: flex;
+		flex-direction: column;
+		inline-size: 100%;
+		font-family: var(--font-sans);
+
+		&:has(> [open]) {
+			--_ease: var(--spring-expand);
+			--_time: var(--spring-expand-duration);
+		}
+	}
+
+	/* Two classes, so these beat collapsible.css wherever a project's CSS puts the two files. */
+	.rx-accordion > .rx-accordion-item {
+		--_open-ease: var(--spring-expand);
+		--_open-time: var(--spring-expand-duration);
+		--_fill: transparent;
+		--_edge-a: transparent;
+		--_edge-b: transparent;
+		--_ring: transparent;
+		--_sheen: transparent;
+		--_shade: transparent;
+		--_rs: 0px;
+		--_re: 0px;
+		--_px: 1rem;
+
+		position: relative;
+		box-sizing: border-box;
+		border: 1px solid transparent;
+		border-start-start-radius: var(--_rs);
+		border-start-end-radius: var(--_rs);
+		border-end-start-radius: var(--_re);
+		border-end-end-radius: var(--_re);
+		background:
+			linear-gradient(180deg, var(--_sheen), transparent 40%, transparent 60%, var(--_shade))
+				padding-box,
+			linear-gradient(var(--_fill), var(--_fill)) padding-box,
+			linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box;
+		box-shadow: 0 0 0 1px var(--_ring);
+		color: var(--card-foreground);
+		transition:
+			--_fill 150ms var(--motion-ease),
+			margin-block-start var(--_time) var(--_ease),
+			border-radius var(--_time) var(--_ease);
+	}
+
+	.rx-accordion-item > .rx-accordion-trigger {
+		gap: 0.75rem;
+		min-block-size: 3.25rem;
+		padding: 0.75rem var(--_px);
+		border-radius: inherit;
+		background: none;
+		color: var(--card-foreground);
+
+		&:focus-visible {
+			outline-offset: -2px;
+		}
+		/* An open item that cannot close (single, not collapsible) says so, and does not invite a press. */
+		&[aria-disabled="true"]:not([data-disabled]) {
+			cursor: default;
+		}
+		@media (hover: hover) and (pointer: fine) {
+			&:hover:not([data-disabled]) {
+				background: none;
+			}
+		}
+	}
+	.rx-accordion-icon {
+		display: grid;
+		flex: none;
+		place-items: center;
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		color: var(--muted-foreground);
+
+		& svg {
+			inline-size: 1rem;
+			block-size: 1rem;
+		}
+	}
+	.rx-accordion-title {
+		flex: 1;
+		min-inline-size: 0;
+		text-align: start;
+	}
+
+	/* The bottom space is a pseudo-element, not padding, so the grid fallback can shrink it to 0. */
+	.rx-accordion-content {
+		padding-inline: var(--_px);
+		color: var(--muted-foreground);
+		font-size: 0.875rem;
+		line-height: 1.375rem;
+
+		&::after {
+			content: "";
+			display: block;
+			block-size: var(--_px);
+		}
+		/* Under the title when the trigger has an icon. */
+		.rx-accordion-item:has(> .rx-accordion-trigger > .rx-accordion-icon) > & {
+			padding-inline-start: calc(var(--_px) + 2.5rem);
+		}
+	}
+
+	/* Surfaces: separated and cards. */
+	:is(.rx-accordion-separated, .rx-accordion-cards) > .rx-accordion-item {
+		--_fill: var(--card);
+		--_edge-a: var(--surface-edge-top);
+		--_edge-b: var(--surface-edge-bottom);
+		--_ring: var(--surface-ring);
+		--_sheen: var(--surface-sheen);
+		--_shade: var(--surface-shade);
+
+		@media (hover: hover) and (pointer: fine) {
+			&:has(> .rx-accordion-trigger:hover:not([data-disabled], [aria-disabled="true"])) {
+				--_fill: color-mix(in oklab, var(--card), var(--foreground) 3%);
+			}
+		}
+	}
+	[data-depth="flat"] :is(.rx-accordion-separated, .rx-accordion-cards) > .rx-accordion-item {
+		--_edge-a: var(--border);
+		--_edge-b: var(--border);
+		--_ring: transparent;
+		--_sheen: transparent;
+		--_shade: transparent;
+	}
+
+	/* Separated: one joined stack; the open item lifts out of it. */
+	.rx-accordion-separated > .rx-accordion-item {
+		&:first-child {
+			--_rs: var(--_r);
+		}
+		&:last-child {
+			--_re: var(--_r);
+		}
+		/* The seam: each item overlaps the one above by its border. */
+		& + .rx-accordion-item {
+			margin-block-start: -1px;
+		}
+		&[open] {
+			--_rs: var(--_r);
+			--_re: var(--_r);
+		}
+		&[open] + .rx-accordion-item,
+		& + .rx-accordion-item[open] {
+			--_rs: var(--_r);
+			margin-block-start: var(--_gap);
+		}
+		&:has(+ .rx-accordion-item[open]) {
+			--_re: var(--_r);
+		}
+	}
+
+	/* Cards: every item its own card. */
+	.rx-accordion-cards {
+		gap: 0.5rem;
+
+		& > .rx-accordion-item {
+			--_rs: var(--_r);
+			--_re: var(--_r);
+		}
+	}
+
+	/* Flush: rows divided by a line, no surface. */
+	.rx-accordion-flush > .rx-accordion-item {
+		--_px: 0px;
+		border-width: 0;
+		border-block-end: 1px solid var(--border);
+		background: none;
+		box-shadow: none;
+
+		&:last-child {
+			border-block-end-width: 0;
+		}
+		& > .rx-accordion-content::after {
+			block-size: 1rem;
+		}
+		& > .rx-accordion-trigger {
+			border-radius: var(--radius-item);
+
+			&:focus-visible {
+				outline-offset: 0;
+			}
+			@media (hover: hover) and (pointer: fine) {
+				&:hover:not([data-disabled], [aria-disabled="true"]) > .rx-accordion-title {
+					text-decoration: underline;
+					text-underline-offset: 3px;
+				}
+			}
+		}
+	}
+}
+/* Less motion and motion off: the rx-motion layer, explained in control.css. */
+@layer rx-motion {
+	@media (prefers-reduced-motion: reduce) {
+		.rx-accordion-item {
+			transition-duration: 0ms;
+		}
+	}
+	[data-motion="off"] .rx-accordion-item {
+		transition: none;
+	}
+}

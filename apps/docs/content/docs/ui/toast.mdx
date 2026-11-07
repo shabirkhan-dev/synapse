@@ -1,0 +1,221 @@
+---
+title: Toast
+description: Stacked toasts in a top-layer region, with an imperative toast() API, actions, promises, swipe to dismiss and live announcements. Every animation is CSS.
+---
+
+<ComponentPreview name="toast/default" />
+
+## Installation
+
+<Installation name="toast" />
+
+## Usage
+
+Render one `Toaster` in your root layout, then call `toast()` from anywhere: an event handler, a
+form action, the end of a fetch. Installed from the registry, both come from
+`@/components/ui/toaster`; inside this monorepo, from `@rabtx/ui/toast`.
+
+```tsx
+// app/layout.tsx
+import { Toaster } from "@rabtx/ui/toast";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx
+import { toast } from "@rabtx/ui/toast";
+
+toast("Event created", {
+  description: "Sunday, November 1 at 9:00",
+  action: { label: "Undo", onClick: () => undo() },
+});
+```
+
+The `Toaster` is a `<section popover="manual">`, so it lives in the browser's top layer: above
+everything on the page, above a modal dialog's backdrop, with no `z-index` and no portal. New toasts
+stack behind the front one, a little smaller each; hovering or focusing the stack fans it out.
+Rendering more than one `Toaster` with the same `id` is safe: the first one mounted shows the
+toasts and the others stay empty, which is why every example on this page has its own.
+
+## Types
+
+`toast.success`, `toast.info`, `toast.warning` and `toast.error` add a tinted icon. Errors are
+announced at once (an assertive live region); everything else waits for the screen reader to
+finish (polite). `toast.loading` shows a spinner and stays until you update it.
+
+<ComponentPreview name="toast/types" />
+
+## Promise
+
+`toast.promise` shows a loading toast and turns it into success or error when the promise settles.
+Each message can be a node, a function of the result, or a whole set of options.
+
+<ComponentPreview name="toast/promise" />
+
+```tsx
+toast.promise(upload, {
+  loading: "Uploading 12 photos…",
+  success: (count) => `Uploaded ${count} photos`,
+  error: (error) => ({ title: "Upload failed", description: error.message }),
+});
+```
+
+To update any toast in place, call `toast` again with its `id`:
+
+```tsx
+const id = toast.loading("Connecting…");
+// later
+toast.success("Connected", { id });
+```
+
+## Action and cancel
+
+`action` is drawn as our primary `Button`, `cancel` as a ghost one. Either dismisses the toast
+after its `onClick`, unless that calls `event.preventDefault()`.
+
+<ComponentPreview name="toast/action" />
+
+## Positions
+
+`position` is `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center` or
+`bottom-right` (default). Toasts stack toward the middle of the screen and enter from their edge.
+`expand` keeps the stack fanned out; `visibleToasts` (default 3) caps how many show, and the rest
+wait their turn; `gap` (default 14) is the space between fanned-out toasts. On a phone the region
+takes the full width less 1rem a side.
+
+<ComponentPreview name="toast/positions" />
+
+## Above a dialog
+
+A modal dialog also opens in the top layer, after the toaster, so it would cover it. The Toaster
+watches for dialogs and popovers opening and moves itself back on top (it hides and re-shows its
+popover, which keeps every toast where it is).
+
+<ComponentPreview name="toast/dialog" />
+
+## Duration, icon, dismissal
+
+`duration` is in milliseconds (default 4000, or the Toaster's `duration`); `Infinity` keeps a toast
+until it is dismissed. `icon` replaces the type's icon (`null` hides it). `dismissible: false`
+removes the close button and ignores swipes and Escape. `toast.dismiss(id)` dismisses one toast and
+`toast.dismiss()` all of them.
+
+<ComponentPreview name="toast/options" />
+
+## Timers
+
+Every timer pauses while the stack is hovered, focused or pressed, and while the tab is hidden; it
+resumes with the time it had left. An update (same `id`) restarts it.
+
+## API
+
+`Toaster`:
+
+<TypeTable
+  type={{
+    position: { type: '"top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-center" | "bottom-right"', default: '"bottom-right"' },
+    expand: { type: "boolean", default: "false", description: "Always fanned out." },
+    visibleToasts: { type: "number", default: "3", description: "The most shown at once; the rest are queued." },
+    gap: { type: "number", default: "14", description: "Space between fanned-out toasts, in px." },
+    offset: { type: "number | string", default: "24", description: "Distance from the viewport edges." },
+    duration: { type: "number", default: "4000", description: "Default time on screen, in ms." },
+    closeButton: { type: "boolean", default: "true", description: "The close button on dismissible toasts." },
+    hotkey: { type: "string[]", default: '["F6", "Alt+T"]', description: "Keys that focus the newest toast." },
+    label: { type: "string", default: '"Notifications"', description: "The region's name; the first hotkey is appended." },
+    closeLabel: { type: "string", default: '"Dismiss"', description: "The close button's accessible name." },
+    id: { type: "string", default: '"default"', description: "Pairs with the toaster option of toast()." },
+  }}
+/>
+
+`toast(title, options)` and `toast.success | error | warning | info | loading(title, options)`
+return the toast's id. Options:
+
+<TypeTable
+  type={{
+    id: { type: "string | number", description: "An existing id updates that toast in place." },
+    description: { type: "ReactNode" },
+    action: { type: "{ label: ReactNode; onClick?: (event) => void }", description: "A primary Button." },
+    cancel: { type: "{ label: ReactNode; onClick?: (event) => void }", description: "A ghost Button." },
+    duration: { type: "number", description: "In ms. Infinity stays until dismissed." },
+    icon: { type: "ReactNode", description: "Replaces the type's icon; null hides it." },
+    dismissible: { type: "boolean", default: "true" },
+    important: { type: "boolean", default: "false", description: "Announce assertively, like an error." },
+    toaster: { type: "string", description: "Which Toaster id shows it." },
+    className: { type: "string" },
+    onDismiss: { type: "(toast) => void", description: "Dismissed by a person or by code." },
+    onAutoClose: { type: "(toast) => void", description: "Its timer ran out." },
+  }}
+/>
+
+`toast.promise(promise | () => promise, { loading, success, error, finally, ...options })` returns
+the id; `success` and `error` take a node, a function of the value, or `{ title, ...options }`.
+`toast.dismiss(id?)` dismisses one toast, or all.
+
+Outside React, `toastParts` from `@rabtx/ui/toast/styles` lists the class names; the CSS reads only
+data attributes and the variables the component sets.
+
+## Theming
+
+The Toast reads only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Toast | fill `--popover`, text `--popover-foreground`, Flat edge `--border` |
+| Floating depth | `--surface-ring`, `--surface-edge-top`, `--surface-edge-bottom`, `--surface-sheen`, `--surface-shade` |
+| Icon chip | `--success`, `--destructive`, `--warning`, `--primary` (info), `--muted-foreground` (loading), mixed toward `--tint-ink` for contrast |
+| Description | `--muted-foreground` |
+| Close button | `--popover`, `--input` edge, `--muted-foreground`; hover `--muted`, `--foreground` |
+| Focus | `--ring` |
+| Corners | `--radius-box` |
+| Motion | `--spring-toast`, `--spring-swap`, `--spring-check`, `--spring-press`, `--motion-ease` |
+
+No cast shadow: the raised edge separates the toast from the page.
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| Stack | each toast gets `--_i` (0 is the front); `translate` moves it 14px per step toward the middle and `scale` shrinks it 5% per step; the ones behind take the front toast's measured height and fade their content |
+| Fan out | `data-expanded` on the region: every toast moves to its `--_offset` (the heights in front of it plus a gap each) at full size; a pseudo-element bridges each gap so the pointer can travel between them |
+| Enter | `@starting-style`: 22px from the edge, scale 0.96, a 10px blur, on the toast spring (420 / 34 / 0.75) |
+| Exit | 200ms, eased: fade, 0.96, a blur and 32px toward the side; `display` transitions with `allow-discrete`, so it stays painted until it has faded |
+| Swipe | pointer events write `--_swipe-x` / `--_swipe-y` with transitions off; past 45px (or a quick flick) it carries on out, otherwise it springs back. The wrong way is damped |
+| Updates | a new icon pops in on the swap spring and the tick draws with `stroke-dashoffset` on the check spring; new text fades up out of a 4px blur |
+
+JavaScript measures heights, keeps the timers and writes those variables and data attributes; it
+never animates. Reduced motion and `data-motion="off"` drop every transition (toasts appear and go
+at once) and slow the spinner right down.
+
+## Browser support
+
+- **Chromium 117+, Safari 17.5+, Firefox 129+:** the popover, `@starting-style` and the enter
+  animation. The exit with `display` `allow-discrete` needs Chromium 117+ or Safari 18;
+  elsewhere a toast fades and is then removed.
+- Re-raising above a dialog uses the dialog's `open` attribute (every browser) and the `toggle`
+  event (popovers, and dialogs in Chromium 132+).
+- Without the Popover API (very old browsers) the region is not shown.
+
+## Accessibility
+
+- The region is a `section` named "Notifications (F6)", so it is a landmark. F6 or Alt+T (`hotkey`)
+  moves focus to the newest toast; Tab moves through the toasts and their buttons; Escape dismisses
+  the focused toast and focus goes to the next one, or back where it was.
+- Announcements go to two visually hidden live regions inside the top layer: polite for most
+  toasts, assertive for errors and `important` ones. An update (a promise settling) is announced
+  again.
+- Timers pause while a toast is hovered or focused, so there is time to read it and reach its
+  buttons (WCAG 2.2.1). Use `duration: Infinity` for anything that needs a decision.
+- The close button is a real button named "Dismiss" (`closeLabel`), shown on hover and focus and
+  always on touch screens. Swiping is never the only way to dismiss.
+- While a modal dialog is open, the browser makes everything outside it inert: a toast shows above
+  it, but a press on the toast lands on the dialog's backdrop (which may close the dialog) and its
+  buttons wait until the dialog closes. Keep decisions inside the dialog.

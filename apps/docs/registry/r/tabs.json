@@ -1,0 +1,377 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tabs",
+  "title": "Tabs",
+  "description": "WAI-ARIA tabs in segmented, pill, underline and expandable variants, with an indicator that slides by CSS anchor positioning. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/tabs.styles.ts",
+      "content": "export type TabsVariant = \"segmented\" | \"pill\" | \"underline\" | \"expandable\";\nexport type TabsSize = \"sm\" | \"md\" | \"lg\";\nexport type TabsOrientation = \"horizontal\" | \"vertical\";\n/** `automatic` selects a tab as focus reaches it; `manual` waits for Enter or Space. */\nexport type TabsActivationMode = \"automatic\" | \"manual\";\n\nexport const tabsVariants = [\n\t\"segmented\",\n\t\"pill\",\n\t\"underline\",\n\t\"expandable\",\n] as const satisfies readonly TabsVariant[];\nexport const tabsSizes = [\"sm\", \"md\", \"lg\"] as const satisfies readonly TabsSize[];\n\n/**\n * The class list for a tab list. The look and the motion live in `tabs.css` (your global CSS, when\n * installed from the registry), so React and plain HTML get the same tabs from these names. The\n * selected tab carries `aria-selected=\"true\"`; the indicator is the list's last child and finds it\n * by CSS anchor positioning, so nothing measures it:\n *\n *   <div class=\"rx-tabs\" data-orientation=\"horizontal\">\n *     <div role=\"tablist\" class=\"rx-tabs-list rx-tabs-segmented rx-tabs-md\">\n *       <button role=\"tab\" class=\"rx-tabs-trigger\" aria-selected=\"true\" aria-controls=\"p1\">\n *         <span class=\"rx-tabs-label\"><span class=\"rx-tabs-text\">Account</span></span>\n *       </button>\n *       <span class=\"rx-tabs-indicator\" aria-hidden=\"true\"></span>\n *     </div>\n *     <div role=\"tabpanel\" id=\"p1\" class=\"rx-tabs-content\" tabindex=\"0\">…</div>\n *   </div>\n */\nexport function tabsListClass(variant: TabsVariant = \"segmented\", size: TabsSize = \"md\") {\n\treturn `rx-tabs-list rx-tabs-${variant} rx-tabs-${size}`;\n}\n\n/** Class names for the parts of Tabs, for markup written by hand. */\nexport const tabsParts = {\n\t/** The wrapper around the list and the panels. Lays them out by `data-orientation`. */\n\troot: \"rx-tabs\",\n\t/** One tab: a `<button role=\"tab\">`. */\n\ttrigger: \"rx-tabs-trigger\",\n\t/** A decorative icon before the label. In `expandable` it is all an unselected tab shows. */\n\ticon: \"rx-tabs-icon\",\n\t/** The label's box. In `expandable` it opens from zero width on the selected tab. */\n\tlabel: \"rx-tabs-label\",\n\t/** The label text inside the box. */\n\ttext: \"rx-tabs-text\",\n\t/** The sliding highlight, anchored to the selected tab. Decorative. */\n\tindicator: \"rx-tabs-indicator\",\n\t/** One panel: a `<div role=\"tabpanel\">`, `hidden` while its tab is not selected. */\n\tcontent: \"rx-tabs-content\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/tabs.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype ButtonHTMLAttributes,\n\tcreateContext,\n\ttype FocusEvent,\n\ttype HTMLAttributes,\n\ttype KeyboardEvent,\n\ttype MouseEvent,\n\ttype ReactNode,\n\ttype Ref,\n\tuseCallback,\n\tuseContext,\n\tuseEffect,\n\tuseId,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\ttype TabsActivationMode,\n\ttype TabsOrientation,\n\ttype TabsSize,\n\ttype TabsVariant,\n\ttabsListClass,\n\ttabsParts,\n} from \"./tabs.styles\";\n\ntype TabsContextValue = {\n\tvalue: string | undefined;\n\tselect: (value: string) => void;\n\torientation: TabsOrientation;\n\tactivationMode: TabsActivationMode;\n\ttriggerId: (value: string) => string;\n\tpanelId: (value: string) => string;\n\t/** Whether `value` has a panel, so a tab only points `aria-controls` at a panel that exists. */\n\thasPanel: (value: string) => boolean;\n\tregisterPanel: (value: string) => () => void;\n};\n\nconst TabsContext = createContext<TabsContextValue | null>(null);\n\nfunction useTabs(part: string) {\n\tconst context = useContext(TabsContext);\n\tif (!context) throw new Error(`${part} must be inside <Tabs>`);\n\treturn context;\n}\n\n/** Any value is a valid tab value; ids keep only the characters an id selector can take as is. */\nconst slug = (value: string) => value.replace(/[^\\w-]/g, \"_\");\n\nexport type TabsProps = Omit<HTMLAttributes<HTMLDivElement>, \"defaultValue\" | \"dir\"> & {\n\t/** The selected tab (controlled). */\n\tvalue?: string;\n\t/** The tab selected first (uncontrolled). */\n\tdefaultValue?: string;\n\t/** The newly selected value, only when it changes. */\n\tonValueChange?: (value: string) => void;\n\t/** Lays the list beside the panels and moves focus with the up and down arrows. */\n\torientation?: TabsOrientation;\n\t/** `automatic` (default) selects a tab when the arrow keys reach it; `manual` needs Enter or Space. */\n\tactivationMode?: TabsActivationMode;\n\t/** Reading direction. Left and right arrows swap in `rtl`; it is inherited when unset. */\n\tdir?: \"ltr\" | \"rtl\";\n\tref?: Ref<HTMLDivElement>;\n};\n\n/**\n * WAI-ARIA tabs: a `tablist` of `tab` buttons, each controlling a `tabpanel`. Only the selected tab\n * is in the Tab order (a roving tab stop); the arrow keys, Home and End move between tabs. Every\n * panel stays mounted and is `hidden` while its tab is not selected, so its content is in the\n * server HTML and a tab's `aria-controls` resolves from the first paint.\n *\n * The indicator slides by CSS anchor positioning and a `linear()` spring; panels fade in with\n * `@starting-style`. JavaScript only holds the selected value.\n */\nexport function Tabs({\n\tvalue: valueProp,\n\tdefaultValue,\n\tonValueChange,\n\torientation = \"horizontal\",\n\tactivationMode = \"automatic\",\n\tclassName,\n\tchildren,\n\tref,\n\t...rest\n}: TabsProps) {\n\tconst [internal, setInternal] = useState(defaultValue);\n\tconst controlled = valueProp !== undefined;\n\tconst value = controlled ? valueProp : internal;\n\tconst [panels, setPanels] = useState<ReadonlySet<string>>(() => new Set());\n\t// Panels register in an effect, which the server never runs. Until hydration every tab assumes\n\t// its panel exists, so the server HTML is wired; after it, a list without panels drops the link.\n\tconst [hydrated, setHydrated] = useState(false);\n\tuseEffect(() => setHydrated(true), []);\n\tconst baseId = useId();\n\n\tconst select = useCallback(\n\t\t(next: string) => {\n\t\t\tif (next === value) return;\n\t\t\tif (!controlled) setInternal(next);\n\t\t\tonValueChange?.(next);\n\t\t},\n\t\t[controlled, onValueChange, value],\n\t);\n\n\tconst registerPanel = useCallback((panel: string) => {\n\t\tsetPanels((current) => (current.has(panel) ? current : new Set(current).add(panel)));\n\t\treturn () =>\n\t\t\tsetPanels((current) => {\n\t\t\t\tif (!current.has(panel)) return current;\n\t\t\t\tconst next = new Set(current);\n\t\t\t\tnext.delete(panel);\n\t\t\t\treturn next;\n\t\t\t});\n\t}, []);\n\n\tconst context = useMemo<TabsContextValue>(\n\t\t() => ({\n\t\t\tvalue,\n\t\t\tselect,\n\t\t\torientation,\n\t\t\tactivationMode,\n\t\t\ttriggerId: (tab) => `${baseId}-tab-${slug(tab)}`,\n\t\t\tpanelId: (tab) => `${baseId}-panel-${slug(tab)}`,\n\t\t\thasPanel: (tab) => !hydrated || panels.has(tab),\n\t\t\tregisterPanel,\n\t\t}),\n\t\t[value, select, orientation, activationMode, baseId, hydrated, panels, registerPanel],\n\t);\n\n\treturn (\n\t\t<TabsContext.Provider value={context}>\n\t\t\t<div\n\t\t\t\t{...rest}\n\t\t\t\tref={ref}\n\t\t\t\tdata-orientation={orientation}\n\t\t\t\tclassName={cn(tabsParts.root, className)}\n\t\t\t>\n\t\t\t\t{children}\n\t\t\t</div>\n\t\t</TabsContext.Provider>\n\t);\n}\n\nexport type TabsListProps = HTMLAttributes<HTMLDivElement> & {\n\t/**\n\t * `segmented` (default): a recessed track with a raised thumb. `pill`: a filled capsule on a\n\t * raised track. `underline`: a line under the selected tab. `expandable`: icon tabs where the\n\t * selected one opens to show its label.\n\t */\n\tvariant?: TabsVariant;\n\t/** 32, 40 (default) or 48px tall, so a tab list lines up with a Button, an Input or a Select. */\n\tsize?: TabsSize;\n\tref?: Ref<HTMLDivElement>;\n};\n\n/** The enabled tabs of this list (not of a list nested in one of its panels). */\nfunction enabledTabs(list: HTMLElement) {\n\treturn Array.from(list.querySelectorAll<HTMLButtonElement>('[role=\"tab\"]')).filter(\n\t\t(tab) => !tab.disabled && tab.closest('[role=\"tablist\"]') === list,\n\t);\n}\n\nexport function TabsList({\n\tvariant = \"segmented\",\n\tsize = \"md\",\n\tclassName,\n\tchildren,\n\tonKeyDown,\n\tref,\n\t...rest\n}: TabsListProps) {\n\tconst { orientation } = useTabs(\"TabsList\");\n\tconst list = useRef<HTMLDivElement>(null);\n\n\t// The selected tab is the tab stop. When nothing enabled is selected (no value yet, or the\n\t// selected tab is disabled) the first enabled tab takes it, so the list is never skipped.\n\tuseLayoutEffect(() => {\n\t\tconst node = list.current;\n\t\tif (!node) return;\n\t\tconst tabs = enabledTabs(node);\n\t\tif (tabs.length && !tabs.some((tab) => tab.tabIndex === 0)) tabs[0].tabIndex = 0;\n\t});\n\n\tconst moveFocus = (event: KeyboardEvent<HTMLDivElement>) => {\n\t\tonKeyDown?.(event);\n\t\tconst node = list.current;\n\t\tif (event.defaultPrevented || !node) return;\n\t\tconst tabs = enabledTabs(node);\n\t\tconst at = tabs.indexOf(event.target as HTMLButtonElement);\n\t\tif (at < 0) return;\n\t\tconst rtl = getComputedStyle(node).direction === \"rtl\";\n\t\tconst vertical = orientation === \"vertical\";\n\t\tconst forward = vertical ? \"ArrowDown\" : rtl ? \"ArrowLeft\" : \"ArrowRight\";\n\t\tconst back = vertical ? \"ArrowUp\" : rtl ? \"ArrowRight\" : \"ArrowLeft\";\n\t\tconst next =\n\t\t\tevent.key === forward\n\t\t\t\t? tabs[(at + 1) % tabs.length]\n\t\t\t\t: event.key === back\n\t\t\t\t\t? tabs[(at - 1 + tabs.length) % tabs.length]\n\t\t\t\t\t: event.key === \"Home\"\n\t\t\t\t\t\t? tabs[0]\n\t\t\t\t\t\t: event.key === \"End\"\n\t\t\t\t\t\t\t? tabs[tabs.length - 1]\n\t\t\t\t\t\t\t: undefined;\n\t\tif (!next) return;\n\t\tevent.preventDefault();\n\t\t// In automatic mode the tab selects itself as it takes focus (see TabsTrigger).\n\t\tnext.focus();\n\t};\n\n\treturn (\n\t\t// The tablist itself is not focusable: its tabs are, with one roving tab stop (WAI-ARIA tabs).\n\t\t// oxlint-disable-next-line jsx-a11y/interactive-supports-focus\n\t\t<div\n\t\t\t{...rest}\n\t\t\tref={(node) => {\n\t\t\t\tlist.current = node;\n\t\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\t\telse if (ref) ref.current = node;\n\t\t\t}}\n\t\t\trole=\"tablist\"\n\t\t\taria-orientation={orientation}\n\t\t\tdata-orientation={orientation}\n\t\t\tclassName={cn(tabsListClass(variant, size), className)}\n\t\t\tonKeyDown={moveFocus}\n\t\t>\n\t\t\t{children}\n\t\t\t{/* Last, so the selected tab is laid out before the indicator that anchors to it. */}\n\t\t\t{variant === \"expandable\" ? null : (\n\t\t\t\t<span className={tabsParts.indicator} aria-hidden=\"true\" />\n\t\t\t)}\n\t\t</div>\n\t);\n}\n\nexport type TabsTriggerProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, \"value\" | \"type\"> & {\n\t/** The value this tab selects. Matches a TabsContent's `value`. */\n\tvalue: string;\n\t/** A decorative icon before the label, such as a HugeIcons element. Needed by `expandable`. */\n\ticon?: ReactNode;\n\tref?: Ref<HTMLButtonElement>;\n};\n\nexport function TabsTrigger({\n\tvalue,\n\ticon,\n\tclassName,\n\tchildren,\n\tonClick,\n\tonFocus,\n\tref,\n\t...rest\n}: TabsTriggerProps) {\n\tconst tabs = useTabs(\"TabsTrigger\");\n\tconst selected = tabs.value === value;\n\n\treturn (\n\t\t<button\n\t\t\tid={tabs.triggerId(value)}\n\t\t\taria-controls={tabs.hasPanel(value) ? tabs.panelId(value) : undefined}\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\ttype=\"button\"\n\t\t\trole=\"tab\"\n\t\t\taria-selected={selected}\n\t\t\tdata-state={selected ? \"active\" : \"inactive\"}\n\t\t\ttabIndex={selected ? 0 : -1}\n\t\t\tclassName={cn(tabsParts.trigger, className)}\n\t\t\tonClick={(event: MouseEvent<HTMLButtonElement>) => {\n\t\t\t\tonClick?.(event);\n\t\t\t\tif (!event.defaultPrevented) tabs.select(value);\n\t\t\t}}\n\t\t\tonFocus={(event: FocusEvent<HTMLButtonElement>) => {\n\t\t\t\tonFocus?.(event);\n\t\t\t\tif (!event.defaultPrevented && tabs.activationMode === \"automatic\") tabs.select(value);\n\t\t\t}}\n\t\t>\n\t\t\t{icon ? (\n\t\t\t\t<span className={tabsParts.icon} aria-hidden=\"true\">\n\t\t\t\t\t{icon}\n\t\t\t\t</span>\n\t\t\t) : null}\n\t\t\t<span className={tabsParts.label}>\n\t\t\t\t<span className={tabsParts.text}>{children}</span>\n\t\t\t</span>\n\t\t</button>\n\t);\n}\n\nexport type TabsContentProps = HTMLAttributes<HTMLDivElement> & {\n\t/** The tab value this panel belongs to. */\n\tvalue: string;\n\tref?: Ref<HTMLDivElement>;\n};\n\nexport function TabsContent({ value, className, children, ref, ...rest }: TabsContentProps) {\n\tconst tabs = useTabs(\"TabsContent\");\n\tconst { registerPanel } = tabs;\n\tconst selected = tabs.value === value;\n\n\tuseLayoutEffect(() => registerPanel(value), [registerPanel, value]);\n\n\treturn (\n\t\t<div\n\t\t\tid={tabs.panelId(value)}\n\t\t\taria-labelledby={tabs.triggerId(value)}\n\t\t\t// In the Tab order, so a panel with no focusable content can still be reached and read.\n\t\t\ttabIndex={0}\n\t\t\t{...rest}\n\t\t\tref={ref}\n\t\t\trole=\"tabpanel\"\n\t\t\thidden={!selected}\n\t\t\tdata-state={selected ? \"active\" : \"inactive\"}\n\t\t\tclassName={cn(tabsParts.content, className)}\n\t\t>\n\t\t\t{children}\n\t\t</div>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-tabs": {
+        "display": "flex",
+        "flex-direction": "column",
+        "gap": "0.75rem"
+      },
+      ".rx-tabs[data-orientation=\"vertical\"]": {
+        "flex-direction": "row",
+        "align-items": "flex-start"
+      },
+      ".rx-tabs-list": {
+        "--_h": "2.5rem",
+        "--_pad": "4px",
+        "--_bw": "1px",
+        "--_px": "0.75rem",
+        "--_icon": "16px",
+        "--_gap": "0.375rem",
+        "--_fs": "0.875rem",
+        "--_lh": "1.25rem",
+        "--_th": "calc(var(--_h) - var(--_pad) * 2 - var(--_bw) * 2)",
+        "--_track": "transparent",
+        "--_track-a": "transparent",
+        "--_track-b": "transparent",
+        "--_track-ring": "transparent",
+        "--_track-radius": "var(--radius-control)",
+        "--_ind": "var(--card)",
+        "--_ind-a": "var(--_ind)",
+        "--_ind-b": "var(--_ind)",
+        "--_ind-ring": "transparent",
+        "--_ind-radius": "max(2px, calc(var(--_track-radius) - var(--_pad) - var(--_bw)))",
+        "--_off": "var(--muted-foreground)",
+        "--_on": "var(--foreground)",
+        "position": "relative",
+        "isolation": "isolate",
+        "display": "inline-flex",
+        "align-self": "flex-start",
+        "align-items": "center",
+        "gap": "2px",
+        "box-sizing": "border-box",
+        "max-inline-size": "100%",
+        "padding": "var(--_pad)",
+        "border": "var(--_bw) solid transparent",
+        "border-radius": "var(--_track-radius)",
+        "background": "linear-gradient(var(--_track), var(--_track)) padding-box, linear-gradient(180deg, var(--_track-a), var(--_track-b)) border-box",
+        "box-shadow": "0 0 0 1px var(--_track-ring)",
+        "font-family": "var(--font-sans)",
+        "font-size": "var(--_fs)",
+        "line-height": "var(--_lh)",
+        "letter-spacing": "-0.15px"
+      },
+      ".rx-tabs-list[data-orientation=\"horizontal\"]": {
+        "overflow-x": "auto",
+        "overflow-y": "hidden",
+        "scrollbar-width": "none"
+      },
+      ".rx-tabs-list[data-orientation=\"vertical\"]": {
+        "flex-direction": "column",
+        "align-items": "stretch"
+      },
+      ".rx-tabs-trigger": {
+        "position": "relative",
+        "isolation": "isolate",
+        "display": "inline-flex",
+        "flex": "1 0 auto",
+        "align-items": "center",
+        "justify-content": "center",
+        "gap": "var(--_gap)",
+        "box-sizing": "border-box",
+        "height": "var(--_th)",
+        "margin": "0",
+        "padding": "0 var(--_px)",
+        "border": "0",
+        "border-radius": "var(--_ind-radius)",
+        "background": "none",
+        "color": "var(--_off)",
+        "font": "inherit",
+        "font-weight": "500",
+        "white-space": "nowrap",
+        "cursor": "pointer",
+        "user-select": "none",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "color 150ms var(--motion-ease)"
+      },
+      ".rx-tabs-trigger[aria-selected=\"true\"]": {
+        "color": "var(--_on)"
+      },
+      ".rx-tabs-trigger::before": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset": "0",
+        "z-index": "-1",
+        "box-sizing": "border-box",
+        "border": "1px solid transparent",
+        "border-radius": "inherit",
+        "background": "linear-gradient(var(--_ind), var(--_ind)) padding-box, linear-gradient(180deg, var(--_ind-a), var(--_ind-b)) border-box",
+        "box-shadow": "0 0 0 1px var(--_ind-ring)",
+        "opacity": "0",
+        "transition": "opacity 150ms var(--motion-ease)"
+      },
+      ".rx-tabs-trigger:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "1px"
+      },
+      ".rx-tabs-trigger:disabled": {
+        "opacity": "0.5",
+        "cursor": "not-allowed"
+      },
+      ".rx-tabs-trigger svg": {
+        "flex": "none",
+        "width": "var(--_icon)",
+        "height": "var(--_icon)"
+      },
+      "[data-orientation=\"vertical\"] > .rx-tabs-trigger": {
+        "flex": "none",
+        "justify-content": "flex-start"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-tabs-trigger:hover:not(:disabled, [aria-selected=\"true\"])": {
+          "color": "var(--foreground)"
+        }
+      },
+      ".rx-tabs-icon": {
+        "display": "inline-flex",
+        "flex": "none"
+      },
+      ".rx-tabs-label": {
+        "display": "block",
+        "min-width": "0"
+      },
+      ".rx-tabs-indicator": {
+        "display": "none"
+      },
+      "@supports (anchor-scope: all)": {
+        ".rx-tabs-list": {
+          "anchor-scope": "--_tab"
+        },
+        ".rx-tabs-trigger[aria-selected=\"true\"]": {
+          "anchor-name": "--_tab"
+        },
+        ".rx-tabs-indicator": {
+          "position": "absolute",
+          "position-anchor": "--_tab",
+          "top": "anchor(top)",
+          "right": "anchor(right)",
+          "bottom": "anchor(bottom)",
+          "left": "anchor(left)",
+          "z-index": "-1",
+          "display": "block",
+          "box-sizing": "border-box",
+          "border": "1px solid transparent",
+          "border-radius": "var(--_ind-radius)",
+          "background": "linear-gradient(var(--_ind), var(--_ind)) padding-box, linear-gradient(180deg, var(--_ind-a), var(--_ind-b)) border-box",
+          "box-shadow": "0 0 0 1px var(--_ind-ring)",
+          "pointer-events": "none",
+          "transition": "top var(--spring-tabs-duration) var(--spring-tabs), right var(--spring-tabs-duration) var(--spring-tabs), bottom var(--spring-tabs-duration) var(--spring-tabs), left var(--spring-tabs-duration) var(--spring-tabs)"
+        },
+        ".rx-tabs-list:not(:has(> [aria-selected=\"true\"])) > .rx-tabs-indicator": {
+          "display": "none"
+        }
+      },
+      "@supports not (anchor-scope: all)": {
+        ".rx-tabs-trigger[aria-selected=\"true\"]::before": {
+          "opacity": "1"
+        }
+      },
+      ".rx-tabs-segmented": {
+        "--_track": "var(--secondary)",
+        "--_track-a": "var(--field-edge-top)",
+        "--_track-b": "var(--field-edge-bottom)",
+        "--_ind": "var(--card)",
+        "--_ind-a": "var(--surface-edge-top)",
+        "--_ind-b": "var(--surface-edge-bottom)",
+        "--_ind-ring": "var(--surface-ring)"
+      },
+      "[data-depth=\"flat\"] .rx-tabs-segmented": {
+        "--_track-a": "var(--_track)",
+        "--_track-b": "var(--_track)",
+        "--_ind-a": "var(--input)",
+        "--_ind-b": "var(--input)",
+        "--_ind-ring": "transparent"
+      },
+      ".rx-tabs-pill, .rx-tabs-expandable": {
+        "--_track": "var(--card)",
+        "--_track-a": "var(--surface-edge-top)",
+        "--_track-b": "var(--surface-edge-bottom)",
+        "--_track-ring": "var(--surface-ring)",
+        "--_track-radius": "var(--radius-button)"
+      },
+      ".rx-tabs-pill": {
+        "--_ind": "var(--primary)",
+        "--_on": "var(--primary-foreground)"
+      },
+      ".rx-tabs-pill > .rx-tabs-trigger": {
+        "transition": "color var(--spring-tabs-duration) var(--spring-tabs)"
+      },
+      "[data-depth=\"flat\"] :is(.rx-tabs-pill, .rx-tabs-expandable)": {
+        "--_track-a": "var(--border)",
+        "--_track-b": "var(--border)",
+        "--_track-ring": "transparent"
+      },
+      ".rx-tabs-underline": {
+        "--_pad": "0px",
+        "--_bw": "0px",
+        "--_ind": "var(--primary)",
+        "--_track-radius": "0px",
+        "--_ind-radius": "0px",
+        "align-self": "stretch",
+        "gap": "0.25rem",
+        "box-shadow": "inset 0 -1px var(--border)"
+      },
+      ".rx-tabs-underline > .rx-tabs-trigger": {
+        "flex": "none",
+        "border-radius": "var(--radius-item)"
+      },
+      ".rx-tabs-underline > .rx-tabs-trigger::before": {
+        "inset": "auto 0 0",
+        "height": "2px",
+        "border": "0",
+        "border-radius": "0"
+      },
+      ".rx-tabs-underline > .rx-tabs-trigger:focus-visible": {
+        "outline-offset": "-2px"
+      },
+      ".rx-tabs-underline > .rx-tabs-indicator": {
+        "top": "auto",
+        "height": "2px",
+        "border": "0"
+      },
+      ".rx-tabs-underline[data-orientation=\"vertical\"]": {
+        "align-self": "flex-start",
+        "box-shadow": "none",
+        "border-inline-start": "1px solid var(--border)",
+        "padding-inline-start": "0.25rem"
+      },
+      ".rx-tabs-underline[data-orientation=\"vertical\"] > .rx-tabs-trigger::before": {
+        "inset": "0 auto 0 calc(-0.25rem - 1px)",
+        "width": "2px",
+        "height": "auto"
+      },
+      ".rx-tabs-underline[data-orientation=\"vertical\"] > .rx-tabs-indicator": {
+        "top": "anchor(top)",
+        "bottom": "anchor(bottom)",
+        "right": "auto",
+        "left": "auto",
+        "inset-inline-start": "-1px",
+        "width": "2px",
+        "height": "auto"
+      },
+      ".rx-tabs-expandable": {
+        "--_ind": "color-mix(in oklab, var(--foreground) 9%, transparent)",
+        "--_px": "calc((var(--_th) - var(--_icon)) / 2)"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger": {
+        "display": "inline-grid",
+        "flex": "none",
+        "grid-template-columns": "auto 0fr",
+        "gap": "0",
+        "transition": "color 150ms var(--motion-ease), grid-template-columns 160ms var(--motion-ease), padding 160ms var(--motion-ease)"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger::before": {
+        "transition": "opacity 120ms var(--motion-ease)"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger .rx-tabs-label": {
+        "overflow": "hidden"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger .rx-tabs-text": {
+        "display": "block",
+        "padding-inline-start": "var(--_gap)",
+        "opacity": "0",
+        "filter": "blur(3px)",
+        "transition": "opacity 120ms var(--motion-ease), filter 120ms var(--motion-ease)"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger[aria-selected=\"true\"]": {
+        "grid-template-columns": "auto 1fr",
+        "padding-inline-end": "calc(var(--_px) + 0.25rem)",
+        "transition": "color 150ms var(--motion-ease), grid-template-columns var(--spring-swap-duration) var(--spring-swap), padding var(--spring-swap-duration) var(--spring-swap)"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger[aria-selected=\"true\"]::before": {
+        "opacity": "1",
+        "transition-duration": "200ms"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger[aria-selected=\"true\"] .rx-tabs-text": {
+        "opacity": "1",
+        "filter": "blur(0)",
+        "transition": "opacity 200ms var(--motion-ease) 60ms, filter 200ms var(--motion-ease) 60ms"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger:not(:has(> .rx-tabs-icon))": {
+        "grid-template-columns": "0px 1fr"
+      },
+      ".rx-tabs-expandable > .rx-tabs-trigger:not(:has(> .rx-tabs-icon)) .rx-tabs-text": {
+        "padding-inline-start": "0",
+        "opacity": "1",
+        "filter": "none"
+      },
+      ".rx-tabs-sm": {
+        "--_h": "2rem",
+        "--_pad": "3px",
+        "--_px": "0.625rem",
+        "--_icon": "14px",
+        "--_gap": "0.25rem",
+        "--_fs": "0.8125rem",
+        "--_lh": "1.25rem"
+      },
+      ".rx-tabs-lg": {
+        "--_h": "3rem",
+        "--_px": "1rem",
+        "--_icon": "18px",
+        "--_gap": "0.5rem",
+        "--_fs": "1rem",
+        "--_lh": "1.5rem"
+      },
+      ".rx-tabs-underline:is(.rx-tabs-sm, .rx-tabs-lg)": {
+        "--_pad": "0px"
+      },
+      ".rx-tabs-expandable:is(.rx-tabs-sm, .rx-tabs-lg)": {
+        "--_px": "calc((var(--_th) - var(--_icon)) / 2)"
+      },
+      ".rx-tabs-content": {
+        "flex": "1",
+        "min-width": "0",
+        "border-radius": "var(--radius-control)",
+        "transition": "opacity 200ms var(--motion-ease), filter 200ms var(--motion-ease), translate var(--spring-panel-duration) var(--spring-panel)"
+      },
+      "@starting-style ": {
+        ".rx-tabs-content": {
+          "opacity": "0",
+          "filter": "blur(4px)",
+          "translate": "0 4px"
+        }
+      },
+      ".rx-tabs-content:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-tabs-indicator, .rx-tabs-pill > .rx-tabs-trigger, .rx-tabs-expandable > .rx-tabs-trigger, .rx-tabs-expandable > .rx-tabs-trigger[aria-selected=\"true\"]": {
+          "transition": "color 100ms var(--motion-ease)"
+        },
+        ".rx-tabs-trigger .rx-tabs-text": {
+          "filter": "none",
+          "transition": "opacity 100ms var(--motion-ease)"
+        },
+        ".rx-tabs-content": {
+          "transition": "opacity 100ms var(--motion-ease)"
+        }
+      },
+      "[data-motion=\"off\"] :is(.rx-tabs-indicator, .rx-tabs-trigger, .rx-tabs-content), [data-motion=\"off\"] .rx-tabs-trigger::before, [data-motion=\"off\"] .rx-tabs-trigger .rx-tabs-text": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

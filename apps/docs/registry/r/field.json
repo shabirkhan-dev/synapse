@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "field",
+  "title": "Field",
+  "description": "A label, a hint and an error wired to the control inside it.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/field.styles.ts",
+      "content": "/** Classes for the parts of a Field. React, Solid and plain HTML all use these. */\nexport const fieldParts = {\n\troot: \"grid gap-1.5\",\n\tlabel: \"text-[13px]/5 font-[510] tracking-[-0.15px] text-foreground\",\n\t/** The hint, or the error: set `data-invalid` on it to turn it red. */\n\tmessage: \"text-xs/4 tracking-[-0.15px] text-(--subtle-foreground) data-invalid:text-destructive\",\n};\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/field.tsx",
+      "content": "\"use client\";\n\nimport { type ReactNode, useId } from \"react\";\nimport { FieldContext } from \"./field-context\";\nimport { cn } from \"@/lib/utils\";\nimport { fieldParts } from \"./field.styles\";\n\nexport type FieldProps = {\n\tlabel: ReactNode;\n\t/** Helper text under the control. */\n\thint?: ReactNode;\n\t/** Replaces the hint, marks the control invalid and is announced when it appears. */\n\terror?: ReactNode;\n\tclassName?: string;\n\t/** One control, such as an Input. It receives the id, the description and the invalid state. */\n\tchildren: ReactNode;\n};\n\n/** A label, a control and an optional hint or error, linked for assistive technology. */\nexport function Field({ label, hint, error, className, children }: FieldProps) {\n\tconst id = useId();\n\tconst message = error ?? hint;\n\tconst { root, label: labelClass, message: messageClass } = fieldParts;\n\n\treturn (\n\t\t<FieldContext\n\t\t\tvalue={{ id, describedBy: message ? `${id}-message` : undefined, invalid: !!error }}\n\t\t>\n\t\t\t<div className={cn(root, className)}>\n\t\t\t\t<label id={`${id}-label`} htmlFor={id} className={labelClass}>\n\t\t\t\t\t{label}\n\t\t\t\t</label>\n\t\t\t\t{children}\n\t\t\t\t{message && (\n\t\t\t\t\t<p\n\t\t\t\t\t\tid={`${id}-message`}\n\t\t\t\t\t\taria-live=\"polite\"\n\t\t\t\t\t\tdata-invalid={error ? \"\" : undefined}\n\t\t\t\t\t\tclassName={messageClass}\n\t\t\t\t\t>\n\t\t\t\t\t\t{message}\n\t\t\t\t\t</p>\n\t\t\t\t)}\n\t\t\t</div>\n\t\t</FieldContext>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

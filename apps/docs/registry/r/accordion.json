@@ -1,0 +1,194 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "accordion",
+  "title": "Accordion",
+  "description": "Single or multiple accordions on native details, in separated, cards and flush variants: the open item lifts out of the stack on a bouncy spring. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/collapsible.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/accordion.styles.ts",
+      "content": "export type AccordionVariant = \"separated\" | \"cards\" | \"flush\";\nexport type AccordionType = \"single\" | \"multiple\";\n\nexport const accordionVariants = [\n\t\"separated\",\n\t\"cards\",\n\t\"flush\",\n] as const satisfies readonly AccordionVariant[];\n\n/**\n * The class list for an accordion. The look and the motion live in `accordion.css` on top of\n * `collapsible.css` (your global CSS, when installed from the registry): every item is a\n * Collapsible, a `<details>`. Single accordions give the items one `name`, so the browser keeps one\n * open even before hydration:\n *\n *   <div class=\"rx-accordion rx-accordion-separated\">\n *     <details class=\"rx-collapsible rx-accordion-item\" name=\"faq\" open>\n *       <summary class=\"rx-collapsible-trigger rx-accordion-trigger\">\n *         <span class=\"rx-accordion-title\">Is it accessible?</span>\n *         <span class=\"rx-collapsible-chevron\" aria-hidden=\"true\"></span>\n *       </summary>\n *       <div class=\"rx-collapsible-content rx-accordion-content\" role=\"region\">…</div>\n *     </details>\n *   </div>\n */\nexport function accordionClass(variant: AccordionVariant = \"separated\") {\n\treturn `rx-accordion rx-accordion-${variant}`;\n}\n\n/** Class names for the parts of Accordion (each item also carries the Collapsible's). */\nexport const accordionParts = {\n\troot: \"rx-accordion\",\n\t/** One `<details>`. */\n\titem: \"rx-accordion-item\",\n\t/** Its `<summary>`. */\n\ttrigger: \"rx-accordion-trigger\",\n\t/** A decorative icon before the title. */\n\ticon: \"rx-accordion-icon\",\n\t/** The title text. */\n\ttitle: \"rx-accordion-title\",\n\t/** The panel, a `region` named by its trigger. */\n\tcontent: \"rx-accordion-content\",\n} as const;\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/accordion.tsx",
+      "content": "\"use client\";\n\nimport {\n\tcreateContext,\n\ttype HTMLAttributes,\n\ttype KeyboardEvent,\n\ttype ReactNode,\n\ttype Ref,\n\tuseCallback,\n\tuseContext,\n\tuseId,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n} from \"react\";\nimport {\n\tCollapsible,\n\tCollapsibleContent,\n\ttype CollapsibleContentProps,\n\ttype CollapsibleProps,\n\tCollapsibleTrigger,\n\ttype CollapsibleTriggerProps,\n\tuseCollapsible,\n} from \"./collapsible\";\nimport { cn } from \"@/lib/utils\";\nimport { type AccordionVariant, accordionClass, accordionParts } from \"./accordion.styles\";\n\ntype AccordionContextValue = {\n\ttype: \"single\" | \"multiple\";\n\topen: readonly string[];\n\tcollapsible: boolean;\n\t/** The `name` that groups a single accordion's items, so the browser keeps one open. */\n\tname: string | undefined;\n\trequest: (value: string, open: boolean, item: HTMLDetailsElement | null) => void;\n};\n\nconst AccordionContext = createContext<AccordionContextValue | null>(null);\n\nfunction useAccordion(part: string) {\n\tconst context = useContext(AccordionContext);\n\tif (!context) throw new Error(`${part} must be inside <Accordion>`);\n\treturn context;\n}\n\ntype AccordionItemContextValue = { value: string; locked: boolean };\nconst AccordionItemContext = createContext<AccordionItemContextValue | null>(null);\n\ntype AccordionBaseProps = Omit<HTMLAttributes<HTMLDivElement>, \"defaultValue\" | \"onChange\"> & {\n\t/**\n\t * `separated` (default): one joined stack where the open item lifts out as its own card.\n\t * `cards`: every item is its own card. `flush`: rows divided by lines, no surface.\n\t */\n\tvariant?: AccordionVariant;\n\tref?: Ref<HTMLDivElement>;\n};\n\nexport type AccordionSingleProps = AccordionBaseProps & {\n\t/** One item open at a time (default). */\n\ttype?: \"single\";\n\t/** The open item (controlled); `\"\"` for none. */\n\tvalue?: string;\n\t/** The item open first (uncontrolled). */\n\tdefaultValue?: string;\n\t/** The newly open item, or `\"\"` when the open one closes. */\n\tonValueChange?: (value: string) => void;\n\t/** Whether the open item can be closed again, leaving none open. Off by default. */\n\tcollapsible?: boolean;\n};\n\nexport type AccordionMultipleProps = AccordionBaseProps & {\n\t/** Any number of items open. */\n\ttype: \"multiple\";\n\t/** The open items (controlled). */\n\tvalue?: string[];\n\t/** The items open first (uncontrolled). */\n\tdefaultValue?: string[];\n\t/** Every open item, after each change. */\n\tonValueChange?: (value: string[]) => void;\n\tcollapsible?: never;\n};\n\nexport type AccordionProps = AccordionSingleProps | AccordionMultipleProps;\n\nconst asList = (value: string | string[] | undefined): string[] =>\n\tvalue === undefined || value === \"\" ? [] : typeof value === \"string\" ? [value] : value;\n\n/** The items and triggers of this accordion, not of one nested inside it. */\nfunction own<T extends Element>(root: Element, selector: string): T[] {\n\treturn Array.from(root.querySelectorAll<T>(selector)).filter(\n\t\t(node) => node.closest(`.${accordionParts.root}`) === root,\n\t);\n}\n\n/**\n * A stack of Collapsibles (`<details>`) with one shared state. `single` gives the items one `name`,\n * so the browser itself keeps one open (and does so before hydration); `multiple` leaves them free.\n * Up and down arrows, Home and End move between triggers. Heights, corners, gaps, the chevron and the\n * content's fade are CSS transitions; JavaScript only holds which items are open.\n */\nexport function Accordion(props: AccordionProps) {\n\tconst {\n\t\ttype = \"single\",\n\t\tvalue: valueProp,\n\t\tdefaultValue,\n\t\tonValueChange,\n\t\tcollapsible = false,\n\t\tvariant = \"separated\",\n\t\tclassName,\n\t\tchildren,\n\t\tonKeyDown,\n\t\tref,\n\t\t...rest\n\t} = props;\n\tconst [internal, setInternal] = useState(() => asList(defaultValue));\n\tconst controlled = valueProp !== undefined;\n\tconst open = useMemo(\n\t\t() => (controlled ? asList(valueProp) : internal),\n\t\t[controlled, valueProp, internal],\n\t);\n\tconst root = useRef<HTMLDivElement>(null);\n\tconst name = useId();\n\n\tconst commit = useCallback(\n\t\t(next: string[]) => {\n\t\t\tif (!controlled) setInternal(next);\n\t\t\tif (type === \"multiple\") (onValueChange as ((v: string[]) => void) | undefined)?.(next);\n\t\t\telse (onValueChange as ((v: string) => void) | undefined)?.(next[0] ?? \"\");\n\t\t},\n\t\t[controlled, onValueChange, type],\n\t);\n\n\tconst request = useCallback(\n\t\t(value: string, opening: boolean, item: HTMLDetailsElement | null) => {\n\t\t\tif (type === \"multiple\") {\n\t\t\t\tcommit(opening ? [...open, value] : open.filter((v) => v !== value));\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tif (opening) {\n\t\t\t\tcommit([value]);\n\t\t\t\treturn;\n\t\t\t}\n\t\t\t// A single accordion's open item closes either because the browser opened a sibling in its\n\t\t\t// `name` group (find-in-page, a text fragment), whose own toggle may not have arrived yet,\n\t\t\t// or because it was asked to. The sibling wins; otherwise only `collapsible` may close.\n\t\t\tconst node = root.current;\n\t\t\tconst sibling =\n\t\t\t\tnode &&\n\t\t\t\town<HTMLDetailsElement>(node, `.${accordionParts.item}`).find(\n\t\t\t\t\t(details) => details !== item && details.open && details.dataset.value !== undefined,\n\t\t\t\t);\n\t\t\tif (sibling?.dataset.value !== undefined && sibling.dataset.value !== value) {\n\t\t\t\tcommit([sibling.dataset.value]);\n\t\t\t} else if (collapsible) commit([]);\n\t\t},\n\t\t[collapsible, commit, open, type],\n\t);\n\n\tconst context = useMemo<AccordionContextValue>(\n\t\t() => ({ type, open, collapsible, name: type === \"single\" ? name : undefined, request }),\n\t\t[type, open, collapsible, name, request],\n\t);\n\n\tconst moveFocus = (event: KeyboardEvent<HTMLDivElement>) => {\n\t\tonKeyDown?.(event);\n\t\tconst node = root.current;\n\t\tif (event.defaultPrevented || !node) return;\n\t\tconst triggers = own<HTMLElement>(node, `.${accordionParts.trigger}`).filter(\n\t\t\t(trigger) => !trigger.hasAttribute(\"data-disabled\"),\n\t\t);\n\t\tconst at = triggers.indexOf(event.target as HTMLElement);\n\t\tif (at < 0) return;\n\t\tconst next =\n\t\t\tevent.key === \"ArrowDown\"\n\t\t\t\t? triggers[(at + 1) % triggers.length]\n\t\t\t\t: event.key === \"ArrowUp\"\n\t\t\t\t\t? triggers[(at - 1 + triggers.length) % triggers.length]\n\t\t\t\t\t: event.key === \"Home\"\n\t\t\t\t\t\t? triggers[0]\n\t\t\t\t\t\t: event.key === \"End\"\n\t\t\t\t\t\t\t? triggers[triggers.length - 1]\n\t\t\t\t\t\t\t: undefined;\n\t\tif (!next) return;\n\t\tevent.preventDefault();\n\t\tnext.focus();\n\t};\n\n\treturn (\n\t\t<AccordionContext.Provider value={context}>\n\t\t\t{/* Keys only move focus between the triggers inside; the triggers are the controls. */}\n\t\t\t{/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions */}\n\t\t\t<div\n\t\t\t\t{...rest}\n\t\t\t\tref={(node) => {\n\t\t\t\t\troot.current = node;\n\t\t\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\t\t\telse if (ref) ref.current = node;\n\t\t\t\t}}\n\t\t\t\tdata-slot=\"accordion\"\n\t\t\t\tdata-orientation=\"vertical\"\n\t\t\t\tclassName={cn(accordionClass(variant), className)}\n\t\t\t\tonKeyDown={moveFocus}\n\t\t\t>\n\t\t\t\t{children}\n\t\t\t</div>\n\t\t</AccordionContext.Provider>\n\t);\n}\n\nexport type AccordionItemProps = Omit<\n\tCollapsibleProps,\n\t\"open\" | \"defaultOpen\" | \"onOpenChange\" | \"name\"\n> & {\n\t/** Identifies the item in `value`. Required. */\n\tvalue: string;\n};\n\n/** One `<details>`. Its first child is the AccordionTrigger, then the AccordionContent. */\nexport function AccordionItem({ value, disabled, className, ref, ...rest }: AccordionItemProps) {\n\tconst accordion = useAccordion(\"AccordionItem\");\n\tconst open = accordion.open.includes(value);\n\tconst details = useRef<HTMLDetailsElement>(null);\n\t// A single accordion that is not collapsible keeps its open item open (WAI-ARIA, as Radix).\n\tconst locked = open && accordion.type === \"single\" && !accordion.collapsible;\n\tconst item = useMemo(() => ({ value, locked }), [value, locked]);\n\n\treturn (\n\t\t<AccordionItemContext.Provider value={item}>\n\t\t\t<Collapsible\n\t\t\t\t{...rest}\n\t\t\t\tref={(node) => {\n\t\t\t\t\tdetails.current = node;\n\t\t\t\t\tif (typeof ref === \"function\") ref(node);\n\t\t\t\t\telse if (ref) ref.current = node;\n\t\t\t\t}}\n\t\t\t\tname={accordion.name}\n\t\t\t\topen={open}\n\t\t\t\tdisabled={disabled}\n\t\t\t\tonOpenChange={(next) => accordion.request(value, next, details.current)}\n\t\t\t\tdata-slot=\"accordion-item\"\n\t\t\t\tdata-value={value}\n\t\t\t\tclassName={cn(accordionParts.item, className)}\n\t\t\t/>\n\t\t</AccordionItemContext.Provider>\n\t);\n}\n\nexport type AccordionTriggerProps = Omit<CollapsibleTriggerProps, \"chevron\"> & {\n\t/** A decorative icon before the title, such as a HugeIcons element. */\n\ticon?: ReactNode;\n};\n\n/** The `<summary>`: the icon, the title and a chevron that turns over as the item opens. */\nexport function AccordionTrigger({ icon, className, children, ...rest }: AccordionTriggerProps) {\n\tconst item = useContext(AccordionItemContext);\n\tif (!item) throw new Error(\"AccordionTrigger must be inside <AccordionItem>\");\n\treturn (\n\t\t<CollapsibleTrigger\n\t\t\taria-disabled={item.locked || undefined}\n\t\t\t{...rest}\n\t\t\tdata-slot=\"accordion-trigger\"\n\t\t\tclassName={cn(accordionParts.trigger, className)}\n\t\t>\n\t\t\t{icon ? (\n\t\t\t\t<span className={accordionParts.icon} aria-hidden=\"true\">\n\t\t\t\t\t{icon}\n\t\t\t\t</span>\n\t\t\t) : null}\n\t\t\t<span className={accordionParts.title}>{children}</span>\n\t\t</CollapsibleTrigger>\n\t);\n}\n\nexport type AccordionContentProps = CollapsibleContentProps;\n\n/** The panel: a `region` named by its trigger. Its padding is inside the part that animates. */\nexport function AccordionContent({ className, ...rest }: AccordionContentProps) {\n\tconst { triggerId } = useCollapsible();\n\treturn (\n\t\t<CollapsibleContent\n\t\t\trole=\"region\"\n\t\t\taria-labelledby={triggerId}\n\t\t\t{...rest}\n\t\t\tdata-slot=\"accordion-content\"\n\t\t\tclassName={cn(accordionParts.content, className)}\n\t\t/>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-accordion": {
+        "--_r": "var(--radius-box)",
+        "--_gap": "0.75rem",
+        "--_ease": "var(--spring-glide)",
+        "--_time": "var(--spring-glide-duration)",
+        "display": "flex",
+        "flex-direction": "column",
+        "inline-size": "100%",
+        "font-family": "var(--font-sans)"
+      },
+      ".rx-accordion:has(> [open])": {
+        "--_ease": "var(--spring-expand)",
+        "--_time": "var(--spring-expand-duration)"
+      },
+      ".rx-accordion > .rx-accordion-item": {
+        "--_open-ease": "var(--spring-expand)",
+        "--_open-time": "var(--spring-expand-duration)",
+        "--_fill": "transparent",
+        "--_edge-a": "transparent",
+        "--_edge-b": "transparent",
+        "--_ring": "transparent",
+        "--_sheen": "transparent",
+        "--_shade": "transparent",
+        "--_rs": "0px",
+        "--_re": "0px",
+        "--_px": "1rem",
+        "position": "relative",
+        "box-sizing": "border-box",
+        "border": "1px solid transparent",
+        "border-start-start-radius": "var(--_rs)",
+        "border-start-end-radius": "var(--_rs)",
+        "border-end-start-radius": "var(--_re)",
+        "border-end-end-radius": "var(--_re)",
+        "background": "linear-gradient(180deg, var(--_sheen), transparent 40%, transparent 60%, var(--_shade)) padding-box, linear-gradient(var(--_fill), var(--_fill)) padding-box, linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box",
+        "box-shadow": "0 0 0 1px var(--_ring)",
+        "color": "var(--card-foreground)",
+        "transition": "--_fill 150ms var(--motion-ease), margin-block-start var(--_time) var(--_ease), border-radius var(--_time) var(--_ease)"
+      },
+      ".rx-accordion-item > .rx-accordion-trigger": {
+        "gap": "0.75rem",
+        "min-block-size": "3.25rem",
+        "padding": "0.75rem var(--_px)",
+        "border-radius": "inherit",
+        "background": "none",
+        "color": "var(--card-foreground)"
+      },
+      ".rx-accordion-item > .rx-accordion-trigger:focus-visible": {
+        "outline-offset": "-2px"
+      },
+      ".rx-accordion-item > .rx-accordion-trigger[aria-disabled=\"true\"]:not([data-disabled])": {
+        "cursor": "default"
+      },
+      "@media (hover: hover) and (pointer: fine)": {
+        ".rx-accordion-item > .rx-accordion-trigger:hover:not([data-disabled])": {
+          "background": "none"
+        },
+        ":is(.rx-accordion-separated, .rx-accordion-cards) > .rx-accordion-item:has(> .rx-accordion-trigger:hover:not([data-disabled], [aria-disabled=\"true\"]))": {
+          "--_fill": "color-mix(in oklab, var(--card), var(--foreground) 3%)"
+        },
+        ".rx-accordion-flush > .rx-accordion-item > .rx-accordion-trigger:hover:not([data-disabled], [aria-disabled=\"true\"]) > .rx-accordion-title": {
+          "text-decoration": "underline",
+          "text-underline-offset": "3px"
+        }
+      },
+      ".rx-accordion-icon": {
+        "display": "grid",
+        "flex": "none",
+        "place-items": "center",
+        "inline-size": "1.75rem",
+        "block-size": "1.75rem",
+        "color": "var(--muted-foreground)"
+      },
+      ".rx-accordion-icon svg": {
+        "inline-size": "1rem",
+        "block-size": "1rem"
+      },
+      ".rx-accordion-title": {
+        "flex": "1",
+        "min-inline-size": "0",
+        "text-align": "start"
+      },
+      ".rx-accordion-content": {
+        "padding-inline": "var(--_px)",
+        "color": "var(--muted-foreground)",
+        "font-size": "0.875rem",
+        "line-height": "1.375rem"
+      },
+      ".rx-accordion-content::after": {
+        "content": "\"\"",
+        "display": "block",
+        "block-size": "var(--_px)"
+      },
+      ".rx-accordion-item:has(> .rx-accordion-trigger > .rx-accordion-icon) > .rx-accordion-content": {
+        "padding-inline-start": "calc(var(--_px) + 2.5rem)"
+      },
+      ":is(.rx-accordion-separated, .rx-accordion-cards) > .rx-accordion-item": {
+        "--_fill": "var(--card)",
+        "--_edge-a": "var(--surface-edge-top)",
+        "--_edge-b": "var(--surface-edge-bottom)",
+        "--_ring": "var(--surface-ring)",
+        "--_sheen": "var(--surface-sheen)",
+        "--_shade": "var(--surface-shade)"
+      },
+      "[data-depth=\"flat\"] :is(.rx-accordion-separated, .rx-accordion-cards) > .rx-accordion-item": {
+        "--_edge-a": "var(--border)",
+        "--_edge-b": "var(--border)",
+        "--_ring": "transparent",
+        "--_sheen": "transparent",
+        "--_shade": "transparent"
+      },
+      ".rx-accordion-separated > .rx-accordion-item:first-child": {
+        "--_rs": "var(--_r)"
+      },
+      ".rx-accordion-separated > .rx-accordion-item:last-child": {
+        "--_re": "var(--_r)"
+      },
+      ".rx-accordion-separated > .rx-accordion-item + .rx-accordion-item": {
+        "margin-block-start": "-1px"
+      },
+      ".rx-accordion-separated > .rx-accordion-item[open]": {
+        "--_rs": "var(--_r)",
+        "--_re": "var(--_r)"
+      },
+      ".rx-accordion-separated > .rx-accordion-item[open] + .rx-accordion-item, .rx-accordion-separated > .rx-accordion-item + .rx-accordion-item[open]": {
+        "--_rs": "var(--_r)",
+        "margin-block-start": "var(--_gap)"
+      },
+      ".rx-accordion-separated > .rx-accordion-item:has(+ .rx-accordion-item[open])": {
+        "--_re": "var(--_r)"
+      },
+      ".rx-accordion-cards": {
+        "gap": "0.5rem"
+      },
+      ".rx-accordion-cards > .rx-accordion-item": {
+        "--_rs": "var(--_r)",
+        "--_re": "var(--_r)"
+      },
+      ".rx-accordion-flush > .rx-accordion-item": {
+        "--_px": "0px",
+        "border-width": "0",
+        "border-block-end": "1px solid var(--border)",
+        "background": "none",
+        "box-shadow": "none"
+      },
+      ".rx-accordion-flush > .rx-accordion-item:last-child": {
+        "border-block-end-width": "0"
+      },
+      ".rx-accordion-flush > .rx-accordion-item > .rx-accordion-content::after": {
+        "block-size": "1rem"
+      },
+      ".rx-accordion-flush > .rx-accordion-item > .rx-accordion-trigger": {
+        "border-radius": "var(--radius-item)"
+      },
+      ".rx-accordion-flush > .rx-accordion-item > .rx-accordion-trigger:focus-visible": {
+        "outline-offset": "0"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-accordion-item": {
+          "transition-duration": "0ms"
+        }
+      },
+      "[data-motion=\"off\"] .rx-accordion-item": {
+        "transition": "none"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

@@ -1,0 +1,115 @@
+---
+title: UI
+description: "@rabtx/ui, the component library: native HTML and CSS, Tailwind, no animation library."
+---
+
+`packages/rabtx` (`@rabtx/ui`) is the component library for the apps. Components are native elements
+with semantic HTML, styled with Tailwind and modern CSS. Every animation is CSS (transitions,
+`@keyframes`, `@starting-style` and springs solved into `linear()` easings); JavaScript only sets
+state or CSS variables. Icons are HugeIcons, passed in as children or props.
+
+## Installation
+
+### In any shadcn project
+
+Every component is a [shadcn registry](https://ui.shadcn.com/docs/registry) item served by this
+site. Point a namespace at it once, then add components by name. The files are copied into your
+`components/ui` through your own `components.json` aliases, use your `cn` helper and are styled by
+your shadcn theme. Nothing depends on `@rabtx/ui`.
+
+```bash
+npx shadcn@latest registry add "@rabtx=https://<docs-domain>/r/{name}.json"
+npx shadcn@latest add @rabtx/button @rabtx/select
+```
+
+Or add one by URL, with no namespace: `npx shadcn@latest add https://<docs-domain>/r/button.json`.
+Locally the docs serve it at `http://localhost:3002/r/<name>.json`.
+
+| Item | Type | What it adds |
+| --- | --- | --- |
+| `theme` | `registry:theme` | The Rabtx colors, radius and extra tokens. Optional; without it components follow your theme. |
+| `rabtx` | `registry:style` | The shared depth, radius and motion CSS every component uses. Pulled in for you. |
+| `springs` | `registry:lib` | `lib/springs.ts` and the `--spring-*` easings. Pulled in for you. |
+| `utils` | `registry:lib` | The `cn` helper, for projects without one. |
+| `button` | `registry:ui` | Button, StatefulButton, MagneticButton and MetallicButton |
+| `select` | `registry:ui` | Select, SelectItem, SelectGroup and SelectSeparator |
+| `switch` | `registry:ui` | Switch |
+| `radio-group` | `registry:ui` | RadioGroup and RadioGroupItem |
+| `slider` | `registry:ui` | Slider (one value or a range) |
+| `tabs` | `registry:ui` | Tabs, TabsList, TabsTrigger and TabsContent |
+| `accordion` | `registry:ui` | Accordion, AccordionItem, AccordionTrigger and AccordionContent (installs `collapsible`) |
+| `collapsible` | `registry:ui` | Collapsible, CollapsibleTrigger and CollapsibleContent |
+| `input`, `textarea`, `field`, `checkbox`, `card`, `badge` | `registry:ui` | The form and surface components |
+| `dialog` | `registry:ui` | Dialog and its trigger, content, header, title, description, footer and close parts |
+| `tooltip` | `registry:ui` | TooltipProvider, Tooltip, TooltipTrigger, TooltipContent and TooltipKbd |
+| `popover` | `registry:ui` | Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverHeader, PopoverTitle and PopoverDescription |
+| `dropdown-menu` | `registry:ui` | DropdownMenu and its items, checkbox and radio rows, labels, groups, separators and submenus, plus ContextMenu |
+| `toast` | `registry:ui` | Toaster and the `toast()` API (success, error, warning, info, loading, promise, dismiss) |
+| `signup-block` | `registry:block` | A sign-up flow and a sign-in card, in `components/blocks/signup` |
+| `command-block` | `registry:block` | A ⌘K command palette, in `components/blocks/command` |
+| `settings-block` | `registry:block` | A settings page with an unsaved changes bar, in `components/blocks/settings` |
+
+Each component page has the command and a manual copy of every file under **Installation**.
+
+### In this monorepo
+
+Add the workspace package to an app, then import its styles once after Tailwind. The styles scan
+the component classes themselves, so there is no `@source` line to add.
+
+```bash
+bun add @rabtx/ui@workspace:*
+```
+
+```css
+@import "tailwindcss";
+@import "@rabtx/ui/styles.css";
+```
+
+Next.js apps also list it in `transpilePackages`, because the package ships TypeScript source.
+
+## Theming
+
+One file themes everything: `packages/rabtx/src/styles/theme.css`. It uses shadcn/ui's token names
+(`--background`, `--primary`, `--muted-foreground`, `--border`, `--ring`, `--radius` and the rest)
+on `:root` and `.dark`, maps them into Tailwind with `@theme inline`, and adds a few Rabtx tokens
+for status tones, depth, radius tiers, shadows and springs. Components read nothing else, so
+changing a value there restyles the web app, these docs and every component installed from the
+registry. See [Theming](/docs/ui/theming) for every token.
+
+## Modes
+
+Components never take a prop for theme, radius, size or motion. Set a class, an attribute or one
+variable on any ancestor and everything inside follows. The UI switch at the top of these pages
+opens a canvas: radius, primary color, size and animation time change the live component, and
+depth stays floating.
+
+- `class="dark"`: dark colors. `class="rabtx"` applies the theme to one subtree only, which is how
+  this site and the web app embed it next to their own themes. `rabtx light` or `rabtx dark` pins it.
+- `data-depth`: `flat` or `floating`, for fields and cards
+- `data-radius`: `sharp`, `default` or `round`
+- `data-size`: `sm`, `md` or `lg`. It resizes the default control. An explicit `size` on one
+  component still wins.
+- `data-motion`: `on` or `off`. Reduced motion in the OS turns motion down as well.
+- `--motion-ms`: a number of milliseconds, with no unit. Every spring uses it. The curves stay.
+
+## Components
+
+- [Theming](/docs/ui/theming)
+- [Button](/docs/ui/button)
+- [Select](/docs/ui/select)
+- [Checkbox](/docs/ui/checkbox)
+- [Switch](/docs/ui/switch)
+- [Radio Group](/docs/ui/radio-group)
+- [Slider](/docs/ui/slider)
+- [Tabs](/docs/ui/tabs)
+- [Input](/docs/ui/input)
+- [Card](/docs/ui/card)
+- [Dialog](/docs/ui/dialog)
+- [Tooltip](/docs/ui/tooltip)
+- [Toast](/docs/ui/toast)
+
+## Blocks
+
+- [Sign-up](/docs/ui/blocks/signup)
+- [Command palette](/docs/ui/blocks/command)
+- [Settings](/docs/ui/blocks/settings)

@@ -1,0 +1,81 @@
+---
+title: Collapsible
+description: A native details element that opens to its own height, fades its content in out of a blur and turns its chevron over. Controlled or not, and opened by find in page. Every animation is CSS.
+---
+
+<ComponentPreview name="collapsible/default" />
+
+## Installation
+
+<Installation name="collapsible" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/collapsible`; inside this monorepo, from
+`@rabtx/ui/collapsible`.
+
+```tsx
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@rabtx/ui/collapsible";
+
+export function Details() {
+  return (
+    <Collapsible>
+      <CollapsibleTrigger>More details</CollapsibleTrigger>
+      <CollapsibleContent>Kept out of the way until someone needs it.</CollapsibleContent>
+    </Collapsible>
+  );
+}
+```
+
+It is a `<details>` and the trigger its `<summary>`: the trigger must be the first child, and
+everything after it folds. It opens and closes before hydration and with no script at all. The
+trigger draws a chevron; pass `chevron={false}` to leave it out. Put vertical padding inside the
+content (or on its children) rather than as a margin outside, so it folds with the rest.
+
+## Controlled
+
+`open` and `onOpenChange` control it. A press, find in page or a link to text inside it all ask
+through `onOpenChange`; the element stays as `open` says until you pass the new value.
+`useCollapsible()` gives custom parts inside it the state and a `toggle`.
+
+<ComponentPreview name="collapsible/controlled" />
+
+## API
+
+`Collapsible` takes everything a `details` takes, plus:
+
+<TypeTable
+  type={{
+    open: { type: "boolean", description: "Open (controlled)." },
+    defaultOpen: { type: "boolean", default: "false", description: "Starts open (uncontrolled)." },
+    onOpenChange: { type: "(open: boolean) => void", description: "The state the user, or the browser, asked for." },
+    disabled: { type: "boolean", description: "The trigger stops toggling, is dimmed and leaves the Tab order." },
+  }}
+/>
+
+`CollapsibleTrigger` takes everything a `summary` takes, plus `chevron` (default `true`).
+`CollapsibleContent` takes everything a `div` takes.
+
+Outside React, `collapsibleParts` from `@rabtx/ui/collapsible/styles` names the classes:
+
+```html
+<details class="rx-collapsible">
+  <summary class="rx-collapsible-trigger">
+    More details <span class="rx-collapsible-chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="rx-collapsible-content">…</div>
+</details>
+```
+
+## How the motion works
+
+The same as the [Accordion](/docs/ui/accordion#how-the-motion-works), on the glide spring both ways
+(360 / 32 / 0.6, no overshoot, about 420ms). `--_open-ease` / `--_open-time` and `--_close-ease` /
+`--_close-time` on `.rx-collapsible` choose the springs; the Accordion sets its bouncier open there.
+
+## Accessibility
+
+- The `<summary>` is a button with its expanded state, toggled by Enter and Space.
+- Closed content is out of the accessibility tree and the Tab order.
+- A disabled collapsible's trigger has `aria-disabled` and `tabindex="-1"`.
+- With reduced motion nothing grows, turns or blurs; with `data-motion="off"` it changes at once.

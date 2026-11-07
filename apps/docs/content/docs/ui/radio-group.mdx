@@ -1,0 +1,149 @@
+---
+title: Radio Group
+description: Native radios in a radiogroup fieldset, three sizes and choice cards. The dot glides to the chosen option, all in CSS.
+---
+
+<ComponentPreview name="radio-group/default" />
+
+## Installation
+
+<Installation name="radio-group" />
+
+## Usage
+
+Installed from the registry, import from `@/components/ui/radio-group`; inside this monorepo, from
+`@rabtx/ui/radio-group`.
+
+```tsx
+import { RadioGroup, RadioGroupItem } from "@rabtx/ui/radio-group";
+
+export function Plan() {
+  const [plan, setPlan] = useState("pro");
+  return (
+    <RadioGroup aria-label="Plan" value={plan} onValueChange={setPlan}>
+      <RadioGroupItem value="starter">Starter</RadioGroupItem>
+      <RadioGroupItem value="pro">Pro</RadioGroupItem>
+    </RadioGroup>
+  );
+}
+```
+
+Every option is a real `<input type="radio">` and they share one `name` (generated when you leave
+it out), inside a `<fieldset role="radiogroup">`. So the browser does the hard parts: the group is
+one tab stop, the arrow keys move the choice (and wrap), Space chooses the focused option, forms
+submit the value and screen readers announce "2 of 3". Each option wraps its circle in a `<label>`,
+so the text names it and the whole row is clickable. Name the group with `aria-label`,
+`aria-labelledby` or a `Field`.
+
+## Description
+
+`description` adds a quieter line under an option's label. It is linked with `aria-describedby`,
+so it is read as the description rather than as part of the name.
+
+<ComponentPreview name="radio-group/description" />
+
+## Horizontal
+
+`orientation="horizontal"` lays the options out in a row that wraps. The arrow keys work the same
+way in both orientations.
+
+<ComponentPreview name="radio-group/horizontal" />
+
+## Choice cards
+
+`variant="card"` draws every option as a bordered card with the circle at the end, for plans,
+shipping speeds and similar. The whole card is the label: hover darkens its edge, the chosen card
+takes a `--primary` edge and tint, keyboard focus rings the card and pressing springs it down a
+little. Cards take every size and both orientations.
+
+<ComponentPreview name="radio-group/cards" />
+
+## States
+
+Chosen and not, a disabled option (`disabled` on the item) and a disabled group (`disabled` on the
+group disables the fieldset, so every option at once). Inside a `Field`, the Field's label names the
+group and `error` sets `aria-invalid`, links the message and turns the circles red until something
+is chosen.
+
+<ComponentPreview name="radio-group/states" />
+
+## Controlled
+
+<ComponentPreview name="radio-group/controlled" />
+
+## API
+
+`RadioGroup` takes everything a `<fieldset>` takes, plus:
+
+<TypeTable
+  type={{
+    value: { type: "string", description: "Controlled value. An empty string means nothing is chosen." },
+    defaultValue: { type: "string", description: "Uncontrolled initial value." },
+    onValueChange: { type: "(value: string) => void", description: "The new value after a click, Space or an arrow key." },
+    name: { type: "string", description: "The form field name. Generated when left out." },
+    orientation: { type: '"vertical" | "horizontal"', default: '"vertical"' },
+    size: { type: '"sm" | "md" | "lg"', default: '"md"' },
+    variant: { type: '"default" | "card"', default: '"default"' },
+    disabled: { type: "boolean", description: "Disables every option (the fieldset's own attribute)." },
+    required: { type: "boolean", description: "One option must be chosen before the form submits." },
+  }}
+/>
+
+`RadioGroupItem` takes everything a native radio takes, except `type`, `name` and `checked`, plus:
+
+<TypeTable
+  type={{
+    value: { type: "string", description: "The group's value when this option is chosen. Required." },
+    description: { type: "ReactNode", description: "A line under the label." },
+    disabled: { type: "boolean", description: "This option only." },
+    children: { type: "ReactNode", description: "The label. Without it, give the option an aria-label." },
+    className: { type: "string", description: "On the option's label element." },
+  }}
+/>
+
+Outside React, the class names are exported from `@rabtx/ui/radio-group/styles`
+(`radioGroupClass()`, `radioGroupParts`):
+
+```html
+<fieldset role="radiogroup" class="rx-radio-group rx-radio-group-md" aria-label="Plan">
+  <label class="rx-radio-item">
+    <span class="rx-radio">
+      <input type="radio" name="plan" value="pro" class="rx-radio-input" checked />
+    </span>
+    <span class="rx-radio-text"><span>Pro</span></span>
+  </label>
+</fieldset>
+```
+
+## Theming
+
+The Radio Group reads only the [theme tokens](/docs/ui/theming).
+
+| Part | Tokens |
+| --- | --- |
+| Circle, off | fill `--background`, edge `--muted-foreground` at 50% (full on hover) |
+| Circle, on | edge and dot `--primary` |
+| Focus and error | `--ring`, `--destructive` (edge, and a 15% halo) |
+| Label and description | `--foreground`, `--muted-foreground` |
+| Cards | fill `--card`, edge `--input`; chosen `--primary` edge and a 6% `--primary` tint; corners `--radius-control` |
+| Motion | `--spring-glide` (the dot travelling), `--spring-swap` (the dot growing), `--spring-press` (press), `--motion-ease` (colors, exit) |
+
+## How the motion works
+
+| Effect | CSS |
+| --- | --- |
+| State | each input is invisible and laid over its circle; the circle reads it with `:has(> :checked)`, `:has(> :focus-visible)`, `:has(> :disabled)`; the group reads `aria-invalid` and `:has(:checked)` |
+| Glide | where anchor positioning exists, the dot is the group's `::after`, anchored (`position-anchor`) to whichever circle is checked; `top` and `left` are `anchor(center)` and transition on the new glide spring (360 / 32 / 0.6, no overshoot, about 420ms), so the dot travels to the new choice. `anchor-scope` keeps each group's anchor to itself |
+| First choice | while nothing is chosen the anchor is the first circle and the dot is hidden at `scale: 0`; choosing grows it on the swap spring while it glides over |
+| Fallback | without anchor positioning, each circle's own `::after` dot pops in on the swap spring and shrinks out in 160ms |
+| Press | `:active` on a circle or its label springs the circle to `scale: 0.92` on the press spring; a card presses as a whole to 0.985 |
+
+## Accessibility
+
+- Native radios: the radiogroup role, one tab stop, arrow keys, Space, form submission and the
+  "n of m" announcement come from the browser.
+- Keyboard focus shows a 2px ring on the circle, or on the whole card. The click target is at least
+  24px.
+- Disabled options are half opacity and are skipped by the arrow keys.
+- With reduced motion there is no press, pop or glide; the dot fades in 100ms. With
+  `data-motion="off"` every state changes at once.

@@ -1,0 +1,16 @@
+{
+	"recommendations": [
+		"oxc.oxc-vscode",
+		"bradlc.vscode-tailwindcss",
+		"rust-lang.rust-analyzer",
+		"llvm-vs-code-extensions.vscode-clangd",
+		"timonwong.shellcheck",
+		"mkhl.shfmt",
+		"sumneko.lua",
+		"JohnnyMorganz.stylua"
+	],
+	"unwantedRecommendations": [
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode"
+	]
+}

@@ -1,0 +1,41 @@
+---
+title: Backend API
+description: The single home for the NestJS API contract.
+---
+
+This page is the one place the NestJS API contract lives. The agent contract in
+`.agents/agent-contract.md` points every role here: web and mobile read it before consuming an
+endpoint, and backend updates it in the same commit as any public API change.
+
+It is a stub in the starter, because the API surface is yours to define. The convention matters
+more than the current contents — a contract that lives in one file stays consistent, while one
+scattered across cards and notes drifts immediately.
+
+## What belongs here
+
+- Every public endpoint: method, path, auth requirement, request and response shape.
+- The response envelope, error shape and status-code conventions.
+- Pagination, filtering and sorting conventions.
+- Breaking changes, with a dated changelog entry below.
+
+## What does not
+
+- Implementation detail, internal service structure, database schema.
+- Anything still being designed — raise a board card for that instead.
+
+## Endpoints
+
+The starter ships a health check and Swagger. Document real endpoints here as you add them.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/health` | none | Liveness probe |
+| — | `/api/docs` | none in dev | Swagger UI |
+
+## Changelog
+
+Record every public API change, newest first, so consumers can see what moved.
+
+| Date | Change | Breaking |
+| --- | --- | --- |
+| — | Nothing documented yet | — |

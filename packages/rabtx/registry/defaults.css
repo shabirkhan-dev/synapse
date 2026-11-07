@@ -1,0 +1,46 @@
+/*
+ * Registry only. Installing any Rabtx component adds these defaults for the few tokens shadcn has no
+ * name for, derived from the project's own shadcn theme so the components fit it. They sit in
+ * `@layer base`, so the project's `:root` / `.dark` values (or the Rabtx theme item) win.
+ * The full set, with the Rabtx values, is packages/rabtx/src/styles/theme.css.
+ */
+@layer base {
+	:root {
+		--subtle-foreground: color-mix(in oklab, var(--muted-foreground) 65%, var(--background));
+		--disabled-foreground: color-mix(in oklab, var(--foreground) 40%, var(--background));
+		--success: #30a46c;
+		--warning: #f0803c;
+		--violet: #8e5cf0;
+		--tint-ink: #000000;
+		--field: color-mix(in oklab, var(--foreground) 4%, var(--background));
+		--field-disabled: color-mix(in oklab, var(--foreground) 2%, var(--background));
+		--field-edge-top: rgb(0 0 0 / 0.14);
+		--field-edge-bottom: rgb(0 0 0 / 0.05);
+		--field-shade: rgb(0 0 0 / 0.04);
+		--surface-ring: rgb(0 0 0 / 0.1);
+		--surface-edge-top: #ffffff;
+		--surface-edge-bottom: rgb(0 0 0 / 0.08);
+		--surface-sheen: rgb(255 255 255 / 0.5);
+		--surface-shade: rgb(0 0 0 / 0.03);
+		--shadow-popover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+		--shadow-raised: 0 8px 22px rgb(0 0 0 / 0.16);
+		--radius-button: 999px;
+		--radius-item: var(--radius);
+		--radius-control: var(--radius);
+		--radius-box: calc(var(--radius) * 1.5);
+		--radius-badge: calc(var(--radius) * 0.5);
+		--radius-check: calc(var(--radius) * 0.5);
+		--motion-ease: cubic-bezier(0.25, 1, 0.5, 1);
+	}
+	.dark {
+		--tint-ink: #ffffff;
+		--field-edge-top: rgb(0 0 0 / 0.55);
+		--field-edge-bottom: rgb(255 255 255 / 0.07);
+		--field-shade: rgb(0 0 0 / 0.25);
+		--surface-ring: rgb(0 0 0 / 0.6);
+		--surface-edge-top: rgb(255 255 255 / 0.14);
+		--surface-edge-bottom: rgb(0 0 0 / 0.4);
+		--surface-sheen: rgb(255 255 255 / 0.05);
+		--surface-shade: rgb(0 0 0 / 0.16);
+	}
+}

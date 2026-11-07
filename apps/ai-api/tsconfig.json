@@ -1,0 +1,21 @@
+{
+	"extends": "@starter/typescript-config/base.json",
+	"compilerOptions": {
+		"target": "ESNext",
+		"lib": ["ESNext"],
+		"module": "Preserve",
+		"moduleResolution": "bundler",
+		"types": ["bun"],
+		"allowJs": false,
+		"jsx": "react-jsx",
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"verbatimModuleSyntax": true,
+		"incremental": false,
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*.ts", "test/**/*.ts", "drizzle.config.ts"],
+	"exclude": ["node_modules", "dist"]
+}

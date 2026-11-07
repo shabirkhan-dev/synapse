@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui":"tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "lint:fix": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "passThroughEnv": ["AI_API_TEST_DATABASE_URL"]
+    },
+    "test:coverage": {
+      "dependsOn": ["test"],
+      "passThroughEnv": ["AI_API_TEST_DATABASE_URL"]
+    },
+    "test:e2e": {
+      "cache": false
+    }
+  }
+}

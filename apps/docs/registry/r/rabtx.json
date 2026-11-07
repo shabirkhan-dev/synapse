@@ -1,0 +1,131 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "rabtx",
+  "title": "Rabtx base",
+  "description": "Defaults for the Rabtx-only tokens (derived from your theme), the radius and depth modes, and the shared surface styles.",
+  "registryDependencies": [
+    "{{origin}}/r/springs.json"
+  ],
+  "css": {
+    "@layer base": {
+      ":root": {
+        "--subtle-foreground": "color-mix(in oklab, var(--muted-foreground) 65%, var(--background))",
+        "--disabled-foreground": "color-mix(in oklab, var(--foreground) 40%, var(--background))",
+        "--success": "#30a46c",
+        "--warning": "#f0803c",
+        "--violet": "#8e5cf0",
+        "--tint-ink": "#000000",
+        "--field": "color-mix(in oklab, var(--foreground) 4%, var(--background))",
+        "--field-disabled": "color-mix(in oklab, var(--foreground) 2%, var(--background))",
+        "--field-edge-top": "rgb(0 0 0 / 0.14)",
+        "--field-edge-bottom": "rgb(0 0 0 / 0.05)",
+        "--field-shade": "rgb(0 0 0 / 0.04)",
+        "--surface-ring": "rgb(0 0 0 / 0.1)",
+        "--surface-edge-top": "#ffffff",
+        "--surface-edge-bottom": "rgb(0 0 0 / 0.08)",
+        "--surface-sheen": "rgb(255 255 255 / 0.5)",
+        "--surface-shade": "rgb(0 0 0 / 0.03)",
+        "--shadow-popover": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "--shadow-raised": "0 8px 22px rgb(0 0 0 / 0.16)",
+        "--radius-button": "999px",
+        "--radius-item": "var(--radius)",
+        "--radius-control": "var(--radius)",
+        "--radius-box": "calc(var(--radius) * 1.5)",
+        "--radius-badge": "calc(var(--radius) * 0.5)",
+        "--radius-check": "calc(var(--radius) * 0.5)",
+        "--motion-ease": "cubic-bezier(0.25, 1, 0.5, 1)"
+      },
+      ".dark": {
+        "--tint-ink": "#ffffff",
+        "--field-edge-top": "rgb(0 0 0 / 0.55)",
+        "--field-edge-bottom": "rgb(255 255 255 / 0.07)",
+        "--field-shade": "rgb(0 0 0 / 0.25)",
+        "--surface-ring": "rgb(0 0 0 / 0.6)",
+        "--surface-edge-top": "rgb(255 255 255 / 0.14)",
+        "--surface-edge-bottom": "rgb(0 0 0 / 0.4)",
+        "--surface-sheen": "rgb(255 255 255 / 0.05)",
+        "--surface-shade": "rgb(0 0 0 / 0.16)"
+      }
+    },
+    "[data-radius=\"sharp\"]": {
+      "--radius-button": "2px",
+      "--radius-item": "2px",
+      "--radius-control": "2px",
+      "--radius-box": "4px",
+      "--radius-badge": "2px",
+      "--radius-check": "2px"
+    },
+    "[data-radius=\"round\"]": {
+      "--radius-button": "999px",
+      "--radius-item": "999px",
+      "--radius-control": "12px",
+      "--radius-box": "20px",
+      "--radius-badge": "999px",
+      "--radius-check": "6px"
+    },
+    "@property --_fill": {
+      "syntax": "\"<color>\"",
+      "inherits": "false",
+      "initial-value": "transparent"
+    },
+    "@property --_edge-a": {
+      "syntax": "\"<color>\"",
+      "inherits": "false",
+      "initial-value": "transparent"
+    },
+    "@property --_edge-b": {
+      "syntax": "\"<color>\"",
+      "inherits": "false",
+      "initial-value": "transparent"
+    },
+    "@property --_sheen": {
+      "syntax": "\"<color>\"",
+      "inherits": "false",
+      "initial-value": "transparent"
+    },
+    "@property --_shade": {
+      "syntax": "\"<color>\"",
+      "inherits": "false",
+      "initial-value": "transparent"
+    },
+    "@layer components": {
+      ".rx-surface": {
+        "border": "1px solid transparent",
+        "background": "linear-gradient(180deg, var(--_sheen), transparent 40%, transparent 60%, var(--_shade)) padding-box, linear-gradient(var(--_fill), var(--_fill)) padding-box, linear-gradient(180deg, var(--_edge-a), var(--_edge-b)) border-box",
+        "box-shadow": "0 0 0 1px var(--_ring), 0 0 0 4px var(--_halo, transparent)",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "--_fill 150ms var(--motion-ease), color 150ms var(--motion-ease), box-shadow 150ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press)"
+      },
+      ".rx-card": {
+        "--_fill": "var(--card)",
+        "--_flat": "var(--border)",
+        "--_ring": "var(--surface-ring)",
+        "--_edge-a": "var(--surface-edge-top)",
+        "--_edge-b": "var(--surface-edge-bottom)",
+        "--_sheen": "var(--surface-sheen)",
+        "--_shade": "var(--surface-shade)",
+        "color": "var(--card-foreground)"
+      },
+      "[data-depth=\"flat\"] .rx-surface": {
+        "--_edge-a": "var(--_flat)",
+        "--_edge-b": "var(--_flat)",
+        "--_sheen": "transparent",
+        "--_shade": "transparent",
+        "--_ring": "transparent"
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-surface": {
+          "transition-duration": "0ms",
+          "animation-duration": "2400ms"
+        }
+      },
+      "[data-motion=\"off\"] .rx-surface": {
+        "transition-duration": "0ms",
+        "animation-duration": "2400ms"
+      }
+    }
+  },
+  "type": "registry:style"
+}

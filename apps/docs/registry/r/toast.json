@@ -1,0 +1,363 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toast",
+  "title": "Toast",
+  "description": "Stacked toasts in a top-layer region: toast(), success, error, warning, info, loading and promise, with actions, swipe to dismiss, paused timers and live announcements. CSS-only motion.",
+  "registryDependencies": [
+    "{{origin}}/r/rabtx.json",
+    "{{origin}}/r/button.json",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "registry/rabtx/ui/toast-store.ts",
+      "content": "import { isValidElement, type MouseEvent, type ReactNode } from \"react\";\n\n/** What a toast is about. It picks the icon and its tint, and errors are announced at once. */\nexport type ToastType = \"default\" | \"success\" | \"error\" | \"warning\" | \"info\" | \"loading\";\n\nexport type ToastId = string | number;\n\n/** A button on a toast. It dismisses the toast after `onClick`, unless that calls `preventDefault()`. */\nexport type ToastButton = {\n\tlabel: ReactNode;\n\tonClick?: (event: MouseEvent<HTMLButtonElement>) => void;\n};\n\nexport type ToastOptions = {\n\t/** Pass an existing id to update that toast in place instead of adding one. */\n\tid?: ToastId;\n\tdescription?: ReactNode;\n\t/** The main button, drawn as our primary `Button`. */\n\taction?: ToastButton;\n\t/** A quieter button beside it, drawn as a ghost `Button`. */\n\tcancel?: ToastButton;\n\t/** Milliseconds on screen. `Infinity` keeps it until it is dismissed. Defaults to the Toaster's. */\n\tduration?: number;\n\t/** Replaces the type's icon. `null` shows none. */\n\ticon?: ReactNode;\n\t/** `false` hides the close button and ignores swipes and Escape. Default `true`. */\n\tdismissible?: boolean;\n\t/** Announce at once (assertive), like an error. */\n\timportant?: boolean;\n\t/** Which `<Toaster id>` shows it, when a page has more than one. */\n\ttoaster?: string;\n\tclassName?: string;\n\t/** Called when it is dismissed by the person (close, swipe, Escape, a button) or by code. */\n\tonDismiss?: (toast: ToastData) => void;\n\t/** Called when its timer runs out. */\n\tonAutoClose?: (toast: ToastData) => void;\n};\n\nexport type ToastData = Omit<ToastOptions, \"id\"> & {\n\tid: ToastId;\n\ttype: ToastType;\n\ttitle: ReactNode;\n\t/** Bumped on every update, so the toast re-announces and its timer restarts. */\n\tversion: number;\n\t/** Set once it starts to leave; it is removed after its exit transition. */\n\tremoving?: boolean;\n\tcreatedAt: number;\n};\n\ntype PromiseMessage<T> = ReactNode | ((value: T) => ReactNode);\n/** A message, a set of options with a title, or a function of the value returning either. */\ntype PromiseState<T> = ReactNode | PromiseConfig<T> | ((value: T) => ReactNode | PromiseConfig<T>);\n\nexport type ToastPromiseOptions<T> = Omit<ToastOptions, \"duration\"> & {\n\tloading: ReactNode;\n\tsuccess: PromiseState<T>;\n\terror: PromiseState<unknown>;\n\t/** Runs after it settles, either way. */\n\tfinally?: () => void;\n};\n\ntype Listener = () => void;\n\nlet counter = 0;\nlet toasts: readonly ToastData[] = [];\nconst listeners = new Set<Listener>();\nconst claims = new Map<string, symbol>();\n\nfunction emit() {\n\tfor (const listener of listeners) listener();\n}\n\n/** The default Toaster id. */\nexport const DEFAULT_TOASTER = \"default\";\n\n/** The toast store every `Toaster` reads and every `toast()` call writes. */\nexport const toastStore = {\n\tsubscribe(listener: Listener) {\n\t\tlisteners.add(listener);\n\t\treturn () => {\n\t\t\tlisteners.delete(listener);\n\t\t};\n\t},\n\t/** Newest first. A new array whenever anything changes, so React can compare by reference. */\n\tgetSnapshot(): readonly ToastData[] {\n\t\treturn toasts;\n\t},\n\tgetServerSnapshot(): readonly ToastData[] {\n\t\treturn EMPTY;\n\t},\n\t/** Adds a toast, or updates the one with the same id. Returns its id. */\n\tupsert(type: ToastType, title: ReactNode, options: ToastOptions = {}): ToastId {\n\t\tconst { id: given, ...rest } = options;\n\t\tconst existing = given === undefined ? undefined : toasts.find((t) => t.id === given);\n\t\tif (existing) {\n\t\t\tconst next: ToastData = {\n\t\t\t\t...existing,\n\t\t\t\t...rest,\n\t\t\t\ttype,\n\t\t\t\ttitle,\n\t\t\t\tremoving: false,\n\t\t\t\tversion: existing.version + 1,\n\t\t\t};\n\t\t\t// A loading toast that becomes a result gets the normal timer back unless told otherwise.\n\t\t\tif (existing.type === \"loading\" && type !== \"loading\" && !(\"duration\" in rest)) {\n\t\t\t\tnext.duration = undefined;\n\t\t\t}\n\t\t\ttoasts = toasts.map((t) => (t.id === existing.id ? next : t));\n\t\t\temit();\n\t\t\treturn existing.id;\n\t\t}\n\t\tcounter += 1;\n\t\tconst id = given ?? counter;\n\t\ttoasts = [{ ...rest, id, type, title, version: 0, createdAt: Date.now() }, ...toasts];\n\t\temit();\n\t\treturn id;\n\t},\n\t/**\n\t * Starts the exit of one toast, or of every toast. The Toaster removes them once they leave.\n\t * `auto` means the timer ran out: `onAutoClose` is called instead of `onDismiss`.\n\t */\n\tdismiss(id?: ToastId, auto = false) {\n\t\tlet changed = false;\n\t\tconst leaving: ToastData[] = [];\n\t\ttoasts = toasts.map((t) => {\n\t\t\tif (t.removing || (id !== undefined && t.id !== id)) return t;\n\t\t\tchanged = true;\n\t\t\tleaving.push(t);\n\t\t\treturn { ...t, removing: true };\n\t\t});\n\t\tif (!changed) return;\n\t\temit();\n\t\tfor (const t of leaving) (auto ? t.onAutoClose : t.onDismiss)?.(t);\n\t},\n\t/** Drops a toast for good (after its exit transition). */\n\tremove(id: ToastId) {\n\t\tconst next = toasts.filter((t) => t.id !== id);\n\t\tif (next.length === toasts.length) return;\n\t\ttoasts = next;\n\t\temit();\n\t},\n\t/**\n\t * One Toaster per id renders: the first to mount claims it and the rest stay empty until it\n\t * unmounts. So an example, a layout and a page can each render `<Toaster />` safely.\n\t */\n\tclaim(toaster: string, token: symbol): boolean {\n\t\tconst owner = claims.get(toaster);\n\t\tif (owner === undefined) {\n\t\t\tclaims.set(toaster, token);\n\t\t\treturn true;\n\t\t}\n\t\treturn owner === token;\n\t},\n\trelease(toaster: string, token: symbol) {\n\t\tif (claims.get(toaster) !== token) return;\n\t\tclaims.delete(toaster);\n\t\temit();\n\t},\n\t/** Empties the store and the claims. For tests. */\n\treset() {\n\t\ttoasts = [];\n\t\tclaims.clear();\n\t\tcounter = 0;\n\t\temit();\n\t},\n};\n\nconst EMPTY: readonly ToastData[] = [];\n\ntype PromiseConfig<T> = Omit<ToastOptions, \"id\" | \"toaster\"> & { title: PromiseMessage<T> };\n\nconst isConfig = <T>(state: unknown): state is PromiseConfig<T> =>\n\tstate !== null && typeof state === \"object\" && !isValidElement(state) && \"title\" in state;\n\nfunction resolve<T>(state: PromiseState<T>, value: T): { title: ReactNode; rest: ToastOptions } {\n\tconst picked = typeof state === \"function\" ? state(value) : state;\n\tif (isConfig<T>(picked)) {\n\t\tconst { title, ...rest } = picked;\n\t\treturn { title: typeof title === \"function\" ? title(value) : title, rest };\n\t}\n\treturn { title: picked, rest: {} };\n}\n\nfunction promise<T>(\n\tinput: Promise<T> | (() => Promise<T>),\n\t{ loading, success, error, finally: settle, ...options }: ToastPromiseOptions<T>,\n): ToastId {\n\tconst id = toastStore.upsert(\"loading\", loading, { ...options, duration: Infinity });\n\tconst pending = typeof input === \"function\" ? input() : input;\n\tpending.then(\n\t\t(value) => {\n\t\t\tconst { title, rest } = resolve(success, value);\n\t\t\ttoastStore.upsert(\"success\", title, { ...options, duration: undefined, ...rest, id });\n\t\t},\n\t\t(reason: unknown) => {\n\t\t\tconst { title, rest } = resolve(error, reason);\n\t\t\ttoastStore.upsert(\"error\", title, { ...options, duration: undefined, ...rest, id });\n\t\t},\n\t);\n\tif (settle) void pending.finally(settle).catch(() => {});\n\treturn id;\n}\n\nconst typed = (type: ToastType) => (title: ReactNode, options?: ToastOptions) =>\n\ttoastStore.upsert(type, title, options);\n\n/**\n * Shows a toast in the `<Toaster>` on the page and returns its id. Call it from anywhere: an event\n * handler, a form action, a fetch callback. Pass an existing `id` to update a toast in place.\n *\n *   toast(\"Saved\");\n *   toast.success(\"Invite sent\", { description: \"ada@example.com\" });\n *   toast.promise(save(), { loading: \"Saving…\", success: \"Saved\", error: \"Could not save\" });\n */\nexport const toast = Object.assign(typed(\"default\"), {\n\tsuccess: typed(\"success\"),\n\terror: typed(\"error\"),\n\twarning: typed(\"warning\"),\n\tinfo: typed(\"info\"),\n\t/** A spinner that stays until you update it (same `id`) or dismiss it. */\n\tloading: (title: ReactNode, options?: ToastOptions) =>\n\t\ttoastStore.upsert(\"loading\", title, { duration: Infinity, ...options }),\n\t/** A loading toast that turns into success or error when the promise settles. */\n\tpromise,\n\t/** Dismisses one toast, or all of them without an id. */\n\tdismiss: (id?: ToastId) => toastStore.dismiss(id),\n});\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/toast.styles.ts",
+      "content": "import type { ToastType } from \"./toast-store\";\n\nexport type ToasterPosition =\n\t| \"top-left\"\n\t| \"top-center\"\n\t| \"top-right\"\n\t| \"bottom-left\"\n\t| \"bottom-center\"\n\t| \"bottom-right\";\n\nexport const toasterPositions = [\n\t\"top-left\",\n\t\"top-center\",\n\t\"top-right\",\n\t\"bottom-left\",\n\t\"bottom-center\",\n\t\"bottom-right\",\n] as const satisfies readonly ToasterPosition[];\n\nexport const toastTypes = [\n\t\"default\",\n\t\"success\",\n\t\"error\",\n\t\"warning\",\n\t\"info\",\n\t\"loading\",\n] as const satisfies readonly ToastType[];\n\n/**\n * Class names for a toaster and its toasts. The look and the motion live in `toast.css` (your\n * global CSS, when installed from the registry). The Toaster sets these as data attributes and CSS\n * variables; markup written by hand can use the same names:\n *\n *   <section popover=\"manual\" class=\"rx-toaster\" data-y=\"bottom\" data-x=\"right\">\n *     <ol class=\"rx-toaster-list\"><li class=\"rx-surface rx-toast\" data-type=\"success\">…</li></ol>\n *   </section>\n */\nexport const toastParts = {\n\ttoaster: \"rx-toaster\",\n\tlist: \"rx-toaster-list\",\n\ttoast: \"rx-toast\",\n\t/** The inner box. It is measured, so a collapsed toast can clip it to the front one's height. */\n\tbody: \"rx-toast-body\",\n\ticon: \"rx-toast-icon\",\n\tcontent: \"rx-toast-content\",\n\ttitle: \"rx-toast-title\",\n\tdescription: \"rx-toast-description\",\n\tactions: \"rx-toast-actions\",\n\t/** The round button in the corner. Its cross is drawn by CSS. */\n\tclose: \"rx-toast-close\",\n\t/** Screen reader announcements, polite and assertive. */\n\tannouncer: \"rx-toast-announcer\",\n} as const;\n\n/** The two halves of a position, as the `data-y` and `data-x` the CSS reads. */\nexport function splitPosition(position: ToasterPosition) {\n\tconst [y, x] = position.split(\"-\") as [\"top\" | \"bottom\", \"left\" | \"center\" | \"right\"];\n\treturn { y, x };\n}\n\n/**\n * Where each toast sits when the stack is fanned out: the heights of the toasts in front of it plus\n * a gap for each. Index 0 is the front (newest) toast.\n */\nexport function stackOffsets(heights: readonly number[], gap: number): number[] {\n\tconst out: number[] = [];\n\tlet sum = 0;\n\tfor (const [index, height] of heights.entries()) {\n\t\tout.push(sum + index * gap);\n\t\tsum += height;\n\t}\n\treturn out;\n}\n\n/** Whether a swipe has gone far or fast enough to dismiss. Distance in px, time in ms. */\nexport function swipeDismisses(distance: number, ms: number, threshold = 45) {\n\tconst velocity = Math.abs(distance) / Math.max(ms, 1);\n\treturn Math.abs(distance) >= threshold || velocity > 0.11;\n}\n\n/**\n * A swipe moves freely toward the toast's own edge and resists the other way, so the toast follows\n * the finger but cannot be thrown into the page. `toward` is +1 or -1, the direction that dismisses.\n */\nexport function dampSwipe(delta: number, toward: 1 | -1) {\n\tif (Math.sign(delta) === toward || delta === 0) return delta;\n\treturn -toward * Math.sqrt(Math.abs(delta)) * 1.5;\n}\n\n/** Whether a key event matches a hotkey such as `\"F6\"`, `\"Alt+T\"` or `\"Mod+Shift+K\"`. */\nexport function matchesHotkey(\n\tevent: Pick<KeyboardEvent, \"key\" | \"code\" | \"altKey\" | \"ctrlKey\" | \"metaKey\" | \"shiftKey\">,\n\thotkey: string,\n) {\n\tconst parts = hotkey.split(\"+\").map((part) => part.trim().toLowerCase());\n\tconst key = parts.pop() ?? \"\";\n\tconst want = new Set(parts);\n\tconst mod = want.delete(\"mod\");\n\tconst isMac = typeof navigator !== \"undefined\" && /mac|iphone|ipad/i.test(navigator.platform);\n\tconst needs = {\n\t\talt: want.has(\"alt\"),\n\t\tctrl: want.has(\"ctrl\") || (mod && !isMac),\n\t\tmeta: want.has(\"meta\") || (mod && isMac),\n\t\tshift: want.has(\"shift\"),\n\t};\n\tif (\n\t\tevent.altKey !== needs.alt ||\n\t\tevent.ctrlKey !== needs.ctrl ||\n\t\tevent.metaKey !== needs.meta ||\n\t\tevent.shiftKey !== needs.shift\n\t) {\n\t\treturn false;\n\t}\n\t// Alt changes `key` on a Mac (Alt+T types †), so letters and digits also match on `code`.\n\tconst code = event.code.toLowerCase();\n\treturn (\n\t\tevent.key.toLowerCase() === key ||\n\t\tcode === key ||\n\t\tcode === `key${key}` ||\n\t\tcode === `digit${key}`\n\t);\n}\n\n/** The readable form of a hotkey for a label: `\"Alt+T\"` becomes `\"Alt T\"`. */\nexport function hotkeyLabel(hotkey: string) {\n\treturn hotkey.split(\"+\").join(\" \");\n}\n",
+      "type": "registry:ui"
+    },
+    {
+      "path": "registry/rabtx/ui/toaster.tsx",
+      "content": "\"use client\";\n\nimport {\n\ttype CSSProperties,\n\ttype KeyboardEvent,\n\ttype MouseEvent,\n\ttype PointerEvent,\n\ttype ReactNode,\n\tuseCallback,\n\tuseEffect,\n\tuseLayoutEffect,\n\tuseMemo,\n\tuseRef,\n\tuseState,\n\tuseSyncExternalStore,\n} from \"react\";\nimport { Button } from \"./button\";\nimport { cn } from \"@/lib/utils\";\nimport {\n\tDEFAULT_TOASTER,\n\ttype ToastButton,\n\ttype ToastData,\n\ttype ToastId,\n\ttype ToastType,\n\ttoastStore,\n} from \"./toast-store\";\nimport {\n\tdampSwipe,\n\thotkeyLabel,\n\tmatchesHotkey,\n\tsplitPosition,\n\tstackOffsets,\n\tswipeDismisses,\n\ttype ToasterPosition,\n\ttoastParts,\n} from \"./toast.styles\";\n\n// One import for both halves: the Toaster and toast() come from this file.\nexport { toast } from \"./toast-store\";\n\nexport type ToasterProps = {\n\t/** Pairs with `toast(…, { toaster })` when a page has more than one region. */\n\tid?: string;\n\t/** Which corner or edge the stack sits on. Default `bottom-right`. */\n\tposition?: ToasterPosition;\n\t/** Always fanned out, instead of only on hover and focus. */\n\texpand?: boolean;\n\t/** How many toasts show at once; the rest wait their turn. Default 3. */\n\tvisibleToasts?: number;\n\t/** Space between fanned-out toasts, in px. Default 14. */\n\tgap?: number;\n\t/** Distance from the viewport edges, a CSS length or px. Default 24. */\n\toffset?: number | string;\n\t/** Default time on screen, in ms. Default 4000. */\n\tduration?: number;\n\t/** The close button on each dismissible toast. Default `true`. */\n\tcloseButton?: boolean;\n\t/** Keys that move focus to the newest toast. Default `[\"F6\", \"Alt+T\"]`. */\n\thotkey?: string[];\n\t/** The region's name; the first hotkey is added to it. Default `\"Notifications\"`. */\n\tlabel?: string;\n\t/** The close button's accessible name. Default `\"Dismiss\"`. */\n\tcloseLabel?: string;\n\tclassName?: string;\n};\n\n/** How long a leaving toast takes before it is removed, if its transition never reports. */\nconst EXIT_FALLBACK_MS = 400;\n/** How long an announcement stays in the live region. */\nconst ANNOUNCE_MS = 7000;\n\nconst subscribe = toastStore.subscribe;\nconst snapshot = toastStore.getSnapshot;\nconst serverSnapshot = toastStore.getServerSnapshot;\n\ntype Announcement = { key: string; toast: ToastData; assertive: boolean };\n\n/**\n * The region toasts appear in. Render it once (in a layout); `toast()` from anywhere fills it. It is\n * a `popover=\"manual\"` element, so it sits in the top layer above dialogs and other popovers, and it\n * moves itself back on top whenever one of them opens.\n */\nexport function Toaster({\n\tid = DEFAULT_TOASTER,\n\tposition = \"bottom-right\",\n\texpand = false,\n\tvisibleToasts = 3,\n\tgap = 14,\n\toffset = 24,\n\tduration = 4000,\n\tcloseButton = true,\n\thotkey = DEFAULT_HOTKEY,\n\tlabel = \"Notifications\",\n\tcloseLabel = \"Dismiss\",\n\tclassName,\n}: ToasterProps) {\n\tconst all = useSyncExternalStore(subscribe, snapshot, serverSnapshot);\n\tconst [token] = useState(() => Symbol(id));\n\tconst [owner, setOwner] = useState(false);\n\tconst sectionRef = useRef<HTMLElement>(null);\n\tconst listRef = useRef<HTMLOListElement>(null);\n\tconst lastFocus = useRef<HTMLElement | null>(null);\n\tconst [heights, setHeights] = useState<ReadonlyMap<ToastId, number>>(() => new Map());\n\tconst [hovered, setHovered] = useState(false);\n\tconst [focused, setFocused] = useState(false);\n\tconst [pressed, setPressed] = useState(false);\n\tconst [hidden, setHidden] = useState(false);\n\tconst [announcements, setAnnouncements] = useState<Announcement[]>([]);\n\t// Every toast on screen and its last place, so a leaving toast stays where it was.\n\tconst [shown, setShown] = useState<ReadonlyMap<ToastId, number>>(() => new Map());\n\tconst versions = useRef(new Map<ToastId, number>());\n\tconst { y, x } = splitPosition(position);\n\n\t// One Toaster per id renders; the others wait for it to unmount.\n\tuseEffect(() => {\n\t\tconst check = () => setOwner(toastStore.claim(id, token));\n\t\tcheck();\n\t\tconst unsubscribe = toastStore.subscribe(check);\n\t\treturn () => {\n\t\t\tunsubscribe();\n\t\t\ttoastStore.release(id, token);\n\t\t};\n\t}, [id, token]);\n\n\tconst mine = useMemo(\n\t\t() => (owner ? all.filter((t) => (t.toaster ?? DEFAULT_TOASTER) === id) : []),\n\t\t[all, owner, id],\n\t);\n\tconst active = useMemo(\n\t\t() => mine.filter((t) => !t.removing).slice(0, Math.max(1, visibleToasts)),\n\t\t[mine, visibleToasts],\n\t);\n\tconst rendered = useMemo(\n\t\t() => mine.filter((t) => active.includes(t) || (t.removing && shown.has(t.id))),\n\t\t[mine, active, shown],\n\t);\n\tconst placeOf = useCallback(\n\t\t(t: ToastData) => {\n\t\t\tconst index = active.indexOf(t);\n\t\t\treturn index === -1 ? (shown.get(t.id) ?? 0) : index;\n\t\t},\n\t\t[active, shown],\n\t);\n\n\tuseLayoutEffect(() => {\n\t\tconst next = new Map(rendered.map((t) => [t.id, placeOf(t)] as const));\n\t\tsetShown((current) =>\n\t\t\tcurrent.size === next.size && [...next].every(([key, at]) => current.get(key) === at)\n\t\t\t\t? current\n\t\t\t\t: next,\n\t\t);\n\t\t// A toast dismissed while it was still waiting its turn never showed, so it just goes.\n\t\tfor (const t of mine) if (t.removing && !next.has(t.id)) toastStore.remove(t.id);\n\t}, [rendered, mine, placeOf]);\n\n\t// Announce each new toast, and each update, in the matching live region.\n\tuseEffect(() => {\n\t\tconst fresh: Announcement[] = [];\n\t\tfor (const t of active) {\n\t\t\tif (versions.current.get(t.id) === t.version) continue;\n\t\t\tversions.current.set(t.id, t.version);\n\t\t\tfresh.push({\n\t\t\t\tkey: `${t.id}-${t.version}`,\n\t\t\t\ttoast: t,\n\t\t\t\tassertive: t.important === true || t.type === \"error\",\n\t\t\t});\n\t\t}\n\t\tif (!fresh.length) return;\n\t\tsetAnnouncements((current) => [...current, ...fresh]);\n\t\tconst timer = window.setTimeout(() => {\n\t\t\tconst done = new Set(fresh.map((a) => a.key));\n\t\t\tsetAnnouncements((current) => current.filter((a) => !done.has(a.key)));\n\t\t}, ANNOUNCE_MS);\n\t\treturn () => window.clearTimeout(timer);\n\t}, [active]);\n\n\t// The region lives in the top layer, and climbs back on top when a dialog or popover opens.\n\tuseEffect(() => {\n\t\tconst section = sectionRef.current;\n\t\tif (!owner || !section || typeof section.showPopover !== \"function\") return;\n\t\tconst show = () => {\n\t\t\tif (!section.matches(\":popover-open\")) section.showPopover();\n\t\t};\n\t\tconst raise = () => {\n\t\t\tif (section.contains(document.activeElement)) return;\n\t\t\tif (section.matches(\":popover-open\")) section.hidePopover();\n\t\t\tsection.showPopover();\n\t\t};\n\t\tshow();\n\t\tconst onToggle = (event: Event) => {\n\t\t\t// Another Toaster re-showing itself is not a reason to climb, or two would leapfrog forever.\n\t\t\tconst target = event.target;\n\t\t\tif (!(target instanceof Element) || target.matches('[data-slot=\"toaster\"]')) return;\n\t\t\tif ((event as ToggleEvent).newState === \"open\") raise();\n\t\t};\n\t\tconst observer = new MutationObserver((records) => {\n\t\t\tif (records.some((r) => r.target instanceof HTMLDialogElement && r.target.open)) raise();\n\t\t});\n\t\tobserver.observe(document.body, { attributes: true, attributeFilter: [\"open\"], subtree: true });\n\t\tdocument.addEventListener(\"toggle\", onToggle, true);\n\t\treturn () => {\n\t\t\tobserver.disconnect();\n\t\t\tdocument.removeEventListener(\"toggle\", onToggle, true);\n\t\t\tif (section.matches(\":popover-open\")) section.hidePopover();\n\t\t};\n\t}, [owner]);\n\n\t// Timers stop while the tab is hidden.\n\tuseEffect(() => {\n\t\tconst update = () => setHidden(document.visibilityState === \"hidden\");\n\t\tupdate();\n\t\tdocument.addEventListener(\"visibilitychange\", update);\n\t\treturn () => document.removeEventListener(\"visibilitychange\", update);\n\t}, []);\n\n\tconst focusFront = useCallback(() => {\n\t\tconst first = listRef.current?.querySelector<HTMLElement>(\n\t\t\t`.${toastParts.toast}:not([data-removed])`,\n\t\t);\n\t\tif (!first) return false;\n\t\tconst current = document.activeElement;\n\t\tif (current instanceof HTMLElement && !sectionRef.current?.contains(current)) {\n\t\t\tlastFocus.current = current;\n\t\t}\n\t\tfirst.focus();\n\t\treturn true;\n\t}, []);\n\n\t// The hotkey jumps to the newest toast, as F6 jumps between a page's regions.\n\tuseEffect(() => {\n\t\tif (!owner) return;\n\t\tconst onKey = (event: globalThis.KeyboardEvent) => {\n\t\t\tif (!hotkey.some((key) => matchesHotkey(event, key))) return;\n\t\t\tif (focusFront()) event.preventDefault();\n\t\t};\n\t\tdocument.addEventListener(\"keydown\", onKey);\n\t\treturn () => document.removeEventListener(\"keydown\", onKey);\n\t}, [owner, hotkey, focusFront]);\n\n\t/** Before a toast that holds focus leaves, focus moves to the next one, or back to the page. */\n\tconst handOffFocus = useCallback((from: HTMLElement) => {\n\t\tif (!from.contains(document.activeElement)) return;\n\t\t// Array.from, not a spread, so projects without the DOM iterable lib still type-check.\n\t\tconst next = Array.from(\n\t\t\tlistRef.current?.querySelectorAll<HTMLElement>(`.${toastParts.toast}:not([data-removed])`) ??\n\t\t\t\t[],\n\t\t).find((el) => el !== from);\n\t\tif (next) next.focus();\n\t\telse if (lastFocus.current?.isConnected) lastFocus.current.focus();\n\t\telse from.blur();\n\t}, []);\n\n\tconst onHeight = useCallback((toastId: ToastId, height: number) => {\n\t\tsetHeights((current) => {\n\t\t\tif (current.get(toastId) === height) return current;\n\t\t\tconst next = new Map(current);\n\t\t\tnext.set(toastId, height);\n\t\t\treturn next;\n\t\t});\n\t}, []);\n\n\tuseEffect(() => {\n\t\tsetHeights((current) => {\n\t\t\tconst ids = new Set(rendered.map((t) => t.id));\n\t\t\tif ([...current.keys()].every((key) => ids.has(key))) return current;\n\t\t\treturn new Map([...current].filter(([key]) => ids.has(key)));\n\t\t});\n\t\tif (!active.length) setFocused(false);\n\t}, [rendered, active.length]);\n\n\tconst expanded = expand || hovered || focused || pressed;\n\tconst paused = expanded || hidden;\n\tconst offsets = stackOffsets(\n\t\tactive.map((t) => heights.get(t.id) ?? 0),\n\t\tgap,\n\t);\n\tconst frontHeight = heights.get(active[0]?.id ?? \"\") ?? 0;\n\tconst lastActive = active.length - 1;\n\tconst stackHeight =\n\t\tlastActive >= 0 ? offsets[lastActive] + (heights.get(active[lastActive].id) ?? 0) : 0;\n\n\tconst style = {\n\t\t\"--_gap\": `${gap}px`,\n\t\t\"--_edge\": typeof offset === \"number\" ? `${offset}px` : offset,\n\t\t\"--_front-h\": `${frontHeight}px`,\n\t\t\"--_stack-h\": `${stackHeight}px`,\n\t} as CSSProperties;\n\n\tconst name = hotkey.length ? `${label} (${hotkeyLabel(hotkey[0])})` : label;\n\n\treturn (\n\t\t<section\n\t\t\tref={sectionRef}\n\t\t\tpopover=\"manual\"\n\t\t\taria-label={name}\n\t\t\ttabIndex={-1}\n\t\t\tdata-slot=\"toaster\"\n\t\t\tdata-y={y}\n\t\t\tdata-x={x}\n\t\t\tdata-expanded={expanded ? \"\" : undefined}\n\t\t\tclassName={cn(toastParts.toaster, className)}\n\t\t\tstyle={style}\n\t\t>\n\t\t\t{/* The list tracks hover, presses and focus for the whole stack; each toast is focusable. */}\n\t\t\t{/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}\n\t\t\t<ol\n\t\t\t\tref={listRef}\n\t\t\t\tclassName={toastParts.list}\n\t\t\t\tonPointerEnter={(event) => {\n\t\t\t\t\tif (event.pointerType === \"mouse\") setHovered(true);\n\t\t\t\t}}\n\t\t\t\tonPointerLeave={(event) => {\n\t\t\t\t\tif (event.pointerType === \"mouse\") setHovered(false);\n\t\t\t\t}}\n\t\t\t\tonPointerDown={() => setPressed(true)}\n\t\t\t\tonPointerUp={() => setPressed(false)}\n\t\t\t\tonPointerCancel={() => setPressed(false)}\n\t\t\t\tonFocus={() => setFocused(true)}\n\t\t\t\tonBlur={(event) => {\n\t\t\t\t\tif (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);\n\t\t\t\t}}\n\t\t\t>\n\t\t\t\t{rendered.map((t) => {\n\t\t\t\t\tconst at = placeOf(t);\n\t\t\t\t\treturn (\n\t\t\t\t\t\t<Toast\n\t\t\t\t\t\t\tkey={t.id}\n\t\t\t\t\t\t\ttoast={t}\n\t\t\t\t\t\t\tindex={at}\n\t\t\t\t\t\t\toffset={offsets[at] ?? 0}\n\t\t\t\t\t\t\theight={heights.get(t.id)}\n\t\t\t\t\t\t\tx={x}\n\t\t\t\t\t\t\ty={y}\n\t\t\t\t\t\t\tpaused={paused}\n\t\t\t\t\t\t\tdefaultDuration={duration}\n\t\t\t\t\t\t\tcloseButton={closeButton}\n\t\t\t\t\t\t\tcloseLabel={closeLabel}\n\t\t\t\t\t\t\tonHeight={onHeight}\n\t\t\t\t\t\t\thandOffFocus={handOffFocus}\n\t\t\t\t\t\t/>\n\t\t\t\t\t);\n\t\t\t\t})}\n\t\t\t</ol>\n\t\t\t<div className={toastParts.announcer} aria-live=\"polite\" aria-atomic=\"false\">\n\t\t\t\t{announcements\n\t\t\t\t\t.filter((a) => !a.assertive)\n\t\t\t\t\t.map((a) => (\n\t\t\t\t\t\t<Announce key={a.key} toast={a.toast} />\n\t\t\t\t\t))}\n\t\t\t</div>\n\t\t\t<div className={toastParts.announcer} aria-live=\"assertive\" aria-atomic=\"false\">\n\t\t\t\t{announcements\n\t\t\t\t\t.filter((a) => a.assertive)\n\t\t\t\t\t.map((a) => (\n\t\t\t\t\t\t<Announce key={a.key} toast={a.toast} />\n\t\t\t\t\t))}\n\t\t\t</div>\n\t\t</section>\n\t);\n}\n\nconst DEFAULT_HOTKEY = [\"F6\", \"Alt+T\"];\n\nfunction Announce({ toast }: { toast: ToastData }) {\n\treturn (\n\t\t<p>\n\t\t\t{toast.title}\n\t\t\t{toast.description ? <> {toast.description}</> : null}\n\t\t</p>\n\t);\n}\n\ntype ToastProps = {\n\ttoast: ToastData;\n\tindex: number;\n\toffset: number;\n\theight: number | undefined;\n\tx: \"left\" | \"center\" | \"right\";\n\ty: \"top\" | \"bottom\";\n\tpaused: boolean;\n\tdefaultDuration: number;\n\tcloseButton: boolean;\n\tcloseLabel: string;\n\tonHeight: (id: ToastId, height: number) => void;\n\thandOffFocus: (from: HTMLElement) => void;\n};\n\ntype Swipe = { x: number; y: number; t: number; id: number; axis?: \"x\" | \"y\"; delta: number };\n\nfunction Toast({\n\ttoast,\n\tindex,\n\toffset,\n\theight,\n\tx,\n\ty,\n\tpaused,\n\tdefaultDuration,\n\tcloseButton,\n\tcloseLabel,\n\tonHeight,\n\thandOffFocus,\n}: ToastProps) {\n\tconst ref = useRef<HTMLLIElement>(null);\n\tconst bodyRef = useRef<HTMLDivElement>(null);\n\tconst swipe = useRef<Swipe | null>(null);\n\tconst remaining = useRef<number | null>(null);\n\tconst version = useRef(toast.version);\n\tconst [swipeOut, setSwipeOut] = useState<\"left\" | \"right\" | \"up\" | \"down\" | undefined>();\n\tconst dismissible = toast.dismissible !== false;\n\tconst duration = toast.duration ?? defaultDuration;\n\tconst { id, removing } = toast;\n\n\t// Measure the content's own height; a collapsed toast clips it to the front toast's height.\n\tuseLayoutEffect(() => {\n\t\tconst body = bodyRef.current;\n\t\tif (!body) return;\n\t\tconst measure = () => onHeight(id, body.offsetHeight);\n\t\tmeasure();\n\t\tif (typeof ResizeObserver === \"undefined\") return;\n\t\tconst observer = new ResizeObserver(measure);\n\t\tobserver.observe(body);\n\t\treturn () => observer.disconnect();\n\t}, [id, onHeight]);\n\n\t// The timer: it stops while paused and resumes with what was left; an update restarts it.\n\tuseEffect(() => {\n\t\tif (version.current !== toast.version) {\n\t\t\tversion.current = toast.version;\n\t\t\tremaining.current = null;\n\t\t}\n\t\tif (removing || paused || !Number.isFinite(duration) || duration <= 0) return;\n\t\tconst left = remaining.current ?? duration;\n\t\tconst started = Date.now();\n\t\tconst timer = window.setTimeout(() => toastStore.dismiss(id, true), left);\n\t\treturn () => {\n\t\t\twindow.clearTimeout(timer);\n\t\t\tremaining.current = Math.max(0, left - (Date.now() - started));\n\t\t};\n\t}, [id, removing, paused, duration, toast.version]);\n\n\t// Once it starts to leave, remove it after its exit transition (or a fallback, when motion is off).\n\tuseEffect(() => {\n\t\tconst el = ref.current;\n\t\tif (!removing || !el) return;\n\t\thandOffFocus(el);\n\t\tconst done = () => toastStore.remove(id);\n\t\tconst onEnd = (event: TransitionEvent) => {\n\t\t\tif (event.target === el && event.propertyName === \"opacity\") done();\n\t\t};\n\t\tel.addEventListener(\"transitionend\", onEnd);\n\t\tconst timer = window.setTimeout(done, EXIT_FALLBACK_MS);\n\t\treturn () => {\n\t\t\tel.removeEventListener(\"transitionend\", onEnd);\n\t\t\twindow.clearTimeout(timer);\n\t\t};\n\t}, [removing, id, handOffFocus]);\n\n\tconst dismiss = () => {\n\t\tif (ref.current) handOffFocus(ref.current);\n\t\ttoastStore.dismiss(id);\n\t};\n\n\tconst press = (button: ToastButton) => (event: MouseEvent<HTMLButtonElement>) => {\n\t\tbutton.onClick?.(event);\n\t\tif (!event.defaultPrevented) dismiss();\n\t};\n\n\tconst onKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {\n\t\tif (event.key !== \"Escape\" || !dismissible) return;\n\t\tevent.preventDefault();\n\t\tevent.stopPropagation();\n\t\tdismiss();\n\t};\n\n\t// Swipe: the pointer writes CSS variables directly, so a drag never re-renders.\n\tconst setVars = (dx: number, dy: number, progress: number) => {\n\t\tconst el = ref.current;\n\t\tif (!el) return;\n\t\tel.style.setProperty(\"--_swipe-x\", `${dx}px`);\n\t\tel.style.setProperty(\"--_swipe-y\", `${dy}px`);\n\t\tel.style.setProperty(\"--_swipe-p\", `${progress}`);\n\t};\n\tconst clearVars = () => {\n\t\tconst el = ref.current;\n\t\tif (!el) return;\n\t\tel.removeAttribute(\"data-swiping\");\n\t\tfor (const name of [\"--_swipe-x\", \"--_swipe-y\", \"--_swipe-p\"]) el.style.removeProperty(name);\n\t};\n\tconst towardX = (delta: number): 1 | -1 =>\n\t\tx === \"left\" ? -1 : x === \"right\" ? 1 : delta < 0 ? -1 : 1;\n\tconst towardY: 1 | -1 = y === \"bottom\" ? 1 : -1;\n\n\tconst onPointerDown = (event: PointerEvent<HTMLLIElement>) => {\n\t\tif (!dismissible || removing || event.button !== 0) return;\n\t\tif ((event.target as Element).closest(\"button, a, input, textarea, select\")) return;\n\t\tswipe.current = {\n\t\t\tx: event.clientX,\n\t\t\ty: event.clientY,\n\t\t\tt: event.timeStamp,\n\t\t\tid: event.pointerId,\n\t\t\tdelta: 0,\n\t\t};\n\t};\n\tconst onPointerMove = (event: PointerEvent<HTMLLIElement>) => {\n\t\tconst s = swipe.current;\n\t\tconst el = ref.current;\n\t\tif (!s || !el || s.id !== event.pointerId) return;\n\t\tconst dx = event.clientX - s.x;\n\t\tconst dy = event.clientY - s.y;\n\t\tif (!s.axis) {\n\t\t\tif (Math.hypot(dx, dy) < 4) return;\n\t\t\ts.axis = Math.abs(dx) > Math.abs(dy) ? \"x\" : \"y\";\n\t\t\tel.setPointerCapture(event.pointerId);\n\t\t\tel.setAttribute(\"data-swiping\", \"\");\n\t\t\t// A drag is not a selection.\n\t\t\twindow.getSelection()?.removeAllRanges();\n\t\t}\n\t\tconst size = s.axis === \"x\" ? el.offsetWidth : el.offsetHeight;\n\t\ts.delta = s.axis === \"x\" ? dampSwipe(dx, towardX(dx)) : dampSwipe(dy, towardY);\n\t\tconst progress = Math.min(1, Math.abs(s.delta) / Math.max(size, 1));\n\t\tsetVars(s.axis === \"x\" ? s.delta : 0, s.axis === \"y\" ? s.delta : 0, progress);\n\t};\n\tconst onPointerUp = (event: PointerEvent<HTMLLIElement>) => {\n\t\tconst s = swipe.current;\n\t\tswipe.current = null;\n\t\tif (!s?.axis || s.id !== event.pointerId) return;\n\t\tconst toward = s.axis === \"x\" ? towardX(s.delta) : towardY;\n\t\tif (Math.sign(s.delta) === toward && swipeDismisses(s.delta, event.timeStamp - s.t)) {\n\t\t\tref.current?.removeAttribute(\"data-swiping\");\n\t\t\tsetSwipeOut(s.axis === \"x\" ? (toward > 0 ? \"right\" : \"left\") : toward > 0 ? \"down\" : \"up\");\n\t\t\tdismiss();\n\t\t} else clearVars();\n\t};\n\tconst onPointerCancel = () => {\n\t\tswipe.current = null;\n\t\tclearVars();\n\t};\n\n\tconst style = {\n\t\t\"--_i\": index,\n\t\t\"--_offset\": `${offset}px`,\n\t\t...(height === undefined ? {} : { \"--_h\": `${height}px` }),\n\t} as CSSProperties;\n\n\tconst icon =\n\t\ttoast.icon !== undefined ? (\n\t\t\ttoast.icon\n\t\t) : toast.type === \"default\" ? null : (\n\t\t\t<ToastIcon type={toast.type} />\n\t\t);\n\n\treturn (\n\t\t// A toast is focusable like Sonner's, so Escape can dismiss it and the hotkey can reach it; the\n\t\t// pointer handlers are the swipe, which the keyboard does with Escape.\n\t\t// oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions\n\t\t<li\n\t\t\tref={ref}\n\t\t\t// oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex\n\t\t\ttabIndex={0}\n\t\t\tdata-slot=\"toast\"\n\t\t\tdata-type={toast.type}\n\t\t\tdata-front={index === 0 ? \"\" : undefined}\n\t\t\tdata-removed={removing ? \"\" : undefined}\n\t\t\tdata-swipe-out={swipeOut}\n\t\t\tclassName={cn(\"rx-surface\", toastParts.toast, toast.className)}\n\t\t\tstyle={style}\n\t\t\tonKeyDown={onKeyDown}\n\t\t\tonPointerDown={onPointerDown}\n\t\t\tonPointerMove={onPointerMove}\n\t\t\tonPointerUp={onPointerUp}\n\t\t\tonPointerCancel={onPointerCancel}\n\t\t>\n\t\t\t<div ref={bodyRef} className={toastParts.body}>\n\t\t\t\t{icon === null ? null : (\n\t\t\t\t\t<span key={toast.type} className={toastParts.icon} aria-hidden=\"true\">\n\t\t\t\t\t\t{icon}\n\t\t\t\t\t</span>\n\t\t\t\t)}\n\t\t\t\t<div key={toast.version} className={toastParts.content}>\n\t\t\t\t\t<div className={toastParts.title}>{toast.title}</div>\n\t\t\t\t\t{toast.description ? (\n\t\t\t\t\t\t<div className={toastParts.description}>{toast.description}</div>\n\t\t\t\t\t) : null}\n\t\t\t\t</div>\n\t\t\t\t{toast.cancel || toast.action ? (\n\t\t\t\t\t<div className={toastParts.actions}>\n\t\t\t\t\t\t{toast.cancel ? (\n\t\t\t\t\t\t\t<Button size=\"sm\" variant=\"ghost\" onClick={press(toast.cancel)}>\n\t\t\t\t\t\t\t\t{toast.cancel.label}\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t) : null}\n\t\t\t\t\t\t{toast.action ? (\n\t\t\t\t\t\t\t<Button size=\"sm\" onClick={press(toast.action)}>\n\t\t\t\t\t\t\t\t{toast.action.label}\n\t\t\t\t\t\t\t</Button>\n\t\t\t\t\t\t) : null}\n\t\t\t\t\t</div>\n\t\t\t\t) : null}\n\t\t\t</div>\n\t\t\t{closeButton && dismissible && toast.type !== \"loading\" ? (\n\t\t\t\t<button\n\t\t\t\t\ttype=\"button\"\n\t\t\t\t\tclassName={toastParts.close}\n\t\t\t\t\taria-label={closeLabel}\n\t\t\t\t\tonClick={dismiss}\n\t\t\t\t/>\n\t\t\t) : null}\n\t\t</li>\n\t);\n}\n\n/** The built-in glyphs, drawn inline so the component needs no icon set. */\nfunction ToastIcon({ type }: { type: Exclude<ToastType, \"default\"> }): ReactNode {\n\tconst paths: Record<Exclude<ToastType, \"default\" | \"loading\">, ReactNode> = {\n\t\tsuccess: <path d=\"M6.5 12.5l3.5 3.5 7.5-8\" pathLength={1} />,\n\t\terror: <path d=\"M8 8l8 8M16 8l-8 8\" pathLength={1} />,\n\t\twarning: <path d=\"M12 6.5v7M12 17.25v.25\" />,\n\t\tinfo: <path d=\"M12 10.75v6.75M12 6.5v.25\" />,\n\t};\n\treturn (\n\t\t<svg\n\t\t\tviewBox=\"0 0 24 24\"\n\t\t\tfill=\"none\"\n\t\t\tstroke=\"currentColor\"\n\t\t\tstrokeWidth={2.25}\n\t\t\tstrokeLinecap=\"round\"\n\t\t\tstrokeLinejoin=\"round\"\n\t\t>\n\t\t\t{type === \"loading\" ? <circle cx=\"12\" cy=\"12\" r=\"7.5\" pathLength={1} /> : paths[type]}\n\t\t</svg>\n\t);\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "css": {
+    "@layer components": {
+      ".rx-toaster": {
+        "--_peek": "14px",
+        "--_dir": "-1",
+        "--_edge": "24px",
+        "--_gap": "14px",
+        "position": "fixed",
+        "inset": "auto",
+        "box-sizing": "border-box",
+        "width": "min(calc(100vw - var(--_edge) * 2), 22.25rem)",
+        "height": "var(--_front-h, 0px)",
+        "margin": "0",
+        "padding": "0",
+        "overflow": "visible",
+        "border": "0",
+        "background": "transparent",
+        "color": "var(--popover-foreground)",
+        "font-size": "13px",
+        "line-height": "20px",
+        "letter-spacing": "-0.15px",
+        "outline": "none",
+        "pointer-events": "none"
+      },
+      ".rx-toaster[data-y=\"bottom\"]": {
+        "bottom": "calc(var(--_edge) + env(safe-area-inset-bottom, 0px))"
+      },
+      ".rx-toaster[data-y=\"top\"]": {
+        "--_dir": "1",
+        "top": "calc(var(--_edge) + env(safe-area-inset-top, 0px))"
+      },
+      ".rx-toaster[data-x=\"left\"]": {
+        "left": "var(--_edge)"
+      },
+      ".rx-toaster[data-x=\"right\"]": {
+        "right": "var(--_edge)"
+      },
+      ".rx-toaster[data-x=\"center\"]": {
+        "left": "50%",
+        "translate": "-50% 0"
+      },
+      "@media (width < 600px)": {
+        ".rx-toaster[data-x]": {
+          "left": "1rem",
+          "right": "1rem",
+          "width": "auto",
+          "translate": "none"
+        }
+      },
+      ".rx-toaster-list": {
+        "position": "relative",
+        "height": "100%",
+        "margin": "0",
+        "padding": "0",
+        "list-style": "none"
+      },
+      ".rx-toast": {
+        "--_fill": "var(--popover)",
+        "--_flat": "var(--border)",
+        "--_ring": "var(--surface-ring)",
+        "--_edge-a": "var(--surface-edge-top)",
+        "--_edge-b": "var(--surface-edge-bottom)",
+        "--_sheen": "var(--surface-sheen)",
+        "--_shade": "var(--surface-shade)",
+        "--_swipe-x": "0px",
+        "--_swipe-y": "0px",
+        "--_swipe-p": "0",
+        "--_exit-x": "0px",
+        "--_exit-y": "0px",
+        "--_y": "calc(var(--_dir) * var(--_i, 0) * var(--_peek))",
+        "--_scale": "calc(1 - var(--_i, 0) * 0.05)",
+        "position": "absolute",
+        "inset-inline": "0",
+        "z-index": "calc(100 - var(--_i, 0))",
+        "box-sizing": "content-box",
+        "height": "var(--_h, auto)",
+        "border-radius": "var(--radius-box)",
+        "color": "var(--popover-foreground)",
+        "pointer-events": "auto",
+        "touch-action": "none",
+        "outline": "none",
+        "opacity": "calc(1 - var(--_swipe-p) * 0.8)",
+        "translate": "calc(var(--_swipe-x) + var(--_exit-x)) calc(var(--_y) + var(--_swipe-y) + var(--_exit-y))",
+        "scale": "var(--_scale)",
+        "transition": "--_fill 150ms var(--motion-ease), opacity 200ms var(--motion-ease), filter var(--spring-toast-duration) var(--spring-toast), translate var(--spring-toast-duration) var(--spring-toast), scale var(--spring-toast-duration) var(--spring-toast), height var(--spring-toast-duration) var(--spring-toast), display 200ms allow-discrete"
+      },
+      ".rx-toaster[data-y=\"bottom\"] .rx-toast": {
+        "bottom": "0",
+        "transform-origin": "50% 100%"
+      },
+      ".rx-toaster[data-y=\"top\"] .rx-toast": {
+        "top": "0",
+        "transform-origin": "50% 0"
+      },
+      ".rx-toast::after": {
+        "content": "\"\"",
+        "position": "absolute",
+        "inset-inline": "0",
+        "height": "calc(var(--_gap) + 1px)"
+      },
+      ".rx-toaster[data-y=\"bottom\"] .rx-toast::after": {
+        "bottom": "100%"
+      },
+      ".rx-toaster[data-y=\"top\"] .rx-toast::after": {
+        "top": "100%"
+      },
+      ".rx-toast:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "2px"
+      },
+      ".rx-toast[data-swiping]": {
+        "user-select": "none",
+        "transition-property": "--_fill, filter, scale, height, display"
+      },
+      ".rx-toast[data-removed]": {
+        "display": "none",
+        "opacity": "0",
+        "scale": "0.96",
+        "filter": "blur(8px)",
+        "pointer-events": "none",
+        "transition": "opacity 200ms var(--motion-ease), filter 200ms var(--motion-ease), translate 200ms var(--motion-ease), scale 200ms var(--motion-ease), display 200ms allow-discrete"
+      },
+      ".rx-toaster[data-x=\"right\"] .rx-toast[data-removed]": {
+        "--_exit-x": "32px"
+      },
+      ".rx-toaster[data-x=\"left\"] .rx-toast[data-removed]": {
+        "--_exit-x": "-32px"
+      },
+      ".rx-toaster[data-x=\"center\"] .rx-toast[data-removed]": {
+        "--_exit-y": "calc(var(--_dir) * -22px)"
+      },
+      ".rx-toaster .rx-toast[data-removed][data-swipe-out]": {
+        "--_exit-x": "0px",
+        "--_exit-y": "0px"
+      },
+      ".rx-toaster .rx-toast[data-removed][data-swipe-out=\"right\"]": {
+        "--_exit-x": "100%"
+      },
+      ".rx-toaster .rx-toast[data-removed][data-swipe-out=\"left\"]": {
+        "--_exit-x": "-100%"
+      },
+      ".rx-toaster .rx-toast[data-removed][data-swipe-out=\"down\"]": {
+        "--_exit-y": "100%"
+      },
+      ".rx-toaster .rx-toast[data-removed][data-swipe-out=\"up\"]": {
+        "--_exit-y": "-100%"
+      },
+      ".rx-toaster[data-expanded] .rx-toast": {
+        "--_y": "calc(var(--_dir) * var(--_offset, 0px))",
+        "--_scale": "1"
+      },
+      ".rx-toaster:not([data-expanded]) .rx-toast:not([data-front])": {
+        "height": "var(--_front-h, auto)"
+      },
+      ".rx-toaster:not([data-expanded]) .rx-toast:not([data-front]) > *": {
+        "opacity": "0",
+        "pointer-events": "none"
+      },
+      ".rx-toast-body": {
+        "display": "flex",
+        "flex-wrap": "wrap",
+        "align-items": "center",
+        "gap": "8px 10px",
+        "padding": "11px 13px",
+        "transition": "opacity 200ms var(--motion-ease)"
+      },
+      ".rx-toast-icon": {
+        "--_tone": "var(--muted-foreground)",
+        "display": "grid",
+        "flex": "none",
+        "place-items": "center",
+        "width": "24px",
+        "height": "24px",
+        "border-radius": "999px",
+        "background": "color-mix(in oklab, var(--_tone) 14%, var(--popover))",
+        "color": "color-mix(in oklab, var(--_tone) 80%, var(--tint-ink))"
+      },
+      ".rx-toast-icon > svg": {
+        "width": "16px",
+        "height": "16px",
+        "transition": "opacity 300ms cubic-bezier(0.2, 0, 0, 1), scale var(--spring-swap-duration) var(--spring-swap), filter 300ms cubic-bezier(0.2, 0, 0, 1)"
+      },
+      ".rx-toast-icon path[pathLength]": {
+        "stroke-dasharray": "1",
+        "stroke-dashoffset": "0",
+        "transition": "stroke-dashoffset var(--spring-check-duration) var(--spring-check) 80ms"
+      },
+      ".rx-toast-icon circle": {
+        "stroke-dasharray": "0.7 0.3",
+        "transform-origin": "50% 50%",
+        "animation": "rx-toast-spin 800ms linear infinite"
+      },
+      ".rx-toast[data-type=\"success\"] .rx-toast-icon": {
+        "--_tone": "var(--success)"
+      },
+      ".rx-toast[data-type=\"error\"] .rx-toast-icon": {
+        "--_tone": "var(--destructive)"
+      },
+      ".rx-toast[data-type=\"warning\"] .rx-toast-icon": {
+        "--_tone": "var(--warning)"
+      },
+      ".rx-toast[data-type=\"info\"] .rx-toast-icon": {
+        "--_tone": "var(--primary)"
+      },
+      ".rx-toast-content": {
+        "flex": "1 1 10rem",
+        "min-width": "0",
+        "transition": "opacity 300ms cubic-bezier(0.2, 0, 0, 1), translate var(--spring-swap-duration) var(--spring-swap), filter 300ms cubic-bezier(0.2, 0, 0, 1)"
+      },
+      ".rx-toast-title": {
+        "font-weight": "510",
+        "overflow-wrap": "anywhere"
+      },
+      ".rx-toast-description": {
+        "color": "var(--muted-foreground)",
+        "overflow-wrap": "anywhere",
+        "text-wrap": "pretty"
+      },
+      ".rx-toast-actions": {
+        "display": "flex",
+        "flex": "none",
+        "gap": "6px",
+        "margin-inline-start": "auto"
+      },
+      ".rx-toast-close": {
+        "position": "absolute",
+        "top": "0",
+        "inset-inline-start": "0",
+        "display": "grid",
+        "place-items": "center",
+        "width": "24px",
+        "height": "24px",
+        "padding": "0",
+        "border": "1px solid var(--input)",
+        "border-radius": "999px",
+        "background-color": "var(--popover)",
+        "color": "var(--muted-foreground)",
+        "cursor": "pointer",
+        "opacity": "0",
+        "translate": "-35% -35%",
+        "scale": "0.8",
+        "-webkit-tap-highlight-color": "transparent",
+        "transition": "opacity 150ms var(--motion-ease), color 150ms var(--motion-ease), background-color 150ms var(--motion-ease), scale var(--spring-press-duration) var(--spring-press)"
+      },
+      ".rx-toast-close::before, .rx-toast-close::after": {
+        "content": "\"\"",
+        "grid-area": "1 / 1",
+        "width": "10px",
+        "height": "1.5px",
+        "border-radius": "1px",
+        "background-color": "currentColor",
+        "rotate": "45deg"
+      },
+      ".rx-toast-close::after": {
+        "rotate": "-45deg"
+      },
+      ".rx-toast-close:hover": {
+        "background-color": "var(--muted)",
+        "color": "var(--foreground)"
+      },
+      ".rx-toast-close:active": {
+        "scale": "0.9"
+      },
+      ".rx-toast-close:focus-visible": {
+        "outline": "2px solid var(--ring)",
+        "outline-offset": "1px"
+      },
+      ".rx-toast:is(:hover, :focus-within) > .rx-toast-close": {
+        "opacity": "1",
+        "scale": "1"
+      },
+      "@media (hover: none)": {
+        ".rx-toast > .rx-toast-close": {
+          "opacity": "1",
+          "scale": "1"
+        }
+      },
+      ".rx-toast-announcer": {
+        "position": "absolute",
+        "width": "1px",
+        "height": "1px",
+        "margin": "-1px",
+        "padding": "0",
+        "overflow": "hidden",
+        "clip-path": "inset(50%)",
+        "white-space": "nowrap",
+        "border": "0"
+      },
+      "@starting-style ": {
+        ".rx-toast": {
+          "opacity": "0",
+          "translate": "0 calc(var(--_dir) * -22px)",
+          "scale": "0.96",
+          "filter": "blur(10px)"
+        },
+        ".rx-toast-icon > svg": {
+          "opacity": "0",
+          "scale": "0.25",
+          "filter": "blur(4px)"
+        },
+        ".rx-toast-icon path[pathLength]": {
+          "stroke-dashoffset": "1"
+        },
+        ".rx-toast-content": {
+          "opacity": "0",
+          "translate": "0 4px",
+          "filter": "blur(4px)"
+        }
+      },
+      "@keyframes rx-toast-spin": {
+        "to": {
+          "rotate": "1turn"
+        }
+      }
+    },
+    "@layer rx-motion": {
+      "@media (prefers-reduced-motion: reduce)": {
+        ".rx-toast, .rx-toast-body, .rx-toast-content, .rx-toast-close, .rx-toast-icon > svg, .rx-toast-icon path": {
+          "transition-duration": "0ms",
+          "transition-delay": "0ms"
+        },
+        ".rx-toast-icon circle": {
+          "animation-duration": "2400ms"
+        }
+      },
+      "[data-motion=\"off\"]\n\t\t:is(\n\t\t\t.rx-toast,\n\t\t\t.rx-toast-body,\n\t\t\t.rx-toast-content,\n\t\t\t.rx-toast-close,\n\t\t\t.rx-toast-icon > svg,\n\t\t\t.rx-toast-icon path\n\t\t)": {
+        "transition-duration": "0ms",
+        "transition-delay": "0ms"
+      },
+      "[data-motion=\"off\"] .rx-toast-icon circle": {
+        "animation-duration": "2400ms"
+      }
+    }
+  },
+  "type": "registry:ui"
+}

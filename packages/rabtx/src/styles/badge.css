@@ -1,0 +1,11 @@
+/*
+ * A tint: a pale fill and a readable ink, both derived from one `--_tone` color so a badge needs one
+ * class per tone. The ink is the tone pulled toward --tint-ink (black in light, white in dark) until
+ * it passes 4.5:1 on its own fill; Figma's raw tone colors on these fills do not.
+ */
+@layer components {
+	.rx-tint {
+		background: color-mix(in oklab, var(--_tone) 12%, var(--card));
+		color: color-mix(in oklab, var(--_tone) var(--_ink-mix, 75%), var(--tint-ink));
+	}
+}
