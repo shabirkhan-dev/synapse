@@ -4,6 +4,14 @@ import { type ConfigSource, loadConfig } from "@synapse/core/config";
 /** Development-only default; production rejects it. */
 export const developmentJwtSecret = "development-only-jwt-secret-change-me";
 
+const modelPricesSchema = z.record(
+	z.string(),
+	z.object({
+		inputPerMillionTokens: z.number().nonnegative(),
+		outputPerMillionTokens: z.number().nonnegative(),
+	}),
+);
+
 const booleanFromString = z
 	.enum(["true", "false"])
 	.default("false")
@@ -17,6 +25,26 @@ export const envSchema = z
 		API_VERSION: z.string().regex(/^\d+$/).default("1"),
 		SERVICE_NAME: z.string().min(1).default("synapse-api"),
 		LOG_LEVEL: z.enum(["DEBUG", "INFO", "WARN", "ERROR"]).default("INFO"),
+		/** Defaults to `json` in production and `pretty` elsewhere. */
+		LOG_FORMAT: z.enum(["json", "pretty"]).optional(),
+		/** OTLP/HTTP collector base URL (e.g. http://localhost:4318); traces are not exported when unset. */
+		OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
+		/** JSON `{ "provider:model": { "inputPerMillionTokens": n, "outputPerMillionTokens": n } }` for cost estimates. */
+		AI_MODEL_PRICES: z
+			.string()
+			.optional()
+			.transform((value, context) => {
+				if (!value) return {};
+				try {
+					return modelPricesSchema.parse(JSON.parse(value));
+				} catch {
+					context.addIssue({
+						code: "custom",
+						message: "AI_MODEL_PRICES must be JSON prices per model",
+					});
+					return z.NEVER;
+				}
+			}),
 		/** Postgres with the pgvector extension (docker compose uses pgvector/pgvector:pg18). */
 		DATABASE_URL: z.url().default("postgresql://synapse:synapse@localhost:5433/synapse"),
 		DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),

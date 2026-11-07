@@ -25,7 +25,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Provenance is returned, not stored:** answers carry `provenance`, but nothing persists it until
   `audit` exists. Token counts in the context budget are estimates (~4 chars/token).
 - **Hybrid scores are RRF scores** (≈0.016–0.033), not cosine; clients must not threshold `score` across modes.
-- **Reranking, query rewriting, queues (pg-boss), LangGraph, Langfuse/OTel** are planned, not installed.
+- **Tracing is OTLP-only:** spans export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; no Langfuse
+  exporter yet (syn-020). Costs are estimated only for models listed in `AI_MODEL_PRICES`.
+- **One global tracer provider per process:** tests that call `startTracing` must `shutdown()` after.
+- **Reranking, query rewriting, queues (pg-boss), LangGraph, Langfuse** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
 - **Console has no UI and no tests**; `@synapse/ui` is not wired into it yet.

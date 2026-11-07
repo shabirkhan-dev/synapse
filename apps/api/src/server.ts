@@ -1,14 +1,22 @@
 import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
+import { createLogger, instrumentModelGateway, startTracing } from "@synapse/observability";
 
 import { createApp } from "./app";
 import { loadConfiguration } from "./config";
-import { createLogger } from "./infrastructure/logger/logger";
 import { ChatService } from "./modules/chat";
 import { DrizzleRagRepository, RagService } from "./modules/rag";
 
 const config = loadConfiguration();
-const logger = createLogger({ prefix: config.app.serviceName, minLevel: config.app.logLevel });
+const tracing = startTracing({
+	serviceName: config.app.serviceName,
+	...(config.observability.otlpEndpoint ? { otlpEndpoint: config.observability.otlpEndpoint } : {}),
+});
+const logger = createLogger({
+	service: config.app.serviceName,
+	level: config.observability.logLevel,
+	format: config.observability.logFormat,
+});
 
 if (!config.ai.apiKey) {
 	logger.warn("AI_API_KEY is not set: ingest, query and chat will fail until it is configured.");
@@ -16,7 +24,10 @@ if (!config.ai.apiKey) {
 
 const database = createDatabase(config.database);
 const repository = new DrizzleRagRepository(database.db);
-const gateway = createOpenAICompatibleModelGateway(config.ai);
+const gateway = instrumentModelGateway(createOpenAICompatibleModelGateway(config.ai), {
+	logger,
+	prices: config.observability.modelPrices,
+});
 const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
@@ -39,13 +50,17 @@ const server = Bun.serve({
 	idleTimeout: 120,
 });
 
-logger.info(`listening on ${server.url.href.replace(/\/$/, "")}${config.app.basePath}`);
-logger.info(`OpenAPI docs at ${server.url.href}${config.app.apiPrefix}/docs`);
+logger.info("listening", {
+	url: `${server.url.href.replace(/\/$/, "")}${config.app.basePath}`,
+	docs: `${server.url.href}${config.app.apiPrefix}/docs`,
+	tracesExportedTo: config.observability.otlpEndpoint ?? "none",
+});
 
 async function shutdown(signal: string) {
-	logger.info(`${signal} received, shutting down`);
+	logger.info("shutting down", { signal });
 	await server.stop();
 	await database.close();
+	await tracing.shutdown();
 	process.exit(0);
 }
 

@@ -10,10 +10,10 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/database` (Drizzle client, schema, migrations), `packages/adapters` (model gateway),
   `packages/ingestion` (normalize, content-hash dedup, pipeline), `packages/knowledge` (chunking,
   embedding preparation, chunk versions), `packages/retrieval` (vector, keyword, hybrid RRF), `packages/generation` (prompts, context,
-  citations, provenance).
+  citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost).
 - **Planned:** `apps/worker`; packages
   `orchestration`, `human-oversight`, `audit`, `guardrails`, `memory`,
-  `evaluation`, `observability`, `security`, `reliability`, `providers`, `native`; more adapters
+  `evaluation`, `security`, `reliability`, `providers`, `native`; more adapters
   (vector-store, cache, queue, storage);
   `crates/*`; root `tests/` and `deploy/`.
 - The RAG and chat code in `apps/api/src/modules/` is the seed that will move into

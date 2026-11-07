@@ -5,11 +5,11 @@ import { SignJWT } from "jose";
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
+import { createLogger, instrumentModelGateway } from "@synapse/observability";
 
 import { createApp } from "@/app";
 import { loadConfiguration } from "@/config";
 import { developmentJwtSecret } from "@/config/env";
-import { createLogger } from "@/infrastructure/logger/logger";
 import { ChatService } from "@/modules/chat";
 import {
 	type NewRagChunk,
@@ -228,12 +228,17 @@ export function buildTestApp({
 	pingDatabase?: () => Promise<void>;
 	searchMode?: "vector" | "hybrid";
 } = {}) {
-	const gateway = createAiSdkModelGateway({
-		chatModel,
-		embeddingModel,
-		chatInfo: { provider: "mock", model: "mock-chat" },
-		embeddingInfo: { provider: "mock", model: "mock-embedding" },
-	});
+	const logger = createLogger({ service: "test", level: "ERROR" });
+	// Instrumented like server.ts, so tests exercise the same tracing path.
+	const gateway = instrumentModelGateway(
+		createAiSdkModelGateway({
+			chatModel,
+			embeddingModel,
+			chatInfo: { provider: "mock", model: "mock-chat" },
+			embeddingInfo: { provider: "mock", model: "mock-embedding" },
+		}),
+		{ logger },
+	);
 	const rag = new RagService(repository, gateway, {
 		chunk: testConfig.rag.chunk,
 		defaultTopK: testConfig.rag.topK,
@@ -248,7 +253,7 @@ export function buildTestApp({
 	});
 	const app = createApp({
 		config: testConfig,
-		logger: createLogger({ minLevel: "ERROR" }),
+		logger,
 		rag,
 		chat,
 		pingDatabase,

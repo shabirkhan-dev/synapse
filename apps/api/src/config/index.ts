@@ -3,9 +3,18 @@ import { type AppConfig, createAppConfig } from "./app.config";
 import { type AuthConfig, createAuthConfig } from "./auth.config";
 import { createDatabaseConfig, type DatabaseConfig } from "./database.config";
 import { type Env, parseEnv } from "./env";
+import { createObservabilityConfig, type ObservabilityConfig } from "./observability.config";
 import { createRagConfig, type RagConfig } from "./rag.config";
 
-export type { AiConfig, AppConfig, AuthConfig, DatabaseConfig, Env, RagConfig };
+export type {
+	AiConfig,
+	AppConfig,
+	AuthConfig,
+	DatabaseConfig,
+	Env,
+	ObservabilityConfig,
+	RagConfig,
+};
 
 export type Configuration = {
 	app: AppConfig;
@@ -13,6 +22,7 @@ export type Configuration = {
 	database: DatabaseConfig;
 	ai: AiConfig;
 	rag: RagConfig;
+	observability: ObservabilityConfig;
 };
 
 /** Build the typed domain configs from a parsed environment. */
@@ -23,6 +33,7 @@ export function createConfiguration(env: Env): Configuration {
 		database: createDatabaseConfig(env),
 		ai: createAiConfig(env),
 		rag: createRagConfig(env),
+		observability: createObservabilityConfig(env),
 	};
 }
 

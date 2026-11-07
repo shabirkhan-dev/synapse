@@ -21,6 +21,7 @@ put apps/api/src/modules/chat/chat.routes.ts 'import { RagService } from "@/modu
 put apps/api/src/modules/chat/chat.tools.ts 'import { RagService } from "../rag";'
 put apps/api/src/shared/responses/success-response.ts 'export const ok = (c) => c.json({});'
 put packages/adapters/src/model-gateway/gateway.ts 'import { embed } from "ai";'
+put packages/observability/src/tracing/tracing.ts 'import { trace } from "@opentelemetry/api";'
 put packages/knowledge/src/chunking/chunker.ts 'import type { ModelGateway } from "@synapse/core/contracts";'
 put apps/api/src/server.ts 'import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";'
 put apps/api/src/shared/constants/error-codes.ts 'export const ERROR_CODES = { NOT_FOUND: "NOT_FOUND" };'
@@ -53,6 +54,8 @@ put packages/demo/src/index.ts 'export const k = process.env.KEY;'
 put packages/retrieval/src/search.ts 'import { embed } from "ai";'
 put packages/core/src/utils/leak.ts 'import { x } from "@synapse/database";'
 put apps/api/src/infrastructure/models.ts 'import { createOpenAICompatible } from "@ai-sdk/openai-compatible";'
+put packages/retrieval/src/traced.ts 'import { trace } from "@opentelemetry/api";'
+put apps/api/src/shared/middleware/otel.ts 'import { context } from "@opentelemetry/api";'
 put apps/api/src/modules/rag/services/rag-status.service.ts 'throw new AppError({ statusCode: 404, code: ERROR_CODES.NOT_FOUND });'
 put apps/api/src/modules/rag/routes/rag-code.routes.ts 'return failure(c, HTTP_STATUS.NOT_FOUND, "RAG_MISSING", "x");'
 put apps/api/src/modules/health/routes/health-raw.routes.ts 'return success(c, data, 201);'
@@ -91,6 +94,8 @@ expect "packages/demo/src/index.ts:1:"
 expect "packages/retrieval/src/search.ts:1:"
 expect "packages/core/src/utils/leak.ts:1:"
 expect "apps/api/src/infrastructure/models.ts:1:"
+expect "packages/retrieval/src/traced.ts:1:"
+expect "apps/api/src/shared/middleware/otel.ts:1:"
 expect "rag-status.service.ts:1:"
 expect "rag-code.routes.ts:1:"
 expect "health-raw.routes.ts:1:"

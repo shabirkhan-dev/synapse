@@ -117,6 +117,11 @@ while IFS= read -r hit; do
     fail "$hit -> apps reach model providers through @synapse/adapters, not @ai-sdk/* directly"
 done < <(search 'from "@ai-sdk/' apps/api/src apps/console/src || true)
 
+while IFS= read -r hit; do
+    fail "$hit -> tracing goes through @synapse/observability, not @opentelemetry/* directly"
+done < <(search 'from "@opentelemetry/' packages apps/api/src apps/console/src |
+    grep -vE '^packages/observability/' || true)
+
 # --- backend ---------------------------------------------------------------------------
 check_isolation "$API_SRC/modules" "@/modules" "$API_SRC" "module"
 

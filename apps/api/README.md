@@ -25,7 +25,7 @@ Database schema and migrations live in [`@synapse/database`](../../packages/data
 
 ```text
 src/
-  server.ts             # load config once, model gateway (@synapse/adapters), repository → services, Bun.serve
+  server.ts             # config, tracing + logger (@synapse/observability), instrumented model gateway, services, Bun.serve
   migrate.ts            # migration entry for the built image (dist/migrate.js)
   app.ts                # createApp: middleware, docs, error handler
   config/               # env.ts (Zod) + app/auth/database/ai/rag/migration configs, index.ts
@@ -33,10 +33,8 @@ src/
     constants/          # HTTP_STATUS, ERROR_CODES, RESPONSE_MESSAGES
     errors/             # AppError, central error handler
     responses/          # success(), failure(), envelope schemas
-    middleware/         # request id
+    middleware/         # request id, request tracing (span + log per request)
     types/              # AppBindings, AuthUser
-  infrastructure/
-    logger/             # leveled logger
   routes/index.ts       # mounts module routers, applies auth
   modules/
     auth/               # constants/ middleware/ services/

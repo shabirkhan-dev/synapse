@@ -5,7 +5,8 @@ description: Use when adding tracing, instrumentation, cost tracking, logging or
 
 # observability
 
-> Status: Planned. Today the API has request logging with request ids (`apps/api/src/infrastructure/logger/logger.ts`).
+> Status: Live: `@synapse/observability` (structured logs with trace ids, OTLP tracing, request spans in
+> `apps/api`, instrumented model gateway with usage/cost). Langfuse exporter is planned (syn-020).
 
 ## When to use
 

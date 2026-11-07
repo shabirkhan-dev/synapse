@@ -14,7 +14,7 @@
 
 See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`, `database`, `adapters`
 (model gateway), `ingestion`, `knowledge`, `retrieval`,
-`generation`.
+`generation`, `observability`.
 Everything else is planned.
 
 ## Crates (Rust)
@@ -37,5 +37,6 @@ Everything else is planned.
 | Keyword search | Postgres full-text (GIN, `simple` config) | Live |
 | Queue | pg-boss | Planned |
 | Cache | Postgres first; Redis only if load proves it | Planned |
-| Tracing | Langfuse + OpenTelemetry | Planned |
+| Tracing | OpenTelemetry (OTLP/HTTP) via `@synapse/observability` | Live |
+| LLM tracing / evals UI | Langfuse | Planned (syn-020) |
 | Local stack | Docker Compose (`docker-compose.yml`) | Live |

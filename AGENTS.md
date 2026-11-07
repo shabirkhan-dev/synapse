@@ -81,6 +81,7 @@ synapse/
 │   ├── knowledge/       # @synapse/knowledge: chunking, embeddings, chunk versions
 │   ├── retrieval/       # @synapse/retrieval: vector, keyword, hybrid (RRF) search
 │   ├── generation/      # @synapse/generation: versioned prompts, context, citations, provenance
+│   ├── observability/   # @synapse/observability: logs, OpenTelemetry tracing, LLM usage/cost
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/

@@ -4,7 +4,6 @@ export type AppConfig = {
 	nodeEnv: Env["NODE_ENV"];
 	port: number;
 	serviceName: string;
-	logLevel: Env["LOG_LEVEL"];
 	/** e.g. `api` → docs at `/api/docs`. */
 	apiPrefix: string;
 	/** e.g. `/api/v1`. */
@@ -24,7 +23,6 @@ export function createAppConfig(env: Env): AppConfig {
 		nodeEnv: env.NODE_ENV,
 		port: env.PORT,
 		serviceName: env.SERVICE_NAME,
-		logLevel: env.LOG_LEVEL,
 		apiPrefix: env.API_PREFIX,
 		basePath: `/${env.API_PREFIX}/v${env.API_VERSION}`,
 		corsOrigins: parseCorsOrigins(env.CORS_ORIGIN),

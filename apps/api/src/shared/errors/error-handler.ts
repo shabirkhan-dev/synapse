@@ -1,8 +1,7 @@
+import type { Logger } from "@synapse/observability";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-
-import type { Logger } from "@/infrastructure/logger/logger";
 
 import { ERROR_CODES } from "../constants/error-codes";
 import { HTTP_STATUS } from "../constants/http-status";
@@ -25,7 +24,12 @@ export function createErrorHandler(logger: Logger) {
 				error.message || RESPONSE_MESSAGES.ERRORS.REQUEST_FAILED,
 			);
 		}
-		logger.error(`unhandled error on ${c.req.method} ${c.req.path}:`, error.stack ?? error.message);
+		logger.error("unhandled error", {
+			method: c.req.method,
+			path: c.req.path,
+			requestId: c.get("requestId"),
+			error,
+		});
 		return failure(
 			c,
 			HTTP_STATUS.INTERNAL_SERVER_ERROR,

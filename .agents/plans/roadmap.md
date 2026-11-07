@@ -25,8 +25,9 @@
 | `knowledge` — chunking + embeddings with versions | ✅ | syn-012 |
 | `retrieval` — vector + keyword + hybrid fusion | ✅ | syn-013 |
 | `generation` — prompts, context, citations, provenance | ✅ | syn-014 |
-| `observability` — OpenTelemetry + Langfuse, replace API logger | ⏭️ | syn-015 |
-| `evaluation` — datasets, retrieval metrics, CI regression | ⬜ | syn-016 |
+| `observability` — OpenTelemetry tracing, structured logs, LLM usage/cost | ✅ | syn-015 |
+| Langfuse export (needs credentials) | ⬜ | syn-020 |
+| `evaluation` — datasets, retrieval metrics, CI regression | ⏭️ | syn-016 |
 
 ## Phase 2 — Platform capabilities (after the RAG path works)
 

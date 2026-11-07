@@ -23,6 +23,7 @@
 		"@synapse/generation": "workspace:*",
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
+		"@synapse/observability": "workspace:*",
 		"@synapse/retrieval": "workspace:*",
 		"ai": "^7.0.164",
 		"drizzle-orm": "^0.45.4",

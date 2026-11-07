@@ -1,15 +1,16 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
+import type { Logger } from "@synapse/observability";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 
-import type { Logger } from "@/infrastructure/logger/logger";
 import { registerRoutes, type RouteDependencies } from "@/routes";
 import { ERROR_CODES } from "@/shared/constants/error-codes";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { RESPONSE_MESSAGES } from "@/shared/constants/response-messages";
 import { createErrorHandler, notFoundHandler } from "@/shared/errors/error-handler";
 import { requestId } from "@/shared/middleware/request-id";
+import { createRequestTracing } from "@/shared/middleware/request-tracing";
 import { failure } from "@/shared/responses/error-response";
 import type { AppBindings } from "@/shared/types/app-types";
 
@@ -39,6 +40,7 @@ export function createApp({ logger, ...dependencies }: AppDependencies) {
 	});
 
 	app.use("*", requestId);
+	app.use("*", createRequestTracing(logger));
 	app.use("*", secureHeaders({ crossOriginResourcePolicy: "cross-origin" }));
 	app.use(
 		"*",
@@ -50,13 +52,6 @@ export function createApp({ logger, ...dependencies }: AppDependencies) {
 			maxAge: 600,
 		}),
 	);
-	app.use("*", async (c, next) => {
-		const started = performance.now();
-		await next();
-		logger.info(
-			`${c.req.method} ${c.req.path} ${c.res.status} ${Math.round(performance.now() - started)}ms ${c.get("requestId")}`,
-		);
-	});
 
 	registerRoutes(app, dependencies);
 

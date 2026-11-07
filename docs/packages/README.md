@@ -17,6 +17,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | `@synapse/knowledge` | Chunking, embedding preparation, chunk versions — see [knowledge.md](knowledge.md) |
 | `@synapse/retrieval` | Vector, keyword and hybrid (RRF) retrieval — see [retrieval.md](retrieval.md) |
 | `@synapse/generation` | Versioned prompts, budgeted context, citations, answer provenance — see [generation.md](generation.md) |
+| `@synapse/observability` | Structured logs, OpenTelemetry tracing, LLM usage and cost — see [observability.md](observability.md) |
 
 ## Platform packages (from the plan)
 
@@ -33,7 +34,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | [`guardrails`](guardrails.md) | Keep inputs, retrieval, tools and outputs within policy. | Planned |
 | [`memory`](memory.md) | Agent and conversation memory: working, conversation, semantic and episodic, with lifecycle rules. | Planned (after the core RAG path works) |
 | [`evaluation`](evaluation.md) | Measure quality: datasets and scorers for retrieval, generation, agents and safety, plus regression runs. | Planned |
-| [`observability`](observability.md) | See what the system does: tracing, instrumentation, cost tracking and exporters. | Planned |
+| [`observability`](observability.md) | See what the system does: tracing, instrumentation, cost tracking and exporters. | Live (logs, tracing, LLM usage/cost) |
 | [`security`](security.md) | Who you are and what you may do: authentication, authorization, tenancy, permissions, PII and secrets. | Partly live: HS256 JWT verification in `apps/api/src/modules/auth` |
 | [`reliability`](reliability.md) | Make external calls and jobs dependable: retry, circuit breakers, idempotency, timeouts, fallbacks, health. | Planned |
 | [`adapters`](adapters.md) | Implement `core` contracts against infrastructure: vector store, cache, queue, storage and the model gateway. | Live (model gateway) |
