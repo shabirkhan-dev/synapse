@@ -7,8 +7,8 @@ Compose is split into **fragments** under `compose/` and merged by the root
 | File | Role |
 |------|------|
 | `compose/postgres.yml` | Postgres 18 + pgvector (`pgvector/pgvector:0.8.7-pg18-trixie`), volume, healthcheck |
-| `compose/ai-api.yml` | Bun + Hono AI API (RAG on pgvector, streaming chat). Needs `AI_API_KEY` in `.env` |
-| `compose/web.yml` | Next.js web image (standalone output) |
+| `compose/api.yml` | Bun + Hono API (RAG on pgvector, streaming chat). Needs `AI_API_KEY` in `.env` |
+| `compose/console.yml` | Next.js console image (standalone output) |
 
 **Env:** copy `env.docker.example` from the repo root to `.env`.
 
@@ -20,12 +20,12 @@ docker compose up -d --build
 | Service | Host port (default) |
 |---------|---------------------|
 | Postgres | 5433 → 5432 |
-| AI API | 8000 (`/api/docs` for the API reference) |
-| Web | 3000 |
+| API | 8000 (`/api/docs` for the API reference) |
+| Console | 3000 |
 
 `NEXT_PUBLIC_*` URLs must be reachable from the **browser**, not Docker service hostnames.
 
-**Postgres only** (API/web on the host):
+**Postgres only** (API/console on the host):
 
 ```bash
 docker compose up -d postgres
@@ -57,10 +57,10 @@ docker compose exec -T postgres psql -U synapse -d postgres < synapse-pg16.sql
 
 ## Switching to the pgvector image
 
-`apps/ai-api` stores embeddings in a `vector(1536)` column, so the compose Postgres now runs
+`apps/api` stores embeddings in a `vector(1536)` column, so the compose Postgres now runs
 `pgvector/pgvector:0.8.7-pg18-trixie` (official Postgres 18 Debian image + the extension) instead of
 `postgres:18-alpine`. It is the same major version and the same `postgres18_data` volume, so existing data opens as is.
-The extension itself is created by the ai-api migration (`CREATE EXTENSION IF NOT EXISTS vector`).
+The extension itself is created by the API migration (`CREATE EXTENSION IF NOT EXISTS vector`).
 
 Alpine (musl) and Debian (glibc) sort text differently, so rebuild text indexes once after the switch:
 
@@ -71,4 +71,4 @@ docker compose exec postgres psql -U synapse -d synapse -c 'ALTER DATABASE synap
 ```
 
 Hosted Postgres: Neon supports `vector` out of the box. Elsewhere, make sure the extension is installable
-(`select * from pg_available_extensions where name = 'vector';`) before deploying ai-api.
+(`select * from pg_available_extensions where name = 'vector';`) before deploying the API.

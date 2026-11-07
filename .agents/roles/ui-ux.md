@@ -11,10 +11,9 @@ design-system decisions.
 - `DESIGN.md`
 - `packages/ui/**` — the shadcn base
 - `packages/rabtx/**` — the polished Rabtx layer built on top of it
-- `apps/web/src/app/ui/**` — the component playground at `/ui`
 
 Web remains the owner of its application code. UI/UX may provide specifications,
-review screens, and change shared UI primitives. A UI implementation inside `apps/web/**`
+review screens, and change shared UI primitives. A UI implementation inside `apps/console/**`
 requires a coordinated card with the web owner. Design documentation in
 `docs/` is coordinated with PM/human ownership through an explicit card.
 

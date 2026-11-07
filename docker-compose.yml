@@ -1,4 +1,4 @@
-# Project entrypoint: Postgres (pgvector) + AI API + Next.js web.
+# Project entrypoint: Postgres (pgvector) + API + Next.js console.
 # Requires Docker Compose v2.20+ (include). From repo root:
 #   cp env.docker.example .env && docker compose up -d --build
 #
@@ -8,5 +8,5 @@ name: synapse
 
 include:
   - path: docker/compose/postgres.yml
-  - path: docker/compose/ai-api.yml
-  - path: docker/compose/web.yml
+  - path: docker/compose/api.yml
+  - path: docker/compose/console.yml

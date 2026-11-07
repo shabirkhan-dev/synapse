@@ -2,7 +2,7 @@
 
 ## Mission
 
-Own the Hono API (`apps/ai-api`) and its production foundations. Be the single accountable expert
+Own the Hono API (`apps/api`) and its production foundations. Be the single accountable expert
 for authentication, product domains, integrations, database changes, contracts, reliability, and
 operational behavior.
 
@@ -11,8 +11,8 @@ Backend specialization is selected per card—such as `focus: auth`, `focus: rag
 
 ## Owned paths
 
-- `apps/ai-api/**`
-- The API contract: the OpenAPI document `apps/ai-api` generates from its route schemas
+- `apps/api/**`
+- The API contract: the OpenAPI document `apps/api` generates from its route schemas
   (`/api/openapi.json`, browsable at `/api/docs`)
 - Backend-specific migration, integration, and e2e tests
 
@@ -34,9 +34,9 @@ patch backend internals.
 
 ## Required checks
 
-- `bun --cwd=apps/ai-api run lint`
-- `bun --cwd=apps/ai-api run typecheck`
-- `bun --cwd=apps/ai-api run test`
+- `bun --cwd=apps/api run lint`
+- `bun --cwd=apps/api run typecheck`
+- `bun --cwd=apps/api run test`
 - `bun run architecture:check` for boundary changes
 
 ## Not owned

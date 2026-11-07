@@ -7,7 +7,7 @@ For quick setup/use, start with `README.md`.
 
 Monorepo managed by **Bun + Turborepo**, with:
 
-- A Bun + Hono AI API and a Next.js web app
+- A Bun + Hono API and a bare Next.js console
 - Shared workspace packages (`@synapse/*`, plus `@rabtx/ui`)
 - Bash scripts and quality tooling
 - Architecture boundary checks
@@ -19,11 +19,11 @@ Monorepo managed by **Bun + Turborepo**, with:
 ```text
 synapse/
 ├── apps/                     # Runnable applications
-│   ├── ai-api/               # Bun + Hono AI API (RAG on pgvector, streaming chat)
-│   └── web/                  # Next.js app
+│   ├── api/                  # Bun + Hono API (RAG on pgvector, streaming chat)
+│   └── console/              # Next.js console (bare, UI starts from zero)
 ├── packages/
 │   ├── logger/               # Shared logger (TypeScript + Rust)
-│   ├── rabtx/                # @rabtx/ui component layer used by the web app
+│   ├── rabtx/                # @rabtx/ui component layer (no app uses it now)
 │   ├── typescript-config/    # Shared TS config bases
 │   └── ui/                   # Shared web UI primitives + design tokens
 ├── scripts/                  # Bash scripts, architecture checks and tests
@@ -42,15 +42,15 @@ synapse/
 
 | App | Stack | Notes |
 | --- | --- | --- |
-| `apps/ai-api` | Bun, Hono, @hono/zod-openapi, AI SDK, Drizzle + pgvector, bun test | RAG + streaming tool chat; verifies HS256 access tokens |
-| `apps/web` | Next.js 16, React 19, Tailwind 4 | Includes unit/integration and Playwright e2e flow |
+| `apps/api` | Bun, Hono, @hono/zod-openapi, AI SDK, Drizzle + pgvector, bun test | RAG + streaming tool chat; verifies HS256 access tokens |
+| `apps/console` | Next.js 16, React 19 | Bare App Router app; no UI library yet |
 
 ## Shared packages
 
 | Package | Workspace import | Purpose |
 | --- | --- | --- |
 | `packages/ui` | `@synapse/ui` | Shared web UI primitives + design tokens |
-| `packages/rabtx` | `@rabtx/ui` | Polished component layer used by the web app |
+| `packages/rabtx` | `@rabtx/ui` | Component layer from the starter (no app uses it now) |
 | `packages/logger` | `@synapse/logger` | Shared structured logger for TypeScript and Rust |
 | `packages/typescript-config` | `@synapse/typescript-config` | Reusable TypeScript config presets |
 
@@ -69,7 +69,6 @@ Run commands from repo root:
 | `bun run typecheck` | TypeScript type checking |
 | `bun run test` | Run tests in workspace + scripts |
 | `bun run test:coverage` | Run full coverage-oriented pass |
-| `bun run test:e2e:web` | Web Playwright e2e |
 | `bun run architecture:check` | Enforce architecture boundaries + kebab-case naming |
 | `bun run preflight` | Lint + typecheck + test |
 | `bun run prepare` | Install git hooks (Lefthook) |
@@ -82,8 +81,8 @@ bun --cwd <app-path> run <script>
 
 Examples:
 
-- `bun --cwd=apps/ai-api run dev` (or `bun run dev:ai`)
-- `bun --cwd=apps/web run dev`
+- `bun --cwd=apps/api run dev` (or `bun run dev:api`)
+- `bun --cwd=apps/console run dev` (or `bun run dev:console`)
 
 ## Tooling and quality system
 
@@ -124,13 +123,13 @@ bun run prepare
 
 ## CI/CD and security
 
-- **CI:** `.github/workflows/ci.yml` runs lint/typecheck/build/test, the ai-api pgvector job, and web e2e
+- **CI:** `.github/workflows/ci.yml` runs lint/typecheck/build/test and the API pgvector job
 - **CD:** `.github/workflows/cd.yml` is a staged deploy template (`main` and version tags)
 - **Security:** `.github/workflows/security.yml` + Dependabot + CodeQL
 
 ## Docker workflow
 
-Postgres (pgvector), the AI API, and Next.js are composed through root `docker-compose.yml` with
+Postgres (pgvector), the API, and the Next.js console are composed through root `docker-compose.yml` with
 fragment files under `docker/compose/` (Compose Spec — no top-level `version` key).
 
 ```bash
@@ -138,7 +137,7 @@ cp env.docker.example .env
 docker compose up -d --build
 ```
 
-Defaults: web `3000`, AI API `8000`, Postgres host `5433`. More details: `docker/README.md`.
+Defaults: console `3000`, API `8000`, Postgres host `5433`. More details: `docker/README.md`.
 
 ## Dev Container workflow
 

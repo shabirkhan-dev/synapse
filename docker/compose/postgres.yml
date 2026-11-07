@@ -1,7 +1,7 @@
 # Postgres service — included from root docker-compose.yml
 services:
   postgres:
-    # Postgres 18 + pgvector (needed by apps/ai-api). Debian-based: pgvector publishes no alpine image.
+    # Postgres 18 + pgvector (needed by apps/api). Debian-based: pgvector publishes no alpine image.
     # Coming from postgres:18-alpine? See docker/README.md "Switching to the pgvector image".
     image: pgvector/pgvector:0.8.7-pg18-trixie
     restart: unless-stopped

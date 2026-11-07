@@ -3,7 +3,7 @@ name: browser-ui-test
 description: >-
   Use when verifying UI/UX or interactive logic in the browser after web changes
   (dropdowns, dialogs, theme toggles, forms, navigation, crash reports). Prefer
-  Playwright MCP for exploratory clicks; use apps/web Playwright e2e for
+  Playwright MCP for exploratory clicks; use apps/console Playwright e2e for
   regressions. Keywords: browser test, UI bug, click crash, dropdown, playwright,
   e2e, hydrate, overlay, Base UI menu
 ---
@@ -12,7 +12,7 @@ description: >-
 
 ## When to use
 
-After changing anything user-visible or interactive in `apps/web` or `packages/ui`:
+After changing anything user-visible or interactive in `apps/console` or `packages/ui`:
 
 - Dropdowns, menus, tooltips, dialogs, sheets
 - Theme / motion controls
@@ -26,7 +26,7 @@ Do **not** stop at typecheck alone for these changes.
 Needs the `playwright` MCP server (`@playwright/mcp`) configured in your editor; the repo no
 longer ships an MCP config of its own.
 
-1. Ensure web is running (`bun run dev` or `bun --cwd=apps/web run dev`). Default local URL: `http://localhost:3000` (e2e config uses `:3005`).
+1. Ensure the console is running (`bun run dev` or `bun run dev:console`). Default local URL: `http://localhost:3000`.
 2. Call `GetMcpTools` for server `playwright`, then use tools to:
    - navigate to the affected route
    - `browser_snapshot` (accessibility tree — primary signal)
@@ -34,15 +34,9 @@ longer ships an MCP config of its own.
    - snapshot again; watch for blank page, error overlay, or missing controls
 3. If the page shows a Next.js / React error overlay, capture the message and fix the root cause before finishing.
 
-## Regression path: repo Playwright e2e
+## Regression path
 
-```bash
-bun run test:e2e:web
-```
-
-- Config: `apps/web/playwright.config.ts` (baseURL `http://127.0.0.1:3005`)
-- Specs: `apps/web/e2e/`
-- Add a focused spec when a bug is fixed and should not return (e.g. theme animation menu opens and selects an option without page crash).
+The console has no e2e suite yet. When one is added, document its command and config here.
 
 ## Base UI / shadcn composition traps (common crash sources)
 

@@ -15,15 +15,15 @@ This package follows the [shadcn monorepo](https://ui.shadcn.com/docs/monorepo) 
 Run the CLI **from the app workspace** (not the package):
 
 ```bash
-cd apps/web
+cd apps/console
 bunx --bun shadcn@latest add button
 ```
 
-The CLI installs primitives into `packages/ui` and app-only blocks into `apps/web`.
+The CLI installs primitives into `packages/ui` and app-only blocks into `apps/console`.
 
 Keep `style`, `iconLibrary`, and `baseColor` identical in:
 
-- `apps/web/components.json`
+- `apps/console/components.json`
 - `packages/ui/components.json`
 
 ## Importing
@@ -54,4 +54,4 @@ Apps import shared tokens from this package:
 
 ## Migration rule
 
-Keep product-specific composed UI in `apps/web/src/components`. Move a component here only when it is a reusable primitive with no app routing/auth/data coupling.
+Keep product-specific composed UI in `apps/console/src/components`. Move a component here only when it is a reusable primitive with no app routing/auth/data coupling.

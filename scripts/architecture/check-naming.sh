@@ -15,8 +15,8 @@ failed=0
 checked=0
 
 SCOPES=(
-    apps/web/src
-    apps/ai-api/src
+    apps/console/src
+    apps/api/src
     packages/ui/src
     packages/logger/src
 )

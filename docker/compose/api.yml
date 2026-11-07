@@ -1,0 +1,36 @@
+# Bun + Hono API (RAG on pgvector, streaming tool chat) — included from root docker-compose.yml
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    image: synapse-api:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      SERVICE_NAME: synapse-api
+      DATABASE_URL: postgresql://${POSTGRES_USER:-synapse}:${POSTGRES_PASSWORD:-synapse}@postgres:5432/${POSTGRES_DB:-synapse}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-5}
+      # HS256 secret the API uses to verify access tokens.
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_PROVIDER_NAME: ${AI_PROVIDER_NAME:-openrouter}
+      AI_API_KEY: ${AI_API_KEY:?Set AI_API_KEY in .env (OpenRouter or any OpenAI-compatible key)}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai/gpt-4o-mini}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      AI_EMBEDDING_BASE_URL: ${AI_EMBEDDING_BASE_URL:-}
+      AI_EMBEDDING_API_KEY: ${AI_EMBEDDING_API_KEY:-}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

@@ -11,14 +11,14 @@ roles:
   backend:
     team: backend
     paths:
-      - apps/ai-api/**
+      - apps/api/**
     reviewers:
       - reviewer
       - qa
   web:
     team: web
     paths:
-      - apps/web/**
+      - apps/console/**
     reviewers:
       - reviewer
       - qa
@@ -41,7 +41,6 @@ roles:
       - DESIGN.md
       - packages/ui/**
       - packages/rabtx/**
-      - apps/web/src/app/ui/**
     reviewers:
       - reviewer
       - web
@@ -59,8 +58,8 @@ shared:
   api-contract:
     # The OpenAPI document is generated from these route schemas (served at /api/openapi.json).
     paths:
-      - apps/ai-api/src/modules/**/*.routes.ts
-      - apps/ai-api/src/modules/**/*.schemas.ts
+      - apps/api/src/modules/**/*.routes.ts
+      - apps/api/src/modules/**/*.schemas.ts
     writers:
       - backend
     reviewers:

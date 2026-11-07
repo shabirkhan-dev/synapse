@@ -1,0 +1,21 @@
+# Next.js console — included from root docker-compose.yml
+services:
+  console:
+    build:
+      context: ../..
+      dockerfile: apps/console/Dockerfile
+    image: synapse-console:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "${CONSOLE_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

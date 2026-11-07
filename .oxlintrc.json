@@ -26,7 +26,7 @@
 	},
 	"overrides": [
 		{
-			"files": ["apps/web/**/*.ts", "apps/web/**/*.tsx"],
+			"files": ["apps/console/**/*.ts", "apps/console/**/*.tsx"],
 			"rules": {
 				"nextjs/no-before-interactive-script-outside-document": "warn"
 			}

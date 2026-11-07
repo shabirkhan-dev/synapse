@@ -4,7 +4,7 @@ An AI platform monorepo — ingestion, knowledge, retrieval, generation and eval
 **Bun workspaces + Turborepo**.
 
 Synapse started from the Rabtx starter and is being cleaned up step by step. Today it holds a
-Bun + Hono AI API, a Next.js web app, and the shared UI, logger and TypeScript config packages.
+Bun + Hono API, a bare Next.js console, and the shared UI, logger and TypeScript config packages.
 
 Dual-licensed **MIT OR Apache-2.0**.
 
@@ -23,14 +23,14 @@ bun run prepare
 bun run dev
 ```
 
-`bun run dev` starts every workspace. Run only the AI API with `bun run dev:ai`.
+`bun run dev` starts every workspace. Run one app with `bun run dev:api` or `bun run dev:console`.
 
 | App | Dev URL |
 | --- | --- |
-| Web | http://localhost:3000 |
-| AI API | http://localhost:8000 — `/api/v1/health`, `/api/docs` |
+| Console | http://localhost:3000 |
+| API | http://localhost:8000 — `/api/v1/health`, `/api/docs` |
 
-To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for `ai-api`).
+To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern for `console`).
 
 ## Layout
 
@@ -38,15 +38,15 @@ To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for 
 
 | Path | What it is |
 | --- | --- |
-| `apps/ai-api` | Bun + Hono AI API — RAG on pgvector, streaming tool-calling chat (AI SDK) |
-| `apps/web` | Next.js 16 — admin, marketing and chat screens; component playground at `/ui` |
+| `apps/api` | Bun + Hono API — RAG on pgvector, streaming tool-calling chat (AI SDK) |
+| `apps/console` | Next.js 16 — admin and playground; a bare app, UI starts from zero |
 
 ### Packages
 
 | Package | Path | Role |
 | --- | --- | --- |
 | `@synapse/ui` | `packages/ui` | shadcn base — the unopinionated primitives |
-| `@rabtx/ui` | `packages/rabtx` | Polished component layer used by the web app (see [DESIGN.md](DESIGN.md)) |
+| `@rabtx/ui` | `packages/rabtx` | Starter component layer, not used by any app now (see [DESIGN.md](DESIGN.md)) |
 | `@synapse/logger` | `packages/logger` | Shared structured logging |
 | `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |
 
@@ -55,7 +55,7 @@ To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for 
 | Path | Purpose |
 | --- | --- |
 | `.agents/` | Agent rules, roles, skills and the coordination board |
-| `docker/` | Compose fragments: Postgres (pgvector), AI API, web |
+| `docker/` | Compose fragments: Postgres (pgvector), API, console |
 | `scripts/` | Bash utilities, plus architecture and naming checks |
 | `.github/workflows/` | `ci.yml`, `cd.yml`, `security.yml` |
 | `.devcontainer/` | Bun + Rust + Bash tooling |
@@ -64,13 +64,12 @@ To work on one app in isolation: `bun --cwd=apps/web run dev` (same pattern for 
 
 | Command | Does |
 | --- | --- |
-| `bun run dev` / `dev:ai` | All dev servers / AI API only |
+| `bun run dev` / `dev:api` / `dev:console` | All dev servers / one app |
 | `bun run build` | Build every app |
 | `bun run lint` / `lint:fix` | oxlint, plus ShellCheck over `scripts/` |
 | `bun run format` | Format TS/JS and shell |
 | `bun run typecheck` | TypeScript across workspaces |
 | `bun run test` / `test:coverage` | Unit tests / coverage gates |
-| `bun run test:e2e:web` | Playwright e2e for web |
 | `bun run architecture:check` | Import-boundary rules |
 | `bun run naming:check` | File and symbol naming rules |
 | `bun run preflight` | `lint` + `typecheck` + `test` — run before pushing |
@@ -89,7 +88,7 @@ cp env.docker.example .env
 docker compose up -d --build
 ```
 
-Web `:3000`, AI API `:8000`, Postgres (pgvector) on host `:5433`. More in
+Console `:3000`, API `:8000`, Postgres (pgvector) on host `:5433`. More in
 [docker/README.md](docker/README.md).
 
 ## Dev Container
@@ -104,7 +103,7 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 
 ## Docs
 
-[PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md), [apps/ai-api/README.md](apps/ai-api/README.md).
+[PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md), [apps/api/README.md](apps/api/README.md).
 
 ## License
 

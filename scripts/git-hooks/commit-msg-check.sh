@@ -45,7 +45,7 @@ fi
 
 if [[ "$FIRST" =~ ^wip([[:space:]:]|$) ]]; then
     msg "commit-msg: error - wip commits are not allowed"
-    msg "example: feat(web): add nest-backed login form"
+    msg "example: feat(console): add login form"
     exit 1
 fi
 

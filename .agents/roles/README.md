@@ -13,8 +13,8 @@ Each agent must load the universal contract and exactly one role charter before 
 
 ## Active roles
 
-- [Backend](backend.md) — the Hono API (`apps/ai-api`) and backend platform
-- [Web](web.md) — Next.js web application
+- [Backend](backend.md) — the Hono API (`apps/api`) and backend platform
+- [Web](web.md) — Next.js console (`apps/console`)
 - [QA](qa.md) — behavior, regression, accessibility, and end-to-end verification
 - [Reviewer](reviewer.md) — independent code, scope, and contract review
 - [UI/UX](ui-ux.md) — design system, the Rabtx polished layer, and visual quality
