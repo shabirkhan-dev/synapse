@@ -25,7 +25,7 @@ Database schema and migrations live in [`@synapse/database`](../../packages/data
 
 ```text
 src/
-  server.ts             # load config once, wire repository → services, Bun.serve
+  server.ts             # load config once, model gateway (@synapse/adapters), repository → services, Bun.serve
   migrate.ts            # migration entry for the built image (dist/migrate.js)
   app.ts                # createApp: middleware, docs, error handler
   config/               # env.ts (Zod) + app/auth/database/ai/rag/migration configs, index.ts
@@ -37,7 +37,6 @@ src/
     types/              # AppBindings, AuthUser
   infrastructure/
     logger/             # leveled logger
-    ai/                 # OpenAI-compatible chat + embedding models
   routes/index.ts       # mounts module routers, applies auth
   modules/
     auth/               # constants/ middleware/ services/

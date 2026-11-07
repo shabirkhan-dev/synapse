@@ -20,6 +20,9 @@ put apps/api/src/modules/rag/routes/rag.routes.ts 'import { RagService } from ".
 put apps/api/src/modules/chat/chat.routes.ts 'import { RagService } from "@/modules/rag";'
 put apps/api/src/modules/chat/chat.tools.ts 'import { RagService } from "../rag";'
 put apps/api/src/shared/responses/success-response.ts 'export const ok = (c) => c.json({});'
+put packages/adapters/src/model-gateway/gateway.ts 'import { embed } from "ai";'
+put packages/knowledge/src/chunking/chunker.ts 'import type { ModelGateway } from "@synapse/core/contracts";'
+put apps/api/src/server.ts 'import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";'
 put apps/api/src/shared/constants/error-codes.ts 'export const ERROR_CODES = { NOT_FOUND: "NOT_FOUND" };'
 put apps/api/src/modules/rag/constants/rag.constants.ts 'export const RAG_ERROR_CODES = { EMPTY: "RAG_EMPTY_DOCUMENT" };'
 put apps/api/src/modules/rag/services/rag-errors.service.ts 'throw new AppError({ statusCode: HTTP_STATUS.NOT_FOUND, code: RAG_ERROR_CODES.EMPTY });'
@@ -47,6 +50,9 @@ put apps/api/src/modules/rag/routes/rag-admin.routes.ts 'import { r } from "../r
 put apps/api/src/modules/rag/routes/rag-raw.routes.ts 'export const h = (c) => c.json({ error: "x" }, 400);'
 put apps/api/src/modules/rag/services/rag-db.service.ts 'import { eq } from "drizzle-orm";'
 put packages/demo/src/index.ts 'export const k = process.env.KEY;'
+put packages/retrieval/src/search.ts 'import { embed } from "ai";'
+put packages/core/src/utils/leak.ts 'import { x } from "@synapse/database";'
+put apps/api/src/infrastructure/models.ts 'import { createOpenAICompatible } from "@ai-sdk/openai-compatible";'
 put apps/api/src/modules/rag/services/rag-status.service.ts 'throw new AppError({ statusCode: 404, code: ERROR_CODES.NOT_FOUND });'
 put apps/api/src/modules/rag/routes/rag-code.routes.ts 'return failure(c, HTTP_STATUS.NOT_FOUND, "RAG_MISSING", "x");'
 put apps/api/src/modules/health/routes/health-raw.routes.ts 'return success(c, data, 201);'
@@ -82,6 +88,9 @@ expect "rag-admin.routes.ts: routes and controllers call services, never reposit
 expect "rag-raw.routes.ts:1:"
 expect "rag-db.service.ts:1:"
 expect "packages/demo/src/index.ts:1:"
+expect "packages/retrieval/src/search.ts:1:"
+expect "packages/core/src/utils/leak.ts:1:"
+expect "apps/api/src/infrastructure/models.ts:1:"
 expect "rag-status.service.ts:1:"
 expect "rag-code.routes.ts:1:"
 expect "health-raw.routes.ts:1:"

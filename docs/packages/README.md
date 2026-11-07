@@ -12,16 +12,17 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | `@synapse/typescript-config` | Shared tsconfig bases (`base.json`, `nextjs.json`) |
 | `@synapse/core` | Errors, config loading, shared types (contracts/events/utils to come) — see [core.md](core.md) |
 | `@synapse/database` | Drizzle client, schema, migrations and runner for Postgres + pgvector — see [database.md](database.md) |
+| `@synapse/adapters` | Model gateway (AI SDK, OpenAI-compatible) implementing the `core` contract — see [adapters.md](adapters.md) |
 
 ## Platform packages (from the plan)
 
 | Package | Purpose | Status |
 | --- | --- | --- |
-| [`core`](core.md) | Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on. | Live (errors, config, types) |
+| [`core`](core.md) | Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on. | Live (errors, config, types, contracts) |
 | [`ingestion`](ingestion.md) | Bring content in from sources and turn it into normalized, deduplicated documents with their access rules. | Planned |
 | [`knowledge`](knowledge.md) | Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes. | Planned |
 | [`retrieval`](retrieval.md) | Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and filter. | Partly live: top-k cosine vector search in `apps/api` |
-| [`generation`](generation.md) | Produce answers from context: providers, prompts, context assembly, completion, citations and structured output. | Partly live: OpenAI-compatible chat + embeddings via the AI SDK in `apps/api/src/infrastructure/ai` |
+| [`generation`](generation.md) | Produce answers from context: providers, prompts, context assembly, completion, citations and structured output. | Planned (models via `@synapse/adapters`; prompts still in `apps/api`) |
 | [`orchestration`](orchestration.md) | Run multi-step agents and workflows with LangGraph JS — the only package that owns LangGraph. | Planned |
 | [`human-oversight`](human-oversight.md) | Keep humans in the loop: approvals, review queues, decisions, escalation and feedback. | Planned |
 | [`audit`](audit.md) | The single owner of event history: who did what, with which inputs, producing which output. | Planned |
@@ -31,7 +32,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | [`observability`](observability.md) | See what the system does: tracing, instrumentation, cost tracking and exporters. | Planned |
 | [`security`](security.md) | Who you are and what you may do: authentication, authorization, tenancy, permissions, PII and secrets. | Partly live: HS256 JWT verification in `apps/api/src/modules/auth` |
 | [`reliability`](reliability.md) | Make external calls and jobs dependable: retry, circuit breakers, idempotency, timeouts, fallbacks, health. | Planned |
-| [`adapters`](adapters.md) | Implement `core` contracts against infrastructure: vector store, cache, queue, storage and the model gateway. | Planned |
+| [`adapters`](adapters.md) | Implement `core` contracts against infrastructure: vector store, cache, queue, storage and the model gateway. | Live (model gateway) |
 | [`providers`](providers.md) | Thin vendor integrations: OpenAI, Anthropic, Google, Cohere and Langfuse. | Planned |
 | [`native`](native.md) | TypeScript wrapper over the Rust crates (napi-rs). | Planned |
 

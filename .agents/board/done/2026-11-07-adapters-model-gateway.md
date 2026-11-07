@@ -5,8 +5,8 @@ type: feature
 from: human
 to: backend
 priority: high
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: []
@@ -47,4 +47,9 @@ Contract in `core/contracts`, implementation in `adapters/model-gateway` (AI SDK
 
 ## Resolution
 
-_Open._
+Done in commit `feat(adapters): add model gateway package and core contract`.
+
+- `@synapse/core/contracts`: `ModelGateway` (`ChatGateway.generateText`, `EmbeddingGateway.embed/embedMany`, `ModelInfo`, `TokenUsage`).
+- `@synapse/adapters/model-gateway`: `createAiSdkModelGateway`, `createOpenAICompatibleModelGateway` (moved from `apps/api/src/infrastructure/ai`), 4 tests.
+- `apps/api`: `RagService` depends only on the contract; `server.ts` builds the gateway; `ChatService` streaming still uses the AI SDK via `gateway.chatModel` (no streaming contract yet).
+- `architecture:check`: vendor SDKs banned in domain packages, `core` imports nothing from the workspace, apps never import `@ai-sdk/*`.

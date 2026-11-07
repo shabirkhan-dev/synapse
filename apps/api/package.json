@@ -15,9 +15,9 @@
 		"test:coverage": "bun test --coverage"
 	},
 	"dependencies": {
-		"@ai-sdk/openai-compatible": "^3.0.86",
 		"@hono/zod-openapi": "^1.6.3",
 		"@scalar/hono-api-reference": "^0.12.18",
+		"@synapse/adapters": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/database": "workspace:*",
 		"ai": "^7.0.164",

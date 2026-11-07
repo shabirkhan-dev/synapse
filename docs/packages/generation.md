@@ -2,7 +2,8 @@
 
 Produce answers from context: providers, prompts, context assembly, completion, citations and structured output.
 
-> **Status:** Partly live: OpenAI-compatible chat + embeddings via the AI SDK in `apps/api/src/infrastructure/ai`.
+> **Status:** Planned. Models are called through `@synapse/adapters` (model gateway); prompts and the
+> RAG answer path still live in `apps/api/src/modules/rag` and `modules/chat`.
 
 ## Internal modules
 

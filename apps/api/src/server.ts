@@ -1,8 +1,8 @@
+import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
 
 import { createApp } from "./app";
 import { loadConfiguration } from "./config";
-import { createAiModels } from "./infrastructure/ai/ai-models";
 import { createLogger } from "./infrastructure/logger/logger";
 import { ChatService } from "./modules/chat";
 import { DrizzleRagRepository, RagService } from "./modules/rag";
@@ -16,14 +16,14 @@ if (!config.ai.apiKey) {
 
 const database = createDatabase(config.database);
 const repository = new DrizzleRagRepository(database.db);
-const models = createAiModels(config.ai);
-const rag = new RagService(repository, models, {
+const gateway = createOpenAICompatibleModelGateway(config.ai);
+const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
 });
 const chat = new ChatService({
 	rag,
-	chatModel: models.chat,
+	chatModel: gateway.chatModel,
 	maxSteps: config.rag.chatMaxSteps,
 	topK: config.rag.topK,
 });

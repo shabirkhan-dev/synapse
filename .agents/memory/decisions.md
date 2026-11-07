@@ -19,3 +19,4 @@ Decisions already made. Formal records: `docs/decisions/adr/`.
 | 2026-11-07 | Response envelope: `message` on every response; errors nested as `error: { code, details? }` | `docs/api/conventions.md` |
 | 2026-11-07 | Agent files live in `.agents/` (cross-tool standard); `CLAUDE.md`, `opencode.json` and `.claude/skills` wire Claude Code and OpenCode to it | `docs/agents/tool-compatibility.md` |
 | 2026-11-07 | Work is tracked as board cards (`syn-<n>`) with `.agents/plans/roadmap.md`; every reply ends with a Roadmap block | `.agents/rules/progress-tracking.md` |
+| 2026-11-07 | Models are called through `ModelGateway` (`@synapse/core/contracts`), implemented in `@synapse/adapters/model-gateway`; vendor-SDK imports in domain packages fail `architecture:check` | ADR-0003 |

@@ -9,7 +9,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `@synapse/database`, kept so existing databases do not re-run migrations).
 - **Bundled migrations:** the API build copies `packages/database/migrations` to `dist/migrations`;
   `import.meta.dir` points at the bundle, so the folder is passed explicitly to `runMigrations`.
-- **RAG/chat live inside `apps/api`**, not yet in domain packages.
+- **RAG/chat live inside `apps/api`**, not yet in domain packages. The RAG service calls models only
+  through `ModelGateway`; streaming tool chat (`ChatService`, `chat.tools.ts`) still uses the AI SDK
+  (`ai`) directly via the gateway's `chatModel`, until a streaming contract exists.
 - **Controllers:** API route handlers are trivial (validate → service → `success`), so there are no
   `controllers/` folders yet; add one when a handler grows real HTTP logic.
 - **Keyword search, reranking, queues (pg-boss), LangGraph, Langfuse/OTel** are planned, not installed.

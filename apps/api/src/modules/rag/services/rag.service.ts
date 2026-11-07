@@ -1,5 +1,4 @@
-import { embed, embedMany, generateText, type EmbeddingModel, type LanguageModel } from "ai";
-
+import type { ModelGateway } from "@synapse/core/contracts";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
@@ -34,7 +33,7 @@ export type RagAnswer = {
 export class RagService {
 	constructor(
 		private readonly repository: RagRepository,
-		private readonly models: { chat: LanguageModel; embedding: EmbeddingModel },
+		private readonly models: ModelGateway,
 		private readonly options: RagServiceOptions,
 	) {}
 
@@ -47,7 +46,7 @@ export class RagService {
 				message: RAG_MESSAGES.EMPTY_DOCUMENT,
 			});
 		}
-		const { embeddings } = await embedMany({ model: this.models.embedding, values: pieces });
+		const embeddings = await this.models.embedding.embedMany(pieces);
 		embeddings.forEach(assertDimensions);
 		return this.repository.createDocument(
 			{
@@ -69,7 +68,7 @@ export class RagService {
 		query: string,
 		topK = this.options.defaultTopK,
 	): Promise<RagMatch[]> {
-		const { embedding } = await embed({ model: this.models.embedding, value: query });
+		const embedding = await this.models.embedding.embed(query);
 		assertDimensions(embedding);
 		return this.repository.searchChunks(ownerId, embedding, topK);
 	}
@@ -79,8 +78,7 @@ export class RagService {
 		if (matches.length === 0) {
 			return { answer: RAG_MESSAGES.NO_DOCUMENTS_TO_ANSWER_FROM, matches };
 		}
-		const { text } = await generateText({
-			model: this.models.chat,
+		const { text } = await this.models.chat.generateText({
 			system: RAG_ANSWER_SYSTEM_PROMPT,
 			prompt: `${formatContext(matches)}\n\nQuestion: ${question}`,
 		});

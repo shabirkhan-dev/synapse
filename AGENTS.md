@@ -75,7 +75,8 @@ synapse/
 │   └── console/         # Next.js console (bare; UI starts from zero)
 ├── packages/
 │   ├── typescript-config/ # Shared tsconfig bases (base.json, nextjs.json)
-│   ├── core/            # @synapse/core: errors, config, shared types
+│   ├── adapters/        # @synapse/adapters: model gateway (vendor SDKs live here)
+│   ├── core/            # @synapse/core: errors, config, shared types, contracts
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/

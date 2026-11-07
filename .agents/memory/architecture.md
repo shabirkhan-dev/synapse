@@ -6,11 +6,12 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `apps/`, capabilities in `packages/`, Rust in `crates/` (napi-rs, in-process).
 - **Today (live):** `apps/api` (Hono, RAG + streaming tool chat on Postgres/pgvector),
   `apps/console` (bare Next.js 16), `packages/ui` (shadcn on Base UI, HugeIcons, Tailwind v4),
-  `packages/typescript-config`, `packages/core` (errors, config, types), `packages/database`
-  (Drizzle client, schema, migrations).
+  `packages/typescript-config`, `packages/core` (errors, config, types, model-gateway contract),
+  `packages/database` (Drizzle client, schema, migrations), `packages/adapters` (model gateway).
 - **Planned:** `apps/worker`; packages `ingestion`, `knowledge`, `retrieval`,
   `generation`, `orchestration`, `human-oversight`, `audit`, `guardrails`, `memory`,
-  `evaluation`, `observability`, `security`, `reliability`, `adapters`, `providers`, `native`;
+  `evaluation`, `observability`, `security`, `reliability`, `providers`, `native`; more adapters
+  (vector-store, cache, queue, storage);
   `crates/*`; root `tests/` and `deploy/`.
 - The RAG and chat code in `apps/api/src/modules/` is the seed that will move into
   `ingestion` / `knowledge` / `retrieval` / `generation` as those packages are created.

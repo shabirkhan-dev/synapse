@@ -2,8 +2,8 @@
 
 Implement `core` contracts against infrastructure: vector store, cache, queue, storage and the model gateway.
 
-> **Status:** Planned. Seed: `apps/api/src/infrastructure/ai/ai-models.ts`. The database client is
-> its own package, [`@synapse/database`](database.md).
+> **Status:** Live (`model-gateway/`) · Planned (vector-store, cache, queue, storage). The database
+> client is its own package, [`@synapse/database`](database.md).
 
 ## Internal modules
 
@@ -27,7 +27,15 @@ Implement `core` contracts against infrastructure: vector store, cache, queue, s
 
 ## Public API
 
-> Placeholder — defined when the package is created. Keep it to `src/index.ts` exports.
+| Export | Import | What it does |
+| --- | --- | --- |
+| `createOpenAICompatibleModelGateway(options)`, `OpenAICompatibleGatewayOptions` | `@synapse/adapters/model-gateway` | `ModelGateway` for any OpenAI-compatible endpoint (OpenRouter default), optional separate embeddings endpoint |
+| `createAiSdkModelGateway({ chatModel, embeddingModel, chatInfo, embeddingInfo })`, `AiSdkModelGateway` | `@synapse/adapters/model-gateway` | Wrap any AI SDK models (tests pass mocks); also exposes `chatModel` |
+
+The gateway implements `ModelGateway` from `@synapse/core/contracts`: `chat.generateText` returns
+text, model info and token usage; `embedding.embed` / `embedMany` return vectors in input order.
+`chatModel` is an escape hatch for AI SDK streaming tool-calling chat (used by `apps/api`'s
+`ChatService`) until a streaming contract exists.
 
 ## Notes
 

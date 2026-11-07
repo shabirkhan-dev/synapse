@@ -15,6 +15,7 @@ synapse/
 │   ├── typescript-config/ (live)
 │   ├── core/            # @synapse/core (live: errors, config, types)
 │   ├── database/        # @synapse/database (live: client, schema, migrations)
+│   ├── adapters/        # @synapse/adapters (live: model gateway)
 │   └── ingestion, knowledge, … (planned — see docs/packages)
 ├── crates/              # Rust via napi-rs (planned)
 ├── deploy/              # docker, compose, migrations, backups, monitoring (planned)

@@ -102,6 +102,21 @@ while IFS= read -r hit; do
     fail "$hit -> packages read env only through @synapse/core/config"
 done < <(search 'process\.env|Bun\.env' packages | grep -v '^packages/core/src/config/' | grep -E '^packages/[^/]+/src/' || true)
 
+# --- packages: vendor SDKs only in infrastructure packages (ADR-0003) -----------------------
+VENDOR_IMPORT='from "(ai|@ai-sdk/[^"]+|openai|@anthropic-ai/[^"]+|@google/[^"]+|cohere-ai|langfuse[^"]*|pg-boss|pg|postgres|drizzle-orm)(/[^"]*)?"'
+while IFS= read -r hit; do
+    fail "$hit -> domain packages depend on @synapse/core contracts, not vendor SDKs"
+done < <(search "$VENDOR_IMPORT" packages | grep -E '^packages/[^/]+/src/' |
+    grep -vE '^packages/(adapters|providers|database|ui)/' || true)
+
+while IFS= read -r hit; do
+    fail "$hit -> @synapse/core imports nothing from the workspace"
+done < <(search 'from "@synapse/' packages/core/src || true)
+
+while IFS= read -r hit; do
+    fail "$hit -> apps reach model providers through @synapse/adapters, not @ai-sdk/* directly"
+done < <(search 'from "@ai-sdk/' apps/api/src apps/console/src || true)
+
 # --- backend ---------------------------------------------------------------------------
 check_isolation "$API_SRC/modules" "@/modules" "$API_SRC" "module"
 

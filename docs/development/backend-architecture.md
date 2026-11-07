@@ -31,7 +31,7 @@ apps/api/src/
 │   ├── errors/            # app-error.ts, error-handler.ts
 │   ├── responses/         # success-response.ts, error-response.ts, response.types.ts
 │   ├── middleware/ · utils/ · types/
-├── infrastructure/        # logger/ ai/ (cache/ queue/ later). The database client is @synapse/database
+├── infrastructure/        # logger/ (cache/ queue/ later). Models: @synapse/adapters; database: @synapse/database
 ├── modules/
 │   ├── users/ · organizations/ · documents/ · knowledge/ · ingestion/
 └── routes/index.ts        # mounts every module router
@@ -216,6 +216,7 @@ Add a specialised error class only when it behaves differently (e.g. carries ret
 | Data access | `drizzle-orm` / `postgres` imported outside repositories |
 | Status constants | `statusCode: 404`, `failure(c, 404, …)` or `success(c, x, 201)` outside `constants/` |
 | Error-code constants | a `"SCREAMING_SNAKE"` string literal outside `constants/` and `config/` |
+| Vendor SDKs | a domain package imports `ai`, `@ai-sdk/*`, `drizzle-orm`, `postgres`, `openai`…; `core` imports `@synapse/*`; an app imports `@ai-sdk/*` |
 | Message constants | `message: "…"` or a string literal in a `success(c, …)` / `failure(c, …)` call outside `constants/` |
 
 `scripts/bash/tests/check-layers.test.sh` proves each check fires on a fixture repo.

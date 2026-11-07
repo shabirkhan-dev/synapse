@@ -12,7 +12,8 @@
 
 ## Packages
 
-See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`, `database`.
+See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`, `database`, `adapters`
+(model gateway).
 Everything else is planned.
 
 ## Crates (Rust)

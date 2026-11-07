@@ -1,18 +1,9 @@
+import type { OpenAICompatibleGatewayOptions } from "@synapse/adapters/model-gateway";
+
 import type { Env } from "./env";
 
-export type AiConfig = {
-	providerName: string;
-	baseUrl: string;
-	apiKey?: string;
-	chatModel: string;
-	embedding: {
-		model: string;
-		/** Separate endpoint for embeddings; falls back to `baseUrl`. */
-		baseUrl?: string;
-		/** Falls back to `apiKey`. */
-		apiKey?: string;
-	};
-};
+/** Model gateway settings (`@synapse/adapters`). Embedding key falls back to `AI_API_KEY`. */
+export type AiConfig = OpenAICompatibleGatewayOptions;
 
 export function createAiConfig(env: Env): AiConfig {
 	const embeddingApiKey = env.AI_EMBEDDING_API_KEY ?? env.AI_API_KEY;

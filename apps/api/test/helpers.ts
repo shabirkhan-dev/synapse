@@ -2,6 +2,7 @@ import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
 import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import { SignJWT } from "jose";
 
+import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 
 import { createApp } from "@/app";
@@ -184,11 +185,16 @@ export function buildTestApp({
 	repository?: RagRepository;
 	pingDatabase?: () => Promise<void>;
 } = {}) {
-	const rag = new RagService(
-		repository,
-		{ chat: chatModel, embedding: embeddingModel },
-		{ chunk: testConfig.rag.chunk, defaultTopK: testConfig.rag.topK },
-	);
+	const gateway = createAiSdkModelGateway({
+		chatModel,
+		embeddingModel,
+		chatInfo: { provider: "mock", model: "mock-chat" },
+		embeddingInfo: { provider: "mock", model: "mock-embedding" },
+	});
+	const rag = new RagService(repository, gateway, {
+		chunk: testConfig.rag.chunk,
+		defaultTopK: testConfig.rag.topK,
+	});
 	const chat = new ChatService({
 		rag,
 		chatModel,

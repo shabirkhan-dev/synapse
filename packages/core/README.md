@@ -8,7 +8,7 @@ Full description: [docs/packages/core.md](../../docs/packages/core.md).
 | `errors/` | `@synapse/core/errors` | Live — `SynapseError`, `isSynapseError` |
 | `config/` | `@synapse/core/config` | Live — `loadConfig(schema, source?)` |
 | `types/` | `@synapse/core/types` | Live — `AnswerProvenance` |
-| `contracts/` | — | Placeholder (folder only; export added with first real code) |
+| `contracts/` | `@synapse/core/contracts` | Live — `ModelGateway` (`ChatGateway`, `EmbeddingGateway`) |
 | `events/` | — | Placeholder (folder only; export added with first real code) |
 | `utils/` | — | Placeholder (folder only; export added with first real code) |
 
