@@ -138,7 +138,12 @@ export function createRagRoutes(rag: RagService) {
 		if (!answer) {
 			return success(
 				c,
-				{ answer: null, matches: await rag.search(ownerId, query, topK) },
+				{
+					answer: null,
+					matches: await rag.search(ownerId, query, topK),
+					citations: [],
+					provenance: null,
+				},
 				RAG_MESSAGES.MATCHES_FOUND,
 			);
 		}

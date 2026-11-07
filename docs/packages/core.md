@@ -30,7 +30,7 @@ nothing in the workspace (only Zod and the standard library)
 | --- | --- | --- |
 | `SynapseError`, `isSynapseError`, `SynapseErrorOptions` | `@synapse/core/errors` | Transport-neutral error with `code`, `message`, optional `details` and `cause` |
 | `loadConfig(schema, source?)`, `ConfigSource` | `@synapse/core/config` | Zod-validated config from `process.env` (empty strings = unset); throws `CONFIG_INVALID` |
-| `AnswerProvenance` | `@synapse/core/types` | Model, prompt version, embedding model and version behind an answer |
+| `AnswerProvenance` | `@synapse/core/types` | `chatModel`, `promptVersion`, `embeddingModel`, `chunkerVersion`, `usage` behind an answer |
 | `ModelGateway`, `ChatGateway`, `EmbeddingGateway`, `ModelInfo`, `TextGenerationRequest/Result`, `TokenUsage`, `CallOptions` | `@synapse/core/contracts` | How domain code calls models; implemented in `@synapse/adapters` |
 
 The root entry (`@synapse/core`) re-exports errors, config, types and contracts. Events and utils

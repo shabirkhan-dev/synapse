@@ -9,9 +9,12 @@ curl -X POST http://localhost:8000/api/v1/rag/query \
   -d '{"query":"How long do I have to ask for a refund?","topK":5}'
 ```
 
-Returns the matches and an `answer`. Send `"answer": false` for retrieval only. For a
+Returns `answer`, `matches`, `citations` (the `[n]` passages the answer cites) and `provenance`
+(chat model, prompt version, embedding model, chunker version, token usage). Send `"answer": false`
+for retrieval only (`citations: []`, `provenance: null`). For a
 conversation with tool use, call `POST /api/v1/chat` with AI SDK UI messages (works with
 `useChat`); the model calls `searchDocuments` when it needs your documents.
 
 Tuning knobs (env): `RAG_TOP_K`, `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `AI_CHAT_MODEL`,
-`AI_EMBEDDING_MODEL` (must return 1536 dimensions), `CHAT_MAX_STEPS`.
+`AI_EMBEDDING_MODEL` (must return 1536 dimensions), `CHAT_MAX_STEPS`, `RAG_SEARCH_MODE`,
+`RAG_MAX_CONTEXT_TOKENS` (passage budget, ~4 characters per token).

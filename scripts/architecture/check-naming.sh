@@ -24,6 +24,7 @@ SCOPES=(
     packages/ingestion/src
     packages/knowledge/src
     packages/retrieval/src
+    packages/generation/src
 )
 
 # Whole stem is one or more kebab segments joined by dots

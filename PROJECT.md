@@ -26,6 +26,7 @@ synapse/
 │   ├── ingestion/            # @synapse/ingestion: normalize, dedup, pipeline
 │   ├── knowledge/            # @synapse/knowledge: chunking, embeddings, versions
 │   ├── retrieval/            # @synapse/retrieval: vector, keyword, hybrid
+│   ├── generation/           # @synapse/generation: prompts, context, citations, provenance
 │   ├── core/                 # @synapse/core: errors, config, shared types, contracts
 │   ├── database/             # @synapse/database: Drizzle client, schema, migrations
 │   ├── typescript-config/    # Shared TS config bases
@@ -59,6 +60,7 @@ synapse/
 | `packages/ingestion` | `@synapse/ingestion` | Normalization, dedup, ingestion pipeline |
 | `packages/knowledge` | `@synapse/knowledge` | Chunking, embeddings, chunk versions |
 | `packages/retrieval` | `@synapse/retrieval` | Vector, keyword, hybrid retrieval |
+| `packages/generation` | `@synapse/generation` | Prompts, context, citations, provenance |
 | `packages/core` | `@synapse/core` | Errors, config loading, shared types, contracts |
 | `packages/database` | `@synapse/database` | Drizzle client, schema, migrations, runner |
 | `packages/ui` | `@synapse/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |

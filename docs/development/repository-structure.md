@@ -19,6 +19,7 @@ synapse/
 │   ├── ingestion/       # @synapse/ingestion (live: normalize, dedup, pipeline)
 │   ├── knowledge/       # @synapse/knowledge (live: chunking, embeddings, versions)
 │   ├── retrieval/       # @synapse/retrieval (live: vector, keyword, hybrid)
+│   ├── generation/      # @synapse/generation (live: prompts, context, citations, provenance)
 │   └── ingestion, knowledge, … (planned — see docs/packages)
 ├── crates/              # Rust via napi-rs (planned)
 ├── deploy/              # docker, compose, migrations, backups, monitoring (planned)

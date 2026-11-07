@@ -5,8 +5,8 @@ description: Use when changing LLM providers, prompts, context assembly, complet
 
 # generation-engineering
 
-> Status: Partly live: models are called through `@synapse/adapters/model-gateway` (`ModelGateway`
-> from `@synapse/core/contracts`). Prompt versioning and citations are planned.
+> Status: Live: `@synapse/generation` (versioned prompts, budgeted context, citations, provenance) on
+> the `ModelGateway`. Structured output and a streaming contract are planned.
 
 ## When to use
 

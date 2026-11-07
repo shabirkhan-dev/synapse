@@ -238,6 +238,7 @@ export function buildTestApp({
 		chunk: testConfig.rag.chunk,
 		defaultTopK: testConfig.rag.topK,
 		searchMode,
+		maxContextTokens: testConfig.rag.maxContextTokens,
 	});
 	const chat = new ChatService({
 		rag,

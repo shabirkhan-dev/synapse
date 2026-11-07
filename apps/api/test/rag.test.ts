@@ -90,6 +90,22 @@ describe("rag", () => {
 		expect(data.matches).toHaveLength(2);
 		expect(data.matches[0].content).toContain("30 days");
 		expect(data.matches[0].score).toBeGreaterThanOrEqual(data.matches[1].score);
+		expect(data.citations).toEqual([
+			{
+				index: 1,
+				chunkId: data.matches[0].chunkId,
+				documentId: data.matches[0].documentId,
+				title: "Refund policy",
+				source: refundDoc.source,
+			},
+		]);
+		expect(data.provenance).toEqual({
+			chatModel: "mock:mock-chat",
+			promptVersion: "rag-answer@1",
+			embeddingModel: "mock:mock-embedding",
+			chunkerVersion: "text-v1;size=200;overlap=20",
+			usage: { inputTokens: 10, outputTokens: 5 },
+		});
 
 		const prompt = JSON.stringify(chatModel.doGenerateCalls[0]?.prompt);
 		expect(prompt).toContain("[1] Refund policy");
@@ -112,6 +128,8 @@ describe("rag", () => {
 		});
 		const { data } = await response.json();
 		expect(data.answer).toBeNull();
+		expect(data.citations).toEqual([]);
+		expect(data.provenance).toBeNull();
 		expect(data.matches[0].content).toContain("Biscuit");
 		expect(chatModel.doGenerateCalls).toHaveLength(0);
 	});

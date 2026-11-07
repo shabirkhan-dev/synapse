@@ -21,6 +21,7 @@
         "@synapse/adapters": "workspace:*",
         "@synapse/core": "workspace:*",
         "@synapse/database": "workspace:*",
+        "@synapse/generation": "workspace:*",
         "@synapse/ingestion": "workspace:*",
         "@synapse/knowledge": "workspace:*",
         "@synapse/retrieval": "workspace:*",
@@ -93,6 +94,18 @@
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
         "drizzle-kit": "^0.31.11",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/generation": {
+      "name": "@synapse/generation",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
         "typescript": "^7.0.2",
       },
     },
@@ -515,6 +528,8 @@
     "@synapse/core": ["@synapse/core@workspace:packages/core"],
 
     "@synapse/database": ["@synapse/database@workspace:packages/database"],
+
+    "@synapse/generation": ["@synapse/generation@workspace:packages/generation"],
 
     "@synapse/ingestion": ["@synapse/ingestion@workspace:packages/ingestion"],
 

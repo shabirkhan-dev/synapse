@@ -13,7 +13,8 @@
 ## Packages
 
 See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`, `database`, `adapters`
-(model gateway), `ingestion`, `knowledge`, `retrieval`.
+(model gateway), `ingestion`, `knowledge`, `retrieval`,
+`generation`.
 Everything else is planned.
 
 ## Crates (Rust)

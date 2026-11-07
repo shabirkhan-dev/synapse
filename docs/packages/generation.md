@@ -2,8 +2,8 @@
 
 Produce answers from context: providers, prompts, context assembly, completion, citations and structured output.
 
-> **Status:** Planned. Models are called through `@synapse/adapters` (model gateway); prompts and the
-> RAG answer path still live in `apps/api/src/modules/rag` and `modules/chat`.
+> **Status:** Live (prompts, context, citations, completion with provenance) · Planned (structured
+> output, streaming completion — chat streaming still uses the AI SDK in `apps/api`).
 
 ## Internal modules
 
@@ -28,7 +28,16 @@ Produce answers from context: providers, prompts, context assembly, completion, 
 
 ## Public API
 
-> Placeholder — defined when the package is created. Keep it to `src/index.ts` exports.
+| Export | What it does |
+| --- | --- |
+| `RAG_ANSWER_PROMPT` (`rag-answer@1`), `CHAT_ASSISTANT_PROMPT` (`chat-assistant@1`), `PromptTemplate`, `promptVersion` | Versioned prompts — bump `version` on every text change |
+| `buildContext(passages, { maxTokens })`, `estimateTokens` | `[1]…[n]` passages in rank order within the budget (~4 chars/token); first passage always kept |
+| `extractCitations(answer, citations)` | `[n]`, `[1][3]`, `[1, 3]` → cited passages, first-mention order |
+| `createAnswerGenerator({ chat, embeddingModel, chunkerVersion, maxContextTokens, prompt? })` | `answer({ question, passages })` → `{ text, citations, context, provenance }` |
+
+`provenance` (`AnswerProvenance` from `@synapse/core/types`): `chatModel`, `promptVersion`,
+`embeddingModel`, `chunkerVersion`, `usage`. The API returns it on every answered query; persisting it
+is `audit`'s job (planned).
 
 ## Notes
 

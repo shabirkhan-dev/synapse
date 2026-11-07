@@ -20,6 +20,7 @@
 		"@synapse/adapters": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/database": "workspace:*",
+		"@synapse/generation": "workspace:*",
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
 		"@synapse/retrieval": "workspace:*",

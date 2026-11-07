@@ -21,9 +21,3 @@ export const RAG_MESSAGES = {
 export const RAG_MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 
 export const RAG_DEFAULT_LIST_LIMIT = 50;
-
-export const RAG_ANSWER_SYSTEM_PROMPT = [
-	"You answer questions using only the numbered context passages provided.",
-	"Cite passages inline as [1], [2], ... matching their numbers.",
-	"If the context does not contain the answer, say you do not know.",
-].join("\n");

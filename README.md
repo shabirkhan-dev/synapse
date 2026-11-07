@@ -50,6 +50,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | `@synapse/ingestion` | `packages/ingestion` | Normalization, content-hash dedup, ingestion pipeline |
 | `@synapse/knowledge` | `packages/knowledge` | Chunking, embedding preparation, chunk versions |
 | `@synapse/retrieval` | `packages/retrieval` | Vector, keyword and hybrid (RRF) retrieval |
+| `@synapse/generation` | `packages/generation` | Versioned prompts, budgeted context, citations, provenance |
 | `@synapse/database` | `packages/database` | Drizzle client, schema, migrations (Postgres + pgvector) |
 | `@synapse/ui` | `packages/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |

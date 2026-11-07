@@ -1,4 +1,5 @@
 import type { ModelGateway } from "@synapse/core/contracts";
+import type { AnswerProvenance } from "@synapse/core/types";
 import { isSynapseError } from "@synapse/core/errors";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import {
@@ -12,23 +13,20 @@ import {
 	createChunkPreparer,
 	KNOWLEDGE_ERROR_CODES,
 } from "@synapse/knowledge";
+import { type AnswerGenerator, type Citation, createAnswerGenerator } from "@synapse/generation";
 import { createRetriever, type RetrievalMode, type Retriever } from "@synapse/retrieval";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 
-import {
-	RAG_ANSWER_SYSTEM_PROMPT,
-	RAG_DEFAULT_LIST_LIMIT,
-	RAG_ERROR_CODES,
-	RAG_MESSAGES,
-} from "../constants/rag.constants";
+import { RAG_DEFAULT_LIST_LIMIT, RAG_ERROR_CODES, RAG_MESSAGES } from "../constants/rag.constants";
 import type { RagDocument, RagMatch, RagRepository } from "../types/rag.types";
 
 export type RagServiceOptions = {
 	chunk: ChunkOptions;
 	defaultTopK: number;
 	searchMode: RetrievalMode;
+	maxContextTokens: number;
 };
 
 export type IngestInput = {
@@ -47,6 +45,10 @@ export type IngestOutcome = {
 export type RagAnswer = {
 	answer: string;
 	matches: RagMatch[];
+	/** Passages the answer cites. */
+	citations: Citation[];
+	/** Model, prompt version and index versions behind the answer; null when no model was called. */
+	provenance: AnswerProvenance | null;
 };
 
 export class RagService {
@@ -56,6 +58,8 @@ export class RagService {
 	private readonly ingestion: IngestionPipeline<RagDocument>;
 	/** vector or hybrid (vector + keyword, RRF) search, via `@synapse/retrieval`. */
 	private readonly retriever: Retriever<RagMatch>;
+	/** versioned prompt + budgeted context + citations + provenance, via `@synapse/generation`. */
+	private readonly generator: AnswerGenerator;
 
 	constructor(
 		private readonly repository: RagRepository,
@@ -80,6 +84,12 @@ export class RagService {
 			},
 			{ mode: options.searchMode, embeddingModel: knowledge.embeddingModel },
 		);
+		this.generator = createAnswerGenerator({
+			chat: models.chat,
+			embeddingModel: knowledge.embeddingModel,
+			chunkerVersion: knowledge.chunkerVersion,
+			maxContextTokens: options.maxContextTokens,
+		});
 	}
 
 	async ingest(ownerId: string, input: IngestInput): Promise<IngestOutcome> {
@@ -124,13 +134,29 @@ export class RagService {
 	async answer(ownerId: string, question: string, topK?: number): Promise<RagAnswer> {
 		const matches = await this.search(ownerId, question, topK);
 		if (matches.length === 0) {
-			return { answer: RAG_MESSAGES.NO_DOCUMENTS_TO_ANSWER_FROM, matches };
+			return {
+				answer: RAG_MESSAGES.NO_DOCUMENTS_TO_ANSWER_FROM,
+				matches,
+				citations: [],
+				provenance: null,
+			};
 		}
-		const { text } = await this.models.chat.generateText({
-			system: RAG_ANSWER_SYSTEM_PROMPT,
-			prompt: `${formatContext(matches)}\n\nQuestion: ${question}`,
+		const generated = await this.generator.answer({
+			question,
+			passages: matches.map((match) => ({
+				chunkId: match.chunkId,
+				documentId: match.documentId,
+				title: match.documentTitle,
+				source: match.source,
+				content: match.content,
+			})),
 		});
-		return { answer: text, matches };
+		return {
+			answer: generated.text,
+			matches,
+			citations: generated.citations,
+			provenance: generated.provenance,
+		};
 	}
 
 	listDocuments(ownerId: string, limit = RAG_DEFAULT_LIST_LIMIT): Promise<RagDocument[]> {
@@ -147,15 +173,6 @@ export class RagService {
 			});
 		}
 	}
-}
-
-export function formatContext(matches: RagMatch[]): string {
-	return matches
-		.map(
-			(match, index) =>
-				`[${index + 1}] ${match.documentTitle}${match.source ? ` (${match.source})` : ""}\n${match.content}`,
-		)
-		.join("\n\n");
 }
 
 /** Map knowledge errors to API errors; anything else is rethrown unchanged. */

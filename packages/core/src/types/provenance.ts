@@ -1,11 +1,14 @@
+import type { TokenUsage } from "../contracts/model-gateway";
+
 /** What produced an answer. Every generated answer records one (architecture rule 4). */
 export interface AnswerProvenance {
-	/** Chat model id, e.g. `openai/gpt-4o-mini`. */
-	model: string;
-	/** Version of the prompt template used. */
+	/** `provider:model` of the chat model, e.g. `openrouter:openai/gpt-4o-mini`. */
+	chatModel: string;
+	/** `id@version` of the prompt template, e.g. `rag-answer@1`. */
 	promptVersion: string;
-	/** Embedding model id used for retrieval. */
+	/** `provider:model` of the embedding model the passages were retrieved with. */
 	embeddingModel: string;
-	/** Version of the embedding setup (model + chunking) the index was built with. */
-	embeddingVersion: string;
+	/** Chunker that produced the passages, e.g. `text-v1;size=1000;overlap=150`. */
+	chunkerVersion: string;
+	usage: TokenUsage;
 }

@@ -64,10 +64,38 @@ export const ragQueryBodySchema = z
 	})
 	.openapi("RagQueryBody");
 
+export const citationSchema = z
+	.object({
+		/** The `[n]` used in the answer. */
+		index: z.number().int(),
+		chunkId: z.uuid(),
+		documentId: z.uuid(),
+		title: z.string(),
+		source: z.string().nullable(),
+	})
+	.openapi("Citation");
+
+export const answerProvenanceSchema = z
+	.object({
+		chatModel: z.string().openapi({ example: "openrouter:openai/gpt-4o-mini" }),
+		promptVersion: z.string().openapi({ example: "rag-answer@1" }),
+		embeddingModel: z.string().openapi({ example: "openrouter:openai/text-embedding-3-small" }),
+		chunkerVersion: z.string().openapi({ example: "text-v1;size=1000;overlap=150" }),
+		usage: z.object({
+			inputTokens: z.number().int().optional(),
+			outputTokens: z.number().int().optional(),
+		}),
+	})
+	.openapi("AnswerProvenance");
+
 export const ragQueryResultSchema = z
 	.object({
 		answer: z.string().nullable(),
 		matches: z.array(ragMatchSchema),
+		/** Passages the answer cites (empty for retrieval-only queries). */
+		citations: z.array(citationSchema),
+		/** What produced the answer; null when no model was called. */
+		provenance: answerProvenanceSchema.nullable(),
 	})
 	.openapi("RagQueryResult");
 

@@ -16,6 +16,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | `@synapse/ingestion` | Normalization, content-hash dedup, ingestion pipeline — see [ingestion.md](ingestion.md) |
 | `@synapse/knowledge` | Chunking, embedding preparation, chunk versions — see [knowledge.md](knowledge.md) |
 | `@synapse/retrieval` | Vector, keyword and hybrid (RRF) retrieval — see [retrieval.md](retrieval.md) |
+| `@synapse/generation` | Versioned prompts, budgeted context, citations, answer provenance — see [generation.md](generation.md) |
 
 ## Platform packages (from the plan)
 
@@ -25,7 +26,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | [`ingestion`](ingestion.md) | Bring content in from sources and turn it into normalized, deduplicated documents with their access rules. | Live (normalize, dedup, pipeline) |
 | [`knowledge`](knowledge.md) | Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes. | Live (chunking, embeddings, versions) |
 | [`retrieval`](retrieval.md) | Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and filter. | Live (vector, keyword, hybrid) |
-| [`generation`](generation.md) | Produce answers from context: providers, prompts, context assembly, completion, citations and structured output. | Planned (models via `@synapse/adapters`; prompts still in `apps/api`) |
+| [`generation`](generation.md) | Produce answers from context: providers, prompts, context assembly, completion, citations and structured output. | Live (prompts, context, citations, provenance) |
 | [`orchestration`](orchestration.md) | Run multi-step agents and workflows with LangGraph JS — the only package that owns LangGraph. | Planned |
 | [`human-oversight`](human-oversight.md) | Keep humans in the loop: approvals, review queues, decisions, escalation and feedback. | Planned |
 | [`audit`](audit.md) | The single owner of event history: who did what, with which inputs, producing which output. | Planned |

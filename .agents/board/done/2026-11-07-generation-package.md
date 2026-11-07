@@ -5,8 +5,8 @@ type: feature
 from: human
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-010, syn-013]
@@ -46,4 +46,9 @@ Move the RAG answer path; record model, prompt version and embedding version.
 
 ## Resolution
 
-_Open._
+Done in commit `feat(generation): add generation package with citations and provenance`.
+
+- `@synapse/generation`: versioned prompts (`rag-answer@1`, `chat-assistant@1`), `buildContext` (token budget), `extractCitations`, `createAnswerGenerator`; 5 tests.
+- `@synapse/core`: `AnswerProvenance` is now `chatModel`, `promptVersion`, `embeddingModel`, `chunkerVersion`, `usage`.
+- `apps/api`: `RagService.answer` uses the generator; `/rag/query` returns `citations` + `provenance`; chat uses `CHAT_ASSISTANT_PROMPT`; `RAG_MAX_CONTEXT_TOKENS` (default 3000).
+- Out of scope: persisting provenance (audit), structured output, streaming contract.

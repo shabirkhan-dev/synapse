@@ -12,6 +12,7 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/core/package.json ./packages/core/
 COPY packages/database/package.json ./packages/database/
+COPY packages/generation/package.json ./packages/generation/
 COPY packages/ingestion/package.json ./packages/ingestion/
 COPY packages/knowledge/package.json ./packages/knowledge/
 COPY packages/retrieval/package.json ./packages/retrieval/
@@ -26,6 +27,7 @@ COPY package.json bun.lock ./
 COPY packages/adapters ./packages/adapters
 COPY packages/core ./packages/core
 COPY packages/database ./packages/database
+COPY packages/generation ./packages/generation
 COPY packages/ingestion ./packages/ingestion
 COPY packages/knowledge ./packages/knowledge
 COPY packages/retrieval ./packages/retrieval

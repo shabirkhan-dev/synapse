@@ -38,6 +38,8 @@ export const envSchema = z
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
 		/** `hybrid` = vector + keyword fused with RRF; `vector` = cosine similarity only. */
 		RAG_SEARCH_MODE: z.enum(["vector", "hybrid"]).default("hybrid"),
+		/** Token budget for the numbered passages sent to the chat model (~4 chars per token). */
+		RAG_MAX_CONTEXT_TOKENS: z.coerce.number().int().min(200).max(32000).default(3000),
 		CHAT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(5),
 		RUN_MIGRATIONS: booleanFromString,
 	})

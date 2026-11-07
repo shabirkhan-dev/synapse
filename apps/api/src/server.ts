@@ -21,6 +21,7 @@ const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
 	searchMode: config.rag.searchMode,
+	maxContextTokens: config.rag.maxContextTokens,
 });
 const chat = new ChatService({
 	rag,
