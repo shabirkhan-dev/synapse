@@ -22,6 +22,7 @@
 		"@synapse/database": "workspace:*",
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
+		"@synapse/retrieval": "workspace:*",
 		"ai": "^7.0.164",
 		"drizzle-orm": "^0.45.4",
 		"hono": "^4.13.17",

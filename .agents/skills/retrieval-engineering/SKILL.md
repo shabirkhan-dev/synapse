@@ -5,7 +5,8 @@ description: Use when changing query rewriting, vector or keyword search, hybrid
 
 # retrieval-engineering
 
-> Status: Partly live: top-k cosine vector search (pgvector HNSW) in `apps/api`. Keyword, hybrid, fusion and reranking are planned.
+> Status: Live: `@synapse/retrieval` (vector, keyword, hybrid RRF; `RAG_SEARCH_MODE`), Postgres full-text
+> with a GIN index, embedding-model filter. Query rewriting and reranking are planned.
 
 ## When to use
 

@@ -41,7 +41,12 @@ export const ragMatchSchema = z
 		source: z.string().nullable(),
 		chunkIndex: z.number().int(),
 		content: z.string(),
+		/** Higher is better: cosine similarity in `vector` mode, RRF score in `hybrid` mode. */
 		score: z.number(),
+		/** 1-based rank in each list that found the chunk. */
+		ranks: z
+			.object({ vector: z.number().int().optional(), keyword: z.number().int().optional() })
+			.optional(),
 	})
 	.openapi("RagMatch");
 

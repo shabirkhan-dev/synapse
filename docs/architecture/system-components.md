@@ -13,7 +13,7 @@
 ## Packages
 
 See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`, `database`, `adapters`
-(model gateway), `ingestion`, `knowledge`.
+(model gateway), `ingestion`, `knowledge`, `retrieval`.
 Everything else is planned.
 
 ## Crates (Rust)
@@ -33,7 +33,7 @@ Everything else is planned.
 | --- | --- | --- |
 | Database | PostgreSQL 18 | Live |
 | Vectors | pgvector (HNSW, cosine) | Live |
-| Keyword search | Postgres full-text | Planned |
+| Keyword search | Postgres full-text (GIN, `simple` config) | Live |
 | Queue | pg-boss | Planned |
 | Cache | Postgres first; Redis only if load proves it | Planned |
 | Tracing | Langfuse + OpenTelemetry | Planned |

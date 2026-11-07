@@ -5,8 +5,8 @@ type: feature
 from: human
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-012]
@@ -46,4 +46,10 @@ Vector search parity first, then keyword + fusion behind evals.
 
 ## Resolution
 
-_Open._
+Done in commit `feat(retrieval): add hybrid retrieval with keyword search and rrf`.
+
+- `@synapse/retrieval`: `reciprocalRankFusion`, `createRetriever` (`vector` / `hybrid`, ranks per list); 6 tests.
+- `@synapse/database`: GIN index on `to_tsvector('simple', content)` (migration `0003_chunk_keyword_search`), `searchVector` / `searchQuery` helpers so queries hit the index.
+- `apps/api`: `RAG_SEARCH_MODE` (default `hybrid`); repository `keywordSearch` + embedding-model filter on `searchChunks`; matches carry `ranks`.
+- Verified on pgvector: keyword search (incl. `SKU-4521`), owner scoping, model filter, GIN index in the plan.
+- Reranking (Cohere) stays out of scope — separate card when providers land.

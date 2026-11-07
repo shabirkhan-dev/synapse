@@ -14,6 +14,21 @@ const refundDoc = {
 	].join("\n"),
 };
 
+async function searchBiscuit(searchMode: "vector" | "hybrid") {
+	const { app } = buildTestApp({ searchMode });
+	await app.request("/api/v1/rag/documents", {
+		method: "POST",
+		headers: await authHeaders(),
+		body: JSON.stringify(refundDoc),
+	});
+	const response = await app.request("/api/v1/rag/query", {
+		method: "POST",
+		headers: await authHeaders(),
+		body: JSON.stringify({ query: "Biscuit printer", answer: false, topK: 2 }),
+	});
+	return (await response.json()).data.matches;
+}
+
 describe("rag", () => {
 	test("ingest chunks, embeds and stores a document", async () => {
 		const repository = new InMemoryRagRepository();
@@ -182,5 +197,16 @@ describe("rag", () => {
 		const other = await ingest(refundDoc.content, "user-2");
 		expect(other.status).toBe(201);
 		expect((await other.json()).data.id).not.toBe(created.id);
+	});
+
+	test("hybrid search (default) fuses vector and keyword ranks; vector mode keeps cosine scores", async () => {
+		const hybrid = await searchBiscuit("hybrid");
+		expect(hybrid[0].content).toContain("Biscuit");
+		expect(hybrid[0].ranks).toEqual({ vector: 1, keyword: 1 });
+		expect(hybrid[0].score).toBeCloseTo(2 / 61, 10);
+
+		const vector = await searchBiscuit("vector");
+		expect(vector[0].ranks).toEqual({ vector: 1 });
+		expect(vector[0].score).toBeGreaterThan(0.1);
 	});
 });

@@ -20,6 +20,7 @@ const gateway = createOpenAICompatibleModelGateway(config.ai);
 const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
+	searchMode: config.rag.searchMode,
 });
 const chat = new ChatService({
 	rag,

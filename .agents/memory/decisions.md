@@ -22,3 +22,4 @@ Decisions already made. Formal records: `docs/decisions/adr/`.
 | 2026-11-07 | Models are called through `ModelGateway` (`@synapse/core/contracts`), implemented in `@synapse/adapters/model-gateway`; vendor-SDK imports in domain packages fail `architecture:check` | ADR-0003 |
 | 2026-11-07 | Ingest dedups per owner by SHA-256 of normalized content (`@synapse/ingestion`); duplicates return the existing document with `200` | `docs/packages/ingestion.md` |
 | 2026-11-07 | Chunking and embedding preparation live in `@synapse/knowledge`; each chunk records `chunker_version` and `embedding_model` | `docs/packages/knowledge.md` |
+| 2026-11-07 | Retrieval defaults to hybrid (pgvector + Postgres full-text `simple`, fused with RRF k=60) in `@synapse/retrieval`; vector search filters by embedding model | `docs/packages/retrieval.md` |

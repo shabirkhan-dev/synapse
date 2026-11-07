@@ -1,13 +1,18 @@
 # Retrieval guide
 
-> **Status:** Live for vector search · Planned for hybrid search and reranking.
+> **Status:** Live for vector, keyword and hybrid search · Planned for query rewriting and reranking.
 
-Today: cosine similarity over pgvector (HNSW index), scoped to the caller, top `RAG_TOP_K`.
+| `RAG_SEARCH_MODE` | What runs | `score` |
+| --- | --- | --- |
+| `hybrid` (default) | pgvector cosine search **and** Postgres full-text search, fused with reciprocal rank fusion | RRF score (`1/(60+rank)` summed over lists) |
+| `vector` | pgvector cosine search only | cosine similarity |
 
-Planned steps, in order (measure each with `evaluation/retrieval`):
+Each match also has `ranks: { vector?, keyword? }`, so you can see why it was returned. Keyword
+search uses `websearch_to_tsquery('simple', …)`: quotes for phrases, `or`, and `-word` exclusions work;
+no stemming, so exact terms (SKUs, names) match in any language.
 
-1. Query rewriting.
-2. Postgres full-text keyword search.
-3. Hybrid search with reciprocal rank fusion.
-4. Cohere reranking on the fused top-N.
-5. Metadata filters and ACL-based access filtering inside the query.
+Only chunks embedded with the current embedding model (or legacy rows without a recorded model) are
+compared in vector search.
+
+Next steps (measure each with `evaluation/retrieval`): query rewriting, Cohere reranking on the
+fused top-N, metadata filters.

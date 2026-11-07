@@ -1,3 +1,4 @@
+import { type AnyColumn, type SQL, sql } from "drizzle-orm";
 import {
 	index,
 	integer,
@@ -9,6 +10,25 @@ import {
 	uuid,
 	vector,
 } from "drizzle-orm/pg-core";
+
+/**
+ * Text-search configuration for keyword search. `simple` = lowercase + split, no stemming, so it
+ * works for any language and exact terms (SKUs, names). Changing it needs a new index migration.
+ */
+export const TEXT_SEARCH_CONFIG = "simple";
+
+/**
+ * `to_tsvector('<config>', column)` — the exact expression the GIN index is built on. Queries must
+ * use this helper (with the literal config, not a bind parameter) or Postgres will not use the index.
+ */
+export function searchVector(column: AnyColumn): SQL {
+	return sql`to_tsvector(${sql.raw(`'${TEXT_SEARCH_CONFIG}'`)}, ${column})`;
+}
+
+/** `websearch_to_tsquery('<config>', input)`: quotes, OR and -exclusions like a search box. */
+export function searchQuery(input: string): SQL {
+	return sql`websearch_to_tsquery(${sql.raw(`'${TEXT_SEARCH_CONFIG}'`)}, ${input})`;
+}
 
 /**
  * Must match the embedding model output. 1536 = OpenAI text-embedding-3-small (the default
@@ -58,6 +78,7 @@ export const ragChunks = pgTable(
 		uniqueIndex("rag_chunks_document_chunk_unique").on(table.documentId, table.chunkIndex),
 		index("rag_chunks_owner_id_idx").on(table.ownerId),
 		index("rag_chunks_embedding_hnsw_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+		index("rag_chunks_content_search_idx").using("gin", searchVector(table.content)),
 	],
 );
 

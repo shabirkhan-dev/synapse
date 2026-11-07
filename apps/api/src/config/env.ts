@@ -36,6 +36,8 @@ export const envSchema = z
 		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
 		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
+		/** `hybrid` = vector + keyword fused with RRF; `vector` = cosine similarity only. */
+		RAG_SEARCH_MODE: z.enum(["vector", "hybrid"]).default("hybrid"),
 		CHAT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(5),
 		RUN_MIGRATIONS: booleanFromString,
 	})

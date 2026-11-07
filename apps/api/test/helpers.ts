@@ -3,6 +3,7 @@ import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4
 import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
+import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 
 import { createApp } from "@/app";
@@ -144,26 +145,56 @@ export class InMemoryRagRepository implements RagRepository {
 		return this.documents.length < before;
 	}
 
-	async searchChunks(ownerId: string, embedding: number[], topK: number): Promise<RagMatch[]> {
+	async searchChunks({
+		ownerId,
+		embedding,
+		embeddingModel,
+		limit,
+	}: VectorSearchRequest): Promise<RagMatch[]> {
+		return this.chunks
+			.filter(
+				(chunk) =>
+					chunk.ownerId === ownerId &&
+					(chunk.embeddingModel == null || chunk.embeddingModel === embeddingModel),
+			)
+			.map((chunk) =>
+				this.toMatch(
+					chunk,
+					chunk.embedding.reduce((sum, value, index) => sum + value * (embedding[index] ?? 0), 0),
+				),
+			)
+			.toSorted((a, b) => b.score - a.score)
+			.slice(0, limit);
+	}
+
+	/** Stand-in for Postgres full-text: count of query words present in the chunk. */
+	async keywordSearch({ ownerId, query, limit }: KeywordSearchRequest): Promise<RagMatch[]> {
+		const words = query.toLowerCase().match(/[a-z0-9-]+/g) ?? [];
 		return this.chunks
 			.filter((chunk) => chunk.ownerId === ownerId)
 			.map((chunk) => {
-				const document = this.documents.find((d) => d.id === chunk.documentId);
-				return {
-					chunkId: chunk.id,
-					documentId: chunk.documentId,
-					documentTitle: document?.title ?? "",
-					source: document?.source ?? null,
-					chunkIndex: chunk.chunkIndex,
-					content: chunk.content,
-					score: chunk.embedding.reduce(
-						(sum, value, index) => sum + value * (embedding[index] ?? 0),
-						0,
-					),
-				};
+				const text = chunk.content.toLowerCase();
+				return this.toMatch(chunk, words.filter((word) => text.includes(word)).length);
 			})
+			.filter((match) => match.score > 0)
 			.toSorted((a, b) => b.score - a.score)
-			.slice(0, topK);
+			.slice(0, limit);
+	}
+
+	private toMatch(
+		chunk: NewRagChunk & { id: string; documentId: string },
+		score: number,
+	): RagMatch {
+		const document = this.documents.find((d) => d.id === chunk.documentId);
+		return {
+			chunkId: chunk.id,
+			documentId: chunk.documentId,
+			documentTitle: document?.title ?? "",
+			source: document?.source ?? null,
+			chunkIndex: chunk.chunkIndex,
+			content: chunk.content,
+			score,
+		};
 	}
 
 	async ping(): Promise<void> {}
@@ -189,11 +220,13 @@ export function buildTestApp({
 	embeddingModel = createMockEmbeddingModel(),
 	repository = new InMemoryRagRepository(),
 	pingDatabase = async () => {},
+	searchMode = testConfig.rag.searchMode,
 }: {
 	chatModel?: MockLanguageModelV4;
 	embeddingModel?: MockEmbeddingModelV4;
 	repository?: RagRepository;
 	pingDatabase?: () => Promise<void>;
+	searchMode?: "vector" | "hybrid";
 } = {}) {
 	const gateway = createAiSdkModelGateway({
 		chatModel,
@@ -204,6 +237,7 @@ export function buildTestApp({
 	const rag = new RagService(repository, gateway, {
 		chunk: testConfig.rag.chunk,
 		defaultTopK: testConfig.rag.topK,
+		searchMode,
 	});
 	const chat = new ChatService({
 		rag,

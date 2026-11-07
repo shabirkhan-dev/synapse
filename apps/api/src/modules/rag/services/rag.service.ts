@@ -12,6 +12,7 @@ import {
 	createChunkPreparer,
 	KNOWLEDGE_ERROR_CODES,
 } from "@synapse/knowledge";
+import { createRetriever, type RetrievalMode, type Retriever } from "@synapse/retrieval";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
@@ -27,6 +28,7 @@ import type { RagDocument, RagMatch, RagRepository } from "../types/rag.types";
 export type RagServiceOptions = {
 	chunk: ChunkOptions;
 	defaultTopK: number;
+	searchMode: RetrievalMode;
 };
 
 export type IngestInput = {
@@ -52,6 +54,8 @@ export class RagService {
 	private readonly knowledge: ChunkPreparer;
 	/** normalize → dedup (per owner) → chunk + embed + store, via `@synapse/ingestion`. */
 	private readonly ingestion: IngestionPipeline<RagDocument>;
+	/** vector or hybrid (vector + keyword, RRF) search, via `@synapse/retrieval`. */
+	private readonly retriever: Retriever<RagMatch>;
 
 	constructor(
 		private readonly repository: RagRepository,
@@ -67,6 +71,15 @@ export class RagService {
 			findByContentHash: (ownerId, hash) => repository.findByContentHash(ownerId, hash),
 			index: (document) => this.index(document),
 		});
+		const knowledge = this.knowledge;
+		this.retriever = createRetriever<RagMatch>(
+			{
+				embedQuery: (query) => knowledge.embedQuery(query).catch(toAppError),
+				vectorSearch: (request) => repository.searchChunks(request),
+				keywordSearch: (request) => repository.keywordSearch(request),
+			},
+			{ mode: options.searchMode, embeddingModel: knowledge.embeddingModel },
+		);
 	}
 
 	async ingest(ownerId: string, input: IngestInput): Promise<IngestOutcome> {
@@ -105,8 +118,7 @@ export class RagService {
 		query: string,
 		topK = this.options.defaultTopK,
 	): Promise<RagMatch[]> {
-		const embedding = await this.knowledge.embedQuery(query).catch(toAppError);
-		return this.repository.searchChunks(ownerId, embedding, topK);
+		return this.retriever.retrieve({ ownerId, query, topK });
 	}
 
 	async answer(ownerId: string, question: string, topK?: number): Promise<RagAnswer> {

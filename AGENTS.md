@@ -79,6 +79,7 @@ synapse/
 │   ├── core/            # @synapse/core: errors, config, shared types, contracts
 │   ├── ingestion/       # @synapse/ingestion: normalize, dedup, ingestion pipeline
 │   ├── knowledge/       # @synapse/knowledge: chunking, embeddings, chunk versions
+│   ├── retrieval/       # @synapse/retrieval: vector, keyword, hybrid (RRF) search
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/

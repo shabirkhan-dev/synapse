@@ -15,6 +15,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | `@synapse/adapters` | Model gateway (AI SDK, OpenAI-compatible) implementing the `core` contract — see [adapters.md](adapters.md) |
 | `@synapse/ingestion` | Normalization, content-hash dedup, ingestion pipeline — see [ingestion.md](ingestion.md) |
 | `@synapse/knowledge` | Chunking, embedding preparation, chunk versions — see [knowledge.md](knowledge.md) |
+| `@synapse/retrieval` | Vector, keyword and hybrid (RRF) retrieval — see [retrieval.md](retrieval.md) |
 
 ## Platform packages (from the plan)
 
@@ -23,7 +24,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | [`core`](core.md) | Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on. | Live (errors, config, types, contracts) |
 | [`ingestion`](ingestion.md) | Bring content in from sources and turn it into normalized, deduplicated documents with their access rules. | Live (normalize, dedup, pipeline) |
 | [`knowledge`](knowledge.md) | Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes. | Live (chunking, embeddings, versions) |
-| [`retrieval`](retrieval.md) | Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and filter. | Partly live: top-k cosine vector search in `apps/api` |
+| [`retrieval`](retrieval.md) | Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and filter. | Live (vector, keyword, hybrid) |
 | [`generation`](generation.md) | Produce answers from context: providers, prompts, context assembly, completion, citations and structured output. | Planned (models via `@synapse/adapters`; prompts still in `apps/api`) |
 | [`orchestration`](orchestration.md) | Run multi-step agents and workflows with LangGraph JS — the only package that owns LangGraph. | Planned |
 | [`human-oversight`](human-oversight.md) | Keep humans in the loop: approvals, review queues, decisions, escalation and feedback. | Planned |

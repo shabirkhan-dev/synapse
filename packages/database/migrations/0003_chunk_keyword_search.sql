@@ -1,0 +1,1 @@
+CREATE INDEX "rag_chunks_content_search_idx" ON "rag_chunks" USING gin (to_tsvector('simple', "content"));

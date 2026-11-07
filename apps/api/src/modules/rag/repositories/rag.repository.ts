@@ -1,6 +1,13 @@
-import { and, cosineDistance, desc, eq, sql } from "drizzle-orm";
+import { and, cosineDistance, desc, eq, isNull, or, sql } from "drizzle-orm";
 
-import { type Database, ragChunks, ragDocuments } from "@synapse/database";
+import {
+	type Database,
+	ragChunks,
+	ragDocuments,
+	searchQuery,
+	searchVector,
+} from "@synapse/database";
+import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 
 import { toRagDocument } from "../mappers/rag.mapper";
 import type {
@@ -82,32 +89,64 @@ export class DrizzleRagRepository implements RagRepository {
 		return rows.length > 0;
 	}
 
-	async searchChunks(ownerId: string, embedding: number[], topK: number): Promise<RagMatch[]> {
+	async searchChunks({
+		ownerId,
+		embedding,
+		embeddingModel,
+		limit,
+	}: VectorSearchRequest): Promise<RagMatch[]> {
 		const distance = cosineDistance(ragChunks.embedding, embedding);
 		const rows = await this.db
 			.select({
-				chunkId: ragChunks.id,
-				documentId: ragChunks.documentId,
-				documentTitle: ragDocuments.title,
-				source: ragDocuments.source,
-				chunkIndex: ragChunks.chunkIndex,
-				content: ragChunks.content,
+				...matchColumns,
 				score: sql<number>`1 - (${distance})`,
 			})
 			.from(ragChunks)
 			.innerJoin(ragDocuments, eq(ragDocuments.id, ragChunks.documentId))
-			.where(eq(ragChunks.ownerId, ownerId))
+			.where(
+				and(
+					eq(ragChunks.ownerId, ownerId),
+					// Vectors from another model are not comparable; legacy rows have no model recorded.
+					or(eq(ragChunks.embeddingModel, embeddingModel), isNull(ragChunks.embeddingModel)),
+				),
+			)
 			// Order by the raw distance expression so Postgres can use the HNSW index.
 			.orderBy(distance)
-			.limit(topK);
-		for (const row of rows) {
-			// numeric expressions come back as strings from postgres-js
-			row.score = Number(row.score);
-		}
-		return rows;
+			.limit(limit);
+		return rows.map(withNumericScore);
+	}
+
+	async keywordSearch({ ownerId, query, limit }: KeywordSearchRequest): Promise<RagMatch[]> {
+		const vector = searchVector(ragChunks.content);
+		const tsQuery = searchQuery(query);
+		const rank = sql<number>`ts_rank_cd(${vector}, ${tsQuery})`;
+		const rows = await this.db
+			.select({ ...matchColumns, score: rank })
+			.from(ragChunks)
+			.innerJoin(ragDocuments, eq(ragDocuments.id, ragChunks.documentId))
+			// The @@ on the indexed expression uses the GIN index.
+			.where(and(eq(ragChunks.ownerId, ownerId), sql`${vector} @@ ${tsQuery}`))
+			.orderBy(desc(rank))
+			.limit(limit);
+		return rows.map(withNumericScore);
 	}
 
 	async ping(): Promise<void> {
 		await this.db.execute(sql`select 1`);
 	}
+}
+
+const matchColumns = {
+	chunkId: ragChunks.id,
+	documentId: ragChunks.documentId,
+	documentTitle: ragDocuments.title,
+	source: ragDocuments.source,
+	chunkIndex: ragChunks.chunkIndex,
+	content: ragChunks.content,
+};
+
+/** Numeric SQL expressions come back as strings from postgres-js. */
+function withNumericScore<TRow extends { score: number }>(row: TRow): TRow {
+	row.score = Number(row.score);
+	return row;
 }

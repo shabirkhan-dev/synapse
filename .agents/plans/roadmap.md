@@ -23,8 +23,8 @@
 | `adapters` — model gateway (+ first `core` contracts) | ✅ | syn-010 |
 | `ingestion` — normalize, dedup, pipeline | ✅ | syn-011 |
 | `knowledge` — chunking + embeddings with versions | ✅ | syn-012 |
-| `retrieval` — vector + keyword + hybrid fusion | ⏭️ | syn-013 |
-| `generation` — prompts, context, citations, provenance | ⬜ | syn-014 |
+| `retrieval` — vector + keyword + hybrid fusion | ✅ | syn-013 |
+| `generation` — prompts, context, citations, provenance | ⏭️ | syn-014 |
 | `observability` — OpenTelemetry + Langfuse, replace API logger | ⬜ | syn-015 |
 | `evaluation` — datasets, retrieval metrics, CI regression | ⬜ | syn-016 |
 

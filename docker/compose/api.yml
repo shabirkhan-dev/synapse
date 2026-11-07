@@ -23,6 +23,7 @@ services:
       AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
       AI_EMBEDDING_BASE_URL: ${AI_EMBEDDING_BASE_URL:-}
       AI_EMBEDDING_API_KEY: ${AI_EMBEDDING_API_KEY:-}
+      RAG_SEARCH_MODE: ${RAG_SEARCH_MODE:-hybrid}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:

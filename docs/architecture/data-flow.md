@@ -10,7 +10,8 @@
 `RAG_CHUNK_OVERLAP`) → embed (1536 dims) → store `rag_documents` + `rag_chunks` scoped to the
 token's `sub`.
 
-**Ask:** `POST /api/v1/rag/query` → embed query → top-k cosine search on the owner's chunks →
+**Ask:** `POST /api/v1/rag/query` → embed query → vector search (same embedding model) + keyword
+search, fused with RRF (`@synapse/retrieval`) on the owner's chunks →
 (optional) answer with the chat model using the matches as context.
 
 **Chat:** `POST /api/v1/chat` → AI SDK tool loop (`searchDocuments`, `currentTime`), streamed as
