@@ -28,9 +28,9 @@ export class DrizzleRateLimiter implements RateLimiter {
 		if (!row) {
 			throw new Error("Rate limit upsert returned no row");
 		}
-		return {
-			allowed: row.attempts <= limit,
-			retryAfterSeconds: Math.max(1, Number(row.retryAfterSeconds)),
-		};
+		// `now()` is each transaction's start time: under contention a hit that started earlier can
+		// see a window opened "after" it, so the raw value can exceed the window by a second.
+		const retryAfterSeconds = Math.min(windowSeconds, Math.max(1, Number(row.retryAfterSeconds)));
+		return { allowed: row.attempts <= limit, retryAfterSeconds };
 	}
 }
