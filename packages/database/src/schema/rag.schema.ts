@@ -25,8 +25,62 @@ export function searchVector(column: AnyColumn): SQL {
 	return sql`to_tsvector(${sql.raw(`'${TEXT_SEARCH_CONFIG}'`)}, ${column})`;
 }
 
-/** `websearch_to_tsquery('<config>', input)`: quotes, OR and -exclusions like a search box. */
+/**
+ * Keyword query that matches chunks containing **any** term (ranked by `ts_rank_cd`), because
+ * natural questions rarely contain every word of the answer. Common words are dropped from the
+ * query (the `simple` index keeps them, so they would match everything). Quoted phrases stay
+ * phrases and `-term` / `-"phrase"` still exclude.
+ */
 export function searchQuery(input: string): SQL {
+	const { include, exclude } = splitSearchTerms(input);
+	const anyIncluded = websearchQuery(include.join(" or "));
+	if (exclude.length === 0) {
+		return anyIncluded;
+	}
+	return sql`(${anyIncluded} && !!${websearchQuery(exclude.join(" or "))})`;
+}
+
+export interface SearchTerms {
+	/** Words and quoted phrases (quotes kept), any of which may match. */
+	include: string[];
+	/** Excluded words and phrases, without the leading `-`. */
+	exclude: string[];
+}
+
+const SEARCH_TERM = /(-?)("[^"]*"?|\S+)/g;
+
+const HAS_WORD = /[\p{L}\p{N}]/u;
+
+/**
+ * English function words dropped from keyword queries. Query-side only, so exact lookups still work
+ * when a query has nothing else (`"to be"`, or a query of only stopwords).
+ */
+const SEARCH_STOPWORDS = new Set(
+	(
+		"a an and any are as at be been but by can cannot could did do does for from get got had has " +
+		"have how i if in into is it its me my no not of on or our so than that the their them then " +
+		"there these they this those to too us was we were what when where which who why will with " +
+		"would you your"
+	).split(" "),
+);
+
+/** Split search-box input into included and excluded terms; a bare `or` and punctuation are dropped. */
+export function splitSearchTerms(input: string): SearchTerms {
+	const terms: SearchTerms = { include: [], exclude: [] };
+	for (const [, minus, term = ""] of input.matchAll(SEARCH_TERM)) {
+		if (term.toLowerCase() === "or" || !HAS_WORD.test(term)) {
+			continue;
+		}
+		(minus ? terms.exclude : terms.include).push(term);
+	}
+	const meaningful = terms.include.filter((term) => !SEARCH_STOPWORDS.has(term.toLowerCase()));
+	if (meaningful.length > 0) {
+		terms.include = meaningful;
+	}
+	return terms;
+}
+
+function websearchQuery(input: string): SQL {
 	return sql`websearch_to_tsquery(${sql.raw(`'${TEXT_SEARCH_CONFIG}'`)}, ${input})`;
 }
 

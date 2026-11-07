@@ -1,9 +1,9 @@
 ---
 id: syn-017
-title: Decide and build the access-token issuer
+title: Build in-house authentication (access-token issuer)
 type: risk
 from: human
-to: human
+to: backend
 priority: high
 status: open
 assignee: none
@@ -28,7 +28,10 @@ No real user can authenticate today; only tests mint tokens.
 
 ## Proposal or Ask
 
-Human decision: build users/sessions in `security/authentication`, or use an external provider (OIDC). Then implement.
+**Decided (2026-11-07, human): build it in-house** — ADR-0005. Users, credentials and sessions in our
+Postgres; `packages/security` owns the logic; the API `auth` module exposes sign-up, sign-in,
+refresh and sign-out. Access tokens stay short-lived JWTs with `sub` + `sid` so the current verifier
+keeps working. Design flows and lifetimes, then implement.
 
 ## Scope
 

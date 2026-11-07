@@ -5,8 +5,8 @@ type: feature
 from: qa
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-016]
@@ -47,4 +47,9 @@ Build an OR tsquery from the query terms (keeping quoted phrases / `-` exclusion
 
 ## Resolution
 
-_Open._
+Done in commit `feat(retrieval): match any keyword term with query-side stopwords`.
+
+- `searchQuery` (`@synapse/database`) ORs the query's words, keeps quoted phrases, ANDs `-term` exclusions (`any && !!excluded`); GIN index still used (EXPLAIN in the integration test).
+- Plain OR made hybrid worse (recall 0.833, MRR 0.806): the `simple` index keeps "how", "my", "and", which matched everything. Fixed by a query-side English stopword list (`SEARCH_STOPWORDS`), skipped when the query has nothing else; the index is unchanged.
+- Eval `retrieval-seed@1`, hashing, k=3: hybrid recall 0.889 → 0.944, MRR 0.824 → 0.944; vector-only stays 0.889 / 0.824. Hybrid baseline updated.
+- Tests: `splitSearchTerms` unit tests (`packages/database/test`), any-term / exclusion / phrase integration test on pgvector.

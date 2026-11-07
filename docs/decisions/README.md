@@ -9,6 +9,7 @@ reverse. Agents keep a short summary in `.agents/memory/decisions.md`.
 | [0002](adr/ADR-0002-database-strategy.md) | Database strategy: PostgreSQL for everything first | Accepted |
 | [0003](adr/ADR-0003-llm-provider-abstraction.md) | LLM provider abstraction | Accepted |
 | [0004](adr/ADR-0004-rust-integration.md) | Rust integration via napi-rs | Accepted |
+| [0005](adr/ADR-0005-in-house-authentication.md) | In-house authentication | Accepted |
 
 ## Template
 

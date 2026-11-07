@@ -8,8 +8,9 @@
 | `vector` | pgvector cosine search only | cosine similarity |
 
 Each match also has `ranks: { vector?, keyword? }`, so you can see why it was returned. Keyword
-search uses `websearch_to_tsquery('simple', …)`: quotes for phrases, `or`, and `-word` exclusions work;
-no stemming, so exact terms (SKUs, names) match in any language.
+search matches chunks with **any** of the query's words (common words like "how", "my", "the" are
+ignored unless the query has nothing else), ranking chunks with more matches higher. Quotes keep a
+phrase together and `-word` excludes. No stemming, so exact terms (SKUs, names) match in any language.
 
 Only chunks embedded with the current embedding model (or legacy rows without a recorded model) are
 compared in vector search.

@@ -2,8 +2,9 @@
 
 Things that are true today and easy to trip over. Remove an entry when it stops being true.
 
-- **No token issuer.** `apps/api` verifies HS256 JWTs (`sub`, `sid`) signed with `JWT_SECRET`, but
-  nothing in the repo issues them yet. Tests mint their own. `security/authentication` will own this.
+- **No token issuer yet.** `apps/api` verifies HS256 JWTs (`sub`, `sid`) signed with `JWT_SECRET`, but
+  nothing issues them. Tests mint their own. Decided: in-house auth in `packages/security` + the API
+  `auth` module (ADR-0005, syn-017).
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
@@ -26,8 +27,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `audit` exists. Token counts in the context budget are estimates (~4 chars/token).
 - **Retrieval eval uses hashing embeddings** (no key needed): it gates the pipeline, not embedding
   quality. Changing the dataset needs a `version` bump and a new baseline (`EVAL_UPDATE_BASELINE=true`).
-- **Keyword search is AND-only** (`websearch_to_tsquery`), so it rarely helps natural questions
-  (syn-021). **HNSW post-filters by owner** — many tenants can starve a user's results (syn-022).
+- **Keyword search matches any term** and drops an English stopword list from the query only
+  (`SEARCH_STOPWORDS` in `@synapse/database`); other languages get no stopword filtering.
+  **HNSW post-filters by owner**: many tenants can starve a user's results (syn-022).
 - **Hybrid scores are RRF scores** (≈0.016–0.033), not cosine; clients must not threshold `score` across modes.
 - **Tracing is OTLP-only:** spans export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; no Langfuse
   exporter yet (syn-020). Costs are estimated only for models listed in `AI_MODEL_PRICES`.

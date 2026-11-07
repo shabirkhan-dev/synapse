@@ -19,5 +19,6 @@ Adding cases: edit `packages/evaluation/src/datasets/retrieval-seed.ts`, **bump 
 `EVAL_UPDATE_BASELINE=true`, commit the new baseline. Include distractors (documents sharing words
 with the right one) — an eval that always scores 100% cannot catch regressions.
 
-Findings so far (`retrieval-seed@1`, hashing embeddings, k=3): hybrid recall 0.889 / MRR 0.824,
-vector-only MRR 0.852 — keyword search requires every term, see syn-021.
+Findings so far (`retrieval-seed@1`, hashing embeddings, k=3): hybrid recall 0.944 / MRR 0.944 vs
+vector-only recall 0.889 / MRR 0.824, after keyword search moved to any-term matching (syn-021; it
+was AND-only, which made hybrid no better than vector).

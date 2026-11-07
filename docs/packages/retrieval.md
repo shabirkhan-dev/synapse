@@ -43,7 +43,9 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
 - Results are deterministic: equal scores are tie-broken by content (vector: in memory, so the SQL
   keeps the HNSW-friendly `ORDER BY distance`; keyword: in SQL).
 
-Keyword search in the API is Postgres full-text: `to_tsvector('simple', content) @@
-websearch_to_tsquery('simple', query)`, ranked by `ts_rank_cd`, on a GIN index (migration
-`0003_chunk_keyword_search`). Use `searchVector` / `searchQuery` from `@synapse/database` so queries
-match the index.
+Keyword search in the API is Postgres full-text on a GIN index (migration
+`0003_chunk_keyword_search`), ranked by `ts_rank_cd`. `searchQuery` (`@synapse/database`) matches
+chunks containing **any** query term: it drops common English words from the query (the `simple`
+index keeps them, so they would match everything), ORs the rest, keeps quoted phrases, and ANDs
+`-term` exclusions (`websearch_to_tsquery(any) && !!websearch_to_tsquery(excluded)`). Use
+`searchVector` / `searchQuery` so queries match the index.

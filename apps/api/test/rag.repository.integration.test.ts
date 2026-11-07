@@ -1,6 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-import { createDatabase, runMigrations, sourceMigrationsFolder } from "@synapse/database";
+import {
+	createDatabase,
+	ragChunks,
+	runMigrations,
+	searchQuery,
+	searchVector,
+	sourceMigrationsFolder,
+} from "@synapse/database";
 import { sql } from "drizzle-orm";
 
 import { DrizzleRagRepository } from "@/modules/rag";
@@ -113,10 +120,37 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 
 		await database.db.execute(sql`set enable_seqscan = off`);
 		const plan = await database.db.execute(
-			sql`explain select id from rag_chunks where to_tsvector('simple', content) @@ websearch_to_tsquery('simple', 'sku')`,
+			sql`explain select id from rag_chunks where ${searchVector(ragChunks.content)} @@ ${searchQuery("sku -cats")}`,
 		);
 		await database.db.execute(sql`reset enable_seqscan`);
 		expect(JSON.stringify([...plan])).toContain("rag_chunks_content_search_idx");
+		await repository.deleteDocument(owner, document.id);
+	});
+
+	test("keyword search matches any term, ranks fuller matches first and honours exclusions", async () => {
+		const document = await repository.createDocument(
+			{ ownerId: owner, title: "Any term" },
+			[
+				"Print the return label and drop the parcel at a courier point",
+				"Tracking links are emailed when the parcel leaves",
+				"The office cat sleeps on the printer",
+			].map((content, chunkIndex) => ({
+				chunkIndex,
+				content,
+				embedding: fakeEmbedding(content),
+				embeddingModel: MODEL,
+			})),
+		);
+		const search = (query: string) =>
+			repository
+				.keywordSearch({ ownerId: owner, query, limit: 5 })
+				.then((matches) => matches.map((m) => m.chunkIndex));
+
+		// No chunk has every word; common words ("how", "do", "I", "a") do not match everything.
+		expect(await search("how do I return a parcel")).toEqual([0, 1]);
+		expect(await search("parcel -tracking")).toEqual([0]);
+		expect(await search('"courier point" or cat')).toEqual([0, 2]);
+
 		await repository.deleteDocument(owner, document.id);
 	});
 

@@ -14,4 +14,5 @@
 | HTTP hardening | `secureHeaders`, CORS allow-list, request ids | `apps/api` |
 | Repo hygiene | Secret scan + large-file guard pre-commit; CodeQL + Dependabot | `.github/` |
 
-> Placeholder — threat model, token issuer design and PII policy are still to be written.
+> Placeholder — threat model, token issuer design and PII policy are still to be written. The issuer
+> is decided: in-house auth ([ADR-0005](../decisions/adr/ADR-0005-in-house-authentication.md)).

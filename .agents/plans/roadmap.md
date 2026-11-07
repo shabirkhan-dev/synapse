@@ -35,9 +35,9 @@ First, the two retrieval fixes found by the Phase 1 evaluation.
 
 | Step | Status | Card |
 | --- | --- | --- |
-| Keyword search: match any term (eval finding) | ⏭️ | syn-021 |
+| Keyword search: match any term (eval finding) | ✅ | syn-021 |
 | HNSW owner filtering stays complete with many tenants (risk) | ⏭️ | syn-022 |
-| `security` — token issuer, tenancy, permissions, PII (**decision needed**) | ⬜ | syn-017 |
+| `security` — in-house auth (ADR-0005), tenancy, permissions, PII | ⏭️ | syn-017 |
 | `apps/worker` + pg-boss queue adapter, resumable jobs | ⬜ | — |
 | `orchestration` — LangGraph graphs, checkpoints | ⬜ | — |
 | `human-oversight` — approvals, review queues, feedback | ⬜ | — |
