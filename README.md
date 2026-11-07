@@ -52,7 +52,8 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 
 | Path | Purpose |
 | --- | --- |
-| `.agents/` | Agent rules, roles, skills and the coordination board |
+| `.agent/` | Agent rules, skills, memory, roles and the coordination board |
+| `docs/` | Architecture, packages, ADRs, development, API, runbooks, guides |
 | `docker/` | Compose fragments: Postgres (pgvector), API, console |
 | `scripts/` | Bash utilities, plus architecture and naming checks |
 | `.github/workflows/` | `ci.yml`, `cd.yml`, `security.yml` |
@@ -101,7 +102,8 @@ See [.devcontainer/README.md](.devcontainer/README.md).
 
 ## Docs
 
-[PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md), [apps/api/README.md](apps/api/README.md).
+Start at [docs/README.md](docs/README.md). Also: [PROJECT.md](PROJECT.md), [AGENTS.md](AGENTS.md),
+[apps/api/README.md](apps/api/README.md), [packages/ui/README.md](packages/ui/README.md).
 
 ## License
 

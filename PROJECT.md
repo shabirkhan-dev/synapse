@@ -33,6 +33,8 @@ synapse/
 ├── lefthook.yml              # Git hooks
 ├── turbo.json                # Turborepo pipeline
 ├── package.json              # Root scripts + workspaces
+├── docs/                     # Architecture, packages, ADRs, development, API, runbooks, guides
+├── .agent/                   # Agent rules, skills, memory, roles, board
 └── AGENTS.md                 # Universal AI agent guidance
 ```
 
@@ -145,11 +147,12 @@ Defaults: console `3000`, API `8000`, Postgres host `5433`. More details: `docke
 ## Conventions and development rules
 
 - Primary repository guidance: `AGENTS.md`
-- Cursor-specific rules: `.agents/rules/`
+- Agent rules, skills and memory: `.agent/` (see `docs/agents/`)
 - Use workspace imports as `@synapse/<package>`
 
 ## Related docs
 
+- `docs/README.md` - full documentation index
 - `README.md` - quick start and high-level navigation
 - `scripts/README.md` - script usage and structure
 - `apps/*/README.md` - per-app setup and workflows
