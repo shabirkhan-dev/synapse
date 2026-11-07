@@ -37,6 +37,7 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | --- | --- | --- |
 | Keyword search: match any term (eval finding) | ✅ | syn-021 |
 | One env file for all credentials and settings | ✅ | syn-023 |
+| Secrets in Doppler; `bun run env:pull` / `env:push` | 🔄 | syn-027 |
 | HNSW owner filtering stays complete with many tenants (risk) | ✅ | syn-022 |
 | `security` — in-house auth: sign-up, sign-in, refresh, sign-out (ADR-0005) | ✅ | syn-017 |
 | Auth hardening — rate limits, email verification, password reset (Resend) | ✅ | syn-026 |

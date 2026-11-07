@@ -35,6 +35,8 @@
     "ci:test": "bun run test:coverage",
     "scripts:lint": "shellcheck scripts/bash/*.sh scripts/bash/tests/*.sh scripts/git-hooks/*.sh scripts/architecture/*.sh",
     "scripts:format": "shfmt -i 4 -w scripts/bash/*.sh scripts/bash/tests/*.sh scripts/git-hooks/*.sh scripts/architecture/*.sh || true",
+    "env:pull": "bash scripts/bash/env-sync.sh pull",
+    "env:push": "bash scripts/bash/env-sync.sh push",
     "scripts:run": "bash scripts/bash/main.sh",
     "scripts:run:bash": "bash scripts/bash/main.sh",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 || exit 0; lefthook install"

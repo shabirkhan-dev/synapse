@@ -1,0 +1,5 @@
+# Doppler holds the real values of the root .env. `doppler setup` reads this file, so a new machine
+# needs only: doppler login && doppler setup --no-interactive && bun run env:pull
+setup:
+  - project: synapse
+    config: dev

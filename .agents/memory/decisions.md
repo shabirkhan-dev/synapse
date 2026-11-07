@@ -33,4 +33,5 @@ Decisions already made. Formal records: `docs/decisions/adr/`.
 | 2026-11-07 | Email goes through the `EmailSender` contract; Resend (HTTP API, no SDK) in `@synapse/adapters/email`; development logs emails when no key is set | `docs/packages/adapters.md` |
 | 2026-11-07 | Auth rate limits are Postgres fixed windows (`auth_rate_limits`, hashed keys); emailed links are single-use SHA-256 tokens in `auth_tokens` | `docs/packages/security.md` |
 | 2026-11-07 | Jobs: `JobQueue` contract, pg-boss 12 in `@synapse/adapters/queue`, `apps/worker`; long jobs checkpoint in `job_checkpoints` keyed by job id; `exclusive` queues dedupe; the api owns migrations | `docs/architecture/workflow-architecture.md` |
+| 2026-11-07 | Doppler is the secret manager (project `synapse`, configs dev/stg/prd); `.env` is a local copy pulled with `bun run env:pull` | `docs/development/secrets.md` |
 | 2026-11-07 | Retrieval quality is gated in CI by `bun run eval:retrieval` (seed dataset, hashing embeddings, real Postgres stack) against committed baselines; search results are deterministic (content tie-break) | `docs/packages/evaluation.md` |

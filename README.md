@@ -20,6 +20,7 @@ git clone https://github.com/shabirkhan-dev/synapse.git
 cd synapse
 bun install
 bun run prepare
+doppler login && doppler setup --no-interactive && bun run env:pull   # .env from Doppler
 bun run dev
 ```
 

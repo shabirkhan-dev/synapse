@@ -42,6 +42,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Traces go to one destination:** Langfuse (both `LANGFUSE_*` keys set) or `OTEL_EXPORTER_OTLP_ENDPOINT`,
   not both; nothing is exported otherwise. Costs need `AI_MODEL_PRICES`. Prompt versions are not yet
   linked to Langfuse prompts.
+- **Secrets live in Doppler** (`synapse` / `dev`, `stg`, `prd`); `bun run env:pull` writes the root
+  `.env`, `env:push` uploads it. Agent sessions use a dev service token injected by the network
+  proxy (CLI runs with a placeholder `DOPPLER_TOKEN`). CI and deploys do not read Doppler yet.
 - **One env file:** the root `.env` (template `.env.example`) feeds docker compose and host runs
   (`dev:api`, `db:migrate`, `eval:retrieval`, api tests via `--env-file=../../.env`). The console
   does not read it yet.

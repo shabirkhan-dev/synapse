@@ -13,7 +13,7 @@
 6. Entry points with different needs (e.g. `migrate.ts`) get their own small schema in `config/`
    instead of reading env directly.
 7. Every new variable is documented in the root `.env.example` (the one env file; compose and host
-   runs read the root `.env`).
+   runs read the root `.env`) **and** added to Doppler `synapse/dev` (`docs/development/secrets.md`).
 
 Tooling files outside `src/` (e.g. `drizzle.config.ts`) and tests may read env directly.
 Enforced by `bun run architecture:check` (`scripts/architecture/check-layers.sh`), which runs in the pre-commit hook and CI.
