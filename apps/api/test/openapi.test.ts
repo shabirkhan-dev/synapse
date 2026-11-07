@@ -23,7 +23,12 @@ describe("openapi", () => {
 			"/api/v1/chat",
 			"/api/v1/health",
 			"/api/v1/health/ready",
+			"/api/v1/oversight/approvals",
+			"/api/v1/oversight/approvals/{id}/approve",
+			"/api/v1/oversight/approvals/{id}/reject",
+			"/api/v1/oversight/feedback",
 			"/api/v1/rag/documents",
+			"/api/v1/rag/documents/purge",
 			"/api/v1/rag/documents/{id}",
 			"/api/v1/rag/query",
 		]);

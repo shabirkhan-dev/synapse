@@ -18,6 +18,12 @@ import {
 	ragQueryBodySchema,
 	ragQueryResultSchema,
 } from "../schemas/rag.schemas";
+import {
+	approvalRequestSchema,
+	OVERSIGHT_ACTIONS,
+	type OversightService,
+} from "@/modules/oversight";
+
 import type { RagService } from "../services/rag.service";
 
 const security = [{ bearerAuth: [] }];
@@ -106,8 +112,30 @@ const queryRoute = createRoute({
 	},
 });
 
-export function createRagRoutes(rag: RagService) {
+const purgeRoute = createRoute({
+	method: "post",
+	path: "/documents/purge",
+	tags: ["RAG"],
+	summary: "Ask to delete all your documents; runs only after approval (see /oversight)",
+	security,
+	responses: {
+		202: {
+			description: "Approval requested; nothing is deleted yet",
+			content: { "application/json": { schema: successEnvelope(approvalRequestSchema) } },
+		},
+		...errorResponses,
+	},
+});
+
+export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	const app = new OpenAPIHono<AppBindings>();
+
+	app.openapi(purgeRoute, async (c) => {
+		const approval = await oversight.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
+			ownerId: c.get("user").sub,
+		});
+		return success(c, approval, RAG_MESSAGES.PURGE_REQUESTED, HTTP_STATUS.ACCEPTED);
+	});
 
 	app.openapi(ingestRoute, async (c) => {
 		const { document, created } = await rag.ingest(c.get("user").sub, c.req.valid("json"));

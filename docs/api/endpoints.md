@@ -17,6 +17,11 @@
 | GET | `/api/v1/auth/me` | Bearer | The signed-in user (`id`, `email`, `createdAt`) |
 | POST | `/api/v1/rag/documents` | Bearer | Ingest a document (`title`, `content`, optional `source`, `metadata`): normalize, dedup, chunk, embed, store. Body ≤ 2 MB. `201` new; `200` if you already ingested the same content (existing document returned, nothing re-embedded) |
 | GET | `/api/v1/rag/documents` | Bearer | List your documents, newest first |
+| POST | `/api/v1/rag/documents/purge` | Bearer | Ask to delete **all** your documents: `202` with a pending approval request; nothing is deleted until it is approved |
+| GET | `/api/v1/oversight/approvals` | Bearer | Your pending approval requests (newest first, ≤ 50) |
+| POST | `/api/v1/oversight/approvals/{id}/approve` | Bearer | Approve: the paused action runs (resumable across restarts) → `{ approval, outcome: { status: "done", result } }`. Repeating is safe; `409` if it was rejected |
+| POST | `/api/v1/oversight/approvals/{id}/reject` | Bearer | Reject (`reason?`): the action never runs. `409` if it was approved |
+| POST | `/api/v1/oversight/feedback` | Bearer | Rate an answer: `{ requestId, rating: "up" \| "down", comment? }`; one per request, re-rating replaces it |
 | DELETE | `/api/v1/rag/documents/{id}` | Bearer | Delete a document and its chunks |
 | POST | `/api/v1/rag/query` | Bearer | Top-k search (`query`, optional `topK`): hybrid vector + keyword (RRF) by default, or vector-only with `RAG_SEARCH_MODE=vector`; matches carry `score` and `ranks`. Answers with the chat model unless `answer: false` (an answer that cites no passage is regenerated once with a stricter prompt); answered queries return `citations` (passages the answer cites) and `provenance` (chat model, prompt version, embedding model, chunker version, token usage) |
 | POST | `/api/v1/chat` | Bearer | Streaming tool-calling chat (`messages`: AI SDK UI messages, 1–200). Tools: `searchDocuments`, `currentTime` |

@@ -1,6 +1,6 @@
 # Workflow architecture
 
-> **Status:** Live (jobs, RAG answer graph with checkpoints) · Planned (agent tools, human in the loop).
+> **Status:** Live (jobs, RAG answer graph, approval-gated actions) · Planned (agent tools, escalation).
 
 ## Jobs (`apps/worker` + `adapters/queue`) — live
 

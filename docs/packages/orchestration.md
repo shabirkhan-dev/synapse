@@ -2,8 +2,8 @@
 
 Run multi-step agents and workflows with LangGraph JS — the only package that owns LangGraph.
 
-> **Status:** Live (RAG answer graph, Postgres checkpoints, resume) · Planned (agent tools, approvals
-> via `human-oversight`, audit events). `/api/v1/chat` is still a single AI SDK tool loop.
+> **Status:** Live (RAG answer graph, approval-gated actions, Postgres checkpoints, resume) ·
+> Planned (agent tools, audit events). `/api/v1/chat` is still a single AI SDK tool loop.
 
 ## Internal modules
 
@@ -33,6 +33,7 @@ ports (plain functions), so the package does not import `retrieval` or `generati
 | --- | --- |
 | `createRagAnswerGraph({ ports, maxAttempts?, checkpointer? })` → `{ run, resume }` | retrieve → generate → if the answer cites nothing and attempts remain, generate again (attempt number passed to `ports.answer`, so the caller can use a stricter prompt) → end. Nothing retrieved ⇒ no model call |
 | `RagAnswerPorts`, `RagAnswerRun`, `CitedAnswer` | `retrieve({ question, context })`, `answer({ question, passages, attempt, context })`; `context` is the caller's per-run data (checkpointed, so JSON) |
+| `createApprovalGatedGraph({ ports, checkpointer })` → `{ start, decide, outcome }`, `ApprovalDecision`, `ApprovalGatedOutcome` | request approval (`approvalId` = thread id, so a repeated step is a no-op) → pause with `interrupt` → on `decide`: run `ports.execute` if approved, else end. `decide` after the run finished returns the outcome without running again |
 | `MemorySaver`, `BaseCheckpointSaver` | In-memory checkpoints (tests) and the checkpointer type; Postgres: `createPostgresCheckpointer` in `@synapse/adapters/checkpointer` |
 
 **Checkpoints and resume:** with a checkpointer, `run(input, threadId)` saves state after every

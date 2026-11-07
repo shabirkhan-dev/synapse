@@ -1,3 +1,4 @@
+import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
 import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
 import { createLogger, instrumentModelGateway, startTracing } from "@synapse/observability";
@@ -7,7 +8,12 @@ import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
-import { DrizzleRagRepository, RagService } from "./modules/rag";
+import {
+	DrizzleApprovalRepository,
+	DrizzleFeedbackRepository,
+	OversightService,
+} from "./modules/oversight";
+import { DrizzleRagRepository, RagService, registerRagActions } from "./modules/rag";
 
 const config = loadConfiguration();
 const tracing = startTracing({
@@ -55,11 +61,22 @@ const chat = new ChatService({
 	topK: config.rag.topK,
 });
 
+// Paused approval runs live in Postgres, so a decision can resume them after a restart.
+const checkpointer = createPostgresCheckpointer({ connectionString: config.database.url });
+await checkpointer.setup();
+const oversight = new OversightService(
+	new DrizzleApprovalRepository(database.db),
+	new DrizzleFeedbackRepository(database.db),
+	checkpointer.saver,
+);
+registerRagActions(oversight, rag);
+
 const app = createApp({
 	config,
 	logger,
 	auth,
 	rag,
+	oversight,
 	chat,
 	pingDatabase: () => repository.ping(),
 });
@@ -80,6 +97,7 @@ logger.info("listening", {
 async function shutdown(signal: string) {
 	logger.info("shutting down", { signal });
 	await server.stop();
+	await checkpointer.close();
 	await database.close();
 	await tracing.shutdown();
 	process.exit(0);

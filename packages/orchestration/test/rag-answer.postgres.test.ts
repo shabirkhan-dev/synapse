@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
 
-import { createRagAnswerGraph, type RagAnswerPorts } from "../src";
+import { createApprovalGatedGraph, createRagAnswerGraph, type RagAnswerPorts } from "../src";
 
 /** Real Postgres. Opt-in: set API_TEST_DATABASE_URL to a throwaway database. */
 const url = process.env.API_TEST_DATABASE_URL;
@@ -66,5 +66,40 @@ describe.skipIf(!url)("rag answer graph with Postgres checkpoints", () => {
 			attempts: 1,
 		});
 		expect(first).toEqual({ retrieve: 1, answer: 1 });
+	}, 30_000);
+
+	test("a run paused for approval is approved and finished by a new process", async () => {
+		const approvalId = crypto.randomUUID();
+		const executed: string[] = [];
+		const startApprovalProcess = async (name: string) => {
+			const checkpointer = createPostgresCheckpointer({
+				connectionString: url ?? "",
+				schema: "langgraph_test",
+			});
+			checkpointers.push(checkpointer);
+			await checkpointer.setup();
+			return createApprovalGatedGraph<{ ownerId: string }, { by: string }>({
+				checkpointer: checkpointer.saver,
+				ports: {
+					async requestApproval() {},
+					async execute() {
+						executed.push(name);
+						return { by: name };
+					},
+				},
+			});
+		};
+
+		const api = await startApprovalProcess("first");
+		expect((await api.start(approvalId, { ownerId: "u1" })).status).toBe("awaiting_approval");
+
+		// Deploy: the first process is gone; another one receives the approval.
+		const restarted = await startApprovalProcess("second");
+		expect(await restarted.decide(approvalId, { approved: true, decidedBy: "u1" })).toEqual({
+			status: "done",
+			approvalId,
+			result: { by: "second" },
+		});
+		expect(executed).toEqual(["second"]);
 	}, 30_000);
 });

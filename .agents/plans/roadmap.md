@@ -43,9 +43,9 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | Auth hardening — rate limits, email verification, password reset (Resend) | ✅ | syn-026 |
 | `apps/worker` + pg-boss queue adapter, resumable jobs | ✅ | syn-024 |
 | `orchestration` — LangGraph graphs, checkpoints | ✅ | syn-025 |
-| `human-oversight` — approvals, review queues, feedback | ⏭️ | syn-028 |
-| `memory` — conversation, semantic, episodic | ⬜ | — |
-| `audit` — event history, provenance, retention | ⬜ | syn-029 |
+| `human-oversight` — approvals, review queues, feedback | ✅ | syn-028 |
+| `memory` — conversation, semantic, episodic | ⬜ | syn-030 |
+| `audit` — event history, provenance, retention | ⏭️ | syn-029 |
 | `guardrails` — input/output/tool policies, injection defense | ⬜ | — |
 | `security` — tenancy (organizations), permissions, PII | ⬜ | — |
 | `reliability` — retry, breakers, timeouts, fallbacks | ⬜ | — |

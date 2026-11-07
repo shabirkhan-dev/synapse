@@ -53,8 +53,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   our migrations (the worker never does). Re-embedding runs on worker start only (no API trigger
   yet); the worker has logs but no tracing yet. Docker images were not built in the agent sandbox
   (no DNS inside build containers); the bundles build and boot.
-- **LangGraph runs in the API without a checkpointer** (in-request); checkpointed runs (`resume`)
-  are tested but no job uses them yet. A RAG answer without citations costs a second chat call.
+- **The API's RAG answer graph has no checkpointer** (in-request); approval-gated actions do (the
+  API calls `checkpointer.setup()` on start: `langgraph` schema). The approver is the owner until
+  roles exist; approvals never expire yet. Feedback references `x-request-id` (answers are not
+  stored until `audit`). A RAG answer without citations costs a second chat call.
   LangGraph keeps the AsyncLocalStorage trace context, so LLM spans stay children of the request.
 - **Reranking, query rewriting** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.

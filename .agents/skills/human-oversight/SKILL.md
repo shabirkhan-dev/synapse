@@ -5,7 +5,7 @@ description: Use when adding approvals, review queues, decisions, escalation or 
 
 # human-oversight
 
-> Status: Planned. `packages/human-oversight` owns all feedback and approval state.
+> Status: Live (approvals, review queue, feedback; see docs/packages/human-oversight.md). `packages/human-oversight` owns all feedback and approval state.
 
 ## When to use
 

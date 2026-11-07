@@ -89,6 +89,14 @@ export class DrizzleRagRepository implements RagRepository {
 		return rows.length > 0;
 	}
 
+	async deleteAllDocuments(ownerId: string): Promise<number> {
+		const rows = await this.db
+			.delete(ragDocuments)
+			.where(eq(ragDocuments.ownerId, ownerId))
+			.returning({ id: ragDocuments.id });
+		return rows.length;
+	}
+
 	async searchChunks({
 		ownerId,
 		embedding,

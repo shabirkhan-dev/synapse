@@ -4,6 +4,7 @@ import type { Configuration } from "@/config";
 import { type AuthService, createAuthMiddleware, createAuthRoutes } from "@/modules/auth";
 import { type ChatService, createChatRoutes } from "@/modules/chat";
 import { createHealthRoutes } from "@/modules/health";
+import { createOversightRoutes, type OversightService } from "@/modules/oversight";
 import { createRagRoutes, type RagService } from "@/modules/rag";
 import type { AppBindings } from "@/shared/types/app-types";
 
@@ -11,6 +12,7 @@ export type RouteDependencies = {
 	config: Configuration;
 	auth: AuthService;
 	rag: RagService;
+	oversight: OversightService;
 	chat: ChatService;
 	pingDatabase: () => Promise<void>;
 };
@@ -18,7 +20,7 @@ export type RouteDependencies = {
 /** Mount every module router under the versioned base path. Protected modules get auth first. */
 export function registerRoutes(
 	app: OpenAPIHono<AppBindings>,
-	{ config, auth, rag, chat, pingDatabase }: RouteDependencies,
+	{ config, auth, rag, oversight, chat, pingDatabase }: RouteDependencies,
 ) {
 	const { basePath, serviceName } = config.app;
 	const authenticate = createAuthMiddleware(auth);
@@ -27,11 +29,13 @@ export function registerRoutes(
 	app.use(`${basePath}/auth/me`, authenticate);
 	app.use(`${basePath}/auth/verify-email/resend`, authenticate);
 	app.use(`${basePath}/rag/*`, authenticate);
+	app.use(`${basePath}/oversight/*`, authenticate);
 	app.use(`${basePath}/chat`, authenticate);
 	app.use(`${basePath}/chat/*`, authenticate);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, { trustProxy: config.auth.trustProxy }));
-	app.route(`${basePath}/rag`, createRagRoutes(rag));
+	app.route(`${basePath}/rag`, createRagRoutes(rag, oversight));
+	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
 }

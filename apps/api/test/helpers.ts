@@ -4,6 +4,14 @@ import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import type { EmailMessage, EmailSender } from "@synapse/core/contracts";
+import type {
+	AnswerFeedback,
+	ApprovalRequest,
+	ApprovalStore,
+	Decision,
+	FeedbackStore,
+} from "@synapse/human-oversight";
+import { MemorySaver } from "@synapse/orchestration";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import { createLogger, instrumentModelGateway } from "@synapse/observability";
@@ -22,6 +30,7 @@ import {
 	type UserCredentials,
 } from "@/modules/auth";
 import { ChatService } from "@/modules/chat";
+import { OversightService } from "@/modules/oversight";
 import {
 	type NewRagChunk,
 	type NewRagDocument,
@@ -29,6 +38,7 @@ import {
 	type RagMatch,
 	type RagRepository,
 	RagService,
+	registerRagActions,
 } from "@/modules/rag";
 
 export const testConfig = loadConfiguration({
@@ -145,6 +155,13 @@ export class InMemoryRagRepository implements RagRepository {
 		if (!found) return null;
 		const { ownerId: _ownerId, ...document } = found;
 		return document;
+	}
+
+	async deleteAllDocuments(ownerId: string): Promise<number> {
+		const mine = this.documents.filter((d) => d.ownerId === ownerId);
+		this.documents = this.documents.filter((d) => d.ownerId !== ownerId);
+		this.chunks = this.chunks.filter((c) => c.ownerId !== ownerId);
+		return mine.length;
 	}
 
 	async deleteDocument(ownerId: string, documentId: string): Promise<boolean> {
@@ -342,6 +359,63 @@ export class InMemoryAuthRepository implements AuthRepository {
 	}
 }
 
+export class InMemoryApprovalStore implements ApprovalStore {
+	rows: ApprovalRequest[] = [];
+
+	async create(input: { id: string; ownerId: string; action: string; summary: string }) {
+		if (this.rows.some((row) => row.id === input.id)) return;
+		this.rows.push({
+			...input,
+			status: "pending",
+			reason: null,
+			decidedBy: null,
+			decidedAt: null,
+			createdAt: new Date().toISOString(),
+		});
+	}
+
+	async find({ id, ownerId }: { id: string; ownerId: string }) {
+		return this.rows.find((row) => row.id === id && row.ownerId === ownerId) ?? null;
+	}
+
+	async listPending(ownerId: string) {
+		return this.rows.filter((row) => row.ownerId === ownerId && row.status === "pending");
+	}
+
+	async decide({
+		id,
+		ownerId,
+		approved,
+		decidedBy,
+		reason,
+	}: { id: string; ownerId: string } & Decision) {
+		const row = this.rows.find(
+			(r) => r.id === id && r.ownerId === ownerId && r.status === "pending",
+		);
+		if (!row) return null;
+		Object.assign(row, {
+			status: approved ? "approved" : "rejected",
+			decidedBy,
+			reason: reason ?? null,
+			decidedAt: new Date().toISOString(),
+		});
+		return row;
+	}
+}
+
+export class InMemoryFeedbackStore implements FeedbackStore {
+	rows: AnswerFeedback[] = [];
+
+	async upsert(input: Omit<AnswerFeedback, "createdAt">) {
+		this.rows = this.rows.filter(
+			(row) => !(row.ownerId === input.ownerId && row.requestId === input.requestId),
+		);
+		const row = { ...input, createdAt: new Date().toISOString() };
+		this.rows.push(row);
+		return row;
+	}
+}
+
 /** Same fixed-window rule as the Postgres limiter, in memory. */
 export class InMemoryRateLimiter implements RateLimiter {
 	private readonly windows = new Map<string, { startedAt: number; attempts: number }>();
@@ -441,15 +515,30 @@ export function buildTestApp({
 		logger,
 		config: testConfig.auth,
 	});
+	const approvals = new InMemoryApprovalStore();
+	const feedback = new InMemoryFeedbackStore();
+	const oversight = new OversightService(approvals, feedback, new MemorySaver());
+	registerRagActions(oversight, rag);
 	const app = createApp({
 		config: testConfig,
 		logger,
 		auth,
 		rag,
+		oversight,
 		chat,
 		pingDatabase,
 	});
-	return { app, rag, repository, authRepository, email, chatModel, embeddingModel };
+	return {
+		app,
+		rag,
+		repository,
+		authRepository,
+		email,
+		approvals,
+		feedback,
+		chatModel,
+		embeddingModel,
+	};
 }
 
 export async function authHeaders(sub = "user-1") {

@@ -47,6 +47,8 @@ export interface RagRepository {
 	listDocuments(ownerId: string, limit: number): Promise<RagDocument[]>;
 	findByContentHash(ownerId: string, contentHash: string): Promise<RagDocument | null>;
 	deleteDocument(ownerId: string, documentId: string): Promise<boolean>;
+	/** Delete every document (and chunk) of the owner; returns how many documents went. */
+	deleteAllDocuments(ownerId: string): Promise<number>;
 	/** Nearest chunks by cosine similarity, only for the given embedding model (or legacy nulls). */
 	searchChunks(request: VectorSearchRequest): Promise<RagMatch[]>;
 	/** Full-text matches ranked by `ts_rank_cd`. */

@@ -23,6 +23,7 @@
 		"@synapse/database": "workspace:*",
 		"@synapse/evaluation": "workspace:*",
 		"@synapse/generation": "workspace:*",
+		"@synapse/human-oversight": "workspace:*",
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
 		"@synapse/observability": "workspace:*",

@@ -15,6 +15,9 @@ export const RAG_MESSAGES = {
 	DOCUMENT_NOT_FOUND: "Document not found",
 	DOCUMENT_TOO_LARGE: "Document body must be 2 MB or smaller",
 	NO_DOCUMENTS_TO_ANSWER_FROM: "I could not find any ingested documents to answer from.",
+	PURGE_REQUESTED: "Deleting all documents needs approval; approve it in /oversight/approvals",
+	PURGE_SUMMARY: (count: number, max: number) =>
+		`Delete all ${count > max ? `${max}+` : count} of your documents and their chunks`,
 } as const;
 
 /** Ingest body limit. */

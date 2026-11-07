@@ -14,6 +14,7 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/database/package.json ./packages/database/
 COPY packages/evaluation/package.json ./packages/evaluation/
 COPY packages/generation/package.json ./packages/generation/
+COPY packages/human-oversight/package.json ./packages/human-oversight/
 COPY packages/ingestion/package.json ./packages/ingestion/
 COPY packages/knowledge/package.json ./packages/knowledge/
 COPY packages/observability/package.json ./packages/observability/
@@ -33,6 +34,7 @@ COPY packages/core ./packages/core
 COPY packages/database ./packages/database
 COPY packages/evaluation ./packages/evaluation
 COPY packages/generation ./packages/generation
+COPY packages/human-oversight ./packages/human-oversight
 COPY packages/ingestion ./packages/ingestion
 COPY packages/knowledge ./packages/knowledge
 COPY packages/observability ./packages/observability

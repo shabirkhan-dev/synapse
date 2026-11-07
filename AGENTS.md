@@ -84,6 +84,7 @@ synapse/
 │   ├── generation/      # @synapse/generation: versioned prompts, context, citations, provenance
 │   ├── observability/   # @synapse/observability: logs, OpenTelemetry tracing, LLM usage/cost
 │   ├── evaluation/      # @synapse/evaluation: retrieval datasets, metrics, CI baselines
+│   ├── human-oversight/ # @synapse/human-oversight: approvals, review queue, feedback
 │   ├── orchestration/   # @synapse/orchestration: LangGraph graphs with Postgres checkpoints
 │   ├── security/        # @synapse/security: passwords, access tokens, rotating refresh tokens
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations

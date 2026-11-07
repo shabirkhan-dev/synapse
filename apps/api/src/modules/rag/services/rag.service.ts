@@ -183,6 +183,11 @@ export class RagService {
 		return this.repository.listDocuments(ownerId, limit);
 	}
 
+	/** Runs only after an approval (`rag.purge-documents`, see the oversight module). */
+	async purgeDocuments(ownerId: string): Promise<{ deleted: number }> {
+		return { deleted: await this.repository.deleteAllDocuments(ownerId) };
+	}
+
 	async deleteDocument(ownerId: string, documentId: string): Promise<void> {
 		const deleted = await this.repository.deleteDocument(ownerId, documentId);
 		if (!deleted) {

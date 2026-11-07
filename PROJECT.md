@@ -30,6 +30,7 @@ synapse/
 │   ├── generation/           # @synapse/generation: prompts, context, citations, provenance
 │   ├── observability/        # @synapse/observability: logs, tracing, LLM usage/cost
 │   ├── evaluation/           # @synapse/evaluation: retrieval evals, baselines
+│   ├── human-oversight/      # @synapse/human-oversight: approvals, review queue, feedback
 │   ├── orchestration/        # @synapse/orchestration: LangGraph graphs, checkpoints
 │   ├── security/             # @synapse/security: passwords, access + refresh tokens
 │   ├── core/                 # @synapse/core: errors, config, shared types, contracts
@@ -69,6 +70,7 @@ synapse/
 | `packages/generation` | `@synapse/generation` | Prompts, context, citations, provenance |
 | `packages/observability` | `@synapse/observability` | Logs, tracing, LLM usage/cost |
 | `packages/evaluation` | `@synapse/evaluation` | Retrieval evals, baselines, CI regression |
+| `packages/human-oversight` | `@synapse/human-oversight` | Approvals, review queue, decisions, feedback |
 | `packages/orchestration` | `@synapse/orchestration` | LangGraph graphs with Postgres checkpoints |
 | `packages/security` | `@synapse/security` | Authentication: passwords, access tokens, refresh tokens |
 | `packages/core` | `@synapse/core` | Errors, config loading, shared types, contracts |

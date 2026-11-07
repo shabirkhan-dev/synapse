@@ -55,6 +55,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | `@synapse/generation` | `packages/generation` | Versioned prompts, budgeted context, citations, provenance |
 | `@synapse/observability` | `packages/observability` | Structured logs, OpenTelemetry tracing, LLM usage/cost |
 | `@synapse/evaluation` | `packages/evaluation` | Retrieval datasets, recall@k / MRR, CI regression baselines |
+| `@synapse/human-oversight` | `packages/human-oversight` | Approval requests, review queue, decisions, answer feedback |
 | `@synapse/orchestration` | `packages/orchestration` | LangGraph graphs with Postgres checkpoints (RAG answer with citation retry) |
 | `@synapse/security` | `packages/security` | Authentication: Argon2id passwords, access tokens, rotating refresh tokens |
 | `@synapse/database` | `packages/database` | Drizzle client, schema, migrations (Postgres + pgvector) |
