@@ -8,3 +8,4 @@ export type {
 	TextGenerationResult,
 	TokenUsage,
 } from "./model-gateway";
+export type { EmailMessage, EmailSender } from "./email-sender";

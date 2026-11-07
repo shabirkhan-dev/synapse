@@ -3,6 +3,7 @@ import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4
 import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
+import type { EmailMessage, EmailSender } from "@synapse/core/contracts";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import { createLogger, instrumentModelGateway } from "@synapse/observability";
@@ -14,6 +15,9 @@ import {
 	type AuthRepository,
 	AuthService,
 	type AuthSession,
+	type AuthTokenPurpose,
+	type RateLimiter,
+	type RateLimitRule,
 	type User,
 	type UserCredentials,
 } from "@/modules/auth";
@@ -222,6 +226,7 @@ export class InMemoryAuthRepository implements AuthRepository {
 			id: crypto.randomUUID(),
 			email,
 			passwordHash,
+			emailVerifiedAt: null as string | null,
 			createdAt: new Date().toISOString(),
 		};
 		this.users.push(user);
@@ -288,6 +293,90 @@ export class InMemoryAuthRepository implements AuthRepository {
 			if (session.id === sessionId && session.userId === userId) session.revokedAt ??= new Date();
 		}
 	}
+
+	async revokeAllSessions(userId: string) {
+		for (const session of this.sessions) {
+			if (session.userId === userId) session.revokedAt ??= new Date();
+		}
+	}
+
+	tokens: Array<{
+		userId: string;
+		purpose: AuthTokenPurpose;
+		tokenHash: string;
+		expiresAt: Date;
+		usedAt: Date | null;
+	}> = [];
+
+	async replaceAuthToken(input: {
+		userId: string;
+		purpose: AuthTokenPurpose;
+		tokenHash: string;
+		expiresAt: Date;
+	}) {
+		for (const token of this.tokens) {
+			if (token.userId === input.userId && token.purpose === input.purpose)
+				token.usedAt ??= new Date();
+		}
+		this.tokens.push({ ...input, usedAt: null });
+	}
+
+	async consumeAuthToken({ purpose, tokenHash }: { purpose: AuthTokenPurpose; tokenHash: string }) {
+		const token = this.tokens.find(
+			(t) =>
+				t.tokenHash === tokenHash && t.purpose === purpose && !t.usedAt && t.expiresAt > new Date(),
+		);
+		if (!token) return null;
+		token.usedAt = new Date();
+		return token.userId;
+	}
+
+	async markEmailVerified(userId: string) {
+		const user = this.users.find((u) => u.id === userId);
+		if (user) user.emailVerifiedAt ??= new Date().toISOString();
+	}
+
+	async updatePasswordHash({ userId, passwordHash }: { userId: string; passwordHash: string }) {
+		const user = this.users.find((u) => u.id === userId);
+		if (user) user.passwordHash = passwordHash;
+	}
+}
+
+/** Same fixed-window rule as the Postgres limiter, in memory. */
+export class InMemoryRateLimiter implements RateLimiter {
+	private readonly windows = new Map<string, { startedAt: number; attempts: number }>();
+
+	async hit(key: string, { limit, windowSeconds }: RateLimitRule) {
+		const now = Date.now();
+		const current = this.windows.get(key);
+		const window =
+			current && now - current.startedAt < windowSeconds * 1000
+				? { ...current, attempts: current.attempts + 1 }
+				: { startedAt: now, attempts: 1 };
+		this.windows.set(key, window);
+		const retryAfterSeconds = Math.max(
+			1,
+			Math.ceil((window.startedAt + windowSeconds * 1000 - now) / 1000),
+		);
+		return { allowed: window.attempts <= limit, retryAfterSeconds };
+	}
+}
+
+/** Records every email instead of sending it. */
+export class CapturingEmailSender implements EmailSender {
+	sent: EmailMessage[] = [];
+
+	async send(message: EmailMessage) {
+		this.sent.push(message);
+	}
+
+	/** The `token` query parameter of the last link sent to `to`. */
+	lastToken(to: string): string {
+		const message = this.sent.findLast((m) => m.to === to);
+		const token = message?.text.match(/[?&]token=([A-Za-z0-9_-]+)/)?.[1];
+		if (!token) throw new Error(`No link emailed to ${to}`);
+		return token;
+	}
 }
 
 export async function signAccessToken(
@@ -310,6 +399,7 @@ export function buildTestApp({
 	embeddingModel = createMockEmbeddingModel(),
 	repository = new InMemoryRagRepository(),
 	authRepository = new InMemoryAuthRepository(),
+	email = new CapturingEmailSender(),
 	pingDatabase = async () => {},
 	searchMode = testConfig.rag.searchMode,
 }: {
@@ -317,6 +407,7 @@ export function buildTestApp({
 	embeddingModel?: MockEmbeddingModelV4;
 	repository?: RagRepository;
 	authRepository?: InMemoryAuthRepository;
+	email?: CapturingEmailSender;
 	pingDatabase?: () => Promise<void>;
 	searchMode?: "vector" | "hybrid";
 } = {}) {
@@ -343,7 +434,13 @@ export function buildTestApp({
 		maxSteps: testConfig.rag.chatMaxSteps,
 		topK: testConfig.rag.topK,
 	});
-	const auth = new AuthService(authRepository, testConfig.auth);
+	const auth = new AuthService({
+		repository: authRepository,
+		rateLimiter: new InMemoryRateLimiter(),
+		email,
+		logger,
+		config: testConfig.auth,
+	});
 	const app = createApp({
 		config: testConfig,
 		logger,
@@ -352,7 +449,7 @@ export function buildTestApp({
 		chat,
 		pingDatabase,
 	});
-	return { app, rag, repository, authRepository, chatModel, embeddingModel };
+	return { app, rag, repository, authRepository, email, chatModel, embeddingModel };
 }
 
 export async function authHeaders(sub = "user-1") {

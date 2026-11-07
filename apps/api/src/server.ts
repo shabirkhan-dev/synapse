@@ -4,7 +4,8 @@ import { createLogger, instrumentModelGateway, startTracing } from "@synapse/obs
 
 import { createApp } from "./app";
 import { loadConfiguration } from "./config";
-import { AuthService, DrizzleAuthRepository } from "./modules/auth";
+import { createEmailSender } from "./infrastructure/email/create-email-sender";
+import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { DrizzleRagRepository, RagService } from "./modules/rag";
 
@@ -30,7 +31,13 @@ if (!config.ai.apiKey) {
 
 const database = createDatabase(config.database);
 const repository = new DrizzleRagRepository(database.db);
-const auth = new AuthService(new DrizzleAuthRepository(database.db), config.auth);
+const auth = new AuthService({
+	repository: new DrizzleAuthRepository(database.db),
+	rateLimiter: new DrizzleRateLimiter(database.db),
+	email: createEmailSender(config.email, logger),
+	logger,
+	config: config.auth,
+});
 const gateway = instrumentModelGateway(createOpenAICompatibleModelGateway(config.ai), {
 	logger,
 	prices: config.observability.modelPrices,

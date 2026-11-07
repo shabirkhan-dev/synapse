@@ -11,5 +11,5 @@ export {
 	verifyPassword,
 	verifyPasswordAgainstNothing,
 } from "./authentication/password";
-export { createRefreshToken, hashRefreshToken } from "./authentication/refresh-token";
+export { createSecretToken, hashSecretToken } from "./authentication/secret-token";
 export { SECURITY_ERROR_CODES } from "./authentication/security-error-codes";

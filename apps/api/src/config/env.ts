@@ -60,6 +60,14 @@ export const envSchema = z
 		AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
 		/** Refresh-token (session) lifetime from sign-in; refreshing rotates the token, not the expiry. */
 		AUTH_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+		/** Console URL that verification and password-reset links point to. */
+		APP_URL: z.url().default("http://localhost:3000"),
+		/** Read the client IP from `x-forwarded-for` (only behind a proxy you control). */
+		TRUST_PROXY: booleanFromString,
+		/** Resend API key; without it (outside production) emails are written to the log instead. */
+		RESEND_API_KEY: z.string().min(1).optional(),
+		/** Sender; `onboarding@resend.dev` only delivers to your own Resend account's address. */
+		EMAIL_FROM: z.string().min(3).default("Synapse <onboarding@resend.dev>"),
 		CORS_ORIGIN: z.string().min(1).default("http://localhost:3000,http://127.0.0.1:3000"),
 		/** Any OpenAI-compatible endpoint. Defaults to OpenRouter. */
 		AI_BASE_URL: z.url().default("https://openrouter.ai/api/v1"),
@@ -117,6 +125,13 @@ export const envSchema = z
 				code: "custom",
 				path: ["AI_API_KEY"],
 				message: "AI_API_KEY is required in production",
+			});
+		}
+		if (!env.RESEND_API_KEY) {
+			context.addIssue({
+				code: "custom",
+				path: ["RESEND_API_KEY"],
+				message: "RESEND_API_KEY is required in production (verification and reset emails)",
 			});
 		}
 	});

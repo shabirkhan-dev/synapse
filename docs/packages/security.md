@@ -33,13 +33,14 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
 | `verifyPasswordAgainstNothing(password)` | Same cost as a real check, always `false`: sign-in timing does not reveal which emails exist |
 | `PASSWORD_POLICY` | 12–128 characters |
 | `createAccessTokens({ secret, ttlSeconds })` → `{ issue, verify }` | HS256 JWTs with `sub` (user) + `sid` (session); `verify` pins the algorithm and throws `SynapseError` `AUTH_ACCESS_TOKEN_INVALID` |
-| `createRefreshToken()`, `hashRefreshToken(token)` | 256-bit random base64url token; SHA-256 hex for storage |
+| `createSecretToken()`, `hashSecretToken(token)` | 256-bit random base64url token (refresh tokens, emailed links); SHA-256 hex for storage |
 | `SECURITY_ERROR_CODES` | Error codes thrown by the package |
 
 ## How the API uses it
 
-`apps/api/src/modules/auth` (routes → `AuthService` → `DrizzleAuthRepository`; tables `users`,
-`auth_sessions` in `@synapse/database`):
+`apps/api/src/modules/auth` (routes → `AuthService` → `DrizzleAuthRepository` + `DrizzleRateLimiter`; tables `users`,
+`auth_sessions`, `auth_tokens`, `auth_rate_limits` in `@synapse/database`; email through the
+`EmailSender` contract, Resend in `@synapse/adapters/email`):
 
 - **Sign-up / sign-in** create a session row and return a 15-minute access token plus a refresh
   token (session lives 30 days; `AUTH_ACCESS_TOKEN_TTL_SECONDS`, `AUTH_SESSION_TTL_DAYS`).
@@ -50,4 +51,15 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
 - **Access tokens are checked by signature and expiry only**, not against the session, so after
   sign-out an access token keeps working until it expires (at most 15 minutes).
 - Emails are trimmed and lowercased; sign-in returns one message for unknown emails and wrong
-  passwords. Only hashes are stored (password: Argon2id; refresh token: SHA-256).
+  passwords. Only hashes are stored (password: Argon2id; refresh and link tokens: SHA-256).
+- **Rate limits** (fixed windows in Postgres, one upsert per hit, so every instance shares them):
+  sign-in 10 per 15 min per email and 100 per IP; sign-up 10/hour per IP; reset requests 5/hour per
+  email and 20 per IP; verification emails 5/hour per user. Counted **before** any password work.
+  Keys are SHA-256 of `scope:value`, so the table holds no raw emails or IPs. Client IP is the
+  socket address, or the last `x-forwarded-for` entry when `TRUST_PROXY=true` (one proxy hop).
+- **Emailed links** (`APP_URL` + `/verify-email` or `/reset-password` + `?token=`) are single-use
+  (consumed by compare-and-swap), expire (verification 24 h, reset 1 h), and a new link voids the
+  previous one. A password reset marks the email verified and signs out every session.
+- **No account enumeration on reset:** same `202` either way, and the email is sent in the
+  background so timing does not differ. Sign-up still answers `409` for a taken email.
+- Email send failures are logged and do not fail the request; the user can ask again.

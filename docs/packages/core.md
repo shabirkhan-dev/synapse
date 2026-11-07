@@ -2,7 +2,7 @@
 
 Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on.
 
-> **Status:** Live (errors, config, types, contracts: model gateway) · Placeholder (events, utils).
+> **Status:** Live (errors, config, types, contracts: model gateway, email sender) · Placeholder (events, utils).
 
 ## Internal modules
 
@@ -32,6 +32,7 @@ nothing in the workspace (only Zod and the standard library)
 | `loadConfig(schema, source?)`, `ConfigSource` | `@synapse/core/config` | Zod-validated config from `process.env` (empty strings = unset); throws `CONFIG_INVALID` |
 | `AnswerProvenance` | `@synapse/core/types` | `chatModel`, `promptVersion`, `embeddingModel`, `chunkerVersion`, `usage` behind an answer |
 | `ModelGateway`, `ChatGateway`, `EmbeddingGateway`, `ModelInfo`, `TextGenerationRequest/Result`, `TokenUsage`, `CallOptions` | `@synapse/core/contracts` | How domain code calls models; implemented in `@synapse/adapters` |
+| `EmailSender`, `EmailMessage` | `@synapse/core/contracts` | How code sends email; implemented in `@synapse/adapters/email` (Resend) |
 
 The root entry (`@synapse/core`) re-exports errors, config, types and contracts. Events and utils
 are placeholders that grow with their first real use.

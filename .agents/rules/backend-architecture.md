@@ -11,7 +11,7 @@ apps/api/src/
 ├── migrate.ts              # migration entry for the built image
 ├── config/                 # env parsing + typed configs (see configuration.md)
 ├── shared/                 # constants/ errors/ responses/ middleware/ utils/ types/
-├── infrastructure/         # cache/ queue/ (later); logs via @synapse/observability, models via @synapse/adapters, db via @synapse/database
+├── infrastructure/         # email/ (sender factory); cache/ queue/ later; logs via @synapse/observability, models via @synapse/adapters, db via @synapse/database
 ├── modules/<domain>/       # one folder per domain; owns its routes … mappers
 └── routes/index.ts         # mounts module routers
 ```

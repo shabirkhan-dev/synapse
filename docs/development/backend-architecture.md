@@ -31,7 +31,7 @@ apps/api/src/
 │   ├── errors/            # app-error.ts, error-handler.ts
 │   ├── responses/         # success-response.ts, error-response.ts, response.types.ts
 │   ├── middleware/ · utils/ · types/
-├── infrastructure/        # cache/ queue/ (later). Logs/tracing: @synapse/observability; models: @synapse/adapters; db: @synapse/database
+├── infrastructure/        # email/ (sender factory); cache/ queue/ later. Logs/tracing: @synapse/observability; models: @synapse/adapters; db: @synapse/database
 ├── modules/
 │   ├── users/ · organizations/ · documents/ · knowledge/ · ingestion/
 └── routes/index.ts        # mounts every module router

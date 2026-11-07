@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { SynapseError } from "@synapse/core/errors";
 import { SignJWT } from "jose";
 
-import { createAccessTokens, createRefreshToken, hashRefreshToken } from "../src";
+import { createAccessTokens, createSecretToken, hashSecretToken } from "../src";
 
 const secret = "s".repeat(40);
 const tokens = createAccessTokens({ secret, ttlSeconds: 900 });
@@ -49,12 +49,12 @@ describe("access tokens", () => {
 	});
 });
 
-describe("refresh tokens", () => {
+describe("secret tokens", () => {
 	test("are random, url-safe and hashed deterministically", () => {
-		const token = createRefreshToken();
+		const token = createSecretToken();
 		expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
-		expect(createRefreshToken()).not.toBe(token);
-		expect(hashRefreshToken(token)).toMatch(/^[0-9a-f]{64}$/);
-		expect(hashRefreshToken(token)).toBe(hashRefreshToken(token));
+		expect(createSecretToken()).not.toBe(token);
+		expect(hashSecretToken(token)).toMatch(/^[0-9a-f]{64}$/);
+		expect(hashSecretToken(token)).toBe(hashSecretToken(token));
 	});
 });

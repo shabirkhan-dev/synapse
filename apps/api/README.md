@@ -35,6 +35,7 @@ src/
     responses/          # success(), failure(), envelope schemas
     middleware/         # request id, request tracing (span + log per request)
     types/              # AppBindings, AuthUser
+  infrastructure/email/ # email sender: Resend, or the log in development
   routes/index.ts       # mounts module routers, applies auth
   modules/
     auth/               # constants/ mappers/ middleware/ repositories/ routes/ schemas/ services/ types/

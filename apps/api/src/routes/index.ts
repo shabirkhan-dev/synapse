@@ -25,12 +25,13 @@ export function registerRoutes(
 
 	app.use(`${basePath}/auth/sign-out`, authenticate);
 	app.use(`${basePath}/auth/me`, authenticate);
+	app.use(`${basePath}/auth/verify-email/resend`, authenticate);
 	app.use(`${basePath}/rag/*`, authenticate);
 	app.use(`${basePath}/chat`, authenticate);
 	app.use(`${basePath}/chat/*`, authenticate);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
-	app.route(`${basePath}/auth`, createAuthRoutes(auth));
+	app.route(`${basePath}/auth`, createAuthRoutes(auth, { trustProxy: config.auth.trustProxy }));
 	app.route(`${basePath}/rag`, createRagRoutes(rag));
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
 }

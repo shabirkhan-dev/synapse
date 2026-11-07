@@ -19,9 +19,9 @@ describe("env", () => {
 		expect(env.RUN_MIGRATIONS).toBe(true);
 	});
 
-	test("rejects the development secret and a missing AI key in production", () => {
+	test("rejects the development secret and missing AI and email keys in production", () => {
 		expect(() => parseEnv({ NODE_ENV: "production" })).toThrow(
-			/JWT_SECRET must be changed.*AI_API_KEY is required/,
+			/JWT_SECRET must be changed.*AI_API_KEY is required.*RESEND_API_KEY is required/,
 		);
 	});
 
@@ -30,6 +30,7 @@ describe("env", () => {
 			NODE_ENV: "production",
 			JWT_SECRET: "x".repeat(40),
 			AI_API_KEY: "test-key-not-real",
+			RESEND_API_KEY: "re_test_not_real",
 		});
 		expect(env.NODE_ENV).toBe("production");
 	});

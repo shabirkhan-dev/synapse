@@ -1,9 +1,15 @@
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, or, sql } from "drizzle-orm";
 
-import { authSessions, type Database, users } from "@synapse/database";
+import { authSessions, authTokens, type Database, users } from "@synapse/database";
 
 import { toUser, toUserCredentials } from "../mappers/auth.mapper";
-import type { AuthRepository, AuthSession, User, UserCredentials } from "../types/auth.types";
+import type {
+	AuthRepository,
+	AuthSession,
+	AuthTokenPurpose,
+	User,
+	UserCredentials,
+} from "../types/auth.types";
 
 export class DrizzleAuthRepository implements AuthRepository {
 	constructor(private readonly db: Database) {}
@@ -109,5 +115,78 @@ export class DrizzleAuthRepository implements AuthRepository {
 					isNull(authSessions.revokedAt),
 				),
 			);
+	}
+
+	async revokeAllSessions(userId: string): Promise<void> {
+		await this.db
+			.update(authSessions)
+			.set({ revokedAt: sql`now()`, updatedAt: sql`now()` })
+			.where(and(eq(authSessions.userId, userId), isNull(authSessions.revokedAt)));
+	}
+
+	async replaceAuthToken(input: {
+		userId: string;
+		purpose: AuthTokenPurpose;
+		tokenHash: string;
+		expiresAt: Date;
+	}): Promise<void> {
+		await this.db.transaction(async (tx) => {
+			await tx
+				.update(authTokens)
+				.set({ usedAt: sql`now()` })
+				.where(
+					and(
+						eq(authTokens.userId, input.userId),
+						eq(authTokens.purpose, input.purpose),
+						isNull(authTokens.usedAt),
+					),
+				);
+			await tx.insert(authTokens).values(input);
+		});
+	}
+
+	async consumeAuthToken({
+		purpose,
+		tokenHash,
+	}: {
+		purpose: AuthTokenPurpose;
+		tokenHash: string;
+	}): Promise<string | null> {
+		const [row] = await this.db
+			.update(authTokens)
+			.set({ usedAt: sql`now()` })
+			.where(
+				and(
+					eq(authTokens.tokenHash, tokenHash),
+					eq(authTokens.purpose, purpose),
+					isNull(authTokens.usedAt),
+					gt(authTokens.expiresAt, sql`now()`),
+				),
+			)
+			.returning({ userId: authTokens.userId });
+		return row?.userId ?? null;
+	}
+
+	async markEmailVerified(userId: string): Promise<void> {
+		await this.db
+			.update(users)
+			.set({
+				emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())`,
+				updatedAt: sql`now()`,
+			})
+			.where(eq(users.id, userId));
+	}
+
+	async updatePasswordHash({
+		userId,
+		passwordHash,
+	}: {
+		userId: string;
+		passwordHash: string;
+	}): Promise<void> {
+		await this.db
+			.update(users)
+			.set({ passwordHash, updatedAt: sql`now()` })
+			.where(eq(users.id, userId));
 	}
 }

@@ -5,6 +5,8 @@ export const AUTH_ERROR_CODES = {
 	INVALID_CREDENTIALS: "AUTH_INVALID_CREDENTIALS",
 	REFRESH_TOKEN_INVALID: "AUTH_REFRESH_TOKEN_INVALID",
 	USER_NOT_FOUND: "AUTH_USER_NOT_FOUND",
+	RATE_LIMITED: "AUTH_RATE_LIMITED",
+	LINK_INVALID: "AUTH_LINK_INVALID",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -21,7 +23,43 @@ export const AUTH_MESSAGES = {
 	REFRESHED: "Tokens refreshed",
 	SIGNED_OUT: "Signed out",
 	USER_FETCHED: "Current user retrieved",
+	RATE_LIMITED: "Too many attempts; try again later",
+	LINK_INVALID: "This link is invalid, expired or already used",
+	EMAIL_VERIFIED: "Email verified",
+	VERIFICATION_SENT: "Verification email sent",
+	ALREADY_VERIFIED: "Email already verified",
+	// Same answer whether or not the account exists.
+	RESET_REQUESTED: "If an account exists for this email, a reset link is on its way",
+	PASSWORD_RESET: "Password changed; sign in again",
 } as const;
+
+const MINUTE = 60;
+const HOUR = 60 * MINUTE;
+
+/** Attempts allowed per window. Counted before any password check, so guessing stays slow. */
+export const AUTH_RATE_LIMITS = {
+	SIGN_IN_PER_EMAIL: { limit: 10, windowSeconds: 15 * MINUTE },
+	SIGN_IN_PER_IP: { limit: 100, windowSeconds: 15 * MINUTE },
+	SIGN_UP_PER_IP: { limit: 10, windowSeconds: HOUR },
+	RESET_REQUEST_PER_EMAIL: { limit: 5, windowSeconds: HOUR },
+	RESET_REQUEST_PER_IP: { limit: 20, windowSeconds: HOUR },
+	VERIFICATION_EMAIL_PER_USER: { limit: 5, windowSeconds: HOUR },
+} as const;
+
+/** How long emailed links stay valid. */
+export const AUTH_LINK_TTL_SECONDS = {
+	email_verification: 24 * HOUR,
+	password_reset: HOUR,
+} as const;
+
+/** Console routes the emailed links open (`?token=` is appended). */
+export const AUTH_LINK_PATHS = {
+	email_verification: "/verify-email",
+	password_reset: "/reset-password",
+} as const;
+
+/** Client IP when the connection does not expose one (e.g. in-process tests). */
+export const UNKNOWN_CLIENT_IP = "unknown";
 
 export const BEARER_PREFIX = "Bearer ";
 export const TOKEN_TYPE = "Bearer";

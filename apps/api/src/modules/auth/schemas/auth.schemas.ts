@@ -3,16 +3,16 @@ import { PASSWORD_POLICY } from "@synapse/security";
 
 const email = z.string().trim().pipe(z.email().max(254)).openapi({ example: "ada@example.com" });
 
-export const signUpBodySchema = z
-	.object({
-		email,
-		password: z
-			.string()
-			.min(PASSWORD_POLICY.minLength)
-			.max(PASSWORD_POLICY.maxLength)
-			.openapi({ example: "correct horse battery staple" }),
-	})
-	.openapi("SignUpBody");
+const newPassword = z
+	.string()
+	.min(PASSWORD_POLICY.minLength)
+	.max(PASSWORD_POLICY.maxLength)
+	.openapi({ example: "correct horse battery staple" });
+
+/** Token from an emailed link (`?token=`). */
+const linkToken = z.string().min(1).max(512);
+
+export const signUpBodySchema = z.object({ email, password: newPassword }).openapi("SignUpBody");
 
 /** Sign-in does not re-check the policy: a wrong password gets the same answer either way. */
 export const signInBodySchema = z
@@ -26,8 +26,21 @@ export const refreshBodySchema = z
 	.object({ refreshToken: z.string().min(1).max(512) })
 	.openapi("RefreshBody");
 
+export const verifyEmailBodySchema = z.object({ token: linkToken }).openapi("VerifyEmailBody");
+
+export const forgotPasswordBodySchema = z.object({ email }).openapi("ForgotPasswordBody");
+
+export const resetPasswordBodySchema = z
+	.object({ token: linkToken, password: newPassword })
+	.openapi("ResetPasswordBody");
+
 export const userSchema = z
-	.object({ id: z.uuid(), email: z.string(), createdAt: z.string() })
+	.object({
+		id: z.uuid(),
+		email: z.string(),
+		emailVerifiedAt: z.string().nullable(),
+		createdAt: z.string(),
+	})
 	.openapi("User");
 
 export const authTokensSchema = z

@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
 	"users",
@@ -8,6 +8,8 @@ export const users = pgTable(
 		email: text("email").notNull(),
 		/** Argon2id hash string (`@synapse/security`); never the password. */
 		passwordHash: text("password_hash").notNull(),
+		/** Set when the user opens a verification link (or resets their password by email). */
+		emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	},
@@ -38,5 +40,34 @@ export const authSessions = pgTable(
 	],
 );
 
+/** Single-use links sent by email. Only the token's SHA-256 is stored. */
+export const authTokens = pgTable(
+	"auth_tokens",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		/** `email_verification` or `password_reset`. */
+		purpose: text("purpose").notNull(),
+		tokenHash: text("token_hash").notNull(),
+		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+		usedAt: timestamp("used_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(table) => [
+		uniqueIndex("auth_tokens_token_hash_unique").on(table.tokenHash),
+		index("auth_tokens_user_purpose_idx").on(table.userId, table.purpose),
+	],
+);
+
+/** Fixed-window attempt counters, shared by every API instance. `key` is a SHA-256, never raw PII. */
+export const authRateLimits = pgTable("auth_rate_limits", {
+	key: text("key").primaryKey(),
+	windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull(),
+	attempts: integer("attempts").notNull(),
+});
+
 export type UserRow = typeof users.$inferSelect;
 export type AuthSessionRow = typeof authSessions.$inferSelect;
+export type AuthTokenRow = typeof authTokens.$inferSelect;

@@ -6,7 +6,8 @@
 	"sideEffects": false,
 	"exports": {
 		".": "./src/index.ts",
-		"./model-gateway": "./src/model-gateway/index.ts"
+		"./model-gateway": "./src/model-gateway/index.ts",
+		"./email": "./src/email/index.ts"
 	},
 	"scripts": {
 		"lint": "oxlint",

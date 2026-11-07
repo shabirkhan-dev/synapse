@@ -12,13 +12,17 @@ import type { AppBindings } from "@/shared/types/app-types";
 import { AUTH_MAX_BODY_BYTES, AUTH_MESSAGES } from "../constants/auth.constants";
 import {
 	authTokensSchema,
+	forgotPasswordBodySchema,
 	refreshBodySchema,
+	resetPasswordBodySchema,
 	signedInSchema,
 	signInBodySchema,
 	signUpBodySchema,
 	userSchema,
+	verifyEmailBodySchema,
 } from "../schemas/auth.schemas";
 import type { AuthService } from "../services/auth.service";
+import { clientIp } from "./client-ip";
 
 const tags = ["Auth"];
 const security = [{ bearerAuth: [] }];
@@ -39,6 +43,20 @@ const jsonBody = <TSchema extends z.ZodType>(schema: TSchema) => ({
 	content: { "application/json": { schema } },
 });
 
+const rateLimited = {
+	429: {
+		description: "Too many attempts; `error.details[0].retryAfterSeconds` says when to retry",
+		content: { "application/json": { schema: apiErrorSchema } },
+	},
+} as const;
+
+const invalidLink = {
+	400: {
+		description: "Link invalid, expired or already used",
+		content: { "application/json": { schema: apiErrorSchema } },
+	},
+} as const;
+
 const signUpRoute = createRoute({
 	method: "post",
 	path: "/sign-up",
@@ -55,6 +73,7 @@ const signUpRoute = createRoute({
 			description: "Email already registered",
 			content: { "application/json": { schema: apiErrorSchema } },
 		},
+		...rateLimited,
 		...errorResponses,
 	},
 });
@@ -71,6 +90,7 @@ const signInRoute = createRoute({
 			description: "Tokens for a new session",
 			content: { "application/json": { schema: successEnvelope(signedInSchema) } },
 		},
+		...rateLimited,
 		...errorResponses,
 	},
 });
@@ -121,16 +141,83 @@ const meRoute = createRoute({
 	},
 });
 
-export function createAuthRoutes(auth: AuthService) {
+const verifyEmailRoute = createRoute({
+	method: "post",
+	path: "/verify-email",
+	tags,
+	summary: "Confirm an email address with the token from the verification link",
+	middleware: [smallBody] as const,
+	request: { body: jsonBody(verifyEmailBodySchema) },
+	responses: {
+		200: {
+			description: "Email verified",
+			content: { "application/json": { schema: successEnvelope(userSchema) } },
+		},
+		...invalidLink,
+		...errorResponses,
+	},
+});
+
+const resendVerificationRoute = createRoute({
+	method: "post",
+	path: "/verify-email/resend",
+	tags,
+	summary: "Email a new verification link to the signed-in user",
+	security,
+	responses: {
+		202: {
+			description: "Link sent, or the email was already verified (see `message`)",
+			content: { "application/json": { schema: successEnvelope(z.null()) } },
+		},
+		...rateLimited,
+		...errorResponses,
+	},
+});
+
+const forgotPasswordRoute = createRoute({
+	method: "post",
+	path: "/password/forgot",
+	tags,
+	summary: "Email a password-reset link (same answer whether or not the account exists)",
+	middleware: [smallBody] as const,
+	request: { body: jsonBody(forgotPasswordBodySchema) },
+	responses: {
+		202: {
+			description: "Accepted",
+			content: { "application/json": { schema: successEnvelope(z.null()) } },
+		},
+		...rateLimited,
+		...errorResponses,
+	},
+});
+
+const resetPasswordRoute = createRoute({
+	method: "post",
+	path: "/password/reset",
+	tags,
+	summary: "Set a new password with the token from the reset link; signs out every session",
+	middleware: [smallBody] as const,
+	request: { body: jsonBody(resetPasswordBodySchema) },
+	responses: {
+		200: {
+			description: "Password changed",
+			content: { "application/json": { schema: successEnvelope(z.null()) } },
+		},
+		...invalidLink,
+		...errorResponses,
+	},
+});
+
+export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy: boolean }) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(signUpRoute, async (c) => {
-		const signedUp = await auth.signUp(c.req.valid("json"));
+		const signedUp = await auth.signUp(c.req.valid("json"), clientIp(c, trustProxy));
 		return success(c, signedUp, AUTH_MESSAGES.SIGNED_UP, HTTP_STATUS.CREATED);
 	});
 
 	app.openapi(signInRoute, async (c) => {
-		const signedIn = await auth.signIn(c.req.valid("json"));
+		const signedIn = await auth.signIn(c.req.valid("json"), clientIp(c, trustProxy));
 		return success(c, signedIn, AUTH_MESSAGES.SIGNED_IN);
 	});
 
@@ -147,6 +234,28 @@ export function createAuthRoutes(auth: AuthService) {
 	app.openapi(meRoute, async (c) => {
 		const user = await auth.currentUser(c.get("user"));
 		return success(c, user, AUTH_MESSAGES.USER_FETCHED);
+	});
+
+	app.openapi(verifyEmailRoute, async (c) => {
+		const user = await auth.verifyEmail(c.req.valid("json").token);
+		return success(c, user, AUTH_MESSAGES.EMAIL_VERIFIED);
+	});
+
+	app.openapi(resendVerificationRoute, async (c) => {
+		const sent = await auth.resendVerification(c.get("user"));
+		const message = sent ? AUTH_MESSAGES.VERIFICATION_SENT : AUTH_MESSAGES.ALREADY_VERIFIED;
+		return success(c, null, message, HTTP_STATUS.ACCEPTED);
+	});
+
+	app.openapi(forgotPasswordRoute, async (c) => {
+		await auth.requestPasswordReset(c.req.valid("json").email, clientIp(c, trustProxy));
+		return success(c, null, AUTH_MESSAGES.RESET_REQUESTED, HTTP_STATUS.ACCEPTED);
+	});
+
+	app.openapi(resetPasswordRoute, async (c) => {
+		const { token, password } = c.req.valid("json");
+		await auth.resetPassword(token, password);
+		return success(c, null, AUTH_MESSAGES.PASSWORD_RESET);
 	});
 
 	return app;

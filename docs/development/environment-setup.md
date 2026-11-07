@@ -33,6 +33,7 @@ compose reads it, and so do `bun run dev:api`, `db:migrate`, `eval:retrieval` an
 | --- | --- |
 | `AI_API_KEY` | chat and embeddings (`/rag/*`, `/chat`) |
 | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` | traces in Langfuse |
+| `RESEND_API_KEY`, `EMAIL_FROM` | verification and password-reset emails (required in production; logged in development) |
 | `API_TEST_DATABASE_URL` | opt-in pgvector integration tests |
 
 For cloud agent sessions, add the same values in the cloud environment's settings, so new sessions

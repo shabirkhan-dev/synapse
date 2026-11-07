@@ -39,7 +39,7 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | One env file for all credentials and settings | ✅ | syn-023 |
 | HNSW owner filtering stays complete with many tenants (risk) | ✅ | syn-022 |
 | `security` — in-house auth: sign-up, sign-in, refresh, sign-out (ADR-0005) | ✅ | syn-017 |
-| Auth hardening — rate limits, email verification, password reset | ⏭️ | syn-026 |
+| Auth hardening — rate limits, email verification, password reset (Resend) | ✅ | syn-026 |
 | `apps/worker` + pg-boss queue adapter, resumable jobs | ⏭️ | syn-024 |
 | `orchestration` — LangGraph graphs, checkpoints | ⬜ | syn-025 |
 | `human-oversight` — approvals, review queues, feedback | ⬜ | — |

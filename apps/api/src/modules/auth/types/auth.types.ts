@@ -1,8 +1,21 @@
 export type User = {
 	id: string;
 	email: string;
+	/** ISO time the email was confirmed, or `null` while unverified. */
+	emailVerifiedAt: string | null;
 	createdAt: string;
 };
+
+export type AuthTokenPurpose = "email_verification" | "password_reset";
+
+export type RateLimitRule = { limit: number; windowSeconds: number };
+
+export type RateLimitResult = { allowed: boolean; retryAfterSeconds: number };
+
+/** Counts attempts per key in a fixed window; shared by every API instance. */
+export interface RateLimiter {
+	hit(key: string, rule: RateLimitRule): Promise<RateLimitResult>;
+}
 
 export type UserCredentials = User & { passwordHash: string };
 
@@ -47,4 +60,16 @@ export interface AuthRepository {
 		nextHash: string;
 	}): Promise<boolean>;
 	revokeSession(input: { sessionId: string; userId: string }): Promise<void>;
+	revokeAllSessions(userId: string): Promise<void>;
+	/** Store a single-use token, voiding any unused one with the same purpose for the user. */
+	replaceAuthToken(input: {
+		userId: string;
+		purpose: AuthTokenPurpose;
+		tokenHash: string;
+		expiresAt: Date;
+	}): Promise<void>;
+	/** Mark an unused, unexpired token used; returns its user id, or `null` if it is not valid. */
+	consumeAuthToken(input: { purpose: AuthTokenPurpose; tokenHash: string }): Promise<string | null>;
+	markEmailVerified(userId: string): Promise<void>;
+	updatePasswordHash(input: { userId: string; passwordHash: string }): Promise<void>;
 }
