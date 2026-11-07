@@ -4,6 +4,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 
 - **No token issuer.** `apps/api` verifies HS256 JWTs (`sub`, `sid`) signed with `JWT_SECRET`, but
   nothing in the repo issues them yet. Tests mint their own. `security/authentication` will own this.
+- **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
+  before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
+- **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
+  use `import.meta.url`.
 - **Embeddings are fixed at 1536 dimensions** (`vector(1536)`); the embedding model must match.
 - **Migrations journal table** is still `__drizzle_migrations_ai_api` (`MIGRATIONS_TABLE` in
   `@synapse/database`, kept so existing databases do not re-run migrations).

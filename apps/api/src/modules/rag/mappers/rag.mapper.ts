@@ -10,6 +10,7 @@ export function toRagDocument(row: RagDocumentRow): RagDocument {
 		source: row.source,
 		metadata: row.metadata,
 		chunkCount: row.chunkCount,
+		contentHash: row.contentHash,
 		createdAt: row.createdAt.toISOString(),
 	};
 }

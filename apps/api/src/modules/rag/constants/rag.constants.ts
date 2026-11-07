@@ -6,6 +6,7 @@ export const RAG_ERROR_CODES = {
 
 export const RAG_MESSAGES = {
 	DOCUMENT_INGESTED: "Document ingested",
+	DOCUMENT_ALREADY_INGESTED: "Document already ingested",
 	DOCUMENTS_FETCHED: "Documents retrieved",
 	DOCUMENT_DELETED: "Document deleted",
 	QUERY_ANSWERED: "Query answered",

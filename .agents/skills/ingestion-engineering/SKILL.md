@@ -5,7 +5,8 @@ description: Use when building connectors, parsers, extraction, normalization, d
 
 # ingestion-engineering
 
-> Status: Planned. Today ingestion is `POST /api/v1/rag/documents` (plain text) in `apps/api`. `packages/ingestion` does not exist yet.
+> Status: Partly live. `@synapse/ingestion` has normalization, content-hash dedup and the pipeline
+> (used by `apps/api` `RagService.ingest`). Connectors, parsers, ACLs and resumable jobs are planned.
 
 ## When to use
 

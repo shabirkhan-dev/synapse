@@ -21,6 +21,7 @@ SCOPES=(
     packages/core/src
     packages/database/src
     packages/adapters/src
+    packages/ingestion/src
 )
 
 # Whole stem is one or more kebab segments joined by dots

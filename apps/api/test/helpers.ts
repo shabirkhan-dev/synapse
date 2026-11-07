@@ -102,6 +102,7 @@ export class InMemoryRagRepository implements RagRepository {
 			source: document.source ?? null,
 			metadata: document.metadata ?? {},
 			chunkCount: chunks.length,
+			contentHash: document.contentHash ?? null,
 			createdAt: new Date().toISOString(),
 		};
 		this.documents.push(stored);
@@ -123,6 +124,15 @@ export class InMemoryRagRepository implements RagRepository {
 			.slice(-limit)
 			.toReversed()
 			.map(({ ownerId: _ownerId, ...document }) => document);
+	}
+
+	async findByContentHash(ownerId: string, contentHash: string): Promise<RagDocument | null> {
+		const found = this.documents.find(
+			(document) => document.ownerId === ownerId && document.contentHash === contentHash,
+		);
+		if (!found) return null;
+		const { ownerId: _ownerId, ...document } = found;
+		return document;
 	}
 
 	async deleteDocument(ownerId: string, documentId: string): Promise<boolean> {

@@ -5,8 +5,8 @@ type: feature
 from: human
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-010]
@@ -46,4 +46,9 @@ Plain-text ingest with content-hash dedup first; connectors and parsers later.
 
 ## Resolution
 
-_Open._
+Done in commit `feat(ingestion): add ingestion package with normalization and dedup`.
+
+- `@synapse/ingestion`: `normalizeDocument`, `contentHash` (SHA-256), `createIngestionPipeline` returning `created | duplicate | empty`; 8 tests.
+- `@synapse/database`: `content_hash` column + unique `(owner_id, content_hash)`, migration `0001_document_content_hash`; runner now uses `import.meta.url` so drizzle-kit (Node) can load it.
+- `apps/api`: `RagService.ingest` runs the pipeline; `POST /rag/documents` returns `201` new / `200` duplicate (no re-embedding); repository `findByContentHash` + conflict-safe insert.
+- Verified against real Postgres + pgvector: migrations apply (and re-apply as a no-op), integration tests incl. the race path pass.

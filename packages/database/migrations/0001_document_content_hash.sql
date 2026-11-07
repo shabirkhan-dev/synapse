@@ -1,0 +1,2 @@
+ALTER TABLE "rag_documents" ADD COLUMN "content_hash" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "rag_documents_owner_content_hash_unique" ON "rag_documents" USING btree ("owner_id","content_hash");

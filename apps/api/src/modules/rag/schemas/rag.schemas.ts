@@ -27,6 +27,8 @@ export const ragDocumentSchema = z
 		source: z.string().nullable(),
 		metadata: z.record(z.string(), z.unknown()),
 		chunkCount: z.number().int(),
+		/** SHA-256 of the normalized content; re-ingesting the same content returns this document. */
+		contentHash: z.string().nullable(),
 		createdAt: z.string(),
 	})
 	.openapi("RagDocument");

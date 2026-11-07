@@ -23,6 +23,7 @@ synapse/
 │   └── console/              # Next.js console (bare, UI starts from zero)
 ├── packages/
 │   ├── adapters/             # @synapse/adapters: model gateway
+│   ├── ingestion/            # @synapse/ingestion: normalize, dedup, pipeline
 │   ├── core/                 # @synapse/core: errors, config, shared types, contracts
 │   ├── database/             # @synapse/database: Drizzle client, schema, migrations
 │   ├── typescript-config/    # Shared TS config bases
@@ -53,6 +54,7 @@ synapse/
 | Package | Workspace import | Purpose |
 | --- | --- | --- |
 | `packages/adapters` | `@synapse/adapters` | Model gateway implementing the core contract |
+| `packages/ingestion` | `@synapse/ingestion` | Normalization, dedup, ingestion pipeline |
 | `packages/core` | `@synapse/core` | Errors, config loading, shared types, contracts |
 | `packages/database` | `@synapse/database` | Drizzle client, schema, migrations, runner |
 | `packages/ui` | `@synapse/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |

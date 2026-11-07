@@ -8,6 +8,13 @@
       "when": 1793475693152,
       "tag": "0000_init_rag",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794054407165,
+      "tag": "0001_document_content_hash",
+      "breakpoints": true
     }
   ]
 }

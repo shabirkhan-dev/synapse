@@ -2,7 +2,8 @@
 
 Bring content in from sources and turn it into normalized, deduplicated documents with their access rules.
 
-> **Status:** Planned. Seed: `POST /api/v1/rag/documents` in `apps/api`.
+> **Status:** Live (normalization, deduplication, pipeline) · Planned (connectors, parsers,
+> extraction, ACLs, lifecycle).
 
 ## Internal modules
 
@@ -27,4 +28,11 @@ Bring content in from sources and turn it into normalized, deduplicated document
 
 ## Public API
 
-> Placeholder — defined when the package is created. Keep it to `src/index.ts` exports.
+| Export | What it does |
+| --- | --- |
+| `normalizeText(text)`, `normalizeDocument(raw)`, `RawDocument`, `NormalizedDocument` | Unicode NFC, `\n` line endings, no NUL/zero-width chars, no trailing spaces, ≤1 blank line, trimmed; title whitespace collapsed; blank source → `null` |
+| `contentHash(content)` | SHA-256 hex of normalized content — the dedup key |
+| `createIngestionPipeline({ findByContentHash, index })`, `IngestionPorts`, `IngestableDocument`, `IngestResult` | normalize → hash → return existing if the owner already has it → `index` |
+
+`IngestResult` is `{ status: "created" | "duplicate", document } | { status: "empty" }` — expected
+outcomes are values, not exceptions. Used by `apps/api` (`RagService.ingest`).

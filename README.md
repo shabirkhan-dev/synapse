@@ -47,6 +47,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | --- | --- | --- |
 | `@synapse/core` | `packages/core` | Errors, config loading, shared types, contracts |
 | `@synapse/adapters` | `packages/adapters` | Model gateway (AI SDK, OpenAI-compatible) |
+| `@synapse/ingestion` | `packages/ingestion` | Normalization, content-hash dedup, ingestion pipeline |
 | `@synapse/database` | `packages/database` | Drizzle client, schema, migrations (Postgres + pgvector) |
 | `@synapse/ui` | `packages/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |

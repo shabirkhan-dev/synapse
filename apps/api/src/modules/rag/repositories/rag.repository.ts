@@ -24,9 +24,18 @@ export class DrizzleRagRepository implements RagRepository {
 					source: document.source ?? null,
 					metadata: document.metadata ?? {},
 					chunkCount: chunks.length,
+					contentHash: document.contentHash ?? null,
 				})
+				// A concurrent ingest of the same content won the race: return its document.
+				.onConflictDoNothing({ target: [ragDocuments.ownerId, ragDocuments.contentHash] })
 				.returning();
 			if (!row) {
+				const existing = document.contentHash
+					? await this.findByContentHash(document.ownerId, document.contentHash)
+					: null;
+				if (existing) {
+					return existing;
+				}
 				throw new Error("Failed to insert rag document");
 			}
 			if (chunks.length > 0) {
@@ -52,6 +61,15 @@ export class DrizzleRagRepository implements RagRepository {
 			.orderBy(desc(ragDocuments.createdAt))
 			.limit(limit);
 		return rows.map(toRagDocument);
+	}
+
+	async findByContentHash(ownerId: string, contentHash: string): Promise<RagDocument | null> {
+		const [row] = await this.db
+			.select()
+			.from(ragDocuments)
+			.where(and(eq(ragDocuments.ownerId, ownerId), eq(ragDocuments.contentHash, contentHash)))
+			.limit(1);
+		return row ? toRagDocument(row) : null;
 	}
 
 	async deleteDocument(ownerId: string, documentId: string): Promise<boolean> {

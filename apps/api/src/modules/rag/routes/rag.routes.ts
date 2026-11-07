@@ -48,6 +48,10 @@ const ingestRoute = createRoute({
 			description: "Document stored",
 			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
 		},
+		200: {
+			description: "Same content already ingested by this user; the existing document is returned",
+			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
 		...errorResponses,
 	},
 });
@@ -106,7 +110,10 @@ export function createRagRoutes(rag: RagService) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(ingestRoute, async (c) => {
-		const document = await rag.ingest(c.get("user").sub, c.req.valid("json"));
+		const { document, created } = await rag.ingest(c.get("user").sub, c.req.valid("json"));
+		if (!created) {
+			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
+		}
 		return success(c, document, RAG_MESSAGES.DOCUMENT_INGESTED, HTTP_STATUS.CREATED);
 	});
 

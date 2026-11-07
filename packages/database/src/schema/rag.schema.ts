@@ -26,10 +26,15 @@ export const ragDocuments = pgTable(
 		source: text("source"),
 		metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
 		chunkCount: integer("chunk_count").notNull().default(0),
+		/** SHA-256 of the normalized content (`@synapse/ingestion`). Null for rows ingested before dedup. */
+		contentHash: text("content_hash"),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	},
-	(table) => [index("rag_documents_owner_id_idx").on(table.ownerId, table.createdAt)],
+	(table) => [
+		index("rag_documents_owner_id_idx").on(table.ownerId, table.createdAt),
+		uniqueIndex("rag_documents_owner_content_hash_unique").on(table.ownerId, table.contentHash),
+	],
 );
 
 export const ragChunks = pgTable(

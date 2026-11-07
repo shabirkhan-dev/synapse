@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 
@@ -14,7 +14,7 @@ export const MIGRATIONS_TABLE = "__drizzle_migrations_ai_api";
  * The package's own `migrations/` folder. Valid only when running from source: a bundle must ship
  * its own copy and pass that path (see apps/api `build` and `src/migrate.ts`).
  */
-export const sourceMigrationsFolder = join(import.meta.dir, "../../migrations");
+export const sourceMigrationsFolder = fileURLToPath(new URL("../../migrations", import.meta.url));
 
 export async function runMigrations(db: Database, migrationsFolder: string): Promise<void> {
 	await migrate(db, { migrationsFolder, migrationsTable: MIGRATIONS_TABLE });

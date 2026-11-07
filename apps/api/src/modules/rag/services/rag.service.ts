@@ -1,4 +1,5 @@
 import type { ModelGateway } from "@synapse/core/contracts";
+import { createIngestionPipeline, type IngestableDocument } from "@synapse/ingestion";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
@@ -25,6 +26,12 @@ export type IngestInput = {
 	metadata?: Record<string, unknown> | undefined;
 };
 
+/** `created: false` means the owner already had this content; nothing was re-embedded. */
+export type IngestOutcome = {
+	document: RagDocument;
+	created: boolean;
+};
+
 export type RagAnswer = {
 	answer: string;
 	matches: RagMatch[];
@@ -37,23 +44,34 @@ export class RagService {
 		private readonly options: RagServiceOptions,
 	) {}
 
-	async ingest(ownerId: string, input: IngestInput): Promise<RagDocument> {
-		const pieces = chunkText(input.content, this.options.chunk);
+	/** normalize → dedup (per owner) → chunk + embed + store, via `@synapse/ingestion`. */
+	private readonly ingestion = createIngestionPipeline<RagDocument>({
+		findByContentHash: (ownerId, hash) => this.repository.findByContentHash(ownerId, hash),
+		index: (document) => this.index(document),
+	});
+
+	async ingest(ownerId: string, input: IngestInput): Promise<IngestOutcome> {
+		const result = await this.ingestion.ingest(ownerId, input);
+		if (result.status === "empty") {
+			throw emptyDocumentError();
+		}
+		return { document: result.document, created: result.status === "created" };
+	}
+
+	private async index(document: IngestableDocument): Promise<RagDocument> {
+		const pieces = chunkText(document.content, this.options.chunk);
 		if (pieces.length === 0) {
-			throw new AppError({
-				statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-				code: RAG_ERROR_CODES.EMPTY_DOCUMENT,
-				message: RAG_MESSAGES.EMPTY_DOCUMENT,
-			});
+			throw emptyDocumentError();
 		}
 		const embeddings = await this.models.embedding.embedMany(pieces);
 		embeddings.forEach(assertDimensions);
 		return this.repository.createDocument(
 			{
-				ownerId,
-				title: input.title,
-				source: input.source ?? null,
-				metadata: input.metadata ?? {},
+				ownerId: document.ownerId,
+				title: document.title,
+				source: document.source,
+				metadata: document.metadata,
+				contentHash: document.contentHash,
 			},
 			pieces.map((content, chunkIndex) => ({
 				chunkIndex,
@@ -118,4 +136,12 @@ function assertDimensions(embedding: number[]): void {
 			message: RAG_MESSAGES.EMBEDDING_DIMENSION_MISMATCH(embedding.length, EMBEDDING_DIMENSIONS),
 		});
 	}
+}
+
+function emptyDocumentError(): AppError {
+	return new AppError({
+		statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		code: RAG_ERROR_CODES.EMPTY_DOCUMENT,
+		message: RAG_MESSAGES.EMPTY_DOCUMENT,
+	});
 }

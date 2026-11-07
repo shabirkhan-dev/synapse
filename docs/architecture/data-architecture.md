@@ -8,7 +8,7 @@ PostgreSQL is the single store (ADR-0002).
 
 | Table | Key columns | Indexes |
 | --- | --- | --- |
-| `rag_documents` | `id` uuid, `owner_id`, `title`, `source`, `metadata` jsonb, `chunk_count`, timestamps | `(owner_id, created_at)` |
+| `rag_documents` | `id` uuid, `owner_id`, `title`, `source`, `metadata` jsonb, `chunk_count`, `content_hash` (SHA-256, nullable for pre-dedup rows), timestamps | `(owner_id, created_at)`, unique `(owner_id, content_hash)` |
 | `rag_chunks` | `id`, `document_id` → documents, `owner_id`, `chunk_index`, `content`, `embedding vector(1536)` | unique `(document_id, chunk_index)`, `owner_id`, HNSW `vector_cosine_ops` |
 
 Migrations: `packages/database/migrations` (`bun run db:generate`, `bun run db:migrate`), journal

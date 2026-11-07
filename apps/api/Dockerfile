@@ -12,6 +12,7 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/core/package.json ./packages/core/
 COPY packages/database/package.json ./packages/database/
+COPY packages/ingestion/package.json ./packages/ingestion/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
 RUN bun install --frozen-lockfile --filter api --ignore-scripts
@@ -23,6 +24,7 @@ COPY package.json bun.lock ./
 COPY packages/adapters ./packages/adapters
 COPY packages/core ./packages/core
 COPY packages/database ./packages/database
+COPY packages/ingestion ./packages/ingestion
 COPY packages/typescript-config ./packages/typescript-config
 COPY apps/api ./apps/api
 WORKDIR /app/apps/api

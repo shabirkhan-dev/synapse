@@ -4,7 +4,8 @@
 
 ## Today (`apps/api`)
 
-**Ingest:** `POST /api/v1/rag/documents` → validate (≤ 2 MB) → chunk (`RAG_CHUNK_SIZE`,
+**Ingest:** `POST /api/v1/rag/documents` → validate (≤ 2 MB) → normalize + content hash
+(`@synapse/ingestion`) → return existing on duplicate → chunk (`RAG_CHUNK_SIZE`,
 `RAG_CHUNK_OVERLAP`) → embed (1536 dims) → store `rag_documents` + `rag_chunks` scoped to the
 token's `sub`.
 

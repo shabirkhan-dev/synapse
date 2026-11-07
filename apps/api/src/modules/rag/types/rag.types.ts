@@ -3,6 +3,8 @@ export type NewRagDocument = {
 	title: string;
 	source?: string | null;
 	metadata?: Record<string, unknown>;
+	/** SHA-256 of the normalized content; dedup key per owner. */
+	contentHash?: string | null;
 };
 
 export type NewRagChunk = {
@@ -17,6 +19,7 @@ export type RagDocument = {
 	source: string | null;
 	metadata: Record<string, unknown>;
 	chunkCount: number;
+	contentHash: string | null;
 	createdAt: string;
 };
 
@@ -35,6 +38,7 @@ export type RagMatch = {
 export interface RagRepository {
 	createDocument(document: NewRagDocument, chunks: NewRagChunk[]): Promise<RagDocument>;
 	listDocuments(ownerId: string, limit: number): Promise<RagDocument[]>;
+	findByContentHash(ownerId: string, contentHash: string): Promise<RagDocument | null>;
 	deleteDocument(ownerId: string, documentId: string): Promise<boolean>;
 	searchChunks(ownerId: string, embedding: number[], topK: number): Promise<RagMatch[]>;
 	ping(): Promise<void>;

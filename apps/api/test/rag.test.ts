@@ -151,4 +151,32 @@ describe("rag", () => {
 		expect(response.status).toBe(502);
 		expect((await response.json()).error.code).toBe("RAG_EMBEDDING_DIMENSION_MISMATCH");
 	});
+
+	test("re-ingesting the same content returns the existing document without re-embedding", async () => {
+		const { app, embeddingModel } = buildTestApp();
+		const ingest = async (content: string, sub = "user-1") =>
+			app.request("/api/v1/rag/documents", {
+				method: "POST",
+				headers: await authHeaders(sub),
+				body: JSON.stringify({ ...refundDoc, content }),
+			});
+
+		const first = await ingest(refundDoc.content);
+		expect(first.status).toBe(201);
+		const created = (await first.json()).data;
+		expect(created.contentHash).toMatch(/^[0-9a-f]{64}$/);
+
+		// Same content with different line endings and trailing whitespace is a duplicate.
+		const again = await ingest(`${refundDoc.content.replaceAll("\n", "\r\n")}  \n\n`);
+		expect(again.status).toBe(200);
+		const body = await again.json();
+		expect(body.message).toBe("Document already ingested");
+		expect(body.data.id).toBe(created.id);
+		expect(embeddingModel.doEmbedCalls).toHaveLength(1);
+
+		// Dedup is per owner: another user gets their own document.
+		const other = await ingest(refundDoc.content, "user-2");
+		expect(other.status).toBe(201);
+		expect((await other.json()).data.id).not.toBe(created.id);
+	});
 });

@@ -51,4 +51,26 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		expect(await repository.searchChunks(owner, fakeEmbedding("cat"), 5)).toEqual([]);
 		await repository.ping();
 	});
+
+	test("finds documents by content hash and returns the winner on a hash conflict", async () => {
+		const hash = "a".repeat(64);
+		const chunk = { chunkIndex: 0, content: "dedup me", embedding: fakeEmbedding("dedup me") };
+		const first = await repository.createDocument(
+			{ ownerId: owner, title: "First", contentHash: hash },
+			[chunk],
+		);
+		expect(first.contentHash).toBe(hash);
+		expect((await repository.findByContentHash(owner, hash))?.id).toBe(first.id);
+		expect(await repository.findByContentHash("someone-else", hash)).toBeNull();
+
+		// A racing insert with the same owner + hash returns the existing row instead of failing.
+		const second = await repository.createDocument(
+			{ ownerId: owner, title: "Second", contentHash: hash },
+			[chunk],
+		);
+		expect(second.id).toBe(first.id);
+		expect((await repository.searchChunks(owner, chunk.embedding, 10)).length).toBe(1);
+
+		await repository.deleteDocument(owner, first.id);
+	});
 });
