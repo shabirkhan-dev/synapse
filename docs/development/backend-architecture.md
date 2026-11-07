@@ -162,11 +162,18 @@ OpenAPI `responses` maps (`200: { … }`) keep literal status keys: they are the
 computed keys break Hono's response typing.
 
 Responses are built only by the shared helpers (`success(...)`, `failure(...)`) and the error
-handler, so every endpoint returns the same envelope. Current envelope: `docs/api/conventions.md`.
+handler, so every endpoint returns the same envelope (full spec: `docs/api/conventions.md`):
 
-> Open decision: the proposal adds a `message` field to success responses and nests the error code
-> as `error: { code }`. That is a breaking change for API clients; decide it in the `shared/`
-> migration step.
+```ts
+// success(c, document, RAG_MESSAGES.DOCUMENT_INGESTED, HTTP_STATUS.CREATED)
+{ success: true, statusCode: 201, message: "Document ingested", data: { id: "…" }, requestId, timestamp }
+
+// throw new AppError({ statusCode: HTTP_STATUS.NOT_FOUND, code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND, … })
+{ success: false, statusCode: 404, message: "Document not found",
+  error: { code: "RAG_DOCUMENT_NOT_FOUND" }, requestId, timestamp, path, method }
+```
+
+Every `success(...)` call passes a message constant; the check fails on inline message strings.
 
 Add a specialised error class only when it behaves differently (e.g. carries retry data).
 
@@ -209,5 +216,6 @@ Add a specialised error class only when it behaves differently (e.g. carries ret
 | Data access | `drizzle-orm` / `postgres` imported outside repositories |
 | Status constants | `statusCode: 404`, `failure(c, 404, …)` or `success(c, x, 201)` outside `constants/` |
 | Error-code constants | a `"SCREAMING_SNAKE"` string literal outside `constants/` and `config/` |
+| Message constants | `message: "…"` or a string literal in a `success(c, …)` / `failure(c, …)` call outside `constants/` |
 
 `scripts/bash/tests/check-layers.test.sh` proves each check fires on a fixture repo.

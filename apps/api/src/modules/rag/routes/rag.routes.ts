@@ -107,27 +107,35 @@ export function createRagRoutes(rag: RagService) {
 
 	app.openapi(ingestRoute, async (c) => {
 		const document = await rag.ingest(c.get("user").sub, c.req.valid("json"));
-		return success(c, document, HTTP_STATUS.CREATED);
+		return success(c, document, RAG_MESSAGES.DOCUMENT_INGESTED, HTTP_STATUS.CREATED);
 	});
 
 	app.openapi(listRoute, async (c) => {
 		const { limit } = c.req.valid("query");
-		return success(c, await rag.listDocuments(c.get("user").sub, limit));
+		return success(
+			c,
+			await rag.listDocuments(c.get("user").sub, limit),
+			RAG_MESSAGES.DOCUMENTS_FETCHED,
+		);
 	});
 
 	app.openapi(deleteRoute, async (c) => {
 		const { id } = c.req.valid("param");
 		await rag.deleteDocument(c.get("user").sub, id);
-		return success(c, { id });
+		return success(c, { id }, RAG_MESSAGES.DOCUMENT_DELETED);
 	});
 
 	app.openapi(queryRoute, async (c) => {
 		const { query, topK, answer } = c.req.valid("json");
 		const ownerId = c.get("user").sub;
 		if (!answer) {
-			return success(c, { answer: null, matches: await rag.search(ownerId, query, topK) });
+			return success(
+				c,
+				{ answer: null, matches: await rag.search(ownerId, query, topK) },
+				RAG_MESSAGES.MATCHES_FOUND,
+			);
 		}
-		return success(c, await rag.answer(ownerId, query, topK));
+		return success(c, await rag.answer(ownerId, query, topK), RAG_MESSAGES.QUERY_ANSWERED);
 	});
 
 	return app;

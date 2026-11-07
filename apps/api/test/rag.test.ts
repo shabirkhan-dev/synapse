@@ -24,7 +24,9 @@ describe("rag", () => {
 			body: JSON.stringify(refundDoc),
 		});
 		expect(response.status).toBe(201);
-		const { data } = await response.json();
+		const { data, message, statusCode } = await response.json();
+		expect(message).toBe("Document ingested");
+		expect(statusCode).toBe(201);
 		expect(data).toMatchObject({ title: "Refund policy", source: refundDoc.source });
 		expect(data.chunkCount).toBeGreaterThan(1);
 		expect(repository.chunks).toHaveLength(data.chunkCount);
@@ -41,8 +43,9 @@ describe("rag", () => {
 		});
 		expect(response.status).toBe(422);
 		const body = await response.json();
-		expect(body.code).toBe("VALIDATION_ERROR");
-		expect(body.errors[0].path).toBe("title");
+		expect(body.error.code).toBe("VALIDATION_ERROR");
+		expect(body.message).toBe("Request validation failed");
+		expect(body.error.details[0].path).toBe("title");
 	});
 
 	test("query returns the closest chunks first and an answer from the chat model", async () => {
@@ -132,7 +135,7 @@ describe("rag", () => {
 		expect((repository as InMemoryRagRepository).chunks).toHaveLength(0);
 		const again = await app.request(`/api/v1/rag/documents/${id}`, { method: "DELETE", headers });
 		expect(again.status).toBe(404);
-		expect((await again.json()).code).toBe("RAG_DOCUMENT_NOT_FOUND");
+		expect((await again.json()).error.code).toBe("RAG_DOCUMENT_NOT_FOUND");
 	});
 
 	test("fails clearly when the embedding model returns the wrong dimensions", async () => {
@@ -146,6 +149,6 @@ describe("rag", () => {
 			body: JSON.stringify(refundDoc),
 		});
 		expect(response.status).toBe(502);
-		expect((await response.json()).code).toBe("RAG_EMBEDDING_DIMENSION_MISMATCH");
+		expect((await response.json()).error.code).toBe("RAG_EMBEDDING_DIMENSION_MISMATCH");
 	});
 });

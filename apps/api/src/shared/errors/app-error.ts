@@ -4,7 +4,7 @@ export type AppErrorOptions = {
 	statusCode: ContentfulStatusCode;
 	code: string;
 	message: string;
-	/** Structured detail returned to the client as `errors` (e.g. validation issues). */
+	/** Structured detail returned to the client as `error.details` (e.g. validation issues). */
 	details?: ReadonlyArray<unknown>;
 	cause?: unknown;
 };

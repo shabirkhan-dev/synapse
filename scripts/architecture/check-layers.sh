@@ -142,6 +142,11 @@ done < <(search 'statusCode: [0-9]{3}|(failure|success)\(.*, [0-9]{3}[,)]' "$API
     grep -vE "^$API_SRC/(config|shared/constants)/|^$API_SRC/[^:]*/constants/" || true)
 
 while IFS= read -r hit; do
+    fail "$hit -> response messages come from RESPONSE_MESSAGES or the module's constants/"
+done < <(search 'message: "|(success|failure)\(c,.*"' "$API_SRC" |
+    grep -vE "^$API_SRC/(config|shared/constants)/|^$API_SRC/[^:]*/constants/" || true)
+
+while IFS= read -r hit; do
     fail "$hit -> error codes come from ERROR_CODES or the module's constants/"
 done < <(search '"[A-Z][A-Z0-9]*(_[A-Z0-9]+)+"' "$API_SRC" |
     grep -vE "^$API_SRC/(config|shared/constants)/|^$API_SRC/[^:]*/constants/" || true)

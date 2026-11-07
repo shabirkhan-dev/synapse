@@ -50,11 +50,15 @@ export function createHealthRoutes({
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(healthRoute, (c) =>
-		success(c, {
-			status: "ok" as const,
-			service: serviceName,
-			uptimeSeconds: Math.round((Date.now() - startedAt) / 1000),
-		}),
+		success(
+			c,
+			{
+				status: "ok" as const,
+				service: serviceName,
+				uptimeSeconds: Math.round((Date.now() - startedAt) / 1000),
+			},
+			HEALTH_MESSAGES.HEALTHY,
+		),
 	);
 
 	app.openapi(readyRoute, async (c) => {
@@ -71,6 +75,7 @@ export function createHealthRoutes({
 		return success(
 			c,
 			{ status: "ok" as const, service: serviceName, database: "ok" as const },
+			HEALTH_MESSAGES.READY,
 			HTTP_STATUS.OK,
 		);
 	});

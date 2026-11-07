@@ -16,3 +16,4 @@ Decisions already made. Formal records: `docs/decisions/adr/`.
 | 2026-11-07 | Layering rules enforced by `scripts/architecture/check-layers.sh` in `architecture:check` | this file |
 | 2026-11-07 | Database is its own package `@synapse/database` (client, schema, migrations, runner), usable by any app or package; repositories stay in modules | `docs/packages/database.md` |
 | 2026-11-07 | `apps/api` restructured: `config/` domain configs, `shared/` constants/errors/responses, `infrastructure/`, `routes/`, per-layer module folders; envelope unchanged | `docs/development/backend-architecture.md` |
+| 2026-11-07 | Response envelope: `message` on every response; errors nested as `error: { code, details? }` | `docs/api/conventions.md` |

@@ -7,15 +7,20 @@
 - **Success envelope:**
 
 ```json
-{ "success": true, "statusCode": 200, "requestId": "req_…", "timestamp": "…", "data": {} }
+{ "success": true, "statusCode": 201, "message": "Document ingested", "data": { "id": "…" },
+  "requestId": "req_…", "timestamp": "…" }
 ```
 
 - **Error envelope:**
 
 ```json
-{ "success": false, "statusCode": 422, "code": "VALIDATION_ERROR", "message": "Request validation failed",
-  "requestId": "req_…", "timestamp": "…", "path": "/api/v1/rag/query", "method": "POST", "errors": [] }
+{ "success": false, "statusCode": 422, "message": "Request validation failed",
+  "error": { "code": "VALIDATION_ERROR", "details": [{ "path": "query", "code": "too_small", "message": "…" }] },
+  "requestId": "req_…", "timestamp": "…", "path": "/api/v1/rag/query", "method": "POST" }
 ```
+
+- **`message`** is human-readable and may change; **`error.code`** is stable — branch on the code,
+  never on the message. `error.details` appears only when there is structured detail.
 
 - **Error codes:** `SCREAMING_SNAKE_CASE`, area-prefixed. Current: `VALIDATION_ERROR`,
   `AUTH_ACCESS_TOKEN_MISSING`, `AUTH_ACCESS_TOKEN_INVALID`, `RAG_DOCUMENT_NOT_FOUND`,

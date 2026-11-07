@@ -12,8 +12,6 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **RAG/chat live inside `apps/api`**, not yet in domain packages.
 - **Controllers:** API route handlers are trivial (validate → service → `success`), so there are no
   `controllers/` folders yet; add one when a handler grows real HTTP logic.
-- **Open decision:** adding `message` to success responses and nesting `error: { code }` is a
-  breaking API change — decide during the `shared/` migration.
 - **Keyword search, reranking, queues (pg-boss), LangGraph, Langfuse/OTel** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).

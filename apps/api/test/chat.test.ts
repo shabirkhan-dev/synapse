@@ -111,7 +111,7 @@ describe("chat", () => {
 			body: JSON.stringify({ messages: [{ role: "user" }] }),
 		});
 		expect(response.status).toBe(422);
-		expect((await response.json()).code).toBe("CHAT_INVALID_MESSAGES");
+		expect((await response.json()).error.code).toBe("CHAT_INVALID_MESSAGES");
 	});
 
 	test("currentTime falls back to UTC for unknown zones", async () => {

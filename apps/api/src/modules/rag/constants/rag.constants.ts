@@ -5,6 +5,11 @@ export const RAG_ERROR_CODES = {
 } as const;
 
 export const RAG_MESSAGES = {
+	DOCUMENT_INGESTED: "Document ingested",
+	DOCUMENTS_FETCHED: "Documents retrieved",
+	DOCUMENT_DELETED: "Document deleted",
+	QUERY_ANSWERED: "Query answered",
+	MATCHES_FOUND: "Matching passages retrieved",
 	EMPTY_DOCUMENT: "Document content is empty",
 	DOCUMENT_NOT_FOUND: "Document not found",
 	DOCUMENT_TOO_LARGE: "Document body must be 2 MB or smaller",

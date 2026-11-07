@@ -50,6 +50,8 @@ put packages/demo/src/index.ts 'export const k = process.env.KEY;'
 put apps/api/src/modules/rag/services/rag-status.service.ts 'throw new AppError({ statusCode: 404, code: ERROR_CODES.NOT_FOUND });'
 put apps/api/src/modules/rag/routes/rag-code.routes.ts 'return failure(c, HTTP_STATUS.NOT_FOUND, "RAG_MISSING", "x");'
 put apps/api/src/modules/health/routes/health-raw.routes.ts 'return success(c, data, 201);'
+put apps/api/src/modules/rag/services/rag-message.service.ts 'throw new AppError({ statusCode: HTTP_STATUS.NOT_FOUND, code: X, message: "Not here" });'
+put apps/api/src/modules/rag/routes/rag-message.routes.ts 'return success(c, data, "Done");'
 put apps/console/src/features/users/components/user-list.tsx 'import { useUsersQuery } from "../hooks/queries/use-users-query";'
 put apps/console/src/features/users/services/user-cache.service.ts 'import { useQuery } from "@tanstack/react-query";'
 put apps/console/src/features/agents/containers/agent-users.tsx 'import { userService } from "@/features/users/services/user.service";'
@@ -83,6 +85,8 @@ expect "packages/demo/src/index.ts:1:"
 expect "rag-status.service.ts:1:"
 expect "rag-code.routes.ts:1:"
 expect "health-raw.routes.ts:1:"
+expect "rag-message.service.ts:1:"
+expect "rag-message.routes.ts:1:"
 expect "user-list.tsx:1:"
 expect "user-cache.service.ts:1:"
 expect "agent-users.tsx imports feature internals"

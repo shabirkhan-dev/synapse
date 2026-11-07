@@ -9,18 +9,17 @@ export function errorBody(
 	statusCode: number,
 	code: string,
 	message: string,
-	errors?: ReadonlyArray<unknown>,
+	details?: ReadonlyArray<unknown>,
 ): ApiErrorResponse {
 	return {
 		success: false,
 		statusCode,
-		code,
 		message,
+		error: { code, ...(details ? { details: [...details] } : {}) },
 		requestId: c.get("requestId") ?? "req_unknown",
 		timestamp: new Date().toISOString(),
 		path: c.req.path,
 		method: c.req.method,
-		...(errors ? { errors: [...errors] } : {}),
 	};
 }
 
@@ -30,9 +29,9 @@ export function failure<TStatus extends ContentfulStatusCode>(
 	statusCode: TStatus,
 	code: string,
 	message: string,
-	errors?: ReadonlyArray<unknown>,
+	details?: ReadonlyArray<unknown>,
 ) {
-	return c.json(errorBody(c, statusCode, code, message, errors), statusCode);
+	return c.json(errorBody(c, statusCode, code, message, details), statusCode);
 }
 
 /**

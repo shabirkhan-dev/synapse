@@ -75,6 +75,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 		credentials: "include",
 	});
 	const result = await response.json();
+	// error envelope: { message, error: { code, details? } } — branch on error.code
 	if (!response.ok) throw new ApiError(result, response.status);
 	return result.data as T;
 }

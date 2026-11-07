@@ -27,8 +27,8 @@ module, or moving logic between layers.
    interface; throws `AppError` with codes from `shared/constants` or the module's `constants/`.
    No Hono imports, no response building.
 5. **Controller / route:** route declares method, path, middleware and OpenAPI schemas; controller
-   (or the route handler when trivial) reads validated input, calls the service, returns via the
-   shared `success(...)` helper. No business logic, no repository imports.
+   (or the route handler when trivial) reads validated input, calls the service, returns
+   `success(c, data, MODULE_MESSAGES.X, HTTP_STATUS.Y)` — always with a message constant. No business logic, no repository imports.
 6. **Mapper** (`mappers/`) when DB rows, domain objects and API shapes differ.
 7. **Public interface:** export what other modules or the composition root need from
    `modules/<domain>/index.ts`. Construct services in `server.ts`, mount routes in

@@ -38,13 +38,13 @@ describe("openapi", () => {
 		});
 		const response = await failing.app.request("/api/v1/health/ready");
 		expect(response.status).toBe(503);
-		expect((await response.json()).code).toBe("DATABASE_UNAVAILABLE");
+		expect((await response.json()).error.code).toBe("DATABASE_UNAVAILABLE");
 		expect((await app.request("/api/v1/health/ready")).status).toBe(200);
 	});
 
 	test("unknown routes use the error envelope", async () => {
 		const response = await app.request("/api/v1/nope");
 		expect(response.status).toBe(404);
-		expect((await response.json()).code).toBe("NOT_FOUND");
+		expect((await response.json()).error.code).toBe("NOT_FOUND");
 	});
 });

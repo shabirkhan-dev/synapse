@@ -13,6 +13,7 @@ describe("auth (HS256 access tokens)", () => {
 		const body = await response.json();
 		expect(body).toMatchObject({
 			success: true,
+			message: "Service is up",
 			data: { status: "ok", service: "synapse-api" },
 		});
 		expect(response.headers.get("x-request-id")).toMatch(/^req_/);
@@ -24,7 +25,8 @@ describe("auth (HS256 access tokens)", () => {
 		expect(await response.json()).toMatchObject({
 			success: false,
 			statusCode: 401,
-			code: "AUTH_ACCESS_TOKEN_MISSING",
+			message: "Missing bearer access token",
+			error: { code: "AUTH_ACCESS_TOKEN_MISSING" },
 			path: "/api/v1/rag/documents",
 			method: "GET",
 		});
@@ -34,7 +36,7 @@ describe("auth (HS256 access tokens)", () => {
 		const token = await signAccessToken(undefined, { secret: "y".repeat(40) });
 		const response = await app.request(url, { headers: { authorization: `Bearer ${token}` } });
 		expect(response.status).toBe(401);
-		expect((await response.json()).code).toBe("AUTH_ACCESS_TOKEN_INVALID");
+		expect((await response.json()).error.code).toBe("AUTH_ACCESS_TOKEN_INVALID");
 	});
 
 	test("rejects an expired token", async () => {
