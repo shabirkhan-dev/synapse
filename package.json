@@ -22,7 +22,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && bun run test:scripts",
     "test:coverage": "(cd packages/core && bun run test:coverage) && (cd apps/api && bun run test:coverage) && bun run test:scripts",
-    "test:scripts": "bash scripts/bash/tests/main.test.sh",
+    "test:scripts": "bash scripts/bash/tests/main.test.sh && bash scripts/bash/tests/check-layers.test.sh",
     "architecture:check": "bash scripts/architecture/check-boundaries.sh",
     "naming:check": "bash scripts/architecture/check-naming.sh",
     "ci:lint": "bun run lint && bun run architecture:check",

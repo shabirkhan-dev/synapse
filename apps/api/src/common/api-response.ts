@@ -71,6 +71,17 @@ export function errorBody(
 	};
 }
 
+/** Send the shared error envelope. The only place error responses are built outside the error handler. */
+export function failure<TStatus extends ContentfulStatusCode>(
+	c: Context<AppBindings>,
+	statusCode: TStatus,
+	code: string,
+	message: string,
+	errors?: ReadonlyArray<unknown>,
+) {
+	return c.json(errorBody(c, statusCode, code, message, errors), statusCode);
+}
+
 export const errorResponses = {
 	401: {
 		description: "Missing or invalid access token",

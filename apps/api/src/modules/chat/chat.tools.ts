@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import type { RagService } from "@/modules/rag/rag.service";
+import type { RagService } from "@/modules/rag";
 
 /** Tools are built per request so RAG search is always scoped to the caller. */
 export function createChatTools({

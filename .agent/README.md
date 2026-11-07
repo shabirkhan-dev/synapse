@@ -8,12 +8,14 @@ Everything AI agents need to work in Synapse: binding **rules**, task **skills**
 .agent/
 ├── README.md         ← you are here
 ├── rules/            ← binding rules, one file per area (always load)
-│   ├── architecture.md · coding-standards.md · typescript.md · bun.md · rust.md
+│   ├── architecture.md · backend-architecture.md · frontend-architecture.md · configuration.md
+│   ├── coding-standards.md · typescript.md · bun.md · rust.md
 │   ├── database.md · api-design.md · security.md · testing.md · error-handling.md
 │   ├── documentation.md
 │   └── clean-code.mdc · project-conventions.mdc  ← editor (Cursor-style) rules
 ├── skills/           ← task playbooks: <name>/SKILL.md
-│   ├── package-development · api-development · ingestion-engineering
+│   ├── package-development · api-development · backend-module-development
+│   ├── frontend-feature-development · ingestion-engineering
 │   ├── knowledge-engineering · rag-engineering · retrieval-engineering
 │   ├── generation-engineering · agent-orchestration · human-oversight
 │   ├── database-engineering · rust-development · security-review

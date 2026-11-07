@@ -14,3 +14,5 @@ The binding rules are in `.agent/rules/` — this page is the human summary.
 
 See: [typescript](../../.agent/rules/typescript.md), [coding standards](../../.agent/rules/coding-standards.md),
 [error handling](../../.agent/rules/error-handling.md), [architecture](../../.agent/rules/architecture.md).
+
+App structure: [backend architecture](backend-architecture.md), [frontend architecture](frontend-architecture.md).

@@ -4,17 +4,16 @@ import type { LanguageModel } from "ai";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 
-import { errorBody } from "@/common/api-response";
+import { failure } from "@/common/api-response";
 import type { AppBindings } from "@/common/app-types";
 import { createErrorHandler, notFoundHandler } from "@/common/error-handler";
 import type { Logger } from "@/common/logger";
 import { requestId } from "@/common/request-id";
 import { type Env, parseCorsOrigins } from "@/config/env";
-import { createAuthMiddleware } from "@/modules/auth/auth.middleware";
-import { createChatRoutes } from "@/modules/chat/chat.routes";
-import { createHealthRoutes } from "@/modules/health/health.routes";
-import { createRagRoutes } from "@/modules/rag/rag.routes";
-import type { RagService } from "@/modules/rag/rag.service";
+import { createAuthMiddleware } from "@/modules/auth";
+import { createChatRoutes } from "@/modules/chat";
+import { createHealthRoutes } from "@/modules/health";
+import { createRagRoutes, type RagService } from "@/modules/rag";
 
 export type AppDependencies = {
 	env: Env;
@@ -35,10 +34,7 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 					code: issue.code,
 					message: issue.message,
 				}));
-				return c.json(
-					errorBody(c, 422, "VALIDATION_ERROR", "Request validation failed", errors),
-					422,
-				);
+				return failure(c, 422, "VALIDATION_ERROR", "Request validation failed", errors);
 			}
 			return undefined;
 		},

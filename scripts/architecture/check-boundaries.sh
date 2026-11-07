@@ -29,5 +29,7 @@ fi
 
 echo "Architecture checks passed."
 
+bash scripts/architecture/check-layers.sh
+
 echo "Running kebab-case naming checks..."
 bash scripts/architecture/check-naming.sh

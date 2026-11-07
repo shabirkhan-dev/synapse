@@ -2,9 +2,8 @@ import { createApp } from "./app";
 import { createLogger } from "./common/logger";
 import { parseEnv } from "./config/env";
 import { createDatabase } from "./database/database";
-import { createAiModels } from "./modules/ai/ai.provider";
-import { DrizzleRagRepository } from "./modules/rag/rag.repository";
-import { RagService } from "./modules/rag/rag.service";
+import { createAiModels } from "./modules/ai";
+import { DrizzleRagRepository, RagService } from "./modules/rag";
 
 const env = parseEnv();
 const logger = createLogger({

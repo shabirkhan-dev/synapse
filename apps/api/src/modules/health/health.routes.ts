@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 
-import { apiErrorSchema, errorBody, success, successEnvelope } from "@/common/api-response";
+import { apiErrorSchema, failure, success, successEnvelope } from "@/common/api-response";
 import type { AppBindings } from "@/common/app-types";
 
 const healthSchema = z
@@ -71,7 +71,7 @@ export function createHealthRoutes({
 		try {
 			await pingDatabase();
 		} catch {
-			return c.json(errorBody(c, 503, "DATABASE_UNAVAILABLE", "Database is not reachable"), 503);
+			return failure(c, 503, "DATABASE_UNAVAILABLE", "Database is not reachable");
 		}
 		return success(
 			c,

@@ -32,3 +32,4 @@ Any schema, index, query-performance or data-migration change.
 - `.agent/rules/database.md`
 - ADR-0002
 - `docs/runbooks/database-backup.md`
+- `docs/development/backend-architecture.md` (database conventions)

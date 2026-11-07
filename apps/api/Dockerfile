@@ -9,6 +9,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json bun.lock ./
 COPY apps/api/package.json ./apps/api/
+COPY packages/core/package.json ./packages/core/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
 RUN bun install --frozen-lockfile --filter api --ignore-scripts
@@ -17,6 +18,7 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY package.json bun.lock ./
+COPY packages/core ./packages/core
 COPY packages/typescript-config ./packages/typescript-config
 COPY apps/api ./apps/api
 WORKDIR /app/apps/api

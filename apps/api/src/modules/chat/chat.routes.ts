@@ -11,7 +11,7 @@ import {
 import { errorResponses } from "@/common/api-response";
 import { AppError } from "@/common/app-error";
 import type { AppBindings } from "@/common/app-types";
-import type { RagService } from "@/modules/rag/rag.service";
+import type { RagService } from "@/modules/rag";
 
 import { createChatTools } from "./chat.tools";
 

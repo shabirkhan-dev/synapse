@@ -7,8 +7,14 @@ Details: `docs/api/conventions.md`.
   (`/api/openapi.json`) is the contract. Keep schemas, examples and summaries accurate.
 - Every JSON response uses the envelope: `{ success, statusCode, requestId, timestamp, data }` or
   the error shape `{ success: false, statusCode, code, message, requestId, timestamp, path, method, errors? }`.
-- Error `code`s are `SCREAMING_SNAKE_CASE`, prefixed by area (`AUTH_`, `RAG_`, `CHAT_`).
+- Error `code`s are `SCREAMING_SNAKE_CASE`, prefixed by area (`AUTH_`, `RAG_`, `CHAT_`). Status codes,
+  error codes and messages come from shared constants (`HTTP_STATUS`, `ERROR_CODES`,
+  `RESPONSE_MESSAGES`) or the module's `constants/` — never inline literals. The message is never the
+  machine-readable identifier.
+- Responses are built only by the shared helpers (`success`, `failure`) and the error handler.
 - Validate every input with Zod; validation failures return `422 VALIDATION_ERROR`.
 - Every request has an `x-request-id` (reused when sane, minted otherwise) and it is logged.
 - Protected routes use bearer auth; never trust a client-supplied owner id.
 - Limit body sizes on write endpoints.
+
+Layering (routes → controllers → services → repositories): `backend-architecture.md`.

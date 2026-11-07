@@ -2,21 +2,18 @@ import { join } from "node:path";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 
+import { loadMigrationConfig } from "../config/migration.config";
 import { createDatabase, MIGRATIONS_TABLE } from "./database";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-	throw new Error("DATABASE_URL is required to run migrations");
-}
+const config = loadMigrationConfig();
 
 /** Works from src/ (bun src/database/migrate.ts) and from the bundle (bun dist/database/migrate.js). */
-export const migrationsFolder = process.env.MIGRATIONS_DIR ?? join(import.meta.dir, "migrations");
+export const migrationsFolder = config.MIGRATIONS_DIR ?? join(import.meta.dir, "migrations");
 
 const { db, close } = createDatabase({
-	url: databaseUrl,
+	url: config.DATABASE_URL,
 	poolMax: 1,
-	...(process.env.DATABASE_SSL ? { ssl: process.env.DATABASE_SSL === "true" } : {}),
+	...(config.DATABASE_SSL ? { ssl: config.DATABASE_SSL === "true" } : {}),
 });
 
 try {

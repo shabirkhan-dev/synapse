@@ -14,14 +14,21 @@ Agent guidance lives in [.agent/](.agent/README.md). Load these in order:
 
 1. This file
 2. [.agent/README.md](.agent/README.md) — what is in `.agent/` and the coordination protocol
-3. [.agent/rules/](.agent/rules/) — binding rules: architecture, coding standards, TypeScript, Bun,
-   Rust, database, API design, security, testing, error handling, documentation
+3. [.agent/rules/](.agent/rules/) — binding rules: architecture, backend architecture, frontend
+   architecture, configuration, coding standards, TypeScript, Bun, Rust, database, API design,
+   security, testing, error handling, documentation
 4. [.agent/memory/](.agent/memory/) — current architecture, decisions, conventions, known constraints
 5. The matching playbook in [.agent/skills/](.agent/skills/) (`<task>/SKILL.md`)
 
 The four architecture rules that matter most: one owner per capability; domain packages never
 import vendor SDKs (only `adapters` and `providers` do); every long job saves its state and can
 resume; every answer records the model, prompt version and embedding version.
+
+App layering: backend modules flow route → controller → service → repository (services never build
+HTTP responses, only repositories touch the database); console features flow page → container →
+query/mutation hook → plain service → central API client. Env is read only in each app's
+`config/`. Modules and features import each other only through `index.ts`. These are enforced by
+`bun run architecture:check`.
 
 For coordinated multi-agent work, also load
 [.agent/agent-contract.md](.agent/agent-contract.md), exactly one charter from

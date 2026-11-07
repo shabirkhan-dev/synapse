@@ -4,6 +4,12 @@
   (pg-boss) and audit. Add Redis or another store only with an ADR and evidence.
 - Access goes through **Drizzle** in `adapters/database` (today: `apps/api/src/database`).
   Domain code depends on repository interfaces, not on Drizzle.
+- **Naming:** tables snake_case plural; columns snake_case; `id` primary keys; `{entity}_id` foreign
+  keys; `created_at` / `updated_at`; booleans `is_*`; every index explicitly named.
+- Only **repositories** query the database. Tenant scope is an explicit argument
+  (`findById({ documentId, tenantId })`), never inferred from global state.
+- Use explicit transactions for multi-step writes; never load unbounded collections; soft delete
+  only when product or compliance requires it.
 - Every schema change is a **migration** (`drizzle-kit generate`), reviewed and committed. Never
   edit an applied migration.
 - Migrations must be safe to run twice and safe for a rolling deploy (expand → migrate → contract).

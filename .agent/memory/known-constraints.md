@@ -8,6 +8,12 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Migrations journal table** is still `__drizzle_migrations_ai_api` (kept so existing databases
   do not re-run migrations).
 - **RAG/chat live inside `apps/api`**, not yet in domain packages.
+- **`apps/api` is partly migrated to the backend standard:** modules have `index.ts` and pass the
+  layering checks, but still use flat `<name>.<role>.ts` files, `common/` instead of `shared/`,
+  `index.ts` instead of `server.ts`, positional `AppError(status, code, message)` and inline status
+  numbers instead of `HTTP_STATUS` / `ERROR_CODES` / `RESPONSE_MESSAGES`.
+- **Open decision:** adding `message` to success responses and nesting `error: { code }` is a
+  breaking API change — decide during the `shared/` migration.
 - **Keyword search, reranking, queues (pg-boss), LangGraph, Langfuse/OTel** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).

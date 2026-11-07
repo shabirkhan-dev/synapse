@@ -32,3 +32,5 @@ New endpoint, changed request/response schema, new error code, auth or middlewar
 - `.agent/rules/api-design.md`
 - `docs/api/`
 - `apps/api/README.md`
+- `.agent/skills/backend-module-development/` — full module layering (routes → controllers → services → repositories)
+- `.agent/rules/backend-architecture.md`

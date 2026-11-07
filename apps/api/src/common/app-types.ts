@@ -1,4 +1,4 @@
-import type { AuthUser } from "@/modules/auth/auth.types";
+import type { AuthUser } from "@/modules/auth";
 
 /** Hono context variables shared by every route. */
 export type AppVariables = {

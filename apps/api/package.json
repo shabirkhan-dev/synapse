@@ -20,6 +20,7 @@
 		"@ai-sdk/openai-compatible": "^3.0.86",
 		"@hono/zod-openapi": "^1.6.3",
 		"@scalar/hono-api-reference": "^0.12.18",
+		"@synapse/core": "workspace:*",
 		"ai": "^7.0.164",
 		"drizzle-orm": "^0.45.4",
 		"hono": "^4.13.17",
