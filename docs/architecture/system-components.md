@@ -12,8 +12,8 @@
 
 ## Packages
 
-See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`. Everything else
-is planned.
+See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`. Everything
+else is planned.
 
 ## Crates (Rust)
 

@@ -2,7 +2,7 @@
 
 Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on.
 
-> **Status:** Planned — first package in the build order.
+> **Status:** Live (errors, config, types) · Placeholder (contracts, events, utils).
 
 ## Internal modules
 
@@ -26,8 +26,15 @@ nothing in the workspace (only Zod and the standard library)
 
 ## Public API
 
-> Placeholder — defined when the package is created. Keep it to `src/index.ts` exports.
+| Export | Module | What it does |
+| --- | --- | --- |
+| `SynapseError`, `isSynapseError`, `SynapseErrorOptions` | `@synapse/core/errors` | Transport-neutral error with `code`, `message`, optional `details` and `cause` |
+| `loadConfig(schema, source?)`, `ConfigSource` | `@synapse/core/config` | Zod-validated config from `process.env` (empty strings = unset); throws `CONFIG_INVALID` |
+| `AnswerProvenance` | `@synapse/core/types` | Model, prompt version, embedding model and version behind an answer |
+
+The root entry (`@synapse/core`) re-exports errors, config and types. Contracts, events and utils
+are placeholders that grow with their first real use.
 
 ## Notes
 
-The API's `AppError`, envelopes and env parsing are the seed for `core/errors` and `core/config`.
+`apps/api` still uses its own `AppError` and `parseEnv`; moving it onto `SynapseError` and `loadConfig` is the next step.

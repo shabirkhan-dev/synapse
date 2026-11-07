@@ -10,12 +10,13 @@ it are internal modules. Rules: `.agent/rules/architecture.md`. How to add one:
 | --- | --- |
 | `@synapse/ui` | shadcn/ui on Base UI (`base-mira`), HugeIcons, Tailwind v4 — see `packages/ui/README.md` |
 | `@synapse/typescript-config` | Shared tsconfig bases (`base.json`, `nextjs.json`) |
+| `@synapse/core` | Errors, config loading, shared types (contracts/events/utils to come) — see [core.md](core.md) |
 
 ## Platform packages (from the plan)
 
 | Package | Purpose | Status |
 | --- | --- | --- |
-| [`core`](core.md) | Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on. | Planned — first package in the build order |
+| [`core`](core.md) | Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on. | Live (errors, config, types) |
 | [`ingestion`](ingestion.md) | Bring content in from sources and turn it into normalized, deduplicated documents with their access rules. | Planned |
 | [`knowledge`](knowledge.md) | Turn documents into searchable, versioned knowledge: chunks, enrichment, embeddings and indexes. | Planned |
 | [`retrieval`](retrieval.md) | Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and filter. | Partly live: top-k cosine vector search in `apps/api` |

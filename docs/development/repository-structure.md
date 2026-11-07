@@ -13,7 +13,8 @@ synapse/
 ├── packages/
 │   ├── ui/              # @synapse/ui (live)
 │   ├── typescript-config/ (live)
-│   └── core, ingestion, knowledge, … (planned — see docs/packages)
+│   ├── core/            # @synapse/core (live: errors, config, types)
+│   └── ingestion, knowledge, … (planned — see docs/packages)
 ├── crates/              # Rust via napi-rs (planned)
 ├── deploy/              # docker, compose, migrations, backups, monitoring (planned)
 ├── docker/              # current compose fragments (live)
