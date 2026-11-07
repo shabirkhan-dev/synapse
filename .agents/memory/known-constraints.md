@@ -29,7 +29,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   quality. Changing the dataset needs a `version` bump and a new baseline (`EVAL_UPDATE_BASELINE=true`).
 - **Keyword search matches any term** and drops an English stopword list from the query only
   (`SEARCH_STOPWORDS` in `@synapse/database`); other languages get no stopword filtering.
-  **HNSW post-filters by owner**: many tenants can starve a user's results (syn-022).
+- **Vector search needs pgvector ≥ 0.8** on the server: each search runs in a transaction with
+  `set local hnsw.iterative_scan = relaxed_order`, so the owner filter cannot starve a tenant's
+  results (syn-022). Limits: it stops after `hnsw.max_scan_tuples` (20,000) scanned rows, and rows
+  HNSW keeps no links to (near-orthogonal outliers) stay unreachable for any index scan.
 - **Hybrid scores are RRF scores** (≈0.016–0.033), not cosine; clients must not threshold `score` across modes.
 - **Traces go to one destination:** Langfuse (both `LANGFUSE_*` keys set) or `OTEL_EXPORTER_OTLP_ENDPOINT`,
   not both; nothing is exported otherwise. Costs need `AI_MODEL_PRICES`. Prompt versions are not yet

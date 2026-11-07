@@ -39,7 +39,9 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
   fused with RRF; `score` = RRF score (e.g. `2/61` for rank 1 in both lists).
 - Every match carries `ranks: { vector?, keyword? }`.
 - Vector search only compares chunks embedded with the current model (plus legacy rows without one).
-- The owner filter runs inside each query.
+- The owner filter runs inside each query. Vector search sets `hnsw.iterative_scan = relaxed_order`
+  for its transaction (pgvector ≥ 0.8), so HNSW keeps scanning past other tenants' rows until `topK`
+  is filled (up to `hnsw.max_scan_tuples`); the relaxed order is re-sorted in memory.
 - Results are deterministic: equal scores are tie-broken by content (vector: in memory, so the SQL
   keeps the HNSW-friendly `ORDER BY distance`; keyword: in SQL).
 

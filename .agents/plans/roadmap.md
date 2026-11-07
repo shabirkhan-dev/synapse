@@ -31,16 +31,16 @@
 
 ## Phase 2 — Platform capabilities (after the RAG path works)
 
-First, the two retrieval fixes found by the Phase 1 evaluation.
+The two retrieval fixes found by the Phase 1 evaluation are done; next is security (syn-017).
 
 | Step | Status | Card |
 | --- | --- | --- |
 | Keyword search: match any term (eval finding) | ✅ | syn-021 |
 | One env file for all credentials and settings | ✅ | syn-023 |
-| HNSW owner filtering stays complete with many tenants (risk) | ⏭️ | syn-022 |
+| HNSW owner filtering stays complete with many tenants (risk) | ✅ | syn-022 |
 | `security` — in-house auth (ADR-0005), tenancy, permissions, PII | ⏭️ | syn-017 |
-| `apps/worker` + pg-boss queue adapter, resumable jobs | ⬜ | — |
-| `orchestration` — LangGraph graphs, checkpoints | ⬜ | — |
+| `apps/worker` + pg-boss queue adapter, resumable jobs | ⬜ | syn-024 |
+| `orchestration` — LangGraph graphs, checkpoints | ⬜ | syn-025 |
 | `human-oversight` — approvals, review queues, feedback | ⬜ | — |
 | `memory` — conversation, semantic, episodic | ⬜ | — |
 | `audit` — event history, provenance, retention | ⬜ | — |

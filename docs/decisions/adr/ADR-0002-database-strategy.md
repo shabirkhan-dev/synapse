@@ -22,7 +22,8 @@ Use **PostgreSQL** as the single store:
 ## Consequences
 
 - One backup/restore story and transactional consistency across data, vectors and jobs.
-- Postgres must have the `vector` extension (compose uses `pgvector/pgvector:0.8.7-pg18-trixie`).
+- Postgres must have the `vector` extension, **0.8 or newer** (iterative HNSW scans keep
+  per-tenant vector search complete); compose and CI use `pgvector/pgvector:0.8.7-pg18-trixie`.
 - Heavy vector or search load may later require a specialised store — via a new ADR.
 
 ## Alternatives considered

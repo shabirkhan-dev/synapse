@@ -15,6 +15,20 @@ import { DrizzleRagRepository } from "@/modules/rag";
 import { fakeEmbedding } from "./helpers";
 
 const MODEL = "test:embed-1";
+const withStartupParameter = (databaseUrl: string, parameter: string) =>
+	`${databaseUrl}${databaseUrl.includes("?") ? "&" : "?"}${parameter}`;
+
+/** Unit vector near one axis with small deterministic noise (seeded), so neighbours are dense. */
+function nearAxis(axis: number, seed: number): number[] {
+	let state = (seed + 7) * 2654435761;
+	const noise = () => {
+		state = (state * 1103515245 + 12345) % 2147483648;
+		return (state / 2147483648) * 0.05;
+	};
+	const values = Array.from({ length: 1536 }, (_, index) => (index === axis ? 1 : noise()));
+	const norm = Math.hypot(...values);
+	return values.map((value) => value / norm);
+}
 const vector = (ownerId: string, embedding: number[], limit: number) => ({
 	ownerId,
 	embedding,
@@ -153,6 +167,46 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 
 		await repository.deleteDocument(owner, document.id);
 	});
+
+	test("vector search stays complete when other tenants crowd the HNSW index", async () => {
+		// Dense vectors (like real embeddings): another tenant's 300 chunks (> ef_search = 40)
+		// cluster around the query; this tenant's 3 chunks are farther away.
+		const crowd = await repository.createDocument(
+			{ ownerId: `it-crowd-${crypto.randomUUID()}`, title: "Crowd" },
+			Array.from({ length: 300 }, (_, chunkIndex) => ({
+				chunkIndex,
+				content: `crowd ${chunkIndex}`,
+				embedding: nearAxis(0, chunkIndex),
+				embeddingModel: MODEL,
+			})),
+		);
+		const tenant = `it-tenant-${crypto.randomUUID()}`;
+		const mine = await repository.createDocument(
+			{ ownerId: tenant, title: "Mine" },
+			[0, 1, 2].map((chunkIndex) => ({
+				chunkIndex,
+				content: `mine ${chunkIndex}`,
+				embedding: nearAxis(1, 5000 + chunkIndex),
+				embeddingModel: MODEL,
+			})),
+		);
+
+		// Small owners get an exact owner-index scan; disabling sorts forces the HNSW plan that
+		// large owners get, where candidates are fetched before the owner filter.
+		const hnswOnly = createDatabase({
+			url: withStartupParameter(url ?? "", "enable_sort=off"),
+			poolMax: 1,
+		});
+		const matches = await new DrizzleRagRepository(hnswOnly.db).searchChunks(
+			vector(tenant, nearAxis(0, -1), 5),
+		);
+		await hnswOnly.close();
+		expect(matches.map((m) => m.content).toSorted()).toEqual(["mine 0", "mine 1", "mine 2"]);
+		expect(matches.every((m) => m.documentId === mine.id)).toBe(true);
+
+		await repository.deleteDocument(tenant, mine.id);
+		await database.db.execute(sql`delete from rag_documents where id = ${crowd.id}`);
+	}, 20_000);
 
 	test("vector search ignores chunks embedded with another model", async () => {
 		const embedding = fakeEmbedding("model filter");

@@ -96,24 +96,32 @@ export class DrizzleRagRepository implements RagRepository {
 		limit,
 	}: VectorSearchRequest): Promise<RagMatch[]> {
 		const distance = cosineDistance(ragChunks.embedding, embedding);
-		const rows = await this.db
-			.select({
-				...matchColumns,
-				score: sql<number>`1 - (${distance})`,
-			})
-			.from(ragChunks)
-			.innerJoin(ragDocuments, eq(ragDocuments.id, ragChunks.documentId))
-			.where(
-				and(
-					eq(ragChunks.ownerId, ownerId),
-					// Vectors from another model are not comparable; legacy rows have no model recorded.
-					or(eq(ragChunks.embeddingModel, embeddingModel), isNull(ragChunks.embeddingModel)),
-				),
-			)
-			// Order by the raw distance only so Postgres can use the HNSW index (extra sort keys,
-			// especially from the joined table, disable it); ties are broken below.
-			.orderBy(distance)
-			.limit(limit);
+		const rows = await this.db.transaction(async (tx) => {
+			// HNSW fetches `ef_search` nearest candidates across all owners before the owner filter,
+			// so a tenant among many could get fewer than `limit` rows. Iterative scans (pgvector
+			// 0.8+) keep scanning until the limit is filled; relaxed order is re-sorted below.
+			await tx.execute(sql`set local hnsw.iterative_scan = relaxed_order`);
+			return (
+				tx
+					.select({
+						...matchColumns,
+						score: sql<number>`1 - (${distance})`,
+					})
+					.from(ragChunks)
+					.innerJoin(ragDocuments, eq(ragDocuments.id, ragChunks.documentId))
+					.where(
+						and(
+							eq(ragChunks.ownerId, ownerId),
+							// Vectors from another model are not comparable; legacy rows have no model recorded.
+							or(eq(ragChunks.embeddingModel, embeddingModel), isNull(ragChunks.embeddingModel)),
+						),
+					)
+					// Order by the raw distance only so Postgres can use the HNSW index (extra sort keys,
+					// especially from the joined table, disable it); ties are broken below.
+					.orderBy(distance)
+					.limit(limit)
+			);
+		});
 		return rows.map(withNumericScore).toSorted(byScoreThenContent);
 	}
 
