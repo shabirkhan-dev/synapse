@@ -14,8 +14,8 @@ One source of truth — `AGENTS.md` and `.agents/` — wired so each tool finds 
 Files that do the wiring:
 
 - `AGENTS.md` — shared entry point (Codex, OpenCode, Copilot, Windsurf, Aider, Cline…).
-- `CLAUDE.md` — imports `AGENTS.md`, every rule and every memory file.
-- `opencode.json` — `"instructions": [".agents/rules/*.md", ".agents/memory/*.md"]`.
+- `CLAUDE.md` — imports `AGENTS.md`, every rule, every memory file and the roadmap.
+- `opencode.json` — `"instructions": [".agents/rules/*.md", ".agents/memory/*.md", ".agents/plans/roadmap.md"]`.
 - `.claude/skills` — symlink to `../.agents/skills` (the rest of `.claude/` stays gitignored).
 
 Notes:

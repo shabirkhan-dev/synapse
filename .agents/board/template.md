@@ -1,5 +1,5 @@
 ---
-id: str-<stable-id>
+id: syn-<number>
 title: <one-line summary>
 type: feature | bug | chore | spike | decision | risk | announcement
 from: backend | web | qa | reviewer | ui-ux | pm | human
@@ -8,7 +8,7 @@ priority: low | normal | high
 status: open
 assignee: none
 reviewer: none
-parent: none
+parent: none | syn-roadmap
 depends_on: []
 branch: none
 worktree: none

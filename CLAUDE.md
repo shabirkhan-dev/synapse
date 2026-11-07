@@ -22,6 +22,11 @@ here — put them in `.agents/rules/` so all tools get them.
 @.agents/rules/testing.md
 @.agents/rules/error-handling.md
 @.agents/rules/documentation.md
+@.agents/rules/progress-tracking.md
+
+## Roadmap
+
+@.agents/plans/roadmap.md
 
 ## Memory (current facts)
 

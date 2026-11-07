@@ -11,7 +11,7 @@ Everything AI agents need to work in Synapse: binding **rules**, task **skills**
 │   ├── architecture.md · backend-architecture.md · frontend-architecture.md · configuration.md
 │   ├── coding-standards.md · typescript.md · bun.md · rust.md
 │   ├── database.md · api-design.md · security.md · testing.md · error-handling.md
-│   ├── documentation.md
+│   ├── documentation.md · progress-tracking.md
 │   └── clean-code.mdc · project-conventions.mdc  ← editor (Cursor-style) rules
 ├── skills/           ← task playbooks: <name>/SKILL.md
 │   ├── package-development · api-development · backend-module-development
@@ -32,7 +32,7 @@ Everything AI agents need to work in Synapse: binding **rules**, task **skills**
 │   ├── README.md · template.md
 │   └── open/ · doing/ · done/
 ├── notes/            ← scratchpad, one file per team (backend, frontend, design)
-└── plans/            ← long-form implementation plans
+└── plans/            ← roadmap.md (where we are / next / left) + long-form plans
 ```
 
 **Load order:** `AGENTS.md` → this file → `rules/` → `memory/` → the matching `skills/<task>/`.

@@ -18,12 +18,17 @@ via `CLAUDE.md`, OpenCode via `opencode.json`, skills via `.agents/skills`; see
 2. [.agents/README.md](.agents/README.md) — what is in `.agents/` and the coordination protocol
 3. [.agents/rules/](.agents/rules/) — binding rules: architecture, backend architecture, frontend
    architecture, configuration, coding standards, TypeScript, Bun, Rust, database, API design,
-   security, testing, error handling, documentation
+   security, testing, error handling, documentation, progress tracking
 4. [.agents/memory/](.agents/memory/) — current architecture, decisions, conventions, known constraints
-5. The matching playbook in [.agents/skills/](.agents/skills/) (`<task>/SKILL.md`)
+5. [.agents/plans/roadmap.md](.agents/plans/roadmap.md) — where the project is, what is next
+6. The matching playbook in [.agents/skills/](.agents/skills/) (`<task>/SKILL.md`)
+
+**Track every task on the board** (`.agents/board/`: claim `open/ → doing/`, close to `done/` with
+the commit), keep the roadmap current, and **end every reply with a Roadmap block** (Where we are /
+Next / Left). See [.agents/rules/progress-tracking.md](.agents/rules/progress-tracking.md).
 
 The four architecture rules that matter most: one owner per capability; domain packages never
-import vendor SDKs (only `adapters` and `providers` do); every long job saves its state and can
+import vendor SDKs (only `database`, `adapters` and `providers` do); every long job saves its state and can
 resume; every answer records the model, prompt version and embedding version.
 
 App layering: backend modules flow route → controller → service → repository (services never build
@@ -75,7 +80,7 @@ synapse/
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/
 ├── docker/              # Docker Compose fragments (see docker/README.md)
-├── .agents/rules/       # Cursor-specific rules (also summarised below)
+├── .agents/             # agent rules, skills, memory, roadmap, board
 ├── .devcontainer/       # Dev Container (Bun, Rust, Bash tooling)
 ├── .github/workflows/   # CI (lint, typecheck, build, test)
 └── (root config)        # .oxlintrc.json, .oxfmtrc.json, turbo.json, lefthook.yml, etc.
@@ -170,10 +175,11 @@ Defaults: console `:3000`, API `:8000`, Postgres host `:5433`. Host-only API/con
 
 ## Before finishing any task
 
-1. Run `bun run lint` from repo root — fix any errors.
-2. Run `bun run format` from repo root — ensure formatting is clean.
-3. If you changed TypeScript, run `bun run typecheck`.
-4. Do not leave dead code, unused imports, or `any` types.
+1. Move your board card to `done/` with the commit, and update `.agents/plans/roadmap.md`.
+2. Run `bun run lint` from repo root — fix any errors.
+3. Run `bun run format` from repo root — ensure formatting is clean.
+4. If you changed TypeScript, run `bun run typecheck`.
+5. Do not leave dead code, unused imports, or `any` types.
 
 ## Key files to read for deeper context
 
