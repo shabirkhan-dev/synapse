@@ -21,6 +21,7 @@ synapse/
 │   ├── retrieval/       # @synapse/retrieval (live: vector, keyword, hybrid)
 │   ├── generation/      # @synapse/generation (live: prompts, context, citations, provenance)
 │   ├── observability/   # @synapse/observability (live: logs, tracing, LLM usage/cost)
+│   ├── evaluation/      # @synapse/evaluation (live: retrieval evals, baselines)
 │   └── ingestion, knowledge, … (planned — see docs/packages)
 ├── crates/              # Rust via napi-rs (planned)
 ├── deploy/              # docker, compose, migrations, backups, monitoring (planned)

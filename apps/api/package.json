@@ -12,7 +12,8 @@
 		"lint:fix": "oxlint --fix",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test",
-		"test:coverage": "bun test --coverage"
+		"test:coverage": "bun test --coverage",
+		"eval:retrieval": "bun src/evaluate.ts"
 	},
 	"dependencies": {
 		"@hono/zod-openapi": "^1.6.3",
@@ -20,6 +21,7 @@
 		"@synapse/adapters": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/database": "workspace:*",
+		"@synapse/evaluation": "workspace:*",
 		"@synapse/generation": "workspace:*",
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",

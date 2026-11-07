@@ -30,6 +30,7 @@ Implement `core` contracts against infrastructure: vector store, cache, queue, s
 | Export | Import | What it does |
 | --- | --- | --- |
 | `createOpenAICompatibleModelGateway(options)`, `OpenAICompatibleGatewayOptions` | `@synapse/adapters/model-gateway` | `ModelGateway` for any OpenAI-compatible endpoint (OpenRouter default), optional separate embeddings endpoint |
+| `createHashingEmbeddingGateway({ dimensions })` | `@synapse/adapters/model-gateway` | Offline deterministic bag-of-words embeddings (`hashing:bow-v1`) for evals and tests |
 | `createAiSdkModelGateway({ chatModel, embeddingModel, chatInfo, embeddingInfo })`, `AiSdkModelGateway` | `@synapse/adapters/model-gateway` | Wrap any AI SDK models (tests pass mocks); also exposes `chatModel` |
 
 The gateway implements `ModelGateway` from `@synapse/core/contracts`: `chat.generateText` returns

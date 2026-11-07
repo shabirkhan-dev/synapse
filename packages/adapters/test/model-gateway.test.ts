@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 
-import { createAiSdkModelGateway, createOpenAICompatibleModelGateway } from "../src";
+import {
+	createAiSdkModelGateway,
+	createHashingEmbeddingGateway,
+	createOpenAICompatibleModelGateway,
+} from "../src";
 
 const chatInfo = { provider: "test", model: "chat-1" };
 const embeddingInfo = { provider: "test", model: "embed-1" };
@@ -73,5 +77,21 @@ describe("OpenAI-compatible gateway", () => {
 			provider: "openrouter-embeddings",
 			model: "text-embedding-3-small",
 		});
+	});
+});
+
+const dot = (x: number[] = [], y: number[] = []) =>
+	x.reduce((sum, v, i) => sum + v * (y[i] ?? 0), 0);
+
+describe("hashing embedding gateway", () => {
+	test("is deterministic, normalized and sized, and similar text scores higher", async () => {
+		const gateway = createHashingEmbeddingGateway({ dimensions: 64 });
+		const [a, b, c] = await gateway.embedMany(["refund policy", "Refund POLICY!", "office cat"]);
+		expect(a).toEqual(b ?? []);
+		expect(a).toHaveLength(64);
+		expect(Math.hypot(...(a ?? []))).toBeCloseTo(1, 10);
+		expect(dot(a, b)).toBeGreaterThan(dot(a, c));
+		expect(gateway.info).toEqual({ provider: "hashing", model: "bow-v1" });
+		expect(await gateway.embed("refund policy")).toEqual(a ?? []);
 	});
 });

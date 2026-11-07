@@ -110,10 +110,11 @@ export class DrizzleRagRepository implements RagRepository {
 					or(eq(ragChunks.embeddingModel, embeddingModel), isNull(ragChunks.embeddingModel)),
 				),
 			)
-			// Order by the raw distance expression so Postgres can use the HNSW index.
+			// Order by the raw distance only so Postgres can use the HNSW index (extra sort keys,
+			// especially from the joined table, disable it); ties are broken below.
 			.orderBy(distance)
 			.limit(limit);
-		return rows.map(withNumericScore);
+		return rows.map(withNumericScore).toSorted(byScoreThenContent);
 	}
 
 	async keywordSearch({ ownerId, query, limit }: KeywordSearchRequest): Promise<RagMatch[]> {
@@ -126,7 +127,7 @@ export class DrizzleRagRepository implements RagRepository {
 			.innerJoin(ragDocuments, eq(ragDocuments.id, ragChunks.documentId))
 			// The @@ on the indexed expression uses the GIN index.
 			.where(and(eq(ragChunks.ownerId, ownerId), sql`${vector} @@ ${tsQuery}`))
-			.orderBy(desc(rank))
+			.orderBy(desc(rank), ...tieBreak)
 			.limit(limit);
 		return rows.map(withNumericScore);
 	}
@@ -134,6 +135,14 @@ export class DrizzleRagRepository implements RagRepository {
 	async ping(): Promise<void> {
 		await this.db.execute(sql`select 1`);
 	}
+}
+
+/** Deterministic order for equal keyword ranks (content-derived, so identical across databases). */
+const tieBreak = [ragDocuments.contentHash, ragChunks.chunkIndex];
+
+/** Stable order for equal vector scores among the fetched rows. */
+function byScoreThenContent(a: RagMatch, b: RagMatch): number {
+	return b.score - a.score || a.content.localeCompare(b.content) || a.chunkIndex - b.chunkIndex;
 }
 
 const matchColumns = {

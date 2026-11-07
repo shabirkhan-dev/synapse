@@ -24,6 +24,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `controllers/` folders yet; add one when a handler grows real HTTP logic.
 - **Provenance is returned, not stored:** answers carry `provenance`, but nothing persists it until
   `audit` exists. Token counts in the context budget are estimates (~4 chars/token).
+- **Retrieval eval uses hashing embeddings** (no key needed): it gates the pipeline, not embedding
+  quality. Changing the dataset needs a `version` bump and a new baseline (`EVAL_UPDATE_BASELINE=true`).
+- **Keyword search is AND-only** (`websearch_to_tsquery`), so it rarely helps natural questions
+  (syn-021). **HNSW post-filters by owner** — many tenants can starve a user's results (syn-022).
 - **Hybrid scores are RRF scores** (≈0.016–0.033), not cosine; clients must not threshold `score` across modes.
 - **Tracing is OTLP-only:** spans export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; no Langfuse
   exporter yet (syn-020). Costs are estimated only for models listed in `AI_MODEL_PRICES`.

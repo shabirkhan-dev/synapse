@@ -179,3 +179,11 @@ jobs:
           done
           exit 1
 
+      # Real retrieval stack (pgvector + full-text + RRF) with offline hashing embeddings; fails when
+      # recall@k or MRR drops below packages/evaluation/baselines by more than the tolerance.
+      - name: Retrieval evaluation (regression vs baseline)
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
+        run: bun run eval:retrieval
+

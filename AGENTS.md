@@ -82,6 +82,7 @@ synapse/
 │   ├── retrieval/       # @synapse/retrieval: vector, keyword, hybrid (RRF) search
 │   ├── generation/      # @synapse/generation: versioned prompts, context, citations, provenance
 │   ├── observability/   # @synapse/observability: logs, OpenTelemetry tracing, LLM usage/cost
+│   ├── evaluation/      # @synapse/evaluation: retrieval datasets, metrics, CI baselines
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/
@@ -118,6 +119,7 @@ synapse/
 | `bun run test` | Run workspace tests + script tests |
 | `bun run test:coverage` | Run TS coverage + all language tests |
 | `bun run architecture:check` | Enforce architecture import boundaries + kebab-case naming |
+| `bun run eval:retrieval` | Retrieval eval vs committed baseline (needs `DATABASE_URL`) |
 | `bun run naming:check` | Enforce kebab-case (dotted, e.g. `rag.service.ts`) file/folder names |
 
 ## Conventions

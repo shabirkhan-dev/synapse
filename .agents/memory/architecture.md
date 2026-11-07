@@ -10,12 +10,13 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/database` (Drizzle client, schema, migrations), `packages/adapters` (model gateway),
   `packages/ingestion` (normalize, content-hash dedup, pipeline), `packages/knowledge` (chunking,
   embedding preparation, chunk versions), `packages/retrieval` (vector, keyword, hybrid RRF), `packages/generation` (prompts, context,
-  citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost).
+  citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost), `packages/evaluation` (retrieval evals,
+  baselines).
 - **Planned:** `apps/worker`; packages
   `orchestration`, `human-oversight`, `audit`, `guardrails`, `memory`,
-  `evaluation`, `security`, `reliability`, `providers`, `native`; more adapters
+  `security`, `reliability`, `providers`, `native`; more adapters
   (vector-store, cache, queue, storage);
   `crates/*`; root `tests/` and `deploy/`.
-- The RAG and chat code in `apps/api/src/modules/` is the seed that will move into
-  `ingestion` / `knowledge` / `retrieval` / `generation` as those packages are created.
+- `apps/api/src/modules/rag` composes ingestion → knowledge → retrieval → generation; Phase 1 of the
+  roadmap (core RAG path) is complete.
 - One owner per capability; domain packages never import vendor SDKs.

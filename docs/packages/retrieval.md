@@ -40,6 +40,8 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
 - Every match carries `ranks: { vector?, keyword? }`.
 - Vector search only compares chunks embedded with the current model (plus legacy rows without one).
 - The owner filter runs inside each query.
+- Results are deterministic: equal scores are tie-broken by content (vector: in memory, so the SQL
+  keeps the HNSW-friendly `ORDER BY distance`; keyword: in SQL).
 
 Keyword search in the API is Postgres full-text: `to_tsvector('simple', content) @@
 websearch_to_tsquery('simple', query)`, ranked by `ts_rank_cd`, on a GIN index (migration

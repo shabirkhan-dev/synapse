@@ -1,0 +1,15 @@
+{
+	"dataset": {
+		"name": "retrieval-seed",
+		"version": 1
+	},
+	"k": 3,
+	"setup": {
+		"embedding": "hashing:bow-v1",
+		"mode": "hybrid"
+	},
+	"metrics": {
+		"recallAtK": 0.8888888888888888,
+		"mrr": 0.8240740740740741
+	}
+}

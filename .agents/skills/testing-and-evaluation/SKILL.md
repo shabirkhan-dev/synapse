@@ -5,7 +5,8 @@ description: Use when writing tests, building evaluation datasets, or measuring 
 
 # testing-and-evaluation
 
-> Status: Tests live (`apps/api/test`). Evaluation planned (`packages/evaluation`).
+> Status: Live: unit/integration tests and retrieval evals (`@synapse/evaluation`, `bun run eval:retrieval`,
+> CI regression vs committed baselines). Generation, agent and safety evals are planned.
 
 ## When to use
 

@@ -7,3 +7,4 @@ export {
 	createOpenAICompatibleModelGateway,
 	type OpenAICompatibleGatewayOptions,
 } from "./openai-compatible";
+export { createHashingEmbeddingGateway } from "./hashing-embedding";

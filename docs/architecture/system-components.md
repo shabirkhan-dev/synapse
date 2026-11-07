@@ -14,7 +14,7 @@
 
 See [docs/packages/](../packages/README.md). Live today: `ui`, `typescript-config`, `core`, `database`, `adapters`
 (model gateway), `ingestion`, `knowledge`, `retrieval`,
-`generation`, `observability`.
+`generation`, `observability`, `evaluation`.
 Everything else is planned.
 
 ## Crates (Rust)
