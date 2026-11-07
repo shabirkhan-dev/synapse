@@ -5,9 +5,8 @@ description: Use when creating or changing a backend domain module in apps/api (
 
 # backend-module-development
 
-> Status: Live standard. `apps/api` is partly migrated: modules have public `index.ts` files and
-> pass the layering checks, but still use flat `<name>.<role>.ts` files and `common/` instead of
-> `shared/`, and inline status codes instead of `HTTP_STATUS` constants.
+> Status: Live. `apps/api` follows this layout (`config/`, `shared/`, `infrastructure/`, `routes/`,
+> per-layer module folders). Reference module: `apps/api/src/modules/rag/`.
 
 ## When to use
 
@@ -16,14 +15,15 @@ module, or moving logic between layers.
 
 ## Workflow
 
-1. **Place it.** `apps/api/src/modules/<domain>/`. Start flat (`<domain>.routes.ts`,
-   `<domain>.service.ts`, …); switch to folders (`routes/`, `services/`, …) when a layer has more
-   than one file. Never create empty layers.
-2. **Schemas first** (`schemas/` or `<domain>.schemas.ts`): Zod with `.openapi()` names; infer types.
-3. **Repository** (`<domain>.repository.ts`): Drizzle queries only. Tenant/owner scope is an
+1. **Place it.** `apps/api/src/modules/<domain>/` with one folder per layer it needs:
+   `routes/<domain>.routes.ts`, `services/<domain>.service.ts`, `repositories/`, `schemas/`,
+   `types/`, `constants/`, `mappers/`. Never create empty layers.
+2. **Schemas first** (`schemas/<domain>.schemas.ts`): Zod with `.openapi()` names; infer types.
+3. **Repository** (`repositories/<domain>.repository.ts`): Drizzle queries only, against tables
+   from `@synapse/database`; add tables in `packages/database/src/schema/` + `bun run db:generate`. Tenant/owner scope is an
    explicit argument: `findById({ documentId, tenantId })`. Bounded queries (limit/pagination).
    Explicit transactions for multi-step writes.
-4. **Service** (`<domain>.service.ts`): business rules and orchestration; depends on the repository
+4. **Service** (`services/<domain>.service.ts`): business rules and orchestration; depends on the repository
    interface; throws `AppError` with codes from `shared/constants` or the module's `constants/`.
    No Hono imports, no response building.
 5. **Controller / route:** route declares method, path, middleware and OpenAPI schemas; controller
@@ -31,7 +31,8 @@ module, or moving logic between layers.
    shared `success(...)` helper. No business logic, no repository imports.
 6. **Mapper** (`mappers/`) when DB rows, domain objects and API shapes differ.
 7. **Public interface:** export what other modules or the composition root need from
-   `modules/<domain>/index.ts`. Wire it in `app.ts` / `routes/index.ts`.
+   `modules/<domain>/index.ts`. Construct services in `server.ts`, mount routes in
+   `routes/index.ts`.
 8. **Config:** new env goes into `config/env.ts` + a typed `config/<area>.config.ts`; never read env
    in the module.
 9. **Tests:** service unit tests with a fake repository; route tests through `createApp`;

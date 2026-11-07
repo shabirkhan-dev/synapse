@@ -2,20 +2,23 @@ import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
 import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import { SignJWT } from "jose";
 
-import { createApp } from "@/app";
-import { createLogger } from "@/common/logger";
-import { developmentJwtSecret, parseEnv } from "@/config/env";
-import { EMBEDDING_DIMENSIONS } from "@/database/schema";
-import { RagService } from "@/modules/rag/rag.service";
-import type {
-	NewRagChunk,
-	NewRagDocument,
-	RagDocument,
-	RagMatch,
-	RagRepository,
-} from "@/modules/rag/rag.types";
+import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 
-export const testEnv = parseEnv({
+import { createApp } from "@/app";
+import { loadConfiguration } from "@/config";
+import { developmentJwtSecret } from "@/config/env";
+import { createLogger } from "@/infrastructure/logger/logger";
+import { ChatService } from "@/modules/chat";
+import {
+	type NewRagChunk,
+	type NewRagDocument,
+	type RagDocument,
+	type RagMatch,
+	type RagRepository,
+	RagService,
+} from "@/modules/rag";
+
+export const testConfig = loadConfiguration({
 	NODE_ENV: "test",
 	LOG_LEVEL: "ERROR",
 	RAG_CHUNK_SIZE: "200",
@@ -184,16 +187,19 @@ export function buildTestApp({
 	const rag = new RagService(
 		repository,
 		{ chat: chatModel, embedding: embeddingModel },
-		{
-			chunk: { size: testEnv.RAG_CHUNK_SIZE, overlap: testEnv.RAG_CHUNK_OVERLAP },
-			defaultTopK: testEnv.RAG_TOP_K,
-		},
+		{ chunk: testConfig.rag.chunk, defaultTopK: testConfig.rag.topK },
 	);
-	const app = createApp({
-		env: testEnv,
-		logger: createLogger({ minLevel: "ERROR" }),
+	const chat = new ChatService({
 		rag,
 		chatModel,
+		maxSteps: testConfig.rag.chatMaxSteps,
+		topK: testConfig.rag.topK,
+	});
+	const app = createApp({
+		config: testConfig,
+		logger: createLogger({ minLevel: "ERROR" }),
+		rag,
+		chat,
 		pingDatabase,
 	});
 	return { app, rag, repository, chatModel, embeddingModel };

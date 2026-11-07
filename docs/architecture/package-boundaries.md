@@ -20,7 +20,9 @@ Each capability has **one owner**. If you need it elsewhere, depend on the owner
 | Tracing, cost, exporters | `observability` |
 | Auth, tenancy, permissions, PII, secrets | `security` |
 | Retry, breakers, idempotency, timeouts, fallbacks, health | `reliability` |
-| Database, vector store, cache, queue, storage, model gateway | `adapters` |
+| Postgres client, schema, migrations | `database` |
+| Domain queries (repositories) | the module that owns the data |
+| Vector store, cache, queue, storage, model gateway | `adapters` |
 | Vendor SDKs (OpenAI, Anthropic, Google, Cohere, Langfuse) | `providers` |
 | Rust bridge | `native` (+ `crates/`) |
 | UI primitives | `ui` |

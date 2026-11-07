@@ -29,3 +29,9 @@ Use **PostgreSQL** as the single store:
 
 - Dedicated vector DB (Pinecone, Qdrant, Weaviate): extra service, split consistency.
 - Redis for queue/cache: faster at scale, not needed yet.
+
+## Update 2026-11-07
+
+The client, schema, migrations and runner live in their own workspace package,
+`@synapse/database` (`packages/database`), so any app or package can use them. Repositories stay in
+the module that owns the data.

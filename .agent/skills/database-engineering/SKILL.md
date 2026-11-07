@@ -5,7 +5,8 @@ description: Use when changing the Postgres schema, migrations, indexes, pgvecto
 
 # database-engineering
 
-> Status: Live. Schema in `apps/api/src/database/schema`, migrations in `apps/api/src/database/migrations` (Drizzle).
+> Status: Live. `@synapse/database` (`packages/database`): client, schema (`src/schema/`), migrations
+> (`migrations/`). Repositories stay in the owning module (`apps/api/src/modules/*/repositories/`).
 
 ## When to use
 
@@ -13,11 +14,13 @@ Any schema, index, query-performance or data-migration change.
 
 ## Workflow
 
-1. Edit the Drizzle schema, then `bun --cwd=apps/api run db:generate` and review the SQL.
+1. Edit the Drizzle schema in `packages/database/src/schema/`, then `bun run db:generate` and review
+   the SQL in `packages/database/migrations/`.
 2. Make it rolling-deploy safe: add nullable/defaulted columns first, backfill, then tighten.
 3. Add indexes for new filters/sorts; HNSW + `vector_cosine_ops` for vectors.
 4. Scope tenant data by owner id and index that column.
-5. Apply with `bun --cwd=apps/api run db:migrate` against local Postgres (`docker compose up -d postgres`).
+5. Apply with `bun run db:migrate` (needs `DATABASE_URL`) against local Postgres
+   (`docker compose up -d postgres`).
 6. Run the integration test with `API_TEST_DATABASE_URL` set.
 
 ## Done when

@@ -1,0 +1,123 @@
+import { embed, embedMany, generateText, type EmbeddingModel, type LanguageModel } from "ai";
+
+import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
+
+import { HTTP_STATUS } from "@/shared/constants/http-status";
+import { AppError } from "@/shared/errors/app-error";
+
+import {
+	RAG_ANSWER_SYSTEM_PROMPT,
+	RAG_DEFAULT_LIST_LIMIT,
+	RAG_ERROR_CODES,
+	RAG_MESSAGES,
+} from "../constants/rag.constants";
+import type { RagDocument, RagMatch, RagRepository } from "../types/rag.types";
+import { chunkText, type ChunkOptions } from "./text-chunker";
+
+export type RagServiceOptions = {
+	chunk: ChunkOptions;
+	defaultTopK: number;
+};
+
+export type IngestInput = {
+	title: string;
+	content: string;
+	source?: string | undefined;
+	metadata?: Record<string, unknown> | undefined;
+};
+
+export type RagAnswer = {
+	answer: string;
+	matches: RagMatch[];
+};
+
+export class RagService {
+	constructor(
+		private readonly repository: RagRepository,
+		private readonly models: { chat: LanguageModel; embedding: EmbeddingModel },
+		private readonly options: RagServiceOptions,
+	) {}
+
+	async ingest(ownerId: string, input: IngestInput): Promise<RagDocument> {
+		const pieces = chunkText(input.content, this.options.chunk);
+		if (pieces.length === 0) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+				code: RAG_ERROR_CODES.EMPTY_DOCUMENT,
+				message: RAG_MESSAGES.EMPTY_DOCUMENT,
+			});
+		}
+		const { embeddings } = await embedMany({ model: this.models.embedding, values: pieces });
+		embeddings.forEach(assertDimensions);
+		return this.repository.createDocument(
+			{
+				ownerId,
+				title: input.title,
+				source: input.source ?? null,
+				metadata: input.metadata ?? {},
+			},
+			pieces.map((content, chunkIndex) => ({
+				chunkIndex,
+				content,
+				embedding: embeddings[chunkIndex] ?? [],
+			})),
+		);
+	}
+
+	async search(
+		ownerId: string,
+		query: string,
+		topK = this.options.defaultTopK,
+	): Promise<RagMatch[]> {
+		const { embedding } = await embed({ model: this.models.embedding, value: query });
+		assertDimensions(embedding);
+		return this.repository.searchChunks(ownerId, embedding, topK);
+	}
+
+	async answer(ownerId: string, question: string, topK?: number): Promise<RagAnswer> {
+		const matches = await this.search(ownerId, question, topK);
+		if (matches.length === 0) {
+			return { answer: RAG_MESSAGES.NO_DOCUMENTS_TO_ANSWER_FROM, matches };
+		}
+		const { text } = await generateText({
+			model: this.models.chat,
+			system: RAG_ANSWER_SYSTEM_PROMPT,
+			prompt: `${formatContext(matches)}\n\nQuestion: ${question}`,
+		});
+		return { answer: text, matches };
+	}
+
+	listDocuments(ownerId: string, limit = RAG_DEFAULT_LIST_LIMIT): Promise<RagDocument[]> {
+		return this.repository.listDocuments(ownerId, limit);
+	}
+
+	async deleteDocument(ownerId: string, documentId: string): Promise<void> {
+		const deleted = await this.repository.deleteDocument(ownerId, documentId);
+		if (!deleted) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.NOT_FOUND,
+				code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND,
+				message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
+			});
+		}
+	}
+}
+
+export function formatContext(matches: RagMatch[]): string {
+	return matches
+		.map(
+			(match, index) =>
+				`[${index + 1}] ${match.documentTitle}${match.source ? ` (${match.source})` : ""}\n${match.content}`,
+		)
+		.join("\n\n");
+}
+
+function assertDimensions(embedding: number[]): void {
+	if (embedding.length !== EMBEDDING_DIMENSIONS) {
+		throw new AppError({
+			statusCode: HTTP_STATUS.BAD_GATEWAY,
+			code: RAG_ERROR_CODES.EMBEDDING_DIMENSION_MISMATCH,
+			message: RAG_MESSAGES.EMBEDDING_DIMENSION_MISMATCH(embedding.length, EMBEDDING_DIMENSIONS),
+		});
+	}
+}

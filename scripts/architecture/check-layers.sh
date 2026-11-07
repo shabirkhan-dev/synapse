@@ -109,7 +109,7 @@ while IFS= read -r file; do
     if grep -nE 'from "(hono|@hono/[^"]+)(/[^"]*)?"' "$file" >/dev/null; then
         fail "$file: services and repositories must not import Hono (no HTTP in business logic)"
     fi
-    if grep -nE 'from "[^"]*(common/api-response|shared/responses)[^"]*"' "$file" >/dev/null; then
+    if grep -nE 'from "[^"]*shared/responses[^"]*"' "$file" >/dev/null; then
         fail "$file: services and repositories must not build HTTP responses"
     fi
 done < <(
@@ -129,12 +129,22 @@ done < <(
 while IFS= read -r hit; do
     fail "$hit -> build responses with the shared response helpers"
 done < <(search '\bc\.(json|body|text|html)\(|new Response\(' "$API_SRC" |
-    grep -vE "^$API_SRC/(common|shared/responses|shared/errors)/" || true)
+    grep -vE "^$API_SRC/shared/(responses|errors)/" || true)
 
 while IFS= read -r hit; do
-    fail "$hit -> database drivers only in repositories and database infrastructure"
+    fail "$hit -> database drivers only in repositories (the client lives in @synapse/database)"
 done < <(search 'from "(drizzle-orm|postgres)(/[^"]*)?"' "$API_SRC" |
-    grep -vE "^$API_SRC/(database|infrastructure/database)/|\.repository\.ts:|/repositories/" || true)
+    grep -vE "^$API_SRC/infrastructure/database/|\.repository\.ts:|/repositories/" || true)
+
+while IFS= read -r hit; do
+    fail "$hit -> use HTTP_STATUS constants, not numeric status codes"
+done < <(search 'statusCode: [0-9]{3}|(failure|success)\(.*, [0-9]{3}[,)]' "$API_SRC" |
+    grep -vE "^$API_SRC/(config|shared/constants)/|^$API_SRC/[^:]*/constants/" || true)
+
+while IFS= read -r hit; do
+    fail "$hit -> error codes come from ERROR_CODES or the module's constants/"
+done < <(search '"[A-Z][A-Z0-9]*(_[A-Z0-9]+)+"' "$API_SRC" |
+    grep -vE "^$API_SRC/(config|shared/constants)/|^$API_SRC/[^:]*/constants/" || true)
 
 # --- frontend --------------------------------------------------------------------------
 check_isolation "$CONSOLE_SRC/features" "@/features" "$CONSOLE_SRC" "feature"

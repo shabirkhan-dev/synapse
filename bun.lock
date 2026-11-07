@@ -20,18 +20,17 @@
         "@hono/zod-openapi": "^1.6.3",
         "@scalar/hono-api-reference": "^0.12.18",
         "@synapse/core": "workspace:*",
+        "@synapse/database": "workspace:*",
         "ai": "^7.0.164",
         "drizzle-orm": "^0.45.4",
         "hono": "^4.13.17",
         "jose": "^6.2.15",
-        "postgres": "^4.1.0",
         "zod": "^4.6.7",
       },
       "devDependencies": {
         "@ai-sdk/provider": "^4.0.36",
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
-        "drizzle-kit": "^0.31.11",
         "typescript": "^7.0.2",
       },
     },
@@ -60,6 +59,22 @@
       "devDependencies": {
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/database": {
+      "name": "@synapse/database",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+        "drizzle-orm": "^0.45.4",
+        "postgres": "^4.1.0",
+        "zod": "^4.6.7",
+      },
+      "devDependencies": {
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "drizzle-kit": "^0.31.11",
         "typescript": "^7.0.2",
       },
     },
@@ -448,6 +463,8 @@
     "@swc/helpers": ["@swc/helpers@0.5.23", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw=="],
 
     "@synapse/core": ["@synapse/core@workspace:packages/core"],
+
+    "@synapse/database": ["@synapse/database@workspace:packages/database"],
 
     "@synapse/typescript-config": ["@synapse/typescript-config@workspace:packages/typescript-config"],
 

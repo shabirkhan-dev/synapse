@@ -20,7 +20,7 @@ the embedding model and version.
 
 - Swapping or adding a model is a configuration/adapter change, not a domain change.
 - Fallback chains, retries, cost tracking and tracing live in one place.
-- Today's seed is `apps/api/src/modules/ai/ai.provider.ts` (AI SDK, OpenAI-compatible endpoint,
+- Today's seed is `apps/api/src/infrastructure/ai/ai-models.ts` (AI SDK, OpenAI-compatible endpoint,
   OpenRouter by default); it moves into the gateway when `adapters` is created.
 
 ## Alternatives considered

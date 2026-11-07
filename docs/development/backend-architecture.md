@@ -1,8 +1,6 @@
 # Backend architecture
 
-> **Status:** Live standard. `apps/api` is partly migrated: modules have public `index.ts` files
-> and pass `bun run architecture:check`; the move to `shared/`, `infrastructure/`, per-layer
-> folders and `HTTP_STATUS` / `ERROR_CODES` / `RESPONSE_MESSAGES` constants is the next step.
+> **Status:** Live. `apps/api` follows this standard; reference module: `apps/api/src/modules/rag/`.
 
 Agent rules: `.agent/rules/backend-architecture.md`, `.agent/rules/configuration.md`.
 Playbook: `.agent/skills/backend-module-development/`.
@@ -18,20 +16,22 @@ Playbook: `.agent/skills/backend-module-development/`.
 
 ```text
 apps/api/src/
-├── app.ts                 # builds the Hono app: middleware, routes, error handler
-├── server.ts              # starts the server (today: index.ts)
+├── app.ts                 # builds the Hono app: middleware, docs, error handler
+├── server.ts              # loads config, wires services, starts Bun.serve
+├── migrate.ts             # migration entry for the built image
 ├── config/
 │   ├── env.ts             # Zod schema, parsed once
 │   ├── app.config.ts
 │   ├── database.config.ts
 │   ├── auth.config.ts
-│   └── index.ts
+│   ├── ai.config.ts · rag.config.ts · migration.config.ts
+│   └── index.ts           # loadConfiguration() → { app, auth, database, ai, rag }
 ├── shared/
 │   ├── constants/         # http-status.ts, error-codes.ts, response-messages.ts
 │   ├── errors/            # app-error.ts, error-handler.ts
 │   ├── responses/         # success-response.ts, error-response.ts, response.types.ts
 │   ├── middleware/ · utils/ · types/
-├── infrastructure/        # database/ logger/ cache/ queue/ (until packages/adapters owns them)
+├── infrastructure/        # logger/ ai/ (cache/ queue/ later). The database client is @synapse/database
 ├── modules/
 │   ├── users/ · organizations/ · documents/ · knowledge/ · ingestion/
 └── routes/index.ts        # mounts every module router
@@ -53,8 +53,16 @@ modules/users/
 └── index.ts               # public interface
 ```
 
-Not every module needs every folder. A small module can stay flat (`user.routes.ts`,
-`user.service.ts`, …) and grow folders when a layer has more than one file.
+Not every module needs every folder — create a folder only when the module has that
+responsibility. Today the API's route handlers are trivial (validate → service → `success`), so
+modules have no `controllers/` yet; add one when a handler grows real HTTP logic.
+
+| Module | Folders today |
+| --- | --- |
+| `auth` | `constants/ middleware/ services/` |
+| `chat` | `constants/ routes/ schemas/ services/ tools/` |
+| `health` | `constants/ routes/ schemas/` |
+| `rag` | `constants/ mappers/ repositories/ routes/ schemas/ services/ types/` |
 
 | Layer | Responsibility |
 | --- | --- |
@@ -76,27 +84,24 @@ business logic; services never construct HTTP responses.
 All env is read and validated in `config/`. Nothing else touches `process.env` / `Bun.env`.
 
 ```ts
-// config/env.ts
-import { loadConfig } from "@synapse/core/config";
-import { z } from "zod";
+// config/env.ts — parse once
+export function parseEnv(source: ConfigSource = process.env): Env {
+	return loadConfig(envSchema, source); // @synapse/core: throws CONFIG_INVALID listing every bad key
+}
 
-const envSchema = z.object({
-	NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-	PORT: z.coerce.number().default(8000),
-	DATABASE_URL: z.url(),
-	JWT_SECRET: z.string().min(32),
-});
+// config/database.config.ts — small typed domain config
+export function createDatabaseConfig(env: Env): DatabaseConfig {
+	return { url: env.DATABASE_URL, poolMax: env.DATABASE_POOL_MAX };
+}
 
-export const env = loadConfig(envSchema); // validates once, throws CONFIG_INVALID
-export type Environment = z.infer<typeof envSchema>;
+// config/index.ts — what server.ts calls
+export function loadConfiguration(source?: ConfigSource): Configuration {
+	return createConfiguration(parseEnv(source)); // { app, auth, database, ai, rag }
+}
 ```
 
-```ts
-// config/database.config.ts
-import { env } from "./env";
-
-export const databaseConfig = { url: env.DATABASE_URL } as const;
-```
+`server.ts` loads the configuration once and passes the typed pieces to the services and
+`createApp`, so tests can build an app from any config (`loadConfiguration({ ... })`).
 
 Rules: validate once at startup, fail fast, explicit defaults, parsing separate from configuration,
 small domain configs over one giant object, server secrets never reach the console.
@@ -115,16 +120,23 @@ export const HTTP_STATUS = {
 // shared/constants/error-codes.ts
 export const ERROR_CODES = {
 	VALIDATION_ERROR: "VALIDATION_ERROR",
+	BAD_REQUEST: "BAD_REQUEST",
 	UNAUTHORIZED: "UNAUTHORIZED",
 	FORBIDDEN: "FORBIDDEN",
-	RESOURCE_NOT_FOUND: "RESOURCE_NOT_FOUND",
-	INTERNAL_ERROR: "INTERNAL_ERROR",
+	NOT_FOUND: "NOT_FOUND",
+	PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+	HTTP_ERROR: "HTTP_ERROR",
+	INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
 } as const;
 
 // shared/constants/response-messages.ts
 export const RESPONSE_MESSAGES = {
-	SUCCESS: { CREATED: "Resource created successfully.", FETCHED: "Resource retrieved successfully." },
-	ERRORS: { UNAUTHORIZED: "Authentication required.", NOT_FOUND: "Requested resource was not found." },
+	ERRORS: {
+		VALIDATION_FAILED: "Request validation failed",
+		REQUEST_FAILED: "Request failed",
+		INTERNAL: "Internal server error",
+		ROUTE_NOT_FOUND: (method: string, path: string) => `Route ${method} ${path} not found`,
+	},
 } as const;
 ```
 
@@ -141,10 +153,13 @@ the response:
 ```ts
 throw new AppError({
 	statusCode: HTTP_STATUS.NOT_FOUND,
-	code: ERROR_CODES.RESOURCE_NOT_FOUND,
-	message: RESPONSE_MESSAGES.ERRORS.NOT_FOUND,
+	code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND, // module constants
+	message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
 });
 ```
+
+OpenAPI `responses` maps (`200: { … }`) keep literal status keys: they are the spec's keys, and
+computed keys break Hono's response typing.
 
 Responses are built only by the shared helpers (`success(...)`, `failure(...)`) and the error
 handler, so every endpoint returns the same envelope. Current envelope: `docs/api/conventions.md`.
@@ -176,8 +191,9 @@ Add a specialised error class only when it behaves differently (e.g. carries ret
   belongs to the current tenant.
 - Index from query patterns; no unbounded collections; soft delete only when product or compliance
   requires it; pgvector index settings match the measured workload.
-- Target home for database code: `packages/adapters/database/` (`client/`, `schema/`,
-  `migrations/`, `transactions/`, `types/`). Today: `apps/api/src/database/`.
+- Database code lives in [`@synapse/database`](../packages/database.md) (`packages/database`):
+  `src/client/`, `src/schema/`, `src/migrations/` (runner), `migrations/` (SQL). Add
+  `transactions/` and `types/` when there is real code for them. Repositories stay in the module.
 
 ## Enforcement
 
@@ -189,7 +205,9 @@ Add a specialised error class only when it behaves differently (e.g. carries ret
 | Module isolation | a file imports another module's internals instead of its `index.ts` |
 | Service purity | a `*.service.ts` / `*.repository.ts` imports Hono or the response helpers |
 | Route → service | a route or controller imports a repository |
-| Responses | `c.json` / `c.body` / `new Response` outside `common/` (`shared/responses`, `shared/errors`) |
-| Data access | `drizzle-orm` / `postgres` imported outside repositories and `database/` |
+| Responses | `c.json` / `c.body` / `new Response` outside `shared/responses` / `shared/errors` |
+| Data access | `drizzle-orm` / `postgres` imported outside repositories |
+| Status constants | `statusCode: 404`, `failure(c, 404, …)` or `success(c, x, 201)` outside `constants/` |
+| Error-code constants | a `"SCREAMING_SNAKE"` string literal outside `constants/` and `config/` |
 
 `scripts/bash/tests/check-layers.test.sh` proves each check fires on a fixture repo.

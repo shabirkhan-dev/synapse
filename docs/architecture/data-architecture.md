@@ -4,14 +4,15 @@
 
 PostgreSQL is the single store (ADR-0002).
 
-## Live tables (`apps/api/src/database/schema/rag.schema.ts`)
+## Live tables (`packages/database/src/schema/rag.schema.ts`)
 
 | Table | Key columns | Indexes |
 | --- | --- | --- |
 | `rag_documents` | `id` uuid, `owner_id`, `title`, `source`, `metadata` jsonb, `chunk_count`, timestamps | `(owner_id, created_at)` |
 | `rag_chunks` | `id`, `document_id` → documents, `owner_id`, `chunk_index`, `content`, `embedding vector(1536)` | unique `(document_id, chunk_index)`, `owner_id`, HNSW `vector_cosine_ops` |
 
-Migrations: `apps/api/src/database/migrations`, journal table `__drizzle_migrations_ai_api`.
+Migrations: `packages/database/migrations` (`bun run db:generate`, `bun run db:migrate`), journal
+table `__drizzle_migrations_ai_api`. Owner: [`@synapse/database`](../packages/database.md).
 
 ## Planned stores (same Postgres)
 

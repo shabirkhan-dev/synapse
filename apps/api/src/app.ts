@@ -1,32 +1,24 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import type { LanguageModel } from "ai";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 
-import { failure } from "@/common/api-response";
-import type { AppBindings } from "@/common/app-types";
-import { createErrorHandler, notFoundHandler } from "@/common/error-handler";
-import type { Logger } from "@/common/logger";
-import { requestId } from "@/common/request-id";
-import { type Env, parseCorsOrigins } from "@/config/env";
-import { createAuthMiddleware } from "@/modules/auth";
-import { createChatRoutes } from "@/modules/chat";
-import { createHealthRoutes } from "@/modules/health";
-import { createRagRoutes, type RagService } from "@/modules/rag";
+import type { Logger } from "@/infrastructure/logger/logger";
+import { registerRoutes, type RouteDependencies } from "@/routes";
+import { ERROR_CODES } from "@/shared/constants/error-codes";
+import { HTTP_STATUS } from "@/shared/constants/http-status";
+import { RESPONSE_MESSAGES } from "@/shared/constants/response-messages";
+import { createErrorHandler, notFoundHandler } from "@/shared/errors/error-handler";
+import { requestId } from "@/shared/middleware/request-id";
+import { failure } from "@/shared/responses/error-response";
+import type { AppBindings } from "@/shared/types/app-types";
 
-export type AppDependencies = {
-	env: Env;
-	logger: Logger;
-	rag: RagService;
-	chatModel: LanguageModel;
-	pingDatabase: () => Promise<void>;
-};
+export type AppDependencies = RouteDependencies & { logger: Logger };
 
-export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDependencies) {
-	const basePath = `/${env.API_PREFIX}/v${env.API_VERSION}`;
+export function createApp({ logger, ...dependencies }: AppDependencies) {
+	const { apiPrefix, corsOrigins } = dependencies.config.app;
 	const app = new OpenAPIHono<AppBindings>({
-		// Zod failures use the shared error envelope (VALIDATION_ERROR).
+		// Zod failures use the shared error envelope.
 		defaultHook: (result, c) => {
 			if (!result.success) {
 				const errors = result.error.issues.map((issue) => ({
@@ -34,7 +26,13 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 					code: issue.code,
 					message: issue.message,
 				}));
-				return failure(c, 422, "VALIDATION_ERROR", "Request validation failed", errors);
+				return failure(
+					c,
+					HTTP_STATUS.UNPROCESSABLE_ENTITY,
+					ERROR_CODES.VALIDATION_ERROR,
+					RESPONSE_MESSAGES.ERRORS.VALIDATION_FAILED,
+					errors,
+				);
 			}
 			return undefined;
 		},
@@ -45,7 +43,7 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 	app.use(
 		"*",
 		cors({
-			origin: parseCorsOrigins(env.CORS_ORIGIN),
+			origin: corsOrigins,
 			allowHeaders: ["authorization", "content-type", "x-request-id"],
 			exposeHeaders: ["x-request-id"],
 			allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
@@ -60,20 +58,7 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 		);
 	});
 
-	const auth = createAuthMiddleware(env.JWT_SECRET);
-	app.use(`${basePath}/rag/*`, auth);
-	app.use(`${basePath}/chat`, auth);
-	app.use(`${basePath}/chat/*`, auth);
-
-	app.route(
-		`${basePath}/health`,
-		createHealthRoutes({ serviceName: env.SERVICE_NAME, pingDatabase }),
-	);
-	app.route(`${basePath}/rag`, createRagRoutes(rag));
-	app.route(
-		`${basePath}/chat`,
-		createChatRoutes({ rag, chatModel, maxSteps: env.CHAT_MAX_STEPS, topK: env.RAG_TOP_K }),
-	);
+	registerRoutes(app, dependencies);
 
 	app.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
 		type: "http",
@@ -81,7 +66,7 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 		bearerFormat: "JWT",
 		description: "HS256 access token signed with JWT_SECRET",
 	});
-	app.doc31(`/${env.API_PREFIX}/openapi.json`, {
+	app.doc31(`/${apiPrefix}/openapi.json`, {
 		openapi: "3.1.0",
 		info: {
 			title: "Synapse AI API",
@@ -89,7 +74,7 @@ export function createApp({ env, logger, rag, chatModel, pingDatabase }: AppDepe
 			description: "RAG (pgvector) and streaming tool-calling chat. Bun + Hono + AI SDK.",
 		},
 	});
-	app.get(`/${env.API_PREFIX}/docs`, Scalar({ url: `/${env.API_PREFIX}/openapi.json` }));
+	app.get(`/${apiPrefix}/docs`, Scalar({ url: `/${apiPrefix}/openapi.json` }));
 
 	app.notFound(notFoundHandler);
 	app.onError(createErrorHandler(logger));

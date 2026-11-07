@@ -5,7 +5,7 @@ description: Use when adding tracing, instrumentation, cost tracking, logging or
 
 # observability
 
-> Status: Planned. Today the API has request logging with request ids (`apps/api/src/common/logger.ts`).
+> Status: Planned. Today the API has request logging with request ids (`apps/api/src/infrastructure/logger/logger.ts`).
 
 ## When to use
 

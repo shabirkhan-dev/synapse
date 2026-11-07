@@ -8,8 +8,9 @@ Applies to every change. Full rationale: `docs/architecture/`.
    feedback → `human-oversight`, event history → `audit`, LangGraph → `orchestration`,
    vendor SDKs → `adapters` / `providers`. Never re-implement a capability in a second place.
 3. **Domain packages never import vendor SDKs.** `ingestion`, `knowledge`, `retrieval`,
-   `generation`, `orchestration` and friends depend on contracts from `core`. Only `adapters/` and
-   `providers/` import OpenAI, Anthropic, Cohere, Langfuse, pg, pg-boss and so on.
+   `generation`, `orchestration` and friends depend on contracts from `core`. Only `database`
+   (Drizzle, postgres.js), `adapters/` and `providers/` import OpenAI, Anthropic, Cohere, Langfuse,
+   pg-boss, database drivers and so on.
 4. **Dependencies point inward.** apps → domain packages → `core`. A package never imports an app,
    and `core` imports nothing from the workspace. See `docs/architecture/dependency-architecture.md`.
 5. **Every long job saves its state** (checkpoint) and can resume after a crash or deploy.

@@ -20,6 +20,9 @@ put apps/api/src/modules/rag/routes/rag.routes.ts 'import { RagService } from ".
 put apps/api/src/modules/chat/chat.routes.ts 'import { RagService } from "@/modules/rag";'
 put apps/api/src/modules/chat/chat.tools.ts 'import { RagService } from "../rag";'
 put apps/api/src/shared/responses/success-response.ts 'export const ok = (c) => c.json({});'
+put apps/api/src/shared/constants/error-codes.ts 'export const ERROR_CODES = { NOT_FOUND: "NOT_FOUND" };'
+put apps/api/src/modules/rag/constants/rag.constants.ts 'export const RAG_ERROR_CODES = { EMPTY: "RAG_EMPTY_DOCUMENT" };'
+put apps/api/src/modules/rag/services/rag-errors.service.ts 'throw new AppError({ statusCode: HTTP_STATUS.NOT_FOUND, code: RAG_ERROR_CODES.EMPTY });'
 put apps/console/src/lib/api/client.ts 'export const api = () => fetch("/x");'
 put apps/console/src/config/env.ts 'export const url = process.env.NEXT_PUBLIC_API_URL;'
 put apps/console/src/features/users/services/user.service.ts 'import { api } from "@/lib/api/client";'
@@ -44,6 +47,9 @@ put apps/api/src/modules/rag/routes/rag-admin.routes.ts 'import { r } from "../r
 put apps/api/src/modules/rag/routes/rag-raw.routes.ts 'export const h = (c) => c.json({ error: "x" }, 400);'
 put apps/api/src/modules/rag/services/rag-db.service.ts 'import { eq } from "drizzle-orm";'
 put packages/demo/src/index.ts 'export const k = process.env.KEY;'
+put apps/api/src/modules/rag/services/rag-status.service.ts 'throw new AppError({ statusCode: 404, code: ERROR_CODES.NOT_FOUND });'
+put apps/api/src/modules/rag/routes/rag-code.routes.ts 'return failure(c, HTTP_STATUS.NOT_FOUND, "RAG_MISSING", "x");'
+put apps/api/src/modules/health/routes/health-raw.routes.ts 'return success(c, data, 201);'
 put apps/console/src/features/users/components/user-list.tsx 'import { useUsersQuery } from "../hooks/queries/use-users-query";'
 put apps/console/src/features/users/services/user-cache.service.ts 'import { useQuery } from "@tanstack/react-query";'
 put apps/console/src/features/agents/containers/agent-users.tsx 'import { userService } from "@/features/users/services/user.service";'
@@ -74,6 +80,9 @@ expect "rag-admin.routes.ts: routes and controllers call services, never reposit
 expect "rag-raw.routes.ts:1:"
 expect "rag-db.service.ts:1:"
 expect "packages/demo/src/index.ts:1:"
+expect "rag-status.service.ts:1:"
+expect "rag-code.routes.ts:1:"
+expect "health-raw.routes.ts:1:"
 expect "user-list.tsx:1:"
 expect "user-cache.service.ts:1:"
 expect "agent-users.tsx imports feature internals"

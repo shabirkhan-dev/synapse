@@ -22,6 +22,8 @@ synapse/
 │   ├── api/                  # Bun + Hono API (RAG on pgvector, streaming chat)
 │   └── console/              # Next.js console (bare, UI starts from zero)
 ├── packages/
+│   ├── core/                 # @synapse/core: errors, config, shared types
+│   ├── database/             # @synapse/database: Drizzle client, schema, migrations
 │   ├── typescript-config/    # Shared TS config bases
 │   └── ui/                   # shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── scripts/                  # Bash scripts, architecture checks and tests
@@ -49,6 +51,8 @@ synapse/
 
 | Package | Workspace import | Purpose |
 | --- | --- | --- |
+| `packages/core` | `@synapse/core` | Errors, config loading, shared types |
+| `packages/database` | `@synapse/database` | Drizzle client, schema, migrations, runner |
 | `packages/ui` | `@synapse/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `packages/typescript-config` | `@synapse/typescript-config` | Reusable TypeScript config presets |
 

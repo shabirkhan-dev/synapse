@@ -2,7 +2,7 @@
 
 Produce answers from context: providers, prompts, context assembly, completion, citations and structured output.
 
-> **Status:** Partly live: OpenAI-compatible chat + embeddings via the AI SDK in `apps/api/src/modules/ai`.
+> **Status:** Partly live: OpenAI-compatible chat + embeddings via the AI SDK in `apps/api/src/infrastructure/ai`.
 
 ## Internal modules
 

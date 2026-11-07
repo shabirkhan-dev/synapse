@@ -19,6 +19,7 @@ SCOPES=(
     apps/api/src
     packages/ui/src
     packages/core/src
+    packages/database/src
 )
 
 # Whole stem is one or more kebab segments joined by dots

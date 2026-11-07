@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { developmentJwtSecret, parseCorsOrigins, parseEnv } from "@/config/env";
+import { parseCorsOrigins } from "@/config/app.config";
+import { developmentJwtSecret, parseEnv } from "@/config/env";
 
 describe("env", () => {
 	test("applies development defaults", () => {

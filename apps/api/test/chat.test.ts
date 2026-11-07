@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { MockLanguageModelV4 } from "ai/test";
 
-import { createChatTools } from "@/modules/chat/chat.tools";
+import { createChatTools } from "@/modules/chat";
 
 import {
 	authHeaders,

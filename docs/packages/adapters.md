@@ -1,16 +1,16 @@
 # `@synapse/adapters`
 
-Implement `core` contracts against infrastructure: database, vector store, cache, queue, storage and the model gateway.
+Implement `core` contracts against infrastructure: vector store, cache, queue, storage and the model gateway.
 
-> **Status:** Planned. Seed: `apps/api/src/database` (Drizzle + postgres.js) and `apps/api/src/modules/ai/ai.provider.ts`.
+> **Status:** Planned. Seed: `apps/api/src/infrastructure/ai/ai-models.ts`. The database client is
+> its own package, [`@synapse/database`](database.md).
 
 ## Internal modules
 
-`database/ vector-store/ cache/ queue/ storage/ model-gateway/`
+`vector-store/ cache/ queue/ storage/ model-gateway/`
 
 ## Owns
 
-- Drizzle + Postgres client and migrations
 - pgvector vector store
 - Postgres-backed cache
 - pg-boss queue
@@ -23,7 +23,7 @@ Implement `core` contracts against infrastructure: database, vector store, cache
 
 ## Depends on
 
-`core`, `providers`, vendor SDKs (pg, drizzle, pg-boss…)
+`core`, `database`, `providers`, vendor SDKs (pg-boss…)
 
 ## Public API
 
@@ -31,4 +31,4 @@ Implement `core` contracts against infrastructure: database, vector store, cache
 
 ## Notes
 
-This is one of only two places allowed to import vendor SDKs.
+One of the places allowed to import vendor SDKs (with `providers` and `database`).

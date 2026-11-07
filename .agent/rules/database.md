@@ -2,8 +2,9 @@
 
 - **PostgreSQL is the one store** for data, vectors (pgvector), keyword search (full-text), jobs
   (pg-boss) and audit. Add Redis or another store only with an ADR and evidence.
-- Access goes through **Drizzle** in `adapters/database` (today: `apps/api/src/database`).
-  Domain code depends on repository interfaces, not on Drizzle.
+- **`@synapse/database`** (`packages/database`) owns the client, schema, migrations and the
+  migration runner. Any app or package that needs Postgres depends on it. Repositories stay in the
+  module that owns the data; services depend on repository interfaces, not on Drizzle.
 - **Naming:** tables snake_case plural; columns snake_case; `id` primary keys; `{entity}_id` foreign
   keys; `created_at` / `updated_at`; booleans `is_*`; every index explicitly named.
 - Only **repositories** query the database. Tenant scope is an explicit argument

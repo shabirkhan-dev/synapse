@@ -10,6 +10,7 @@ FROM base AS deps
 COPY package.json bun.lock ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/core/package.json ./packages/core/
+COPY packages/database/package.json ./packages/database/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
 RUN bun install --frozen-lockfile --filter api --ignore-scripts
@@ -19,6 +20,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY package.json bun.lock ./
 COPY packages/core ./packages/core
+COPY packages/database ./packages/database
 COPY packages/typescript-config ./packages/typescript-config
 COPY apps/api ./apps/api
 WORKDIR /app/apps/api
@@ -46,4 +48,4 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=5 \
 	CMD wget -qO- "http://127.0.0.1:${PORT}/api/v1/health" >/dev/null || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["bun", "dist/index.js"]
+CMD ["bun", "dist/server.js"]

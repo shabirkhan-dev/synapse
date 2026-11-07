@@ -17,7 +17,7 @@ cd synapse
 bun install                       # also installs Lefthook git hooks
 docker compose up -d postgres     # Postgres 18 + pgvector on localhost:5433
 cp apps/api/.env.example apps/api/.env   # set AI_API_KEY
-bun --cwd=apps/api run db:migrate
+DATABASE_URL=postgresql://synapse:synapse@localhost:5433/synapse bun run db:migrate
 bun run dev                       # console :3000, api :8000
 ```
 

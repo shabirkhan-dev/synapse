@@ -25,7 +25,7 @@ updated: YYYY-MM-DD
 ## Why / Context
 
 <Why it matters, what triggered it. Link to files or contract sections:
-e.g. `apps/api/src/modules/rag/rag.routes.ts`.>
+e.g. `apps/api/src/modules/rag/routes/rag.routes.ts`.>
 
 ## Proposal or Ask
 

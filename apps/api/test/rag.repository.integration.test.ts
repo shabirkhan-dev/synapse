@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { join } from "node:path";
 
+import { createDatabase, runMigrations, sourceMigrationsFolder } from "@synapse/database";
 import { sql } from "drizzle-orm";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 
-import { createDatabase, MIGRATIONS_TABLE } from "@/database/database";
-import { DrizzleRagRepository } from "@/modules/rag/rag.repository";
+import { DrizzleRagRepository } from "@/modules/rag";
 
 import { fakeEmbedding } from "./helpers";
 
@@ -21,10 +19,7 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 	const owner = `it-${crypto.randomUUID()}`;
 
 	beforeAll(async () => {
-		await migrate(database.db, {
-			migrationsFolder: join(import.meta.dir, "../src/database/migrations"),
-			migrationsTable: MIGRATIONS_TABLE,
-		});
+		await runMigrations(database.db, sourceMigrationsFolder);
 	});
 
 	afterAll(async () => {

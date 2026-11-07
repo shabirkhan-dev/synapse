@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "turbo run dev --continue --concurrency=12",
     "dev:api": "bun --cwd=apps/api run dev",
+    "db:generate": "bun --cwd=packages/database run db:generate",
+    "db:migrate": "bun --cwd=packages/database run db:migrate",
     "dev:console": "bun --cwd=apps/console run dev",
     "dev:all": "turbo run dev --continue --concurrency=12",
     "build": "turbo run build",

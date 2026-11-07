@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { type ConfigSource, loadConfig } from "@synapse/core/config";
 
 /** Development-only default; production rejects it. */
 export const developmentJwtSecret = "development-only-jwt-secret-change-me";
@@ -67,22 +68,7 @@ export const envSchema = z
 
 export type Env = z.infer<typeof envSchema>;
 
-export function parseEnv(source: Record<string, string | undefined> = process.env): Env {
-	// Treat `KEY=` (common in compose files and .env templates) as unset so defaults apply.
-	const cleaned = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ""));
-	const result = envSchema.safeParse(cleaned);
-	if (!result.success) {
-		const details = result.error.issues
-			.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
-			.join("; ");
-		throw new Error(`Invalid api environment: ${details}`);
-	}
-	return result.data;
-}
-
-export function parseCorsOrigins(value: string): string[] {
-	return value
-		.split(",")
-		.map((origin) => origin.trim())
-		.filter(Boolean);
+/** Parse and validate the API environment once. Throws `CONFIG_INVALID` listing every bad key. */
+export function parseEnv(source: ConfigSource = process.env): Env {
+	return loadConfig(envSchema, source);
 }

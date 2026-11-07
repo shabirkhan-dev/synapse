@@ -11,3 +11,5 @@
   `apps/api/.env.example` and `env.docker.example`.
 - Tooling: Bun only; oxlint + oxfmt (tabs, width 100); Lefthook hooks; ShellCheck + shfmt for bash.
 - UI: add components with `bunx --bun shadcn@latest add <name>` from `packages/ui`; HugeIcons only.
+- Database: schema in `packages/database/src/schema/`; `bun run db:generate`, `bun run db:migrate`
+  (needs `DATABASE_URL`).

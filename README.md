@@ -45,6 +45,8 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 
 | Package | Path | Role |
 | --- | --- | --- |
+| `@synapse/core` | `packages/core` | Errors, config loading, shared types |
+| `@synapse/database` | `packages/database` | Drizzle client, schema, migrations (Postgres + pgvector) |
 | `@synapse/ui` | `packages/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |
 
@@ -65,6 +67,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | --- | --- |
 | `bun run dev` / `dev:api` / `dev:console` | All dev servers / one app |
 | `bun run build` | Build every app |
+| `bun run db:generate` / `db:migrate` | Generate / apply database migrations |
 | `bun run lint` / `lint:fix` | oxlint, plus ShellCheck over `scripts/` |
 | `bun run format` | Format TS/JS and shell |
 | `bun run typecheck` | TypeScript across workspaces |
