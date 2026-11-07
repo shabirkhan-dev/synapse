@@ -21,7 +21,10 @@ pull)
     trap 'rm -f "$tmp"' EXIT
     # Download first, so a failed pull never leaves a half-written .env.
     doppler secrets download --no-file --format env >"$tmp"
-    [[ -f .env ]] && cp .env .env.backup
+    if [[ -f .env ]]; then
+        cp .env .env.backup
+        chmod 600 .env.backup
+    fi
     mv "$tmp" .env
     chmod 600 .env
     printf '[env] .env written from Doppler (%s keys)\n' "$(grep -c '=' .env)"

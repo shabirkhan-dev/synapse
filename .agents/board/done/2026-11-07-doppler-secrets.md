@@ -5,7 +5,7 @@ type: chore
 from: human
 to: backend
 priority: high
-status: doing
+status: done
 assignee: claude
 reviewer: human
 parent: syn-roadmap
@@ -49,4 +49,10 @@ as a network secret.
 
 ## Resolution
 
-_In progress: repo wiring done; waiting for the human's Doppler project and dev service token._
+Done in commits `chore(env): sync the root .env with doppler` and `fix(env): keep the .env backup private and finish the doppler setup`.
+
+- Human created project `synapse` (dev/stg/prd) and a `dev` read/write service token with the CLI; the token is stored as a network secret for `api.doppler.com` on the Default cloud environment (proxy-injected; the CLI runs with a placeholder `DOPPLER_TOKEN`).
+- Uploaded `dev`: every `.env.example` variable with its default, plus the real Langfuse and Resend keys and `EMAIL_FROM` (38 keys; no session-local database URLs). Empty for now: `AI_API_KEY`, `AI_EMBEDDING_*`, `AI_MODEL_PRICES`.
+- Verified: pulled values build a valid api and worker config (Langfuse tracing on, Resend on); `env-sync.sh pull` and `push` round-trip in a scratch copy (test key added, read back, deleted). `.env.backup` is now `chmod 600` like `.env`.
+- Left in Doppler untouched: the example entries Doppler created (`DB_URL`, `FEATURE_FLAGS`, `LOGGING`, `PRIVATE_KEY`, `STRIPE_KEY`); the app ignores them.
+- Not done: `stg`/`prd` values, CI and deploys reading Doppler.
