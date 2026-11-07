@@ -66,8 +66,8 @@ export const envSchema = z
 		TRUST_PROXY: booleanFromString,
 		/** Resend API key; without it (outside production) emails are written to the log instead. */
 		RESEND_API_KEY: z.string().min(1).optional(),
-		/** Sender; `onboarding@resend.dev` only delivers to your own Resend account's address. */
-		EMAIL_FROM: z.string().min(3).default("Synapse <onboarding@resend.dev>"),
+		/** Sender on a domain verified in Resend (rabtx.dev). */
+		EMAIL_FROM: z.string().min(3).default("Synapse <synapse@rabtx.dev>"),
 		CORS_ORIGIN: z.string().min(1).default("http://localhost:3000,http://127.0.0.1:3000"),
 		/** Any OpenAI-compatible endpoint. Defaults to OpenRouter. */
 		AI_BASE_URL: z.url().default("https://openrouter.ai/api/v1"),

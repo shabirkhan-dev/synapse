@@ -19,7 +19,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
       RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY in .env (production requires it)}
-      EMAIL_FROM: ${EMAIL_FROM:-Synapse <onboarding@resend.dev>}
+      EMAIL_FROM: ${EMAIL_FROM:-Synapse <synapse@rabtx.dev>}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}

@@ -6,7 +6,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   checked by signature only, so they outlive sign-out by up to `AUTH_ACCESS_TOKEN_TTL_SECONDS` (15 min).
   Rate limits, email verification and password reset exist (syn-026); **no MFA, session list or
   organizations** yet: `sub` (user id) is the tenant. Unverified users can sign in
-  (`emailVerifiedAt: null`). Without `RESEND_API_KEY` emails go to the API log (development only;
+  (`emailVerifiedAt: null`). Emails are sent from `synapse@rabtx.dev` (rabtx.dev is verified in
+  Resend; `synapse.rabtx.dev` is not, and the current key cannot send from it). Without `RESEND_API_KEY` emails go to the API log (development only;
   production requires the key). `auth_rate_limits` and used `auth_tokens` rows are never pruned yet
   (worker job, syn-024). Console pages `/verify-email` and `/reset-password` do not exist yet
   (syn-018). Tests may still mint tokens (`signAccessToken`).
