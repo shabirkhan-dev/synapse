@@ -174,7 +174,7 @@ Postgres (pgvector), the API, and the Next.js console via Compose fragments unde
 (merged by root `docker-compose.yml`, Compose v2.20+, no `version:` key):
 
 ```bash
-cp env.docker.example .env
+cp .env.example .env
 docker compose up -d --build
 ```
 

@@ -16,7 +16,7 @@
 | Agent wiring (Codex, OpenCode, Claude Code) | ✅ | syn-006 |
 | Roadmap + board tracking | ✅ | syn-007 |
 
-## Phase 1 — Core RAG path (build order) ✅ (except Langfuse export, blocked on credentials)
+## Phase 1 — Core RAG path (build order) ✅
 
 | Step | Status | Card |
 | --- | --- | --- |
@@ -26,7 +26,7 @@
 | `retrieval` — vector + keyword + hybrid fusion | ✅ | syn-013 |
 | `generation` — prompts, context, citations, provenance | ✅ | syn-014 |
 | `observability` — OpenTelemetry tracing, structured logs, LLM usage/cost | ✅ | syn-015 |
-| Langfuse export (needs credentials) | ⬜ | syn-020 |
+| Langfuse export (OTLP) | ✅ | syn-020 |
 | `evaluation` — datasets, retrieval metrics, CI regression | ✅ | syn-016 |
 
 ## Phase 2 — Platform capabilities (after the RAG path works)
@@ -36,6 +36,7 @@ First, the two retrieval fixes found by the Phase 1 evaluation.
 | Step | Status | Card |
 | --- | --- | --- |
 | Keyword search: match any term (eval finding) | ✅ | syn-021 |
+| One env file for all credentials and settings | ✅ | syn-023 |
 | HNSW owner filtering stays complete with many tenants (risk) | ⏭️ | syn-022 |
 | `security` — in-house auth (ADR-0005), tenancy, permissions, PII | ⏭️ | syn-017 |
 | `apps/worker` + pg-boss queue adapter, resumable jobs | ⬜ | — |

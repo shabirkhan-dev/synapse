@@ -19,7 +19,6 @@
 .env
 .env.*
 !.env.example
-env.docker.example
 
 # Host-only / unused for the API + web images
 scripts

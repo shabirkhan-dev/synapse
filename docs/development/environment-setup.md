@@ -16,9 +16,24 @@ git clone https://github.com/shabirkhan-dev/synapse.git
 cd synapse
 bun install                       # also installs Lefthook git hooks
 docker compose up -d postgres     # Postgres 18 + pgvector on localhost:5433
-cp apps/api/.env.example apps/api/.env   # set AI_API_KEY
-DATABASE_URL=postgresql://synapse:synapse@localhost:5433/synapse bun run db:migrate
+cp .env.example .env              # the one env file: set AI_API_KEY (and Langfuse keys)
+bun run db:migrate                # reads DATABASE_URL from .env
 bun run dev                       # console :3000, api :8000
 ```
 
 Check: <http://localhost:8000/api/v1/health> and <http://localhost:8000/api/docs>.
+
+## Credentials: one place
+
+All keys and settings live in the root **`.env`** (gitignored; template `.env.example`). Docker
+compose reads it, and so do `bun run dev:api`, `db:migrate`, `eval:retrieval` and the API tests
+(`bun --env-file=../../.env`). Empty values count as unset.
+
+| Key | Needed for |
+| --- | --- |
+| `AI_API_KEY` | chat and embeddings (`/rag/*`, `/chat`) |
+| `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` | traces in Langfuse |
+| `API_TEST_DATABASE_URL` | opt-in pgvector integration tests |
+
+For cloud agent sessions, add the same values in the cloud environment's settings, so new sessions
+start with them.

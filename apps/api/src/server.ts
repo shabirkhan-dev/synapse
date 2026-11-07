@@ -10,7 +10,12 @@ import { DrizzleRagRepository, RagService } from "./modules/rag";
 const config = loadConfiguration();
 const tracing = startTracing({
 	serviceName: config.app.serviceName,
-	...(config.observability.otlpEndpoint ? { otlpEndpoint: config.observability.otlpEndpoint } : {}),
+	...(config.observability.traceExport
+		? {
+				otlpEndpoint: config.observability.traceExport.endpoint,
+				otlpHeaders: config.observability.traceExport.headers,
+			}
+		: {}),
 });
 const logger = createLogger({
 	service: config.app.serviceName,
@@ -53,7 +58,7 @@ const server = Bun.serve({
 logger.info("listening", {
 	url: `${server.url.href.replace(/\/$/, "")}${config.app.basePath}`,
 	docs: `${server.url.href}${config.app.apiPrefix}/docs`,
-	tracesExportedTo: config.observability.otlpEndpoint ?? "none",
+	tracesExportedTo: config.observability.traceExport?.destination ?? "none",
 });
 
 async function shutdown(signal: string) {

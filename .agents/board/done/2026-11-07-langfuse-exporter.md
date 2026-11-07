@@ -5,8 +5,8 @@ type: feature
 from: human
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-015]
@@ -49,4 +49,10 @@ auth headers first; add a `providers/langfuse` exporter only if OTLP lacks somet
 
 ## Resolution
 
-_Open._
+Done in commit `feat(observability): export traces to langfuse and keep credentials in one env file`.
+
+- No Langfuse SDK and no `providers/langfuse`: Langfuse's OTLP endpoint was enough. `startTracing` takes `otlpHeaders`; the API builds `<LANGFUSE_BASE_URL>/api/public/otel` + Basic auth + `x-langfuse-ingestion-version: 4` from `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` (both or neither; not together with `OTEL_EXPORTER_OTLP_ENDPOINT`).
+- Cost moved to the standard `gen_ai.usage.cost` attribute (Langfuse reads it as total cost).
+- Verified against the real project (EU cloud): a smoke trace showed a `GENERATION chat openai/gpt-4o-mini` with input 1200 / output 300 tokens and cost $0.00036 under its request span. A real `/rag/query` trace needs `AI_API_KEY` (not set here).
+- Tests: `apps/api/test/trace-export.test.ts` (endpoint, headers, validation).
+- Follow-up (not done): link prompt versions to Langfuse prompts (`langfuse.observation.prompt.*`).

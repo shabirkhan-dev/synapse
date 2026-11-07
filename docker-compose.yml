@@ -1,6 +1,6 @@
 # Project entrypoint: Postgres (pgvector) + API + Next.js console.
 # Requires Docker Compose v2.20+ (include). From repo root:
-#   cp env.docker.example .env && docker compose up -d --build
+#   cp .env.example .env && docker compose up -d --build
 #
 # Compose file format: no top-level `version` key (obsolete since Compose Spec).
 

@@ -5,15 +5,15 @@ the Vercel AI SDK. API reference at `/api/docs` (OpenAPI at `/api/openapi.json`)
 Structure follows `docs/development/backend-architecture.md`.
 
 ```bash
-cp .env.example .env                       # set AI_API_KEY (and JWT_SECRET outside development)
-docker compose up -d postgres              # from the repo root: Postgres + pgvector
-DATABASE_URL=postgresql://synapse:synapse@localhost:5433/synapse bun run db:migrate   # repo root
-bun run dev                                # http://localhost:8000/api/v1/health
+cp .env.example .env            # repo root: the one env file; set AI_API_KEY (and Langfuse keys)
+docker compose up -d postgres   # Postgres + pgvector
+bun run db:migrate              # reads DATABASE_URL from the root .env
+bun run dev:api                 # http://localhost:8000/api/v1/health
 ```
 
 | Script | Does |
 | --- | --- |
-| `dev` | `bun --watch src/server.ts` |
+| `dev` | `bun --watch src/server.ts` (loads the root `.env`) |
 | `build` / `start` | Bundle `server.js` + `migrate.js` and copy migrations to `dist/` / run the bundle |
 | `test` / `test:coverage` | `bun test` (LLM and embeddings mocked; set `API_TEST_DATABASE_URL` for pgvector) |
 | `typecheck` / `lint` | `tsc --noEmit` / oxlint |

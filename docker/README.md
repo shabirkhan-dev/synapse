@@ -10,10 +10,10 @@ Compose is split into **fragments** under `compose/` and merged by the root
 | `compose/api.yml` | Bun + Hono API (RAG on pgvector, streaming chat). Needs `AI_API_KEY` in `.env` |
 | `compose/console.yml` | Next.js console image (standalone output) |
 
-**Env:** copy `env.docker.example` from the repo root to `.env`.
+**Env:** copy the repo root `.env.example` to `.env` (the one env file; host runs read it too).
 
 ```bash
-cp env.docker.example .env
+cp .env.example .env
 docker compose up -d --build
 ```
 

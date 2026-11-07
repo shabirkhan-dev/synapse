@@ -5,15 +5,15 @@
 	"type": "module",
 	"license": "MIT OR Apache-2.0",
 	"scripts": {
-		"dev": "bun --watch src/server.ts",
+		"dev": "bun --env-file=../../.env --watch src/server.ts",
 		"build": "bun build src/server.ts src/migrate.ts --target=bun --outdir=dist --root=src && rm -rf dist/migrations && cp -r ../../packages/database/migrations dist/migrations",
 		"start": "bun dist/server.js",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
 		"typecheck": "tsc --noEmit",
-		"test": "bun test",
-		"test:coverage": "bun test --coverage",
-		"eval:retrieval": "bun src/evaluate.ts"
+		"test": "bun --env-file=../../.env test",
+		"test:coverage": "bun --env-file=../../.env test --coverage",
+		"eval:retrieval": "bun --env-file=../../.env src/evaluate.ts"
 	},
 	"dependencies": {
 		"@hono/zod-openapi": "^1.6.3",

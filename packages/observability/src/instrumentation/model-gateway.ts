@@ -17,6 +17,8 @@ const GEN_AI = {
 	MODEL: "gen_ai.request.model",
 	INPUT_TOKENS: "gen_ai.usage.input_tokens",
 	OUTPUT_TOKENS: "gen_ai.usage.output_tokens",
+	/** Estimated USD cost; Langfuse reads it as the generation's total cost. */
+	COST: "gen_ai.usage.cost",
 } as const;
 
 const modelKey = ({ provider, model }: ModelInfo) => `${provider}:${model}`;
@@ -51,7 +53,7 @@ export function instrumentModelGateway<TGateway extends ModelGateway>(
 						if (outputTokens !== undefined) span.setAttribute(GEN_AI.OUTPUT_TOKENS, outputTokens);
 						const price = prices[modelKey(result.model)];
 						const costUsd = price ? estimateCostUsd(result.usage, price) : undefined;
-						if (costUsd !== undefined) span.setAttribute("synapse.cost_usd", costUsd);
+						if (costUsd !== undefined) span.setAttribute(GEN_AI.COST, costUsd);
 						logger.info("llm call", {
 							operation: "chat",
 							model: modelKey(result.model),

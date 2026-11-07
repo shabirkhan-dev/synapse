@@ -85,7 +85,7 @@ describe("instrumentModelGateway", () => {
 			"gen_ai.request.model": "chat-1",
 			"gen_ai.usage.input_tokens": 1000,
 			"gen_ai.usage.output_tokens": 500,
-			"synapse.cost_usd": 0.002,
+			"gen_ai.usage.cost": 0.002,
 		});
 		expect(embedSpan?.name).toBe("embeddings embed-1");
 		expect(embedSpan?.attributes["synapse.embedding.inputs"]).toBe(2);

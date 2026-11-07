@@ -18,6 +18,8 @@ export type TracingOptions = {
 	serviceVersion?: string;
 	/** OTLP/HTTP base URL (e.g. `http://localhost:4318`); spans are exported in batches when set. */
 	otlpEndpoint?: string;
+	/** Headers sent with every OTLP export (e.g. `Authorization` for Langfuse). */
+	otlpHeaders?: Record<string, string>;
 	/** Extra exporter, flushed per span (tests use `InMemorySpanExporter`). */
 	exporter?: SpanExporter;
 };
@@ -37,12 +39,17 @@ export function startTracing({
 	serviceName,
 	serviceVersion,
 	otlpEndpoint,
+	otlpHeaders,
 	exporter,
 }: TracingOptions): Tracing {
 	const spanProcessors: SpanProcessor[] = [];
 	if (otlpEndpoint) {
 		const url = `${otlpEndpoint.replace(/\/$/, "")}/v1/traces`;
-		spanProcessors.push(new BatchSpanProcessor({ exporter: new OTLPTraceExporter({ url }) }));
+		spanProcessors.push(
+			new BatchSpanProcessor({
+				exporter: new OTLPTraceExporter({ url, ...(otlpHeaders ? { headers: otlpHeaders } : {}) }),
+			}),
+		);
 	}
 	if (exporter) {
 		spanProcessors.push(new SimpleSpanProcessor({ exporter }));

@@ -27,4 +27,6 @@ Decisions already made. Formal records: `docs/decisions/adr/`.
 | 2026-11-07 | Logging and tracing via `@synapse/observability` (structured logs with trace ids, OpenTelemetry OTLP/HTTP, GenAI spans, cost from `AI_MODEL_PRICES`); the API's local logger is removed; only observability may import `@opentelemetry/*` | `docs/packages/observability.md` |
 | 2026-11-07 | Authentication is built in-house (users, sessions, tokens in our Postgres), owned by `packages/security` + the API `auth` module; no external identity provider or auth library | ADR-0005 |
 | 2026-11-07 | Keyword search matches any term (OR), with query-side English stopwords and `-term` exclusions kept | `docs/packages/retrieval.md` |
+| 2026-11-07 | One env file: root `.env` (template `.env.example`) for docker compose and host runs; `env.docker.example` and `apps/api/.env.example` removed | `docs/development/environment-setup.md` |
+| 2026-11-07 | Traces go to Langfuse over its OTLP endpoint (no Langfuse SDK); cost on `gen_ai.usage.cost` | `docs/packages/observability.md` |
 | 2026-11-07 | Retrieval quality is gated in CI by `bun run eval:retrieval` (seed dataset, hashing embeddings, real Postgres stack) against committed baselines; search results are deterministic (content tie-break) | `docs/packages/evaluation.md` |

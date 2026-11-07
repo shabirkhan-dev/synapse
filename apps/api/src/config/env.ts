@@ -29,6 +29,11 @@ export const envSchema = z
 		LOG_FORMAT: z.enum(["json", "pretty"]).optional(),
 		/** OTLP/HTTP collector base URL (e.g. http://localhost:4318); traces are not exported when unset. */
 		OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
+		/** Langfuse project keys: set both to export traces to Langfuse over OTLP instead. */
+		LANGFUSE_PUBLIC_KEY: z.string().startsWith("pk-lf-").optional(),
+		LANGFUSE_SECRET_KEY: z.string().startsWith("sk-lf-").optional(),
+		/** Langfuse host: EU cloud by default; https://us.cloud.langfuse.com or self-hosted. */
+		LANGFUSE_BASE_URL: z.url().default("https://cloud.langfuse.com"),
 		/** JSON `{ "provider:model": { "inputPerMillionTokens": n, "outputPerMillionTokens": n } }` for cost estimates. */
 		AI_MODEL_PRICES: z
 			.string()
@@ -72,6 +77,20 @@ export const envSchema = z
 		RUN_MIGRATIONS: booleanFromString,
 	})
 	.superRefine((env, context) => {
+		if (Boolean(env.LANGFUSE_PUBLIC_KEY) !== Boolean(env.LANGFUSE_SECRET_KEY)) {
+			context.addIssue({
+				code: "custom",
+				path: ["LANGFUSE_SECRET_KEY"],
+				message: "Set both LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY, or neither",
+			});
+		}
+		if (env.LANGFUSE_PUBLIC_KEY && env.OTEL_EXPORTER_OTLP_ENDPOINT) {
+			context.addIssue({
+				code: "custom",
+				path: ["OTEL_EXPORTER_OTLP_ENDPOINT"],
+				message: "Export traces to Langfuse or to OTEL_EXPORTER_OTLP_ENDPOINT, not both",
+			});
+		}
 		if (env.RAG_CHUNK_OVERLAP >= env.RAG_CHUNK_SIZE) {
 			context.addIssue({
 				code: "custom",

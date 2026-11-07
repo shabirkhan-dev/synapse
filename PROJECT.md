@@ -149,7 +149,7 @@ Postgres (pgvector), the API, and the Next.js console are composed through root 
 fragment files under `docker/compose/` (Compose Spec — no top-level `version` key).
 
 ```bash
-cp env.docker.example .env
+cp .env.example .env
 docker compose up -d --build
 ```
 

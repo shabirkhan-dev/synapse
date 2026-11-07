@@ -33,4 +33,4 @@ synapse/
 ```
 
 Root config: `package.json`, `bun.lock`, `turbo.json`, `tsconfig.json`, `.oxlintrc.json`,
-`.oxfmtrc.json`, `lefthook.yml`, `docker-compose.yml`, `env.docker.example`.
+`.oxfmtrc.json`, `lefthook.yml`, `docker-compose.yml`, `.env.example` (the one env file template).

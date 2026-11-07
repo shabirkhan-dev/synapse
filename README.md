@@ -95,7 +95,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 ## Docker
 
 ```bash
-cp env.docker.example .env
+cp .env.example .env
 docker compose up -d --build
 ```
 

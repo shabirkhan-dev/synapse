@@ -31,10 +31,14 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   (`SEARCH_STOPWORDS` in `@synapse/database`); other languages get no stopword filtering.
   **HNSW post-filters by owner**: many tenants can starve a user's results (syn-022).
 - **Hybrid scores are RRF scores** (≈0.016–0.033), not cosine; clients must not threshold `score` across modes.
-- **Tracing is OTLP-only:** spans export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; no Langfuse
-  exporter yet (syn-020). Costs are estimated only for models listed in `AI_MODEL_PRICES`.
+- **Traces go to one destination:** Langfuse (both `LANGFUSE_*` keys set) or `OTEL_EXPORTER_OTLP_ENDPOINT`,
+  not both; nothing is exported otherwise. Costs need `AI_MODEL_PRICES`. Prompt versions are not yet
+  linked to Langfuse prompts.
+- **One env file:** the root `.env` (template `.env.example`) feeds docker compose and host runs
+  (`dev:api`, `db:migrate`, `eval:retrieval`, api tests via `--env-file=../../.env`). The console
+  does not read it yet.
 - **One global tracer provider per process:** tests that call `startTracing` must `shutdown()` after.
-- **Reranking, query rewriting, queues (pg-boss), LangGraph, Langfuse** are planned, not installed.
+- **Reranking, query rewriting, queues (pg-boss), LangGraph** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
 - **Console has no UI and no tests**; `@synapse/ui` is not wired into it yet.
