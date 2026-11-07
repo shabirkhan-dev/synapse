@@ -2,9 +2,10 @@
 
 Things that are true today and easy to trip over. Remove an entry when it stops being true.
 
-- **No token issuer yet.** `apps/api` verifies HS256 JWTs (`sub`, `sid`) signed with `JWT_SECRET`, but
-  nothing issues them. Tests mint their own. Decided: in-house auth in `packages/security` + the API
-  `auth` module (ADR-0005, syn-017).
+- **Auth is in-house** (ADR-0005): `/auth/sign-up|sign-in|refresh|sign-out|me`. Access tokens are
+  checked by signature only, so they outlive sign-out by up to `AUTH_ACCESS_TOKEN_TTL_SECONDS` (15 min).
+  **No rate limiting, email verification, password reset or MFA yet** (syn-026). Users have no
+  organizations: `sub` (user id) is the tenant. Tests may still mint tokens (`signAccessToken`).
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);

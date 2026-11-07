@@ -27,6 +27,7 @@
 		"@synapse/knowledge": "workspace:*",
 		"@synapse/observability": "workspace:*",
 		"@synapse/retrieval": "workspace:*",
+		"@synapse/security": "workspace:*",
 		"ai": "^7.0.164",
 		"drizzle-orm": "^0.45.4",
 		"hono": "^4.13.17",

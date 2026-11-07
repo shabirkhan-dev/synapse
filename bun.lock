@@ -27,6 +27,7 @@
         "@synapse/knowledge": "workspace:*",
         "@synapse/observability": "workspace:*",
         "@synapse/retrieval": "workspace:*",
+        "@synapse/security": "workspace:*",
         "ai": "^7.0.164",
         "drizzle-orm": "^0.45.4",
         "hono": "^4.13.17",
@@ -165,6 +166,19 @@
     "packages/retrieval": {
       "name": "@synapse/retrieval",
       "version": "0.0.0",
+      "devDependencies": {
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/security": {
+      "name": "@synapse/security",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+        "jose": "^6.2.15",
+      },
       "devDependencies": {
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
@@ -594,6 +608,8 @@
     "@synapse/observability": ["@synapse/observability@workspace:packages/observability"],
 
     "@synapse/retrieval": ["@synapse/retrieval@workspace:packages/retrieval"],
+
+    "@synapse/security": ["@synapse/security@workspace:packages/security"],
 
     "@synapse/typescript-config": ["@synapse/typescript-config@workspace:packages/typescript-config"],
 

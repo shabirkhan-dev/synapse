@@ -37,7 +37,7 @@ src/
     types/              # AppBindings, AuthUser
   routes/index.ts       # mounts module routers, applies auth
   modules/
-    auth/               # constants/ middleware/ services/
+    auth/               # constants/ mappers/ middleware/ repositories/ routes/ schemas/ services/ types/
     chat/               # constants/ routes/ schemas/ services/ tools/
     health/             # constants/ routes/ schemas/
     rag/                # constants/ mappers/ repositories/ routes/ schemas/ services/ types/

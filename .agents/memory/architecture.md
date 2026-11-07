@@ -11,10 +11,10 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/ingestion` (normalize, content-hash dedup, pipeline), `packages/knowledge` (chunking,
   embedding preparation, chunk versions), `packages/retrieval` (vector, keyword, hybrid RRF), `packages/generation` (prompts, context,
   citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost), `packages/evaluation` (retrieval evals,
-  baselines).
+  baselines), `packages/security` (authentication: passwords, access + refresh tokens).
 - **Planned:** `apps/worker`; packages
   `orchestration`, `human-oversight`, `audit`, `guardrails`, `memory`,
-  `security`, `reliability`, `providers`, `native`; more adapters
+  `reliability`, `providers`, `native` (and the rest of `security`: authorization, PII); more adapters
   (vector-store, cache, queue, storage);
   `crates/*`; root `tests/` and `deploy/`.
 - `apps/api/src/modules/rag` composes ingestion → knowledge → retrieval → generation; Phase 1 of the

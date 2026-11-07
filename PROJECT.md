@@ -29,6 +29,7 @@ synapse/
 │   ├── generation/           # @synapse/generation: prompts, context, citations, provenance
 │   ├── observability/        # @synapse/observability: logs, tracing, LLM usage/cost
 │   ├── evaluation/           # @synapse/evaluation: retrieval evals, baselines
+│   ├── security/             # @synapse/security: passwords, access + refresh tokens
 │   ├── core/                 # @synapse/core: errors, config, shared types, contracts
 │   ├── database/             # @synapse/database: Drizzle client, schema, migrations
 │   ├── typescript-config/    # Shared TS config bases
@@ -65,6 +66,7 @@ synapse/
 | `packages/generation` | `@synapse/generation` | Prompts, context, citations, provenance |
 | `packages/observability` | `@synapse/observability` | Logs, tracing, LLM usage/cost |
 | `packages/evaluation` | `@synapse/evaluation` | Retrieval evals, baselines, CI regression |
+| `packages/security` | `@synapse/security` | Authentication: passwords, access tokens, refresh tokens |
 | `packages/core` | `@synapse/core` | Errors, config loading, shared types, contracts |
 | `packages/database` | `@synapse/database` | Drizzle client, schema, migrations, runner |
 | `packages/ui` | `@synapse/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |

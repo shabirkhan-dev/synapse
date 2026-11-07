@@ -53,6 +53,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | `@synapse/generation` | `packages/generation` | Versioned prompts, budgeted context, citations, provenance |
 | `@synapse/observability` | `packages/observability` | Structured logs, OpenTelemetry tracing, LLM usage/cost |
 | `@synapse/evaluation` | `packages/evaluation` | Retrieval datasets, recall@k / MRR, CI regression baselines |
+| `@synapse/security` | `packages/security` | Authentication: Argon2id passwords, access tokens, rotating refresh tokens |
 | `@synapse/database` | `packages/database` | Drizzle client, schema, migrations (Postgres + pgvector) |
 | `@synapse/ui` | `packages/ui` | shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4 |
 | `@synapse/typescript-config` | `packages/typescript-config` | Base tsconfigs every workspace extends |

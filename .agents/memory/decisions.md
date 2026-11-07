@@ -29,4 +29,5 @@ Decisions already made. Formal records: `docs/decisions/adr/`.
 | 2026-11-07 | Keyword search matches any term (OR), with query-side English stopwords and `-term` exclusions kept | `docs/packages/retrieval.md` |
 | 2026-11-07 | One env file: root `.env` (template `.env.example`) for docker compose and host runs; `env.docker.example` and `apps/api/.env.example` removed | `docs/development/environment-setup.md` |
 | 2026-11-07 | Traces go to Langfuse over its OTLP endpoint (no Langfuse SDK); cost on `gen_ai.usage.cost` | `docs/packages/observability.md` |
+| 2026-11-07 | Auth: Argon2id passwords (`Bun.password`), 15-min HS256 access tokens checked by signature only, opaque refresh tokens stored as SHA-256 and rotated on every use with reuse → session revoked; sessions in `auth_sessions` | `docs/packages/security.md` |
 | 2026-11-07 | Retrieval quality is gated in CI by `bun run eval:retrieval` (seed dataset, hashing embeddings, real Postgres stack) against committed baselines; search results are deterministic (content tie-break) | `docs/packages/evaluation.md` |

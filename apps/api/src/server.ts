@@ -4,6 +4,7 @@ import { createLogger, instrumentModelGateway, startTracing } from "@synapse/obs
 
 import { createApp } from "./app";
 import { loadConfiguration } from "./config";
+import { AuthService, DrizzleAuthRepository } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { DrizzleRagRepository, RagService } from "./modules/rag";
 
@@ -29,6 +30,7 @@ if (!config.ai.apiKey) {
 
 const database = createDatabase(config.database);
 const repository = new DrizzleRagRepository(database.db);
+const auth = new AuthService(new DrizzleAuthRepository(database.db), config.auth);
 const gateway = instrumentModelGateway(createOpenAICompatibleModelGateway(config.ai), {
 	logger,
 	prices: config.observability.modelPrices,
@@ -46,7 +48,14 @@ const chat = new ChatService({
 	topK: config.rag.topK,
 });
 
-const app = createApp({ config, logger, rag, chat, pingDatabase: () => repository.ping() });
+const app = createApp({
+	config,
+	logger,
+	auth,
+	rag,
+	chat,
+	pingDatabase: () => repository.ping(),
+});
 
 const server = Bun.serve({
 	port: config.app.port,

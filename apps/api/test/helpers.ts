@@ -10,6 +10,13 @@ import { createLogger, instrumentModelGateway } from "@synapse/observability";
 import { createApp } from "@/app";
 import { loadConfiguration } from "@/config";
 import { developmentJwtSecret } from "@/config/env";
+import {
+	type AuthRepository,
+	AuthService,
+	type AuthSession,
+	type User,
+	type UserCredentials,
+} from "@/modules/auth";
 import { ChatService } from "@/modules/chat";
 import {
 	type NewRagChunk,
@@ -200,6 +207,89 @@ export class InMemoryRagRepository implements RagRepository {
 	async ping(): Promise<void> {}
 }
 
+type StoredSession = Omit<AuthSession, "matched"> & {
+	refreshTokenHash: string;
+	previousRefreshTokenHash: string | null;
+};
+
+export class InMemoryAuthRepository implements AuthRepository {
+	users: UserCredentials[] = [];
+	sessions: StoredSession[] = [];
+
+	async createUser({ email, passwordHash }: { email: string; passwordHash: string }) {
+		if (this.users.some((user) => user.email === email)) return null;
+		const user = {
+			id: crypto.randomUUID(),
+			email,
+			passwordHash,
+			createdAt: new Date().toISOString(),
+		};
+		this.users.push(user);
+		const { passwordHash: _passwordHash, ...publicUser } = user;
+		return publicUser;
+	}
+
+	async findUserByEmail(email: string) {
+		return this.users.find((user) => user.email === email) ?? null;
+	}
+
+	async findUserById(userId: string): Promise<User | null> {
+		const found = this.users.find((user) => user.id === userId);
+		if (!found) return null;
+		const { passwordHash: _passwordHash, ...user } = found;
+		return user;
+	}
+
+	async createSession(input: { userId: string; refreshTokenHash: string; expiresAt: Date }) {
+		const session = {
+			...input,
+			id: crypto.randomUUID(),
+			revokedAt: null,
+			previousRefreshTokenHash: null,
+		};
+		this.sessions.push(session);
+		return { id: session.id };
+	}
+
+	async findSessionByRefreshTokenHash(hash: string): Promise<AuthSession | null> {
+		const session = this.sessions.find(
+			(s) => s.refreshTokenHash === hash || s.previousRefreshTokenHash === hash,
+		);
+		if (!session) return null;
+		return {
+			id: session.id,
+			userId: session.userId,
+			expiresAt: session.expiresAt,
+			revokedAt: session.revokedAt,
+			matched: session.refreshTokenHash === hash ? "current" : "previous",
+		};
+	}
+
+	async rotateRefreshToken({
+		sessionId,
+		currentHash,
+		nextHash,
+	}: {
+		sessionId: string;
+		currentHash: string;
+		nextHash: string;
+	}) {
+		const session = this.sessions.find(
+			(s) => s.id === sessionId && s.refreshTokenHash === currentHash && !s.revokedAt,
+		);
+		if (!session) return false;
+		session.previousRefreshTokenHash = currentHash;
+		session.refreshTokenHash = nextHash;
+		return true;
+	}
+
+	async revokeSession({ sessionId, userId }: { sessionId: string; userId: string }) {
+		for (const session of this.sessions) {
+			if (session.id === sessionId && session.userId === userId) session.revokedAt ??= new Date();
+		}
+	}
+}
+
 export async function signAccessToken(
 	claims: { sub?: string; sid?: string } = { sub: "user-1", sid: "session-1" },
 	{
@@ -219,12 +309,14 @@ export function buildTestApp({
 	chatModel = new MockLanguageModelV4({ doGenerate: textGenerateResult("mock answer") }),
 	embeddingModel = createMockEmbeddingModel(),
 	repository = new InMemoryRagRepository(),
+	authRepository = new InMemoryAuthRepository(),
 	pingDatabase = async () => {},
 	searchMode = testConfig.rag.searchMode,
 }: {
 	chatModel?: MockLanguageModelV4;
 	embeddingModel?: MockEmbeddingModelV4;
 	repository?: RagRepository;
+	authRepository?: InMemoryAuthRepository;
 	pingDatabase?: () => Promise<void>;
 	searchMode?: "vector" | "hybrid";
 } = {}) {
@@ -251,14 +343,16 @@ export function buildTestApp({
 		maxSteps: testConfig.rag.chatMaxSteps,
 		topK: testConfig.rag.topK,
 	});
+	const auth = new AuthService(authRepository, testConfig.auth);
 	const app = createApp({
 		config: testConfig,
 		logger,
+		auth,
 		rag,
 		chat,
 		pingDatabase,
 	});
-	return { app, rag, repository, chatModel, embeddingModel };
+	return { app, rag, repository, authRepository, chatModel, embeddingModel };
 }
 
 export async function authHeaders(sub = "user-1") {

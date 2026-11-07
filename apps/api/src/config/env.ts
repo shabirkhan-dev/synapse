@@ -56,6 +56,10 @@ export const envSchema = z
 		DATABASE_SSL: z.enum(["true", "false"]).optional(),
 		/** Access tokens are HS256 JWTs signed with this secret. */
 		JWT_SECRET: z.string().min(32).default(developmentJwtSecret),
+		/** Access-token lifetime. Short: access tokens are not checked against the session. */
+		AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+		/** Refresh-token (session) lifetime from sign-in; refreshing rotates the token, not the expiry. */
+		AUTH_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
 		CORS_ORIGIN: z.string().min(1).default("http://localhost:3000,http://127.0.0.1:3000"),
 		/** Any OpenAI-compatible endpoint. Defaults to OpenRouter. */
 		AI_BASE_URL: z.url().default("https://openrouter.ai/api/v1"),
