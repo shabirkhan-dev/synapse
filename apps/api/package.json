@@ -26,6 +26,7 @@
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
 		"@synapse/observability": "workspace:*",
+		"@synapse/orchestration": "workspace:*",
 		"@synapse/retrieval": "workspace:*",
 		"@synapse/security": "workspace:*",
 		"ai": "^7.0.164",

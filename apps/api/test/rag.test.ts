@@ -112,6 +112,56 @@ describe("rag", () => {
 		expect(prompt).toContain("how many days to request a refund");
 	});
 
+	test("an answer that cites nothing is retried once with the stricter prompt", async () => {
+		const replies = ["You have 30 days.", "You have 30 days [1]."];
+		const chatModel = new MockLanguageModelV4({
+			doGenerate: async () => textGenerateResult(replies.shift() ?? "unexpected third call"),
+		});
+		const { app } = buildTestApp({ chatModel });
+		const headers = await authHeaders();
+		await app.request("/api/v1/rag/documents", {
+			method: "POST",
+			headers,
+			body: JSON.stringify(refundDoc),
+		});
+
+		const response = await app.request("/api/v1/rag/query", {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ query: "how many days to request a refund" }),
+		});
+		const { data } = await response.json();
+		expect(chatModel.doGenerateCalls).toHaveLength(2);
+		expect(JSON.stringify(chatModel.doGenerateCalls[1]?.prompt)).toContain(
+			"An answer without passage numbers is not allowed.",
+		);
+		expect(data.answer).toBe("You have 30 days [1].");
+		expect(data.citations).toHaveLength(1);
+		// Provenance names the prompt that produced the returned answer.
+		expect(data.provenance.promptVersion).toBe("rag-answer-cited@1");
+	});
+
+	test("an answer that still cites nothing after the retry is returned as is", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doGenerate: textGenerateResult("I do not know."),
+		});
+		const { app } = buildTestApp({ chatModel });
+		const headers = await authHeaders();
+		await app.request("/api/v1/rag/documents", {
+			method: "POST",
+			headers,
+			body: JSON.stringify(refundDoc),
+		});
+		const response = await app.request("/api/v1/rag/query", {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ query: "what is the office wifi password" }),
+		});
+		const { data } = await response.json();
+		expect(chatModel.doGenerateCalls).toHaveLength(2);
+		expect(data).toMatchObject({ answer: "I do not know.", citations: [] });
+	});
+
 	test("answer=false skips the chat model", async () => {
 		const chatModel = new MockLanguageModelV4({ doGenerate: textGenerateResult("unused") });
 		const { app } = buildTestApp({ chatModel });

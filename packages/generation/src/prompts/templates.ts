@@ -10,6 +10,18 @@ export const RAG_ANSWER_PROMPT: PromptTemplate = {
 	].join("\n"),
 };
 
+/** Retry prompt when a `rag-answer` reply cited no passage (`@synapse/orchestration` RAG graph). */
+export const RAG_ANSWER_CITED_PROMPT: PromptTemplate = {
+	id: "rag-answer-cited",
+	version: 1,
+	system: [
+		"You answer questions using only the numbered context passages provided.",
+		"Every sentence that states a fact must end with the number of the passage it comes from, like [1] or [2][3].",
+		"An answer without passage numbers is not allowed.",
+		"If the context does not contain the answer, say you do not know.",
+	].join("\n"),
+};
+
 export const CHAT_ASSISTANT_PROMPT: PromptTemplate = {
 	id: "chat-assistant",
 	version: 1,

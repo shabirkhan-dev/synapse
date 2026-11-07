@@ -2,7 +2,9 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { InMemorySpanExporter, startTracing, type Tracing } from "@synapse/observability";
 
-import { authHeaders, buildTestApp } from "./helpers";
+import { MockLanguageModelV4 } from "ai/test";
+
+import { authHeaders, buildTestApp, textGenerateResult } from "./helpers";
 
 let exporter: InMemorySpanExporter;
 let tracing: Tracing;
@@ -18,7 +20,9 @@ afterAll(async () => {
 
 describe("request tracing", () => {
 	test("a query produces a route-named request span with LLM spans as children", async () => {
-		const { app } = buildTestApp();
+		// A cited answer: one generation (an uncited one would be retried, adding a second chat span).
+		const chatModel = new MockLanguageModelV4({ doGenerate: textGenerateResult("30 days [1]") });
+		const { app } = buildTestApp({ chatModel });
 		await app.request("/api/v1/rag/documents", {
 			method: "POST",
 			headers: await authHeaders(),

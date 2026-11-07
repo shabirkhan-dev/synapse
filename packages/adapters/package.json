@@ -8,7 +8,8 @@
 		".": "./src/index.ts",
 		"./model-gateway": "./src/model-gateway/index.ts",
 		"./email": "./src/email/index.ts",
-		"./queue": "./src/queue/index.ts"
+		"./queue": "./src/queue/index.ts",
+		"./checkpointer": "./src/checkpointer/index.ts"
 	},
 	"scripts": {
 		"lint": "oxlint",
@@ -19,6 +20,9 @@
 	},
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^3.0.86",
+		"@langchain/core": "1.2.20",
+		"@langchain/langgraph-checkpoint": "1.2.1",
+		"@langchain/langgraph-checkpoint-postgres": "1.1.2",
 		"@synapse/core": "workspace:*",
 		"ai": "^7.0.164",
 		"pg-boss": "12.38.0"

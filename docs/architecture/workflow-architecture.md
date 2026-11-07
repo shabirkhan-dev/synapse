@@ -1,6 +1,6 @@
 # Workflow architecture
 
-> **Status:** Live (jobs) · Planned (agents, human in the loop).
+> **Status:** Live (jobs, RAG answer graph with checkpoints) · Planned (agent tools, human in the loop).
 
 ## Jobs (`apps/worker` + `adapters/queue`) — live
 
@@ -15,6 +15,9 @@
 - Planned: after the retry limit, park the job for a human (`human-oversight`); reconciliation jobs.
 
 ## Agents (`orchestration`)
+
+Live: the RAG answer graph (retrieve → generate → retry once without citations) with Postgres
+checkpoints and `resume(threadId)`; see [orchestration](../packages/orchestration.md). Planned:
 
 - LangGraph JS graphs with a Postgres checkpointer: a run can pause (approval) and resume after a
   crash or deploy.

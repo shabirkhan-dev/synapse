@@ -13,7 +13,14 @@ import {
 	createChunkPreparer,
 	KNOWLEDGE_ERROR_CODES,
 } from "@synapse/knowledge";
-import { type AnswerGenerator, type Citation, createAnswerGenerator } from "@synapse/generation";
+import {
+	type AnswerGenerator,
+	type Citation,
+	createAnswerGenerator,
+	type GeneratedAnswer,
+	RAG_ANSWER_CITED_PROMPT,
+} from "@synapse/generation";
+import { createRagAnswerGraph, type RagAnswerGraph } from "@synapse/orchestration";
 import { createRetriever, type RetrievalMode, type Retriever } from "@synapse/retrieval";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
@@ -60,6 +67,10 @@ export class RagService {
 	private readonly retriever: Retriever<RagMatch>;
 	/** versioned prompt + budgeted context + citations + provenance, via `@synapse/generation`. */
 	private readonly generator: AnswerGenerator;
+	/** Same, with the stricter prompt used when an answer cited nothing. */
+	private readonly citedGenerator: AnswerGenerator;
+	/** retrieve → generate → one stricter retry without citations, via `@synapse/orchestration`. */
+	private readonly answerGraph: RagAnswerGraph<RagMatch, GeneratedAnswer, AnswerScope>;
 
 	constructor(
 		private readonly repository: RagRepository,
@@ -84,11 +95,27 @@ export class RagService {
 			},
 			{ mode: options.searchMode, embeddingModel: knowledge.embeddingModel },
 		);
-		this.generator = createAnswerGenerator({
+		const generatorOptions = {
 			chat: models.chat,
 			embeddingModel: knowledge.embeddingModel,
 			chunkerVersion: knowledge.chunkerVersion,
 			maxContextTokens: options.maxContextTokens,
+		};
+		this.generator = createAnswerGenerator(generatorOptions);
+		this.citedGenerator = createAnswerGenerator({
+			...generatorOptions,
+			prompt: RAG_ANSWER_CITED_PROMPT,
+		});
+		// In-request runs: no checkpointer (a failed request is simply retried by the client).
+		this.answerGraph = createRagAnswerGraph<RagMatch, GeneratedAnswer, AnswerScope>({
+			ports: {
+				retrieve: ({ question, context }) => this.search(context.ownerId, question, context.topK),
+				answer: ({ question, passages, attempt }) =>
+					(attempt === 1 ? this.generator : this.citedGenerator).answer({
+						question,
+						passages: passages.map(toContextPassage),
+					}),
+			},
 		});
 	}
 
@@ -132,8 +159,11 @@ export class RagService {
 	}
 
 	async answer(ownerId: string, question: string, topK?: number): Promise<RagAnswer> {
-		const matches = await this.search(ownerId, question, topK);
-		if (matches.length === 0) {
+		const { passages: matches, answer } = await this.answerGraph.run({
+			question,
+			context: { ownerId, ...(topK === undefined ? {} : { topK }) },
+		});
+		if (!answer) {
 			return {
 				answer: RAG_MESSAGES.NO_DOCUMENTS_TO_ANSWER_FROM,
 				matches,
@@ -141,21 +171,11 @@ export class RagService {
 				provenance: null,
 			};
 		}
-		const generated = await this.generator.answer({
-			question,
-			passages: matches.map((match) => ({
-				chunkId: match.chunkId,
-				documentId: match.documentId,
-				title: match.documentTitle,
-				source: match.source,
-				content: match.content,
-			})),
-		});
 		return {
-			answer: generated.text,
+			answer: answer.text,
 			matches,
-			citations: generated.citations,
-			provenance: generated.provenance,
+			citations: answer.citations,
+			provenance: answer.provenance,
 		};
 	}
 
@@ -195,4 +215,17 @@ function emptyDocumentError(): AppError {
 		code: RAG_ERROR_CODES.EMPTY_DOCUMENT,
 		message: RAG_MESSAGES.EMPTY_DOCUMENT,
 	});
+}
+
+/** Who and how much to retrieve for one answer run. */
+type AnswerScope = { ownerId: string; topK?: number };
+
+function toContextPassage(match: RagMatch) {
+	return {
+		chunkId: match.chunkId,
+		documentId: match.documentId,
+		title: match.documentTitle,
+		source: match.source,
+		content: match.content,
+	};
 }

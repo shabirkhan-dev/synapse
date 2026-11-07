@@ -5,7 +5,7 @@ description: Use when building LangGraph graphs, agent state, checkpoints, routi
 
 # agent-orchestration
 
-> Status: Planned. `packages/orchestration` is the only owner of LangGraph JS. Today the API has a simple AI SDK tool loop (`/chat`).
+> Status: Live (RAG answer graph, Postgres checkpoints). `packages/orchestration` is the only owner of LangGraph JS (checked by `architecture:check`); `@synapse/adapters/checkpointer` stores checkpoints. `/chat` is still an AI SDK tool loop.
 
 ## When to use
 

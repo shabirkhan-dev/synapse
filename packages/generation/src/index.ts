@@ -13,4 +13,8 @@ export {
 	estimateTokens,
 } from "./context/build-context";
 export { type PromptTemplate, promptVersion } from "./prompts/prompt";
-export { CHAT_ASSISTANT_PROMPT, RAG_ANSWER_PROMPT } from "./prompts/templates";
+export {
+	CHAT_ASSISTANT_PROMPT,
+	RAG_ANSWER_CITED_PROMPT,
+	RAG_ANSWER_PROMPT,
+} from "./prompts/templates";

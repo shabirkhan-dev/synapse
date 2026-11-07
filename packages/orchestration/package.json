@@ -1,0 +1,29 @@
+{
+	"name": "@synapse/orchestration",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"typecheck": "tsc --noEmit",
+		"test": "bun --env-file=../../.env test",
+		"test:coverage": "bun --env-file=../../.env test --coverage"
+	},
+	"dependencies": {
+		"@langchain/core": "1.2.20",
+		"@langchain/langgraph": "1.5.2",
+		"@langchain/langgraph-checkpoint": "1.2.1",
+		"@synapse/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@synapse/adapters": "workspace:*",
+		"@synapse/typescript-config": "workspace:*",
+		"@types/bun": "^1.4.4",
+		"typescript": "^7.0.2"
+	}
+}

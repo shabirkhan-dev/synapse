@@ -115,6 +115,11 @@ done < <(search "$VENDOR_IMPORT" packages | grep -E '^packages/[^/]+/src/' |
     grep -vE '^packages/(adapters|providers|database|ui)/' || true)
 
 while IFS= read -r hit; do
+    fail "$hit -> LangGraph belongs to @synapse/orchestration (checkpoint storage: @synapse/adapters)"
+done < <(search 'from "@langchain/' packages "$API_SRC" "$WORKER_SRC" "$CONSOLE_SRC" |
+    grep -E '/src/' | grep -vE '^packages/(orchestration|adapters)/' || true)
+
+while IFS= read -r hit; do
     fail "$hit -> @synapse/core imports nothing from the workspace"
 done < <(search 'from "@synapse/' packages/core/src || true)
 

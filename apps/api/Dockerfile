@@ -17,6 +17,7 @@ COPY packages/generation/package.json ./packages/generation/
 COPY packages/ingestion/package.json ./packages/ingestion/
 COPY packages/knowledge/package.json ./packages/knowledge/
 COPY packages/observability/package.json ./packages/observability/
+COPY packages/orchestration/package.json ./packages/orchestration/
 COPY packages/retrieval/package.json ./packages/retrieval/
 COPY packages/security/package.json ./packages/security/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
@@ -35,6 +36,7 @@ COPY packages/generation ./packages/generation
 COPY packages/ingestion ./packages/ingestion
 COPY packages/knowledge ./packages/knowledge
 COPY packages/observability ./packages/observability
+COPY packages/orchestration ./packages/orchestration
 COPY packages/retrieval ./packages/retrieval
 COPY packages/security ./packages/security
 COPY packages/typescript-config ./packages/typescript-config

@@ -2,7 +2,8 @@
 
 Run multi-step agents and workflows with LangGraph JS — the only package that owns LangGraph.
 
-> **Status:** Planned. Today `/api/v1/chat` is a single AI SDK tool loop.
+> **Status:** Live (RAG answer graph, Postgres checkpoints, resume) · Planned (agent tools, approvals
+> via `human-oversight`, audit events). `/api/v1/chat` is still a single AI SDK tool loop.
 
 ## Internal modules
 
@@ -22,8 +23,23 @@ Run multi-step agents and workflows with LangGraph JS — the only package that 
 
 ## Depends on
 
-`core`, `retrieval`, `generation`, `guardrails`, `human-oversight`, `memory`
+`core` and LangGraph JS (`@langchain/langgraph` 1.5.2, pinned). Domain work reaches graphs as
+ports (plain functions), so the package does not import `retrieval` or `generation`. Later:
+`guardrails`, `human-oversight`, `memory`.
 
 ## Public API
 
-> Placeholder — defined when the package is created. Keep it to `src/index.ts` exports.
+| Export | What it does |
+| --- | --- |
+| `createRagAnswerGraph({ ports, maxAttempts?, checkpointer? })` → `{ run, resume }` | retrieve → generate → if the answer cites nothing and attempts remain, generate again (attempt number passed to `ports.answer`, so the caller can use a stricter prompt) → end. Nothing retrieved ⇒ no model call |
+| `RagAnswerPorts`, `RagAnswerRun`, `CitedAnswer` | `retrieve({ question, context })`, `answer({ question, passages, attempt, context })`; `context` is the caller's per-run data (checkpointed, so JSON) |
+| `MemorySaver`, `BaseCheckpointSaver` | In-memory checkpoints (tests) and the checkpointer type; Postgres: `createPostgresCheckpointer` in `@synapse/adapters/checkpointer` |
+
+**Checkpoints and resume:** with a checkpointer, `run(input, threadId)` saves state after every
+step. If the process dies mid-run, `resume(threadId)` (any process, same database) continues from
+the last finished step: a crash during generation re-runs only generation, never retrieval. Steps are
+bounded (`recursionLimit` 10).
+
+**Used by:** `apps/api` `RagService.answer` (`POST /rag/query`): attempt 1 uses `rag-answer@1`,
+the retry uses `rag-answer-cited@1`; provenance names the prompt that produced the returned answer.
+API runs are in-request, so they use no checkpointer.

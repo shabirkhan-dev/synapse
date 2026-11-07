@@ -27,6 +27,8 @@ put apps/api/src/server.ts 'import { createOpenAICompatibleModelGateway } from "
 put apps/api/src/shared/constants/error-codes.ts 'export const ERROR_CODES = { NOT_FOUND: "NOT_FOUND" };'
 put apps/api/src/modules/rag/constants/rag.constants.ts 'export const RAG_ERROR_CODES = { EMPTY: "RAG_EMPTY_DOCUMENT" };'
 put apps/api/src/modules/rag/services/rag-errors.service.ts 'throw new AppError({ statusCode: HTTP_STATUS.NOT_FOUND, code: RAG_ERROR_CODES.EMPTY });'
+put packages/orchestration/src/graphs/graph.ts 'import { StateGraph } from "@langchain/langgraph";'
+put packages/adapters/src/checkpointer/postgres.ts 'import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";'
 put apps/worker/src/config/env.ts 'export const url = process.env.DATABASE_URL;'
 put apps/worker/src/modules/knowledge/repositories/chunk.repository.ts 'import { eq } from "drizzle-orm";'
 put apps/worker/src/worker.ts 'import { createPgBossJobQueue } from "@synapse/adapters/queue";'
@@ -75,6 +77,8 @@ put apps/worker/src/jobs/reembed.job.ts 'const n = process.env.BATCH;'
 put apps/worker/src/modules/maintenance/jobs/prune.job.ts 'import { sql } from "drizzle-orm";'
 put apps/worker/src/modules/maintenance/jobs/cross.job.ts 'import { x } from "@/modules/knowledge/jobs/reembed-chunks.job";'
 put apps/worker/src/queue.ts 'import { PgBoss } from "pg-boss";'
+put packages/generation/src/agent.ts 'import { StateGraph } from "@langchain/langgraph";'
+put apps/api/src/modules/rag/services/rag-graph.service.ts 'import { MemorySaver } from "@langchain/langgraph";'
 
 if out="$(bash "$CHECK" "$fixture" 2>&1)"; then
     echo "violating fixture should fail"
@@ -119,5 +123,7 @@ expect "apps/worker/src/jobs/reembed.job.ts:1:"
 expect "apps/worker/src/modules/maintenance/jobs/prune.job.ts:1:"
 expect "cross.job.ts imports module internals"
 expect "apps/worker/src/queue.ts:1:"
+expect "packages/generation/src/agent.ts:1:"
+expect "rag-graph.service.ts:1:"
 
 echo "check-layers test passed"
