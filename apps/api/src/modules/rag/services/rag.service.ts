@@ -24,6 +24,7 @@ import {
 import { createRagAnswerGraph, type RagAnswerGraph } from "@synapse/orchestration";
 import { createRetriever, type RetrievalMode, type Retriever } from "@synapse/retrieval";
 
+import type { GuardrailsService } from "@/modules/guardrails";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
@@ -38,6 +39,8 @@ export type RagServiceOptions = {
 	maxContextTokens: number;
 	/** Answers (with provenance), ingests and deletes are recorded here. */
 	audit: AuditLog;
+	/** Input policy, passage sanitizing (prompt injection) and answer checks. */
+	guardrails: GuardrailsService;
 };
 
 const NO_REQUEST: RequestContext = { requestId: null };
@@ -115,7 +118,17 @@ export class RagService {
 		// In-request runs: no checkpointer (a failed request is simply retried by the client).
 		this.answerGraph = createRagAnswerGraph<RagMatch, GeneratedAnswer, AnswerScope>({
 			ports: {
-				retrieve: ({ question, context }) => this.search(context.ownerId, question, context.topK),
+				// Passages are sanitized once, here: the model (and the returned matches) see the cleaned text.
+				retrieve: async ({ question, context }) => {
+					const matches = await this.search(context.ownerId, question, context.topK);
+					const sanitized = await options.guardrails.sanitizePassages(
+						context.ownerId,
+						matches.map((match) => Object.assign({}, match, { id: match.chunkId })),
+						"rag.query",
+						{ requestId: context.requestId },
+					);
+					return sanitized.map(({ id: _id, ...match }) => match);
+				},
 				answer: ({ question, passages, attempt }) =>
 					(attempt === 1 ? this.generator : this.citedGenerator).answer({
 						question,
@@ -186,15 +199,27 @@ export class RagService {
 		return this.retriever.retrieve({ ownerId, query, topK });
 	}
 
+	/** A user's search (`answer: false`): input policy first, then retrieval. */
+	async retrieve(
+		ownerId: string,
+		query: string,
+		topK?: number,
+		context: RequestContext = NO_REQUEST,
+	): Promise<RagMatch[]> {
+		await this.options.guardrails.checkInput(ownerId, query, "rag.query", context);
+		return this.search(ownerId, query, topK);
+	}
+
 	async answer(
 		ownerId: string,
 		question: string,
 		topK?: number,
 		context: RequestContext = NO_REQUEST,
 	): Promise<RagAnswer> {
+		await this.options.guardrails.checkInput(ownerId, question, "rag.query", context);
 		const { passages: matches, answer } = await this.answerGraph.run({
 			question,
-			context: { ownerId, ...(topK === undefined ? {} : { topK }) },
+			context: { ownerId, requestId: context.requestId, ...(topK === undefined ? {} : { topK }) },
 		});
 		if (!answer) {
 			return {
@@ -204,6 +229,7 @@ export class RagService {
 				provenance: null,
 			};
 		}
+		const text = await this.options.guardrails.guardAnswer(ownerId, answer.text, context);
 		// Recorded before returning: an answer is only given out once it is traceable.
 		await this.options.audit.record({
 			ownerId,
@@ -214,14 +240,14 @@ export class RagService {
 			requestId: context.requestId,
 			data: {
 				question,
-				answer: answer.text,
+				answer: text,
 				citedChunkIds: answer.citations.map((citation) => citation.chunkId),
 				contextChunkIds: answer.context.map((citation) => citation.chunkId),
 			},
 			provenance: answer.provenance,
 		});
 		return {
-			answer: answer.text,
+			answer: text,
 			matches,
 			citations: answer.citations,
 			provenance: answer.provenance,
@@ -297,7 +323,7 @@ function emptyDocumentError(): AppError {
 }
 
 /** Who and how much to retrieve for one answer run. */
-type AnswerScope = { ownerId: string; topK?: number };
+type AnswerScope = { ownerId: string; requestId: string | null; topK?: number };
 
 function toContextPassage(match: RagMatch) {
 	return {

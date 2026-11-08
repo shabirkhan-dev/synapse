@@ -78,7 +78,7 @@ export const citationSchema = z
 export const answerProvenanceSchema = z
 	.object({
 		chatModel: z.string().openapi({ example: "openrouter:openai/gpt-4o-mini" }),
-		promptVersion: z.string().openapi({ example: "rag-answer@1" }),
+		promptVersion: z.string().openapi({ example: "rag-answer@2" }),
 		embeddingModel: z.string().openapi({ example: "openrouter:openai/text-embedding-3-small" }),
 		chunkerVersion: z.string().openapi({ example: "text-v1;size=1000;overlap=150" }),
 		usage: z.object({

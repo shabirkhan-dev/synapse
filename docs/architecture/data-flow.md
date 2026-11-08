@@ -15,7 +15,7 @@ search, fused with RRF (`@synapse/retrieval`) on the owner's chunks →
 (optional) answer with the chat model using the matches as context.
 
 **Answer:** `@synapse/generation` numbers the passages within `RAG_MAX_CONTEXT_TOKENS`, calls the
-chat model with the versioned `rag-answer@1` prompt, extracts `[n]` citations and returns provenance.
+chat model with the versioned `rag-answer@2` prompt, extracts `[n]` citations and returns provenance.
 
 **Chat:** `POST /api/v1/chat` → AI SDK tool loop (`searchDocuments`, `currentTime`), streamed as
 the AI SDK UI message stream (SSE).

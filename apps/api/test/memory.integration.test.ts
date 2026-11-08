@@ -6,6 +6,7 @@ import { createLongTermMemory } from "@synapse/memory";
 import { sql } from "drizzle-orm";
 
 import { DrizzleAuditRepository } from "@/modules/audit";
+import { GuardrailsService } from "@/modules/guardrails";
 import {
 	DrizzleConversationRepository,
 	DrizzleFactRepository,
@@ -35,17 +36,23 @@ describe.skipIf(!url)("memory (postgres)", () => {
 	const other = `it-memory-${crypto.randomUUID()}`;
 
 	/** A fresh service over the same database, like the API after a restart. */
-	const startService = () =>
-		new MemoryService({
+	const startService = () => {
+		const audit = createAuditLog({
+			store: new DrizzleAuditRepository(database.db),
+			redact: (d) => d,
+		});
+		return new MemoryService({
 			conversations: new DrizzleConversationRepository(database.db),
 			facts: createLongTermMemory({
 				store: new DrizzleFactRepository(database.db),
 				embedding,
 				embeddingModel: "test:bow",
 			}),
-			audit: createAuditLog({ store: new DrizzleAuditRepository(database.db), redact: (d) => d }),
+			audit,
 			history: { maxTokens: 6000, maxMessages: 50 },
+			guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, audit),
 		});
+	};
 
 	beforeAll(async () => {
 		await runMigrations(database.db, sourceMigrationsFolder);

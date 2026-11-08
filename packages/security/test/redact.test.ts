@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { redactPii, redactPiiDeep } from "../src";
+import { redactPii, redactPiiDeep, redactSecrets } from "../src";
 
 describe("redactPii", () => {
 	test("replaces emails, phones and card numbers", () => {
@@ -59,5 +59,12 @@ describe("redactPii", () => {
 				ok: true,
 			}),
 		).toEqual({ question: "email me at [email]", tags: ["x", "call [phone]"], n: 3, ok: true });
+	});
+
+	test("redactSecrets removes keys and tokens but keeps emails and numbers", () => {
+		const key = ["sk-", "a".repeat(24)].join("");
+		expect(redactSecrets(`Contact ada@example.com or +44 20 7946 0958, key ${key}`)).toBe(
+			"Contact ada@example.com or +44 20 7946 0958, key [secret]",
+		);
 	});
 });

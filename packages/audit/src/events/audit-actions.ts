@@ -15,6 +15,9 @@ export const AUDIT_ACTIONS = {
 	MEMORY_FACT_FORGOTTEN: "memory.fact.forgotten",
 	MEMORY_CONVERSATION_DELETED: "memory.conversation.deleted",
 	MEMORY_ALL_FORGOTTEN: "memory.all.forgotten",
+	GUARDRAILS_INPUT_BLOCKED: "guardrails.input.blocked",
+	GUARDRAILS_PASSAGES_FLAGGED: "guardrails.passages.flagged",
+	GUARDRAILS_OUTPUT_REDACTED: "guardrails.output.redacted",
 } as const;
 
 /** Actor for work no user did directly (approved actions, jobs). */

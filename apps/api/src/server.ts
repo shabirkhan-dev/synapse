@@ -13,6 +13,7 @@ import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
+import { GuardrailsService } from "./modules/guardrails";
 import {
 	DrizzleConversationRepository,
 	DrizzleFactRepository,
@@ -52,6 +53,7 @@ const audit = createAuditLog({
 	store: new DrizzleAuditRepository(database.db),
 	redact: redactPiiDeep,
 });
+const guardrails = new GuardrailsService(config.guardrails, audit);
 const auth = new AuthService({
 	repository: new DrizzleAuthRepository(database.db),
 	rateLimiter: new DrizzleRateLimiter(database.db),
@@ -70,6 +72,7 @@ const rag = new RagService(repository, gateway, {
 	searchMode: config.rag.searchMode,
 	maxContextTokens: config.rag.maxContextTokens,
 	audit,
+	guardrails,
 });
 const memory = new MemoryService({
 	conversations: new DrizzleConversationRepository(database.db),
@@ -80,10 +83,12 @@ const memory = new MemoryService({
 	}),
 	audit,
 	history: config.rag.chatHistory,
+	guardrails,
 });
 const chat = new ChatService({
 	rag,
 	memory,
+	guardrails,
 	chatModel: gateway.chatModel,
 	maxSteps: config.rag.chatMaxSteps,
 	topK: config.rag.topK,

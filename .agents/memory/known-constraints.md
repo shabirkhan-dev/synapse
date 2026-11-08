@@ -62,7 +62,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Memory:** stored chat saves the reply in `onFinish` after streaming (a failed save is logged, the
   user already has the reply). Long histories are cut to the budget, not summarized. Facts use the
   current embedding model only (the worker does not re-embed facts yet) and have no vector index.
-  A model-called `rememberFact` writes without approval (owner's own memory; guardrails come in syn-031).
+  A model-called `rememberFact` writes without approval (owner's own memory); facts with instructions are refused.
+- **Guardrails are pattern-based:** paraphrased injections can slip through (prompts v2 are the second
+  line). Streaming chat text is not checked for secrets; RAG answers are. Returned `matches` show
+  sanitized passage text. Blocked-term matching is whole-word, English-centric.
 - **Reranking, query rewriting** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).

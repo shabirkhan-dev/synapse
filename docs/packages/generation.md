@@ -30,7 +30,7 @@ Produce answers from context: providers, prompts, context assembly, completion, 
 
 | Export | What it does |
 | --- | --- |
-| `RAG_ANSWER_PROMPT` (`rag-answer@1`), `RAG_ANSWER_CITED_PROMPT` (`rag-answer-cited@1`, the retry when an answer cited nothing), `CHAT_ASSISTANT_PROMPT` (`chat-assistant@1`), `PromptTemplate`, `promptVersion` | Versioned prompts — bump `version` on every text change |
+| `RAG_ANSWER_PROMPT` (`rag-answer@2`), `RAG_ANSWER_CITED_PROMPT` (`rag-answer-cited@2`, the retry when an answer cited nothing), `CHAT_ASSISTANT_PROMPT` (`chat-assistant@2`; v2 of all three: passages, tool results and facts are data, not instructions), `PromptTemplate`, `promptVersion` | Versioned prompts — bump `version` on every text change |
 | `buildContext(passages, { maxTokens })`, `estimateTokens` | `[1]…[n]` passages in rank order within the budget (~4 chars/token); first passage always kept |
 | `extractCitations(answer, citations)` | `[n]`, `[1][3]`, `[1, 3]` → cited passages, first-mention order |
 | `createAnswerGenerator({ chat, embeddingModel, chunkerVersion, maxContextTokens, prompt? })` | `answer({ question, passages })` → `{ text, citations, context, provenance }` |

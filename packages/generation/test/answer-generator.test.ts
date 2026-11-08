@@ -42,7 +42,7 @@ describe("answer generator", () => {
 		expect(answer.context).toHaveLength(2);
 		expect(answer.provenance).toEqual({
 			chatModel: "test:chat-1",
-			promptVersion: "rag-answer@1",
+			promptVersion: "rag-answer@2",
 			embeddingModel: "test:embed-1",
 			chunkerVersion: "text-v1;size=1000;overlap=150",
 			usage: { inputTokens: 9 },

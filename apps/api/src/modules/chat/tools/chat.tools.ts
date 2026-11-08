@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+import type { GuardrailsService } from "@/modules/guardrails";
 import type { MemoryService } from "@/modules/memory";
 import type { RagService } from "@/modules/rag";
 import type { RequestContext } from "@/shared/types/app-types";
@@ -9,6 +10,7 @@ import type { RequestContext } from "@/shared/types/app-types";
 export function createChatTools({
 	rag,
 	memory,
+	guardrails,
 	ownerId,
 	topK,
 	context = { requestId: null },
@@ -16,6 +18,7 @@ export function createChatTools({
 }: {
 	rag: RagService;
 	memory: MemoryService;
+	guardrails: GuardrailsService;
 	ownerId: string;
 	topK: number;
 	context?: RequestContext;
@@ -30,7 +33,14 @@ export function createChatTools({
 				topK: z.number().int().min(1).max(20).optional().describe("How many passages to return"),
 			}),
 			async execute({ query, topK: requested }) {
-				const matches = await rag.search(ownerId, query, requested ?? topK);
+				const found = await rag.search(ownerId, query, requested ?? topK);
+				// Tool output is untrusted: instruction-like text is removed before the model reads it.
+				const matches = await guardrails.sanitizePassages(
+					ownerId,
+					found.map((match) => Object.assign({}, match, { id: match.chunkId })),
+					"chat.search",
+					context,
+				);
 				return matches.map((match) => ({
 					documentId: match.documentId,
 					title: match.documentTitle,

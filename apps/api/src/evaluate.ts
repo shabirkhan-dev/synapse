@@ -20,6 +20,7 @@ import {
 import { embeddingVersion } from "@synapse/knowledge";
 
 import { loadEvaluationConfig } from "./config/evaluation.config";
+import { GuardrailsService } from "./modules/guardrails";
 import { DrizzleRagRepository, RagService } from "./modules/rag";
 
 /**
@@ -34,6 +35,11 @@ const database = createDatabase({
 	...(config.DATABASE_SSL ? { ssl: config.DATABASE_SSL === "true" } : {}),
 });
 const embedding = createHashingEmbeddingGateway({ dimensions: EMBEDDING_DIMENSIONS });
+// Evaluation is not user activity: nothing goes to the audit trail.
+const evaluationAudit = createAuditLog({
+	store: { append: async (event) => ({ ...event, id: "", createdAt: "" }), list: async () => [] },
+	redact: (data) => data,
+});
 const rag = new RagService(
 	new DrizzleRagRepository(database.db),
 	{ chat: createUnavailableChat(), embedding },
@@ -42,14 +48,8 @@ const rag = new RagService(
 		defaultTopK: config.EVAL_K,
 		searchMode: config.RAG_SEARCH_MODE,
 		maxContextTokens: 3000,
-		// Evaluation is not user activity: nothing goes to the audit trail.
-		audit: createAuditLog({
-			store: {
-				append: async (event) => ({ ...event, id: "", createdAt: "" }),
-				list: async () => [],
-			},
-			redact: (data) => data,
-		}),
+		audit: evaluationAudit,
+		guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, evaluationAudit),
 	},
 );
 const ownerId = `eval-${crypto.randomUUID()}`;

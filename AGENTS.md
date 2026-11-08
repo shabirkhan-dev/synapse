@@ -85,6 +85,7 @@ synapse/
 │   ├── observability/   # @synapse/observability: logs, OpenTelemetry tracing, LLM usage/cost
 │   ├── evaluation/      # @synapse/evaluation: retrieval datasets, metrics, CI baselines
 │   ├── audit/           # @synapse/audit: append-only event history, answer provenance
+│   ├── guardrails/      # @synapse/guardrails: input policy, injection defense, tool allowlist
 │   ├── human-oversight/ # @synapse/human-oversight: approvals, review queue, feedback
 │   ├── memory/          # @synapse/memory: conversation history, long-term facts
 │   ├── orchestration/   # @synapse/orchestration: LangGraph graphs with Postgres checkpoints

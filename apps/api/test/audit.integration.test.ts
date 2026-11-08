@@ -9,6 +9,7 @@ import { redactPiiDeep } from "@synapse/security";
 import { sql } from "drizzle-orm";
 
 import { DrizzleAuditRepository } from "@/modules/audit";
+import { GuardrailsService } from "@/modules/guardrails";
 import { DrizzleRagRepository, RagService } from "@/modules/rag";
 
 import { createMockEmbeddingModel, testConfig, textGenerateResult } from "./helpers";
@@ -51,6 +52,7 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 				searchMode: "vector",
 				maxContextTokens: 3000,
 				audit,
+				guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, audit),
 			},
 		);
 		await rag.ingest(owner, { title: "Refunds", content: "Refunds are accepted within 30 days." });
@@ -65,7 +67,7 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 			data: { question: "refund window? call [phone]", answer: "Within 30 days [1]." },
 			provenance: {
 				chatModel: "mock:mock-chat",
-				promptVersion: "rag-answer@1",
+				promptVersion: "rag-answer@2",
 				embeddingModel: "mock:mock-embedding",
 				chunkerVersion: "text-v1;size=200;overlap=20",
 			},

@@ -172,7 +172,7 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 				c,
 				{
 					answer: null,
-					matches: await rag.search(ownerId, query, topK),
+					matches: await rag.retrieve(ownerId, query, topK, { requestId: c.get("requestId") }),
 					citations: [],
 					provenance: null,
 				},

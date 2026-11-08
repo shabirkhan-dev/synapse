@@ -8,6 +8,7 @@ import {
 	type StoredMessage,
 } from "@synapse/memory";
 
+import type { GuardrailsService } from "@/modules/guardrails";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
@@ -28,6 +29,8 @@ export type MemoryServiceOptions = {
 	facts: LongTermMemory;
 	audit: AuditLog;
 	history: HistoryBudget;
+	/** Facts carrying instructions are refused (memory poisoning). */
+	guardrails: GuardrailsService;
 };
 
 const NO_REQUEST: RequestContext = { requestId: null };
@@ -103,6 +106,7 @@ export class MemoryService {
 	}
 
 	async rememberFact(ownerId: string, content: string, context = NO_REQUEST): Promise<MemoryFact> {
+		await this.options.guardrails.checkFact(ownerId, content, context);
 		const fact = await this.options.facts.remember(ownerId, content);
 		await this.record(ownerId, AUDIT_ACTIONS.MEMORY_FACT_SAVED, "memory_fact", fact.id, context, {
 			content: fact.content,

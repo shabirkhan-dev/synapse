@@ -10,6 +10,7 @@ import {
 import { CHAT_ASSISTANT_PROMPT } from "@synapse/generation";
 import type { Logger } from "@synapse/observability";
 
+import type { GuardrailsService } from "@/modules/guardrails";
 import type { MemoryService } from "@/modules/memory";
 import type { RagService } from "@/modules/rag";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
@@ -23,6 +24,7 @@ import { createChatTools } from "../tools/chat.tools";
 export type ChatServiceOptions = {
 	rag: RagService;
 	memory: MemoryService;
+	guardrails: GuardrailsService;
 	chatModel: LanguageModel;
 	maxSteps: number;
 	topK: number;
@@ -48,7 +50,7 @@ export class ChatService {
 		context: RequestContext;
 		abortSignal?: AbortSignal;
 	}) {
-		const { rag, memory, chatModel, maxSteps, topK, logger } = this.options;
+		const { rag, memory, guardrails, chatModel, maxSteps, topK, logger } = this.options;
 		let conversationId: string | null = null;
 		let messages: unknown[] = body.messages ?? [];
 		if (body.message) {
@@ -56,6 +58,8 @@ export class ChatService {
 			if (!message) {
 				throw invalidMessages("Missing message");
 			}
+			// Before anything is stored or sent to the model.
+			await guardrails.checkInput(ownerId, lastUserText([message]), "chat.message", context);
 			const continued = await memory.continueConversation(ownerId, body.conversationId, {
 				id: message.id,
 				role: message.role,
@@ -65,8 +69,13 @@ export class ChatService {
 			messages = continued.history;
 		}
 		const validated = await validate(messages);
+		if (!body.message) {
+			await guardrails.checkInput(ownerId, lastUserText(validated), "chat.message", context);
+		}
 		const recalled = await memory.recallContext(ownerId, lastUserText(validated));
-		const tools = createChatTools({ rag, memory, ownerId, topK, context });
+		const tools = guardrails.allowedTools(
+			createChatTools({ rag, memory, guardrails, ownerId, topK, context }),
+		);
 		const result = streamText({
 			model: chatModel,
 			system: [CHAT_ASSISTANT_PROMPT.system, recalled].filter(Boolean).join("\n\n"),

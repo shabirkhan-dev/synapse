@@ -46,7 +46,7 @@ describe("audit trail", () => {
 				answer: "30 days [1].",
 				citedChunkIds: [query.body.data.matches[0].chunkId],
 			},
-			provenance: { promptVersion: "rag-answer@1", chatModel: "mock:mock-chat" },
+			provenance: { promptVersion: "rag-answer@2", chatModel: "mock:mock-chat" },
 		});
 	});
 

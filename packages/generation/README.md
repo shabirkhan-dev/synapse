@@ -14,7 +14,7 @@ const generator = createAnswerGenerator({
 	maxContextTokens: 3000,
 });
 const { text, citations, context, provenance } = await generator.answer({ question, passages });
-// provenance: { chatModel, promptVersion: "rag-answer@1", embeddingModel, chunkerVersion, usage }
+// provenance: { chatModel, promptVersion: "rag-answer@2", embeddingModel, chunkerVersion, usage }
 ```
 
 | Module | Status |

@@ -31,6 +31,7 @@ synapse/
 │   ├── observability/        # @synapse/observability: logs, tracing, LLM usage/cost
 │   ├── evaluation/           # @synapse/evaluation: retrieval evals, baselines
 │   ├── audit/                # @synapse/audit: append-only event history, answer provenance
+│   ├── guardrails/           # @synapse/guardrails: input policy, injection defense, tool policy
 │   ├── human-oversight/      # @synapse/human-oversight: approvals, review queue, feedback
 │   ├── memory/               # @synapse/memory: conversation history, long-term facts
 │   ├── orchestration/        # @synapse/orchestration: LangGraph graphs, checkpoints
@@ -73,6 +74,7 @@ synapse/
 | `packages/observability` | `@synapse/observability` | Logs, tracing, LLM usage/cost |
 | `packages/evaluation` | `@synapse/evaluation` | Retrieval evals, baselines, CI regression |
 | `packages/audit` | `@synapse/audit` | Append-only event history with provenance |
+| `packages/guardrails` | `@synapse/guardrails` | Input, passage, tool and output policies |
 | `packages/human-oversight` | `@synapse/human-oversight` | Approvals, review queue, decisions, feedback |
 | `packages/memory` | `@synapse/memory` | Conversation history and long-term facts |
 | `packages/orchestration` | `@synapse/orchestration` | LangGraph graphs with Postgres checkpoints |

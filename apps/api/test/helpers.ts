@@ -38,6 +38,7 @@ import {
 	type UserCredentials,
 } from "@/modules/auth";
 import { ChatService } from "@/modules/chat";
+import { GuardrailsService } from "@/modules/guardrails";
 import {
 	type Conversation,
 	type ConversationStore,
@@ -635,6 +636,7 @@ export function buildTestApp({
 	email = new CapturingEmailSender(),
 	pingDatabase = async () => {},
 	searchMode = testConfig.rag.searchMode,
+	blockedTerms = [],
 }: {
 	chatModel?: MockLanguageModelV4;
 	embeddingModel?: MockEmbeddingModelV4;
@@ -643,6 +645,7 @@ export function buildTestApp({
 	email?: CapturingEmailSender;
 	pingDatabase?: () => Promise<void>;
 	searchMode?: "vector" | "hybrid";
+	blockedTerms?: string[];
 } = {}) {
 	const logger = createLogger({ service: "test", level: "ERROR" });
 	// Instrumented like server.ts, so tests exercise the same tracing path.
@@ -657,12 +660,14 @@ export function buildTestApp({
 	);
 	const auditEvents = new InMemoryAuditStore();
 	const audit = createAuditLog({ store: auditEvents, redact: redactPiiDeep });
+	const guardrails = new GuardrailsService({ ...testConfig.guardrails, blockedTerms }, audit);
 	const rag = new RagService(repository, gateway, {
 		chunk: testConfig.rag.chunk,
 		defaultTopK: testConfig.rag.topK,
 		searchMode,
 		maxContextTokens: testConfig.rag.maxContextTokens,
 		audit,
+		guardrails,
 	});
 	const conversations = new InMemoryConversationStore();
 	const facts = new InMemoryFactStore();
@@ -675,10 +680,12 @@ export function buildTestApp({
 		}),
 		audit,
 		history: testConfig.rag.chatHistory,
+		guardrails,
 	});
 	const chat = new ChatService({
 		rag,
 		memory,
+		guardrails,
 		logger,
 		chatModel,
 		maxSteps: testConfig.rag.chatMaxSteps,
@@ -719,6 +726,7 @@ export function buildTestApp({
 		conversations,
 		facts,
 		memory,
+		guardrails,
 		chatModel,
 		embeddingModel,
 	};

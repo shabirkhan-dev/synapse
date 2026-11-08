@@ -89,6 +89,18 @@ export const envSchema = z
 		/** Stored conversation history sent to the model: rough token budget and message cap. */
 		CHAT_HISTORY_MAX_TOKENS: z.coerce.number().int().min(500).max(100_000).default(6000),
 		CHAT_HISTORY_MAX_MESSAGES: z.coerce.number().int().min(2).max(500).default(50),
+		/** Longest user input (query, chat message, fact) accepted before any model call. */
+		GUARDRAILS_MAX_INPUT_CHARS: z.coerce.number().int().min(100).max(100_000).default(4000),
+		/** Comma-separated terms that block a request (case-insensitive, whole words). */
+		GUARDRAILS_BLOCKED_TERMS: z
+			.string()
+			.default("")
+			.transform((value) =>
+				value
+					.split(",")
+					.map((term) => term.trim())
+					.filter(Boolean),
+			),
 		RUN_MIGRATIONS: booleanFromString,
 	})
 	.superRefine((env, context) => {

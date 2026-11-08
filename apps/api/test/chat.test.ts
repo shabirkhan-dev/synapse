@@ -115,10 +115,11 @@ describe("chat", () => {
 	});
 
 	test("currentTime falls back to UTC for unknown zones", async () => {
-		const { rag, memory } = buildTestApp();
+		const { rag, memory, guardrails } = buildTestApp();
 		const tools = createChatTools({
 			rag,
 			memory,
+			guardrails,
 			ownerId: "u",
 			topK: 3,
 			now: () => new Date("2026-10-31T12:00:00Z"),

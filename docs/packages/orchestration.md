@@ -41,6 +41,6 @@ step. If the process dies mid-run, `resume(threadId)` (any process, same databas
 the last finished step: a crash during generation re-runs only generation, never retrieval. Steps are
 bounded (`recursionLimit` 10).
 
-**Used by:** `apps/api` `RagService.answer` (`POST /rag/query`): attempt 1 uses `rag-answer@1`,
-the retry uses `rag-answer-cited@1`; provenance names the prompt that produced the returned answer.
+**Used by:** `apps/api` `RagService.answer` (`POST /rag/query`): attempt 1 uses `rag-answer@2`,
+the retry uses `rag-answer-cited@2`; provenance names the prompt that produced the returned answer.
 API runs are in-request, so they use no checkpointer.

@@ -41,6 +41,7 @@ src/
     audit/              # constants/ mappers/ repositories/ routes/ schemas/ (event history)
     auth/               # constants/ mappers/ middleware/ repositories/ routes/ schemas/ services/ types/
     chat/               # constants/ routes/ schemas/ services/ tools/
+    guardrails/         # constants/ services/ (policy checks + audit)
     health/             # constants/ routes/ schemas/
     memory/             # constants/ mappers/ repositories/ routes/ schemas/ services/ types/ (conversations, facts)
     oversight/          # constants/ mappers/ repositories/ routes/ schemas/ services/ (approvals, feedback)

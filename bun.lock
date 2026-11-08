@@ -24,6 +24,7 @@
         "@synapse/database": "workspace:*",
         "@synapse/evaluation": "workspace:*",
         "@synapse/generation": "workspace:*",
+        "@synapse/guardrails": "workspace:*",
         "@synapse/human-oversight": "workspace:*",
         "@synapse/ingestion": "workspace:*",
         "@synapse/knowledge": "workspace:*",
@@ -152,6 +153,18 @@
     },
     "packages/generation": {
       "name": "@synapse/generation",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/guardrails": {
+      "name": "@synapse/guardrails",
       "version": "0.0.0",
       "dependencies": {
         "@synapse/core": "workspace:*",
@@ -694,6 +707,8 @@
     "@synapse/evaluation": ["@synapse/evaluation@workspace:packages/evaluation"],
 
     "@synapse/generation": ["@synapse/generation@workspace:packages/generation"],
+
+    "@synapse/guardrails": ["@synapse/guardrails@workspace:packages/guardrails"],
 
     "@synapse/human-oversight": ["@synapse/human-oversight@workspace:packages/human-oversight"],
 

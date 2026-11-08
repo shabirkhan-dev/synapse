@@ -46,9 +46,9 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | `human-oversight` — approvals, review queues, feedback | ✅ | syn-028 |
 | `audit` — event history, provenance, retention | ✅ | syn-029 |
 | `memory` — conversation, semantic, episodic | ✅ | syn-030 |
-| `guardrails` — input/output/tool policies, injection defense | ⏭️ | syn-031 |
-| `security` — organizations, roles, permissions | ⬜ | syn-032 |
-| `reliability` — retry, breakers, timeouts, fallbacks | ⬜ | — |
+| `guardrails` — input/output/tool policies, injection defense | ✅ | syn-031 |
+| `security` — organizations, roles, permissions | ⏭️ | syn-032 |
+| `reliability` — retry, breakers, timeouts, fallbacks | ⬜ | syn-033 |
 | `providers` — OpenAI, Anthropic, Google, Cohere, Langfuse | ⬜ | — |
 | Reranking (Cohere via adapter) | ⬜ | — |
 | `native` + `crates/` (napi-rs) | ⬜ | — |

@@ -4,6 +4,7 @@ import { type AuthConfig, createAuthConfig } from "./auth.config";
 import { createDatabaseConfig, type DatabaseConfig } from "./database.config";
 import { createEmailConfig, type EmailConfig } from "./email.config";
 import { type Env, parseEnv } from "./env";
+import { createGuardrailsConfig, type GuardrailsConfig } from "./guardrails.config";
 import { createObservabilityConfig, type ObservabilityConfig } from "./observability.config";
 import { createRagConfig, type RagConfig } from "./rag.config";
 
@@ -14,6 +15,7 @@ export type {
 	DatabaseConfig,
 	EmailConfig,
 	Env,
+	GuardrailsConfig,
 	ObservabilityConfig,
 	RagConfig,
 };
@@ -25,6 +27,7 @@ export type Configuration = {
 	email: EmailConfig;
 	ai: AiConfig;
 	rag: RagConfig;
+	guardrails: GuardrailsConfig;
 	observability: ObservabilityConfig;
 };
 
@@ -37,6 +40,7 @@ export function createConfiguration(env: Env): Configuration {
 		email: createEmailConfig(env),
 		ai: createAiConfig(env),
 		rag: createRagConfig(env),
+		guardrails: createGuardrailsConfig(env),
 		observability: createObservabilityConfig(env),
 	};
 }

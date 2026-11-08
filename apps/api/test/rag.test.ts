@@ -101,7 +101,7 @@ describe("rag", () => {
 		]);
 		expect(data.provenance).toEqual({
 			chatModel: "mock:mock-chat",
-			promptVersion: "rag-answer@1",
+			promptVersion: "rag-answer@2",
 			embeddingModel: "mock:mock-embedding",
 			chunkerVersion: "text-v1;size=200;overlap=20",
 			usage: { inputTokens: 10, outputTokens: 5 },
@@ -138,7 +138,7 @@ describe("rag", () => {
 		expect(data.answer).toBe("You have 30 days [1].");
 		expect(data.citations).toHaveLength(1);
 		// Provenance names the prompt that produced the returned answer.
-		expect(data.provenance.promptVersion).toBe("rag-answer-cited@1");
+		expect(data.provenance.promptVersion).toBe("rag-answer-cited@2");
 	});
 
 	test("an answer that still cites nothing after the retry is returned as is", async () => {

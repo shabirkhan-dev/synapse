@@ -2,7 +2,7 @@
  * Patterns for personal data and secrets that must not reach logs or the audit trail. Order matters:
  * secrets first, so a token that contains digits is not half-redacted as a phone number.
  */
-const RULES: Array<{ pattern: RegExp; label: string }> = [
+const SECRET_RULES: Array<{ pattern: RegExp; label: string }> = [
 	// JWTs (three base64url parts starting with eyJ).
 	{ pattern: /\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}\b/g, label: "[secret]" },
 	// Provider keys: OpenAI/Langfuse sk-…, pk-lf-…, Resend re_…, Doppler dp.st.…, GitHub gh?_…, AWS AKIA….
@@ -12,6 +12,9 @@ const RULES: Array<{ pattern: RegExp; label: string }> = [
 		label: "[secret]",
 	},
 	{ pattern: /\bBearer\s+[\w.~+/-]{16,}=*/gi, label: "Bearer [secret]" },
+];
+
+const PERSONAL_RULES: Array<{ pattern: RegExp; label: string }> = [
 	{ pattern: /\b[\w.%+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b/gi, label: "[email]" },
 	// Card-like numbers: 13–19 digits, optionally grouped by spaces or dashes. Not part of a longer
 	// hyphenated token, so UUIDs (`23141549-3005-4927-…`) stay intact.
@@ -20,13 +23,22 @@ const RULES: Array<{ pattern: RegExp; label: string }> = [
 	{ pattern: /(?<![\w+-])\+?\d(?:[\s().-]?\d){8,14}(?![\w-])/g, label: "[phone]" },
 ];
 
-/** Replace emails, phone and card numbers, tokens and API keys with placeholders. */
-export function redactPii(text: string): string {
+function apply(text: string, rules: Array<{ pattern: RegExp; label: string }>): string {
 	let result = text;
-	for (const { pattern, label } of RULES) {
+	for (const { pattern, label } of rules) {
 		result = result.replace(pattern, label);
 	}
 	return result;
+}
+
+/** Replace emails, phone and card numbers, tokens and API keys with placeholders. */
+export function redactPii(text: string): string {
+	return apply(text, [...SECRET_RULES, ...PERSONAL_RULES]);
+}
+
+/** Only tokens and API keys (for model output, where emails and numbers can be real content). */
+export function redactSecrets(text: string): string {
+	return apply(text, SECRET_RULES);
 }
 
 /** `redactPii` on every string inside a JSON-like value (objects, arrays); other values unchanged. */
