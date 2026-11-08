@@ -10,6 +10,7 @@ FROM base AS deps
 COPY package.json bun.lock ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/adapters/package.json ./packages/adapters/
+COPY packages/audit/package.json ./packages/audit/
 COPY packages/core/package.json ./packages/core/
 COPY packages/database/package.json ./packages/database/
 COPY packages/evaluation/package.json ./packages/evaluation/
@@ -30,6 +31,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY package.json bun.lock ./
 COPY packages/adapters ./packages/adapters
+COPY packages/audit ./packages/audit
 COPY packages/core ./packages/core
 COPY packages/database ./packages/database
 COPY packages/evaluation ./packages/evaluation

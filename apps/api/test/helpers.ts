@@ -3,6 +3,7 @@ import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4
 import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
+import { type AuditStore, createAuditLog, type StoredAuditEvent } from "@synapse/audit";
 import type { EmailMessage, EmailSender } from "@synapse/core/contracts";
 import type {
 	AnswerFeedback,
@@ -12,6 +13,7 @@ import type {
 	FeedbackStore,
 } from "@synapse/human-oversight";
 import { MemorySaver } from "@synapse/orchestration";
+import { redactPiiDeep } from "@synapse/security";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import { createLogger, instrumentModelGateway } from "@synapse/observability";
@@ -416,6 +418,23 @@ export class InMemoryFeedbackStore implements FeedbackStore {
 	}
 }
 
+export class InMemoryAuditStore implements AuditStore {
+	events: StoredAuditEvent[] = [];
+
+	async append(event: Omit<StoredAuditEvent, "id" | "createdAt">) {
+		const stored = { ...event, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+		this.events.push(stored);
+		return stored;
+	}
+
+	async list({ ownerId, limit, action }: { ownerId: string; limit: number; action?: string }) {
+		return this.events
+			.filter((e) => e.ownerId === ownerId && (!action || e.action === action))
+			.toReversed()
+			.slice(0, limit);
+	}
+}
+
 /** Same fixed-window rule as the Postgres limiter, in memory. */
 export class InMemoryRateLimiter implements RateLimiter {
 	private readonly windows = new Map<string, { startedAt: number; attempts: number }>();
@@ -496,11 +515,14 @@ export function buildTestApp({
 		}),
 		{ logger },
 	);
+	const auditEvents = new InMemoryAuditStore();
+	const audit = createAuditLog({ store: auditEvents, redact: redactPiiDeep });
 	const rag = new RagService(repository, gateway, {
 		chunk: testConfig.rag.chunk,
 		defaultTopK: testConfig.rag.topK,
 		searchMode,
 		maxContextTokens: testConfig.rag.maxContextTokens,
+		audit,
 	});
 	const chat = new ChatService({
 		rag,
@@ -514,10 +536,11 @@ export function buildTestApp({
 		email,
 		logger,
 		config: testConfig.auth,
+		audit,
 	});
 	const approvals = new InMemoryApprovalStore();
 	const feedback = new InMemoryFeedbackStore();
-	const oversight = new OversightService(approvals, feedback, new MemorySaver());
+	const oversight = new OversightService(approvals, feedback, new MemorySaver(), audit);
 	registerRagActions(oversight, rag);
 	const app = createApp({
 		config: testConfig,
@@ -525,6 +548,7 @@ export function buildTestApp({
 		auth,
 		rag,
 		oversight,
+		audit,
 		chat,
 		pingDatabase,
 	});
@@ -536,6 +560,7 @@ export function buildTestApp({
 		email,
 		approvals,
 		feedback,
+		auditEvents,
 		chatModel,
 		embeddingModel,
 	};

@@ -57,6 +57,20 @@
       "when": 1794091560990,
       "tag": "0007_oversight",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794092196491,
+      "tag": "0008_audit_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794092197174,
+      "tag": "0009_audit_events_append_only",
+      "breakpoints": true
     }
   ]
 }

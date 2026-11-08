@@ -14,9 +14,10 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost), `packages/evaluation` (retrieval evals,
   baselines), `packages/security` (authentication: passwords, access + refresh tokens),
   `packages/orchestration` (LangGraph RAG answer graph, approval-gated graph, Postgres checkpoints),
-  `packages/human-oversight` (approvals, review queue, answer feedback).
+  `packages/human-oversight` (approvals, review queue, answer feedback),
+  `packages/audit` (append-only events, answer provenance; PII redacted by `security`).
 - **Planned:** packages
-  `audit`, `guardrails`, `memory`,
+  `guardrails`, `memory`,
   `reliability`, `providers`, `native` (and the rest of `security`: authorization, PII); more adapters
   (vector-store, cache, storage);
   `crates/*`; root `tests/` and `deploy/`.

@@ -37,7 +37,8 @@ Produce answers from context: providers, prompts, context assembly, completion, 
 
 `provenance` (`AnswerProvenance` from `@synapse/core/types`): `chatModel`, `promptVersion`,
 `embeddingModel`, `chunkerVersion`, `usage`. The API returns it on every answered query; persisting it
-is `audit`'s job (planned).
+is `audit`'s job: every answer is recorded with its provenance in `audit_events`
+([audit](audit.md)).
 
 ## Notes
 

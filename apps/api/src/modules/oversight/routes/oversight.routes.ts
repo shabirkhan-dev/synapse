@@ -110,18 +110,23 @@ export function createOversightRoutes(oversight: OversightService) {
 	});
 
 	app.openapi(approveRoute, async (c) => {
-		const result = await oversight.decide(c.req.valid("param").id, c.get("user"), {
-			approved: true,
-		});
+		const result = await oversight.decide(
+			c.req.valid("param").id,
+			c.get("user"),
+			{ approved: true },
+			{ requestId: c.get("requestId") },
+		);
 		return success(c, result, OVERSIGHT_MESSAGES.APPROVED);
 	});
 
 	app.openapi(rejectRoute, async (c) => {
 		const body = c.req.valid("json") ?? {};
-		const result = await oversight.decide(c.req.valid("param").id, c.get("user"), {
-			approved: false,
-			reason: body.reason,
-		});
+		const result = await oversight.decide(
+			c.req.valid("param").id,
+			c.get("user"),
+			{ approved: false, reason: body.reason },
+			{ requestId: c.get("requestId") },
+		);
 		return success(c, result, OVERSIGHT_MESSAGES.REJECTED);
 	});
 

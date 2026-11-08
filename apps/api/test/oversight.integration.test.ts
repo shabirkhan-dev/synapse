@@ -1,9 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
+import { createAuditLog } from "@synapse/audit";
 import { createDatabase, runMigrations, sourceMigrationsFolder } from "@synapse/database";
+import { redactPiiDeep } from "@synapse/security";
 import { sql } from "drizzle-orm";
 
+import { DrizzleAuditRepository } from "@/modules/audit";
 import {
 	DrizzleApprovalRepository,
 	DrizzleFeedbackRepository,
@@ -46,6 +49,7 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 			new DrizzleApprovalRepository(database.db),
 			new DrizzleFeedbackRepository(database.db),
 			checkpointer.saver,
+			createAuditLog({ store: new DrizzleAuditRepository(database.db), redact: redactPiiDeep }),
 		);
 		oversight.registerAction<{ ownerId: string }, { by: string }>(
 			OVERSIGHT_ACTIONS.PURGE_DOCUMENTS,

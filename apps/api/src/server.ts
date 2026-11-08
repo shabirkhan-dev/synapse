@@ -1,9 +1,12 @@
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
+import { createAuditLog } from "@synapse/audit";
 import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
 import { createLogger, instrumentModelGateway, startTracing } from "@synapse/observability";
+import { redactPiiDeep } from "@synapse/security";
 
 import { createApp } from "./app";
+import { DrizzleAuditRepository } from "./modules/audit";
 import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
@@ -37,12 +40,18 @@ if (!config.ai.apiKey) {
 
 const database = createDatabase(config.database);
 const repository = new DrizzleRagRepository(database.db);
+// Every answer, ingest, delete, sign-in and approval decision; PII is redacted before writing.
+const audit = createAuditLog({
+	store: new DrizzleAuditRepository(database.db),
+	redact: redactPiiDeep,
+});
 const auth = new AuthService({
 	repository: new DrizzleAuthRepository(database.db),
 	rateLimiter: new DrizzleRateLimiter(database.db),
 	email: createEmailSender(config.email, logger),
 	logger,
 	config: config.auth,
+	audit,
 });
 const gateway = instrumentModelGateway(createOpenAICompatibleModelGateway(config.ai), {
 	logger,
@@ -53,6 +62,7 @@ const rag = new RagService(repository, gateway, {
 	defaultTopK: config.rag.topK,
 	searchMode: config.rag.searchMode,
 	maxContextTokens: config.rag.maxContextTokens,
+	audit,
 });
 const chat = new ChatService({
 	rag,
@@ -68,6 +78,7 @@ const oversight = new OversightService(
 	new DrizzleApprovalRepository(database.db),
 	new DrizzleFeedbackRepository(database.db),
 	checkpointer.saver,
+	audit,
 );
 registerRagActions(oversight, rag);
 
@@ -77,6 +88,7 @@ const app = createApp({
 	auth,
 	rag,
 	oversight,
+	audit,
 	chat,
 	pingDatabase: () => repository.ping(),
 });

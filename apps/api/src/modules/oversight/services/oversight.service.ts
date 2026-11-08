@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
 import { isSynapseError } from "@synapse/core/errors";
 import {
 	type ApprovalRequest,
@@ -17,7 +18,7 @@ import {
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
-import type { AuthUser } from "@/shared/types/app-types";
+import type { AuthUser, RequestContext } from "@/shared/types/app-types";
 
 import {
 	OVERSIGHT_API_ERROR_CODES,
@@ -50,6 +51,7 @@ export class OversightService {
 		approvalStore: ApprovalStore,
 		feedbackStore: FeedbackStore,
 		private readonly checkpointer: BaseCheckpointSaver,
+		private readonly audit: AuditLog,
 	) {
 		this.approvals = createApprovals(approvalStore);
 		this.feedback = createFeedback(feedbackStore);
@@ -80,10 +82,16 @@ export class OversightService {
 	async request<TInput extends ActionInput>(
 		action: string,
 		input: TInput,
+		context: RequestContext = { requestId: null },
 	): Promise<ApprovalRequest> {
 		const approvalId = crypto.randomUUID();
 		await this.graph(action).start(approvalId, input);
-		return this.approvals.get(approvalId, input.ownerId);
+		const approval = await this.approvals.get(approvalId, input.ownerId);
+		await this.record(AUDIT_ACTIONS.OVERSIGHT_APPROVAL_REQUESTED, approval, context, {
+			action,
+			summary: approval.summary,
+		});
+		return approval;
 	}
 
 	pending(ownerId: string): Promise<ApprovalRequest[]> {
@@ -98,10 +106,22 @@ export class OversightService {
 		id: string,
 		user: AuthUser,
 		{ approved, reason }: { approved: boolean; reason?: string | undefined },
+		context: RequestContext = { requestId: null },
 	): Promise<{ approval: ApprovalRequest; outcome: ActionOutcome }> {
 		const decision = { approved, decidedBy: user.sub, ...(reason ? { reason } : {}) };
+		// Read before deciding: only a new decision is an event; a repeated one (retry) is not.
+		const isNewDecision =
+			(await this.approvals.get(id, user.sub).catch(toAppError)).status === "pending";
 		const approval = await this.approvals.decide(id, user.sub, decision).catch(toAppError);
 		const outcome = await this.graph(approval.action).decide(id, decision);
+		if (isNewDecision) {
+			await this.record(AUDIT_ACTIONS.OVERSIGHT_APPROVAL_DECIDED, approval, context, {
+				action: approval.action,
+				approved,
+				reason: reason ?? null,
+				outcome: outcome.status,
+			});
+		}
 		return { approval, outcome };
 	}
 
@@ -110,6 +130,24 @@ export class OversightService {
 		input: { requestId: string; rating: FeedbackRating; comment?: string | undefined },
 	) {
 		return this.feedback.record({ ownerId, ...input });
+	}
+
+	private async record(
+		action: string,
+		approval: ApprovalRequest,
+		context: RequestContext,
+		data: Record<string, unknown>,
+	): Promise<void> {
+		await this.audit.record({
+			ownerId: approval.ownerId,
+			actorId: approval.decidedBy ?? approval.ownerId,
+			action,
+			subjectType: "approval",
+			subjectId: approval.id,
+			requestId: context.requestId,
+			data,
+			provenance: null,
+		});
 	}
 
 	private graph(action: string): ApprovalGatedGraph<ActionInput, unknown> {

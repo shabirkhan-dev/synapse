@@ -13,3 +13,4 @@ export {
 } from "./authentication/password";
 export { createSecretToken, hashSecretToken } from "./authentication/secret-token";
 export { SECURITY_ERROR_CODES } from "./authentication/security-error-codes";
+export { redactPii, redactPiiDeep } from "./pii/redact";

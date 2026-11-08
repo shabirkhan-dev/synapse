@@ -131,14 +131,18 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(purgeRoute, async (c) => {
-		const approval = await oversight.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
-			ownerId: c.get("user").sub,
-		});
+		const approval = await oversight.request(
+			OVERSIGHT_ACTIONS.PURGE_DOCUMENTS,
+			{ ownerId: c.get("user").sub },
+			{ requestId: c.get("requestId") },
+		);
 		return success(c, approval, RAG_MESSAGES.PURGE_REQUESTED, HTTP_STATUS.ACCEPTED);
 	});
 
 	app.openapi(ingestRoute, async (c) => {
-		const { document, created } = await rag.ingest(c.get("user").sub, c.req.valid("json"));
+		const { document, created } = await rag.ingest(c.get("user").sub, c.req.valid("json"), {
+			requestId: c.get("requestId"),
+		});
 		if (!created) {
 			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
 		}
@@ -156,7 +160,7 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 
 	app.openapi(deleteRoute, async (c) => {
 		const { id } = c.req.valid("param");
-		await rag.deleteDocument(c.get("user").sub, id);
+		await rag.deleteDocument(c.get("user").sub, id, { requestId: c.get("requestId") });
 		return success(c, { id }, RAG_MESSAGES.DOCUMENT_DELETED);
 	});
 
@@ -175,7 +179,8 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 				RAG_MESSAGES.MATCHES_FOUND,
 			);
 		}
-		return success(c, await rag.answer(ownerId, query, topK), RAG_MESSAGES.QUERY_ANSWERED);
+		const answered = await rag.answer(ownerId, query, topK, { requestId: c.get("requestId") });
+		return success(c, answered, RAG_MESSAGES.QUERY_ANSWERED);
 	});
 
 	return app;

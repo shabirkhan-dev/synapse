@@ -12,7 +12,8 @@
 | Input limits | Zod validation, 2 MB ingest limit, 200-message chat limit | `guardrails/input` |
 | Prompt injection | Not yet | `guardrails/injection-defense` |
 | Tool safety | Read-only tools only (`searchDocuments`, `currentTime`) | `guardrails/tools` |
-| PII | Not yet | `security/pii` |
+| PII | Pattern redaction (emails, phones, cards, tokens, keys) before audit writes | `security/pii` (live) |
+| Audit trail | Append-only `audit_events` (UPDATE rejected by trigger): answers with provenance, ingests, deletes, auth, approvals | `audit` (live) |
 | HTTP hardening | `secureHeaders`, CORS allow-list, request ids | `apps/api` |
 | Repo hygiene | Secret scan + large-file guard pre-commit; CodeQL + Dependabot | `.github/` |
 

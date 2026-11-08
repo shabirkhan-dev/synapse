@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
 import type { ModelGateway } from "@synapse/core/contracts";
 import type { AnswerProvenance } from "@synapse/core/types";
 import { isSynapseError } from "@synapse/core/errors";
@@ -25,6 +26,7 @@ import { createRetriever, type RetrievalMode, type Retriever } from "@synapse/re
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
+import type { RequestContext } from "@/shared/types/app-types";
 
 import { RAG_DEFAULT_LIST_LIMIT, RAG_ERROR_CODES, RAG_MESSAGES } from "../constants/rag.constants";
 import type { RagDocument, RagMatch, RagRepository } from "../types/rag.types";
@@ -34,7 +36,11 @@ export type RagServiceOptions = {
 	defaultTopK: number;
 	searchMode: RetrievalMode;
 	maxContextTokens: number;
+	/** Answers (with provenance), ingests and deletes are recorded here. */
+	audit: AuditLog;
 };
+
+const NO_REQUEST: RequestContext = { requestId: null };
 
 export type IngestInput = {
 	title: string;
@@ -119,12 +125,34 @@ export class RagService {
 		});
 	}
 
-	async ingest(ownerId: string, input: IngestInput): Promise<IngestOutcome> {
+	async ingest(
+		ownerId: string,
+		input: IngestInput,
+		context: RequestContext = NO_REQUEST,
+	): Promise<IngestOutcome> {
 		const result = await this.ingestion.ingest(ownerId, input);
 		if (result.status === "empty") {
 			throw emptyDocumentError();
 		}
-		return { document: result.document, created: result.status === "created" };
+		const { document } = result;
+		if (result.status === "created") {
+			await this.options.audit.record({
+				ownerId,
+				actorId: ownerId,
+				action: AUDIT_ACTIONS.RAG_DOCUMENT_INGESTED,
+				subjectType: "document",
+				subjectId: document.id,
+				requestId: context.requestId,
+				data: {
+					title: document.title,
+					source: document.source,
+					chunkCount: document.chunkCount,
+					contentHash: document.contentHash,
+				},
+				provenance: null,
+			});
+		}
+		return { document, created: result.status === "created" };
 	}
 
 	private async index(document: IngestableDocument): Promise<RagDocument> {
@@ -158,7 +186,12 @@ export class RagService {
 		return this.retriever.retrieve({ ownerId, query, topK });
 	}
 
-	async answer(ownerId: string, question: string, topK?: number): Promise<RagAnswer> {
+	async answer(
+		ownerId: string,
+		question: string,
+		topK?: number,
+		context: RequestContext = NO_REQUEST,
+	): Promise<RagAnswer> {
 		const { passages: matches, answer } = await this.answerGraph.run({
 			question,
 			context: { ownerId, ...(topK === undefined ? {} : { topK }) },
@@ -171,6 +204,22 @@ export class RagService {
 				provenance: null,
 			};
 		}
+		// Recorded before returning: an answer is only given out once it is traceable.
+		await this.options.audit.record({
+			ownerId,
+			actorId: ownerId,
+			action: AUDIT_ACTIONS.RAG_QUERY_ANSWERED,
+			subjectType: "query",
+			subjectId: null,
+			requestId: context.requestId,
+			data: {
+				question,
+				answer: answer.text,
+				citedChunkIds: answer.citations.map((citation) => citation.chunkId),
+				contextChunkIds: answer.context.map((citation) => citation.chunkId),
+			},
+			provenance: answer.provenance,
+		});
 		return {
 			answer: answer.text,
 			matches,
@@ -185,10 +234,25 @@ export class RagService {
 
 	/** Runs only after an approval (`rag.purge-documents`, see the oversight module). */
 	async purgeDocuments(ownerId: string): Promise<{ deleted: number }> {
-		return { deleted: await this.repository.deleteAllDocuments(ownerId) };
+		const deleted = await this.repository.deleteAllDocuments(ownerId);
+		await this.options.audit.record({
+			ownerId,
+			actorId: ownerId,
+			action: AUDIT_ACTIONS.RAG_DOCUMENTS_PURGED,
+			subjectType: "document",
+			subjectId: null,
+			requestId: null,
+			data: { deleted },
+			provenance: null,
+		});
+		return { deleted };
 	}
 
-	async deleteDocument(ownerId: string, documentId: string): Promise<void> {
+	async deleteDocument(
+		ownerId: string,
+		documentId: string,
+		context: RequestContext = NO_REQUEST,
+	): Promise<void> {
 		const deleted = await this.repository.deleteDocument(ownerId, documentId);
 		if (!deleted) {
 			throw new AppError({
@@ -197,6 +261,16 @@ export class RagService {
 				message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
 			});
 		}
+		await this.options.audit.record({
+			ownerId,
+			actorId: ownerId,
+			action: AUDIT_ACTIONS.RAG_DOCUMENT_DELETED,
+			subjectType: "document",
+			subjectId: documentId,
+			requestId: context.requestId,
+			data: {},
+			provenance: null,
+		});
 	}
 }
 

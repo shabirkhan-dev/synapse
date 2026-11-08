@@ -19,6 +19,7 @@
 		"@hono/zod-openapi": "^1.6.3",
 		"@scalar/hono-api-reference": "^0.12.18",
 		"@synapse/adapters": "workspace:*",
+		"@synapse/audit": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/database": "workspace:*",
 		"@synapse/evaluation": "workspace:*",

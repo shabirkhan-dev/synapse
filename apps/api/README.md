@@ -38,6 +38,7 @@ src/
   infrastructure/email/ # email sender: Resend, or the log in development
   routes/index.ts       # mounts module routers, applies auth
   modules/
+    audit/              # constants/ mappers/ repositories/ routes/ schemas/ (event history)
     auth/               # constants/ mappers/ middleware/ repositories/ routes/ schemas/ services/ types/
     chat/               # constants/ routes/ schemas/ services/ tools/
     health/             # constants/ routes/ schemas/

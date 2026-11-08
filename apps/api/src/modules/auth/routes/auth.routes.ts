@@ -212,12 +212,16 @@ export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(signUpRoute, async (c) => {
-		const signedUp = await auth.signUp(c.req.valid("json"), clientIp(c, trustProxy));
+		const signedUp = await auth.signUp(c.req.valid("json"), clientIp(c, trustProxy), {
+			requestId: c.get("requestId"),
+		});
 		return success(c, signedUp, AUTH_MESSAGES.SIGNED_UP, HTTP_STATUS.CREATED);
 	});
 
 	app.openapi(signInRoute, async (c) => {
-		const signedIn = await auth.signIn(c.req.valid("json"), clientIp(c, trustProxy));
+		const signedIn = await auth.signIn(c.req.valid("json"), clientIp(c, trustProxy), {
+			requestId: c.get("requestId"),
+		});
 		return success(c, signedIn, AUTH_MESSAGES.SIGNED_IN);
 	});
 
@@ -227,7 +231,7 @@ export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy
 	});
 
 	app.openapi(signOutRoute, async (c) => {
-		await auth.signOut(c.get("user"));
+		await auth.signOut(c.get("user"), { requestId: c.get("requestId") });
 		return success(c, null, AUTH_MESSAGES.SIGNED_OUT);
 	});
 
@@ -237,7 +241,9 @@ export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy
 	});
 
 	app.openapi(verifyEmailRoute, async (c) => {
-		const user = await auth.verifyEmail(c.req.valid("json").token);
+		const user = await auth.verifyEmail(c.req.valid("json").token, {
+			requestId: c.get("requestId"),
+		});
 		return success(c, user, AUTH_MESSAGES.EMAIL_VERIFIED);
 	});
 
@@ -254,7 +260,7 @@ export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy
 
 	app.openapi(resetPasswordRoute, async (c) => {
 		const { token, password } = c.req.valid("json");
-		await auth.resetPassword(token, password);
+		await auth.resetPassword(token, password, { requestId: c.get("requestId") });
 		return success(c, null, AUTH_MESSAGES.PASSWORD_RESET);
 	});
 

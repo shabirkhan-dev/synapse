@@ -6,6 +6,12 @@ export type AuthUser = {
 	sid: string;
 };
 
+/** Per-request facts services record (e.g. in the audit trail). */
+export type RequestContext = {
+	/** `x-request-id`; `null` for work outside a request (jobs, approved actions). */
+	requestId: string | null;
+};
+
 /** Hono context variables shared by every route. */
 export type AppVariables = {
 	requestId: string;

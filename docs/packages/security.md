@@ -2,8 +2,8 @@
 
 Who you are and what you may do: authentication, authorization, tenancy, permissions, PII and secrets.
 
-> **Status:** Live (authentication: passwords, access tokens, refresh tokens) · Planned
-> (authorization, tenancy beyond owner scoping, permissions, PII, secrets). Decision: ADR-0005.
+> **Status:** Live (authentication: passwords, access tokens, refresh tokens; PII redaction) ·
+> Planned (authorization, tenancy beyond owner scoping, permissions, PII detection beyond patterns). Decision: ADR-0005.
 
 ## Internal modules
 
@@ -34,6 +34,7 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
 | `PASSWORD_POLICY` | 12–128 characters |
 | `createAccessTokens({ secret, ttlSeconds })` → `{ issue, verify }` | HS256 JWTs with `sub` (user) + `sid` (session); `verify` pins the algorithm and throws `SynapseError` `AUTH_ACCESS_TOKEN_INVALID` |
 | `createSecretToken()`, `hashSecretToken(token)` | 256-bit random base64url token (refresh tokens, emailed links); SHA-256 hex for storage |
+| `redactPii(text)`, `redactPiiDeep(value)` | Replace emails, phone and card numbers, JWTs, bearer tokens and provider keys (`sk-`, `pk-lf-`, `re_`, `dp.st.`, `ghp_`, `AKIA`) with `[email]` / `[phone]` / `[card]` / `[secret]`; `Deep` walks objects and arrays (used before audit writes) |
 | `SECURITY_ERROR_CODES` | Error codes thrown by the package |
 
 ## How the API uses it

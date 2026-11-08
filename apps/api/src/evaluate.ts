@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { createAuditLog } from "@synapse/audit";
 import { createHashingEmbeddingGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
@@ -41,6 +42,14 @@ const rag = new RagService(
 		defaultTopK: config.EVAL_K,
 		searchMode: config.RAG_SEARCH_MODE,
 		maxContextTokens: 3000,
+		// Evaluation is not user activity: nothing goes to the audit trail.
+		audit: createAuditLog({
+			store: {
+				append: async (event) => ({ ...event, id: "", createdAt: "" }),
+				list: async () => [],
+			},
+			redact: (data) => data,
+		}),
 	},
 );
 const ownerId = `eval-${crypto.randomUUID()}`;

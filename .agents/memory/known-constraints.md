@@ -28,8 +28,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   (`ai`) directly via the gateway's `chatModel`, until a streaming contract exists.
 - **Controllers:** API route handlers are trivial (validate → service → `success`), so there are no
   `controllers/` folders yet; add one when a handler grows real HTTP logic.
-- **Provenance is returned, not stored:** answers carry `provenance`, but nothing persists it until
-  `audit` exists. Token counts in the context budget are estimates (~4 chars/token).
+- **Every answer is stored in `audit_events`** with its provenance (awaited: an audit write failure
+  fails the request). Audit rows are never pruned yet (no retention policy) and redaction is
+  pattern-based (names and addresses are not detected). Token counts in the context budget are
+  estimates (~4 chars/token).
 - **Retrieval eval uses hashing embeddings** (no key needed): it gates the pipeline, not embedding
   quality. Changing the dataset needs a `version` bump and a new baseline (`EVAL_UPDATE_BASELINE=true`).
 - **Keyword search matches any term** and drops an English stopword list from the query only
@@ -55,8 +57,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   (no DNS inside build containers); the bundles build and boot.
 - **The API's RAG answer graph has no checkpointer** (in-request); approval-gated actions do (the
   API calls `checkpointer.setup()` on start: `langgraph` schema). The approver is the owner until
-  roles exist; approvals never expire yet. Feedback references `x-request-id` (answers are not
-  stored until `audit`). A RAG answer without citations costs a second chat call.
+  roles exist; approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
   LangGraph keeps the AsyncLocalStorage trace context, so LLM spans stay children of the request.
 - **Reranking, query rewriting** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.

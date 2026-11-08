@@ -48,5 +48,5 @@ approval id is the paused run's thread id.
 | `POST /oversight/feedback` | `{ requestId, rating, comment? }` for an answered `/rag/query` |
 
 Until roles exist (security tenancy), the approver is the owner: a purge is a two-step confirmation
-that survives restarts. Feedback joins answers by `x-request-id`; once `audit` stores answers
-(syn-029) the rating links to the answer's provenance.
+that survives restarts. Feedback joins answers by `x-request-id`: `answer_feedback.request_id` = the
+`rag.query.answered` event's `request_id` in `audit_events`, which carries the provenance.

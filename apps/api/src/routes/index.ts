@@ -1,6 +1,9 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import type { Configuration } from "@/config";
+import type { AuditLog } from "@synapse/audit";
+
+import { createAuditRoutes } from "@/modules/audit";
 import { type AuthService, createAuthMiddleware, createAuthRoutes } from "@/modules/auth";
 import { type ChatService, createChatRoutes } from "@/modules/chat";
 import { createHealthRoutes } from "@/modules/health";
@@ -13,6 +16,7 @@ export type RouteDependencies = {
 	auth: AuthService;
 	rag: RagService;
 	oversight: OversightService;
+	audit: AuditLog;
 	chat: ChatService;
 	pingDatabase: () => Promise<void>;
 };
@@ -20,7 +24,7 @@ export type RouteDependencies = {
 /** Mount every module router under the versioned base path. Protected modules get auth first. */
 export function registerRoutes(
 	app: OpenAPIHono<AppBindings>,
-	{ config, auth, rag, oversight, chat, pingDatabase }: RouteDependencies,
+	{ config, auth, rag, oversight, audit, chat, pingDatabase }: RouteDependencies,
 ) {
 	const { basePath, serviceName } = config.app;
 	const authenticate = createAuthMiddleware(auth);
@@ -30,6 +34,7 @@ export function registerRoutes(
 	app.use(`${basePath}/auth/verify-email/resend`, authenticate);
 	app.use(`${basePath}/rag/*`, authenticate);
 	app.use(`${basePath}/oversight/*`, authenticate);
+	app.use(`${basePath}/audit/*`, authenticate);
 	app.use(`${basePath}/chat`, authenticate);
 	app.use(`${basePath}/chat/*`, authenticate);
 
@@ -37,5 +42,6 @@ export function registerRoutes(
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, { trustProxy: config.auth.trustProxy }));
 	app.route(`${basePath}/rag`, createRagRoutes(rag, oversight));
 	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));
+	app.route(`${basePath}/audit`, createAuditRoutes(audit));
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
 }

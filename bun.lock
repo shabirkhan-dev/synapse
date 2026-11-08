@@ -19,6 +19,7 @@
         "@hono/zod-openapi": "^1.6.3",
         "@scalar/hono-api-reference": "^0.12.18",
         "@synapse/adapters": "workspace:*",
+        "@synapse/audit": "workspace:*",
         "@synapse/core": "workspace:*",
         "@synapse/database": "workspace:*",
         "@synapse/evaluation": "workspace:*",
@@ -91,6 +92,18 @@
       },
       "devDependencies": {
         "@ai-sdk/provider": "^4.0.36",
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/audit": {
+      "name": "@synapse/audit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
+      "devDependencies": {
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
         "typescript": "^7.0.2",
@@ -658,6 +671,8 @@
     "@swc/helpers": ["@swc/helpers@0.5.23", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw=="],
 
     "@synapse/adapters": ["@synapse/adapters@workspace:packages/adapters"],
+
+    "@synapse/audit": ["@synapse/audit@workspace:packages/audit"],
 
     "@synapse/core": ["@synapse/core@workspace:packages/core"],
 

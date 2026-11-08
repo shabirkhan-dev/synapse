@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
 import type { EmailMessage, EmailSender } from "@synapse/core/contracts";
 import { isSynapseError } from "@synapse/core/errors";
 import type { Logger } from "@synapse/observability";
@@ -15,7 +16,7 @@ import {
 import type { AuthConfig } from "@/config";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
-import type { AuthUser } from "@/shared/types/app-types";
+import type { AuthUser, RequestContext } from "@/shared/types/app-types";
 
 import { passwordResetEmail, verificationEmail } from "../constants/auth-emails";
 import {
@@ -44,7 +45,11 @@ export type AuthServiceDependencies = {
 	email: EmailSender;
 	logger: Logger;
 	config: AuthConfig;
+	/** Sign-ups, sign-ins, sign-outs, verifications and resets are recorded here. */
+	audit: AuditLog;
 };
+
+const NO_REQUEST: RequestContext = { requestId: null };
 
 /**
  * Accounts and sessions. Access tokens are short-lived JWTs (`sub` = user, `sid` = session) checked
@@ -58,9 +63,11 @@ export class AuthService {
 	private readonly email: EmailSender;
 	private readonly logger: Logger;
 	private readonly config: AuthConfig;
+	private readonly audit: AuditLog;
 	private readonly accessTokens: AccessTokens;
 
-	constructor({ repository, rateLimiter, email, logger, config }: AuthServiceDependencies) {
+	constructor({ repository, rateLimiter, email, logger, config, audit }: AuthServiceDependencies) {
+		this.audit = audit;
 		this.repository = repository;
 		this.rateLimiter = rateLimiter;
 		this.email = email;
@@ -72,7 +79,11 @@ export class AuthService {
 		});
 	}
 
-	async signUp({ email, password }: Credentials, ip: string): Promise<SignedIn> {
+	async signUp(
+		{ email, password }: Credentials,
+		ip: string,
+		context: RequestContext = NO_REQUEST,
+	): Promise<SignedIn> {
 		await this.limit(`sign-up:ip:${ip}`, AUTH_RATE_LIMITS.SIGN_UP_PER_IP);
 		const user = await this.repository.createUser({
 			email: normalizeEmail(email),
@@ -86,10 +97,16 @@ export class AuthService {
 			});
 		}
 		await this.sendLink(user, "email_verification");
-		return { user, tokens: await this.startSession(user.id) };
+		const tokens = await this.startSession(user.id);
+		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_UP, user.id, context);
+		return { user, tokens };
 	}
 
-	async signIn({ email, password }: Credentials, ip: string): Promise<SignedIn> {
+	async signIn(
+		{ email, password }: Credentials,
+		ip: string,
+		context: RequestContext = NO_REQUEST,
+	): Promise<SignedIn> {
 		const normalized = normalizeEmail(email);
 		await this.limit(`sign-in:ip:${ip}`, AUTH_RATE_LIMITS.SIGN_IN_PER_IP);
 		await this.limit(`sign-in:email:${normalized}`, AUTH_RATE_LIMITS.SIGN_IN_PER_EMAIL);
@@ -101,7 +118,9 @@ export class AuthService {
 			throw unauthorized(AUTH_ERROR_CODES.INVALID_CREDENTIALS, AUTH_MESSAGES.INVALID_CREDENTIALS);
 		}
 		const { passwordHash: _passwordHash, ...user } = account;
-		return { user, tokens: await this.startSession(user.id) };
+		const tokens = await this.startSession(user.id);
+		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_IN, user.id, context);
+		return { user, tokens };
 	}
 
 	async refresh(refreshToken: string, now = new Date()): Promise<AuthTokens> {
@@ -130,8 +149,9 @@ export class AuthService {
 		return this.tokens(session.userId, session.id, nextToken, session.expiresAt);
 	}
 
-	signOut({ sub, sid }: AuthUser): Promise<void> {
-		return this.repository.revokeSession({ sessionId: sid, userId: sub });
+	async signOut({ sub, sid }: AuthUser, context: RequestContext = NO_REQUEST): Promise<void> {
+		await this.repository.revokeSession({ sessionId: sid, userId: sub });
+		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_OUT, sub, context, { sessionId: sid });
 	}
 
 	currentUser({ sub }: AuthUser): Promise<User> {
@@ -150,9 +170,10 @@ export class AuthService {
 		return user;
 	}
 
-	async verifyEmail(token: string): Promise<User> {
+	async verifyEmail(token: string, context: RequestContext = NO_REQUEST): Promise<User> {
 		const userId = await this.consumeLink("email_verification", token);
 		await this.repository.markEmailVerified(userId);
+		await this.record(AUDIT_ACTIONS.AUTH_EMAIL_VERIFIED, userId, context);
 		return this.findUser(userId);
 	}
 
@@ -184,7 +205,11 @@ export class AuthService {
 	}
 
 	/** Set a new password from an emailed link; every session of the user is signed out. */
-	async resetPassword(token: string, password: string): Promise<void> {
+	async resetPassword(
+		token: string,
+		password: string,
+		context: RequestContext = NO_REQUEST,
+	): Promise<void> {
 		const userId = await this.consumeLink("password_reset", token);
 		await this.repository.updatePasswordHash({
 			userId,
@@ -193,6 +218,7 @@ export class AuthService {
 		// Opening the link proved the inbox is theirs.
 		await this.repository.markEmailVerified(userId);
 		await this.repository.revokeAllSessions(userId);
+		await this.record(AUDIT_ACTIONS.AUTH_PASSWORD_RESET, userId, context);
 	}
 
 	/** Verify a bearer access token (signature, algorithm, expiry, `sub` + `sid`). */
@@ -209,6 +235,25 @@ export class AuthService {
 			}
 			throw error;
 		}
+	}
+
+	/** Account events: owner, actor and subject are the user. */
+	private async record(
+		action: string,
+		userId: string,
+		context: RequestContext,
+		data: Record<string, unknown> = {},
+	): Promise<void> {
+		await this.audit.record({
+			ownerId: userId,
+			actorId: userId,
+			action,
+			subjectType: "user",
+			subjectId: userId,
+			requestId: context.requestId,
+			data,
+			provenance: null,
+		});
 	}
 
 	/** Count an attempt; throws `429 AUTH_RATE_LIMITED` once the window's limit is passed. */

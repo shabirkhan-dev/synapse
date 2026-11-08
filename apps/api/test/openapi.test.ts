@@ -11,6 +11,7 @@ describe("openapi", () => {
 		const doc = await response.json();
 		expect(doc.openapi).toBe("3.1.0");
 		expect(Object.keys(doc.paths).toSorted()).toEqual([
+			"/api/v1/audit/events",
 			"/api/v1/auth/me",
 			"/api/v1/auth/password/forgot",
 			"/api/v1/auth/password/reset",
