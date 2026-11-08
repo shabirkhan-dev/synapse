@@ -37,6 +37,19 @@ describe("redactPii", () => {
 		expect(redactPii(text)).toBe(text);
 	});
 
+	test("never touches UUIDs, even ones whose groups are all digits", () => {
+		const ids = [
+			"23141549-3005-4927-bf89-5b2a07029ac6",
+			"12345678-1234-1234-1234-123456789012",
+			"9e7b740b-ddec-4576-9b2b-a1aa6735fe6f",
+		];
+		for (const id of ids) {
+			expect(redactPii(id)).toBe(id);
+			expect(redactPii(`chunk ${id} cited`)).toBe(`chunk ${id} cited`);
+		}
+		expect(redactPiiDeep({ citedChunkIds: ids })).toEqual({ citedChunkIds: ids });
+	});
+
 	test("deep redaction walks objects and arrays", () => {
 		expect(
 			redactPiiDeep({

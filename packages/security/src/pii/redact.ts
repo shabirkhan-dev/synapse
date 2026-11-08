@@ -13,10 +13,11 @@ const RULES: Array<{ pattern: RegExp; label: string }> = [
 	},
 	{ pattern: /\bBearer\s+[\w.~+/-]{16,}=*/gi, label: "Bearer [secret]" },
 	{ pattern: /\b[\w.%+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b/gi, label: "[email]" },
-	// Card-like numbers: 13–19 digits, optionally grouped by spaces or dashes.
-	{ pattern: /\b(?:\d[ -]?){12,18}\d\b/g, label: "[card]" },
-	// Phone-like: optional +, 9–15 digits with common separators.
-	{ pattern: /(?<![\w+])\+?\d(?:[\s().-]?\d){8,14}(?!\w)/g, label: "[phone]" },
+	// Card-like numbers: 13–19 digits, optionally grouped by spaces or dashes. Not part of a longer
+	// hyphenated token, so UUIDs (`23141549-3005-4927-…`) stay intact.
+	{ pattern: /(?<![\w-])(?:\d[ -]?){12,18}\d(?![\w-])/g, label: "[card]" },
+	// Phone-like: optional +, 9–15 digits with common separators (same UUID rule).
+	{ pattern: /(?<![\w+-])\+?\d(?:[\s().-]?\d){8,14}(?![\w-])/g, label: "[phone]" },
 ];
 
 /** Replace emails, phone and card numbers, tokens and API keys with placeholders. */
