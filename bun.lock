@@ -27,6 +27,7 @@
         "@synapse/human-oversight": "workspace:*",
         "@synapse/ingestion": "workspace:*",
         "@synapse/knowledge": "workspace:*",
+        "@synapse/memory": "workspace:*",
         "@synapse/observability": "workspace:*",
         "@synapse/orchestration": "workspace:*",
         "@synapse/retrieval": "workspace:*",
@@ -184,6 +185,18 @@
     },
     "packages/knowledge": {
       "name": "@synapse/knowledge",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/memory": {
+      "name": "@synapse/memory",
       "version": "0.0.0",
       "dependencies": {
         "@synapse/core": "workspace:*",
@@ -687,6 +700,8 @@
     "@synapse/ingestion": ["@synapse/ingestion@workspace:packages/ingestion"],
 
     "@synapse/knowledge": ["@synapse/knowledge@workspace:packages/knowledge"],
+
+    "@synapse/memory": ["@synapse/memory@workspace:packages/memory"],
 
     "@synapse/observability": ["@synapse/observability@workspace:packages/observability"],
 

@@ -71,6 +71,13 @@
       "when": 1794092197174,
       "tag": "0009_audit_events_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794108947250,
+      "tag": "0010_memory",
+      "breakpoints": true
     }
   ]
 }

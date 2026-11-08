@@ -42,6 +42,7 @@ src/
     auth/               # constants/ mappers/ middleware/ repositories/ routes/ schemas/ services/ types/
     chat/               # constants/ routes/ schemas/ services/ tools/
     health/             # constants/ routes/ schemas/
+    memory/             # constants/ mappers/ repositories/ routes/ schemas/ services/ types/ (conversations, facts)
     oversight/          # constants/ mappers/ repositories/ routes/ schemas/ services/ (approvals, feedback)
     rag/                # constants/ mappers/ repositories/ routes/ schemas/ services/ types/
 test/                   # bun test (mocks in helpers.ts)

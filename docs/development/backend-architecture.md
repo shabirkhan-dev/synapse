@@ -63,6 +63,7 @@ modules have no `controllers/` yet; add one when a handler grows real HTTP logic
 | `auth` | `constants/ mappers/ middleware/ repositories/ routes/ schemas/ services/ types/` |
 | `chat` | `constants/ routes/ schemas/ services/ tools/` |
 | `health` | `constants/ routes/ schemas/` |
+| `memory` | `constants/ mappers/ repositories/ routes/ schemas/ services/ types/` |
 | `oversight` | `constants/ mappers/ repositories/ routes/ schemas/ services/` |
 | `rag` | `constants/ mappers/ repositories/ routes/ schemas/ services/ types/` |
 

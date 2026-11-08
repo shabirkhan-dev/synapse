@@ -86,6 +86,7 @@ synapse/
 │   ├── evaluation/      # @synapse/evaluation: retrieval datasets, metrics, CI baselines
 │   ├── audit/           # @synapse/audit: append-only event history, answer provenance
 │   ├── human-oversight/ # @synapse/human-oversight: approvals, review queue, feedback
+│   ├── memory/          # @synapse/memory: conversation history, long-term facts
 │   ├── orchestration/   # @synapse/orchestration: LangGraph graphs with Postgres checkpoints
 │   ├── security/        # @synapse/security: passwords, access tokens, rotating refresh tokens
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations

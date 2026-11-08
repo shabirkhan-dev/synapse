@@ -47,7 +47,7 @@ export function createApp({ logger, ...dependencies }: AppDependencies) {
 		cors({
 			origin: corsOrigins,
 			allowHeaders: ["authorization", "content-type", "x-request-id"],
-			exposeHeaders: ["x-request-id"],
+			exposeHeaders: ["x-request-id", "x-conversation-id"],
 			allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
 			maxAge: 600,
 		}),

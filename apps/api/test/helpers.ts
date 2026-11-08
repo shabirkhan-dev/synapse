@@ -12,6 +12,12 @@ import type {
 	Decision,
 	FeedbackStore,
 } from "@synapse/human-oversight";
+import {
+	createLongTermMemory,
+	type FactStore,
+	type MemoryFact,
+	type StoredMessage,
+} from "@synapse/memory";
 import { MemorySaver } from "@synapse/orchestration";
 import { redactPiiDeep } from "@synapse/security";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
@@ -32,6 +38,12 @@ import {
 	type UserCredentials,
 } from "@/modules/auth";
 import { ChatService } from "@/modules/chat";
+import {
+	type Conversation,
+	type ConversationStore,
+	MemoryService,
+	type NewMessage,
+} from "@/modules/memory";
 import { OversightService } from "@/modules/oversight";
 import {
 	type NewRagChunk,
@@ -418,6 +430,134 @@ export class InMemoryFeedbackStore implements FeedbackStore {
 	}
 }
 
+export class InMemoryConversationStore implements ConversationStore {
+	conversations: Array<Conversation & { ownerId: string }> = [];
+	stored: Array<
+		StoredMessage<Record<string, unknown>> & { ownerId: string; conversationId: string }
+	> = [];
+
+	async create(ownerId: string, title: string) {
+		const now = new Date().toISOString();
+		const conversation = {
+			id: crypto.randomUUID(),
+			ownerId,
+			title,
+			createdAt: now,
+			updatedAt: now,
+		};
+		this.conversations.push(conversation);
+		return conversation;
+	}
+
+	async find(ownerId: string, id: string) {
+		return this.conversations.find((c) => c.id === id && c.ownerId === ownerId) ?? null;
+	}
+
+	async list(ownerId: string, limit: number) {
+		return this.conversations
+			.filter((c) => c.ownerId === ownerId)
+			.toReversed()
+			.slice(0, limit);
+	}
+
+	async messages(ownerId: string, conversationId: string) {
+		return this.stored.filter((m) => m.ownerId === ownerId && m.conversationId === conversationId);
+	}
+
+	async append(ownerId: string, conversationId: string, messages: NewMessage[]) {
+		for (const message of messages) {
+			if (this.stored.some((m) => m.conversationId === conversationId && m.id === message.id))
+				continue;
+			this.stored.push({
+				...message,
+				ownerId,
+				conversationId,
+				createdAt: new Date().toISOString(),
+			});
+		}
+	}
+
+	async remove(ownerId: string, id: string) {
+		const before = this.conversations.length;
+		this.conversations = this.conversations.filter((c) => !(c.id === id && c.ownerId === ownerId));
+		this.stored = this.stored.filter((m) => m.conversationId !== id);
+		return this.conversations.length < before;
+	}
+
+	async removeAll(ownerId: string) {
+		const mine = this.conversations.filter((c) => c.ownerId === ownerId).map((c) => c.id);
+		this.conversations = this.conversations.filter((c) => c.ownerId !== ownerId);
+		this.stored = this.stored.filter((m) => !mine.includes(m.conversationId));
+		return mine.length;
+	}
+}
+
+export class InMemoryFactStore implements FactStore {
+	rows: Array<MemoryFact & { ownerId: string; embedding: number[] }> = [];
+
+	async save({
+		ownerId,
+		content,
+		embedding,
+	}: {
+		ownerId: string;
+		content: string;
+		embedding: number[];
+	}) {
+		const existing = this.rows.find((row) => row.ownerId === ownerId && row.content === content);
+		if (existing) return existing;
+		const row = {
+			id: crypto.randomUUID(),
+			ownerId,
+			content,
+			embedding,
+			createdAt: new Date().toISOString(),
+		};
+		this.rows.push(row);
+		return row;
+	}
+
+	async search({
+		ownerId,
+		embedding,
+		limit,
+	}: {
+		ownerId: string;
+		embedding: number[];
+		limit: number;
+	}) {
+		return this.rows
+			.filter((row) => row.ownerId === ownerId)
+			.map(({ id, content, createdAt, embedding: vector }) => ({
+				id,
+				content,
+				createdAt,
+				score: vector.reduce((sum, value, i) => sum + value * (embedding[i] ?? 0), 0),
+			}))
+			.toSorted((a, b) => b.score - a.score)
+			.slice(0, limit);
+	}
+
+	async list(ownerId: string, limit: number) {
+		return this.rows
+			.filter((row) => row.ownerId === ownerId)
+			.toReversed()
+			.slice(0, limit);
+	}
+
+	async remove({ ownerId, id }: { ownerId: string; id: string }) {
+		const before = this.rows.length;
+		this.rows = this.rows.filter((row) => !(row.ownerId === ownerId && row.id === id));
+		return this.rows.length < before;
+	}
+
+	async removeAll(ownerId: string) {
+		const before = this.rows.length;
+		this.rows = this.rows.filter((row) => row.ownerId !== ownerId);
+		return before - this.rows.length;
+	}
+}
+
 export class InMemoryAuditStore implements AuditStore {
 	events: StoredAuditEvent[] = [];
 
@@ -524,8 +664,22 @@ export function buildTestApp({
 		maxContextTokens: testConfig.rag.maxContextTokens,
 		audit,
 	});
+	const conversations = new InMemoryConversationStore();
+	const facts = new InMemoryFactStore();
+	const memory = new MemoryService({
+		conversations,
+		facts: createLongTermMemory({
+			store: facts,
+			embedding: gateway.embedding,
+			embeddingModel: "mock:mock-embedding",
+		}),
+		audit,
+		history: testConfig.rag.chatHistory,
+	});
 	const chat = new ChatService({
 		rag,
+		memory,
+		logger,
 		chatModel,
 		maxSteps: testConfig.rag.chatMaxSteps,
 		topK: testConfig.rag.topK,
@@ -549,6 +703,7 @@ export function buildTestApp({
 		rag,
 		oversight,
 		audit,
+		memory,
 		chat,
 		pingDatabase,
 	});
@@ -561,6 +716,9 @@ export function buildTestApp({
 		approvals,
 		feedback,
 		auditEvents,
+		conversations,
+		facts,
+		memory,
 		chatModel,
 		embeddingModel,
 	};

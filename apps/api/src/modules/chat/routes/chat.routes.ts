@@ -3,6 +3,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { errorResponses } from "@/shared/responses/error-response";
 import type { AppBindings } from "@/shared/types/app-types";
 
+import { CONVERSATION_ID_HEADER } from "../constants/chat.constants";
 import { chatBodySchema } from "../schemas/chat.schemas";
 import type { ChatService } from "../services/chat.service";
 
@@ -10,7 +11,8 @@ const chatRoute = createRoute({
 	method: "post",
 	path: "/",
 	tags: ["Chat"],
-	summary: "Streaming, tool-calling chat (AI SDK UI message stream, SSE)",
+	summary:
+		"Streaming, tool-calling chat (AI SDK UI message stream, SSE); stateless `messages` or a stored conversation (`message` + `conversationId`)",
 	security: [{ bearerAuth: [] }],
 	request: {
 		body: { required: true, content: { "application/json": { schema: chatBodySchema } } },
@@ -28,13 +30,18 @@ export function createChatRoutes(chat: ChatService) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(chatRoute, async (c) => {
-		const result = await chat.streamReply({
+		const { result, conversationId, stream } = await chat.streamReply({
 			ownerId: c.get("user").sub,
-			messages: c.req.valid("json").messages,
+			body: c.req.valid("json"),
+			context: { requestId: c.get("requestId") },
 			abortSignal: c.req.raw.signal,
 		});
 		return result.toUIMessageStreamResponse({
-			headers: { "x-request-id": c.get("requestId") },
+			...stream,
+			headers: {
+				"x-request-id": c.get("requestId"),
+				...(conversationId ? { [CONVERSATION_ID_HEADER]: conversationId } : {}),
+			},
 		});
 	});
 

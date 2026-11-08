@@ -1,18 +1,24 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+import type { MemoryService } from "@/modules/memory";
 import type { RagService } from "@/modules/rag";
+import type { RequestContext } from "@/shared/types/app-types";
 
 /** Tools are built per request so RAG search is always scoped to the caller. */
 export function createChatTools({
 	rag,
+	memory,
 	ownerId,
 	topK,
+	context = { requestId: null },
 	now = () => new Date(),
 }: {
 	rag: RagService;
+	memory: MemoryService;
 	ownerId: string;
 	topK: number;
+	context?: RequestContext;
 	now?: () => Date;
 }) {
 	return {
@@ -32,6 +38,21 @@ export function createChatTools({
 					score: Number(match.score.toFixed(4)),
 					content: match.content,
 				}));
+			},
+		}),
+		rememberFact: tool({
+			description:
+				"Save a short fact about the user for future conversations. Use only when the user explicitly asks you to remember something.",
+			inputSchema: z.object({
+				fact: z
+					.string()
+					.min(1)
+					.max(500)
+					.describe("The fact, in the user's words, e.g. 'Prefers metric units'"),
+			}),
+			async execute({ fact }) {
+				const saved = await memory.rememberFact(ownerId, fact, context);
+				return { remembered: saved.content };
 			},
 		}),
 		currentTime: tool({

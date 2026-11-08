@@ -43,7 +43,7 @@ describe("chat", () => {
 		expect(events.find((e) => e.type === "text-delta")?.delta).toBe("Hello from the mock");
 		expect(events.at(-1)?.type).toBe("finish");
 		expect(JSON.stringify(chatModel.doStreamCalls[0]?.tools?.map((t) => t.name))).toBe(
-			JSON.stringify(["searchDocuments", "currentTime"]),
+			JSON.stringify(["searchDocuments", "rememberFact", "currentTime"]),
 		);
 	});
 
@@ -115,9 +115,10 @@ describe("chat", () => {
 	});
 
 	test("currentTime falls back to UTC for unknown zones", async () => {
-		const { rag } = buildTestApp();
+		const { rag, memory } = buildTestApp();
 		const tools = createChatTools({
 			rag,
+			memory,
 			ownerId: "u",
 			topK: 3,
 			now: () => new Date("2026-10-31T12:00:00Z"),

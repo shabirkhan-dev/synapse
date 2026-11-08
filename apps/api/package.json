@@ -27,6 +27,7 @@
 		"@synapse/human-oversight": "workspace:*",
 		"@synapse/ingestion": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
+		"@synapse/memory": "workspace:*",
 		"@synapse/observability": "workspace:*",
 		"@synapse/orchestration": "workspace:*",
 		"@synapse/retrieval": "workspace:*",

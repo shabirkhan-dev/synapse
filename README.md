@@ -57,6 +57,7 @@ To run any script in one app: `bun --cwd=apps/api run <script>` (same pattern fo
 | `@synapse/evaluation` | `packages/evaluation` | Retrieval datasets, recall@k / MRR, CI regression baselines |
 | `@synapse/audit` | `packages/audit` | Append-only event history; every answer with its provenance |
 | `@synapse/human-oversight` | `packages/human-oversight` | Approval requests, review queue, decisions, answer feedback |
+| `@synapse/memory` | `packages/memory` | Conversation history within a budget; long-term facts recalled by meaning |
 | `@synapse/orchestration` | `packages/orchestration` | LangGraph graphs with Postgres checkpoints (RAG answer with citation retry) |
 | `@synapse/security` | `packages/security` | Authentication: Argon2id passwords, access tokens, rotating refresh tokens |
 | `@synapse/database` | `packages/database` | Drizzle client, schema, migrations (Postgres + pgvector) |

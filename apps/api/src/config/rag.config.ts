@@ -7,6 +7,8 @@ export type RagConfig = {
 	maxContextTokens: number;
 	/** Max tool-calling steps per chat turn. */
 	chatMaxSteps: number;
+	/** How much stored conversation history goes back to the model. */
+	chatHistory: { maxTokens: number; maxMessages: number };
 };
 
 export function createRagConfig(env: Env): RagConfig {
@@ -16,5 +18,9 @@ export function createRagConfig(env: Env): RagConfig {
 		searchMode: env.RAG_SEARCH_MODE,
 		maxContextTokens: env.RAG_MAX_CONTEXT_TOKENS,
 		chatMaxSteps: env.CHAT_MAX_STEPS,
+		chatHistory: {
+			maxTokens: env.CHAT_HISTORY_MAX_TOKENS,
+			maxMessages: env.CHAT_HISTORY_MAX_MESSAGES,
+		},
 	};
 }

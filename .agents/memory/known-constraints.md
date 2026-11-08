@@ -59,6 +59,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   API calls `checkpointer.setup()` on start: `langgraph` schema). The approver is the owner until
   roles exist; approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
   LangGraph keeps the AsyncLocalStorage trace context, so LLM spans stay children of the request.
+- **Memory:** stored chat saves the reply in `onFinish` after streaming (a failed save is logged, the
+  user already has the reply). Long histories are cut to the budget, not summarized. Facts use the
+  current embedding model only (the worker does not re-embed facts yet) and have no vector index.
+  A model-called `rememberFact` writes without approval (owner's own memory; guardrails come in syn-031).
 - **Reranking, query rewriting** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).

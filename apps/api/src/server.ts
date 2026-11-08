@@ -2,6 +2,8 @@ import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
 import { createAuditLog } from "@synapse/audit";
 import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
+import { embeddingVersion } from "@synapse/knowledge";
+import { createLongTermMemory } from "@synapse/memory";
 import { createLogger, instrumentModelGateway, startTracing } from "@synapse/observability";
 import { redactPiiDeep } from "@synapse/security";
 
@@ -11,6 +13,11 @@ import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
+import {
+	DrizzleConversationRepository,
+	DrizzleFactRepository,
+	MemoryService,
+} from "./modules/memory";
 import {
 	DrizzleApprovalRepository,
 	DrizzleFeedbackRepository,
@@ -64,11 +71,23 @@ const rag = new RagService(repository, gateway, {
 	maxContextTokens: config.rag.maxContextTokens,
 	audit,
 });
+const memory = new MemoryService({
+	conversations: new DrizzleConversationRepository(database.db),
+	facts: createLongTermMemory({
+		store: new DrizzleFactRepository(database.db),
+		embedding: gateway.embedding,
+		embeddingModel: embeddingVersion(gateway.embedding.info),
+	}),
+	audit,
+	history: config.rag.chatHistory,
+});
 const chat = new ChatService({
 	rag,
+	memory,
 	chatModel: gateway.chatModel,
 	maxSteps: config.rag.chatMaxSteps,
 	topK: config.rag.topK,
+	logger,
 });
 
 // Paused approval runs live in Postgres, so a decision can resume them after a restart.
@@ -89,6 +108,7 @@ const app = createApp({
 	rag,
 	oversight,
 	audit,
+	memory,
 	chat,
 	pingDatabase: () => repository.ping(),
 });

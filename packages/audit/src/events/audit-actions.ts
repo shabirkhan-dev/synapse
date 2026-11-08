@@ -11,6 +11,10 @@ export const AUDIT_ACTIONS = {
 	AUTH_EMAIL_VERIFIED: "auth.email.verified",
 	OVERSIGHT_APPROVAL_REQUESTED: "oversight.approval.requested",
 	OVERSIGHT_APPROVAL_DECIDED: "oversight.approval.decided",
+	MEMORY_FACT_SAVED: "memory.fact.saved",
+	MEMORY_FACT_FORGOTTEN: "memory.fact.forgotten",
+	MEMORY_CONVERSATION_DELETED: "memory.conversation.deleted",
+	MEMORY_ALL_FORGOTTEN: "memory.all.forgotten",
 } as const;
 
 /** Actor for work no user did directly (approved actions, jobs). */

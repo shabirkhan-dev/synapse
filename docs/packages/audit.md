@@ -50,6 +50,7 @@ numbers, JWTs, bearer tokens and provider keys in any string of `data` become `[
 | `auth.user.signed_up` / `auth.user.signed_in` / `auth.session.signed_out` | account events | — |
 | `auth.email.verified` / `auth.password.reset` | link used | — |
 | `oversight.approval.requested` / `oversight.approval.decided` | request / first decision (not repeats) | — |
+| `memory.fact.saved` / `memory.fact.forgotten` / `memory.conversation.deleted` / `memory.all.forgotten` | memory changes | — |
 
 Writes are awaited: an answer is returned only after its event is stored, so every answer is
 traceable (architecture rule 6). Answer feedback (`answer_feedback.request_id`) joins

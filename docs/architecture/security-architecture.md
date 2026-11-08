@@ -10,7 +10,7 @@
 | Authorization / tenancy | Every RAG row and query scoped by token `sub` | `security/authorization`, `security/tenancy` |
 | Secrets | Env vars, Zod-validated; production rejects dev defaults | `security/secrets` |
 | Input limits | Zod validation, 2 MB ingest limit, 200-message chat limit | `guardrails/input` |
-| Prompt injection | Not yet | `guardrails/injection-defense` |
+| Prompt injection | Not yet (recalled memory facts are framed as data, not instructions) | `guardrails/injection-defense` (syn-031) |
 | Tool safety | Read-only tools only (`searchDocuments`, `currentTime`) | `guardrails/tools` |
 | PII | Pattern redaction (emails, phones, cards, tokens, keys) before audit writes | `security/pii` (live) |
 | Audit trail | Append-only `audit_events` (UPDATE rejected by trigger): answers with provenance, ingests, deletes, auth, approvals | `audit` (live) |

@@ -24,7 +24,12 @@
 | POST | `/api/v1/oversight/feedback` | Bearer | Rate an answer: `{ requestId, rating: "up" \| "down", comment? }`; one per request, re-rating replaces it |
 | DELETE | `/api/v1/rag/documents/{id}` | Bearer | Delete a document and its chunks |
 | POST | `/api/v1/rag/query` | Bearer | Top-k search (`query`, optional `topK`): hybrid vector + keyword (RRF) by default, or vector-only with `RAG_SEARCH_MODE=vector`; matches carry `score` and `ranks`. Answers with the chat model unless `answer: false` (an answer that cites no passage is regenerated once with a stricter prompt); answered queries return `citations` (passages the answer cites) and `provenance` (chat model, prompt version, embedding model, chunker version, token usage) |
-| POST | `/api/v1/chat` | Bearer | Streaming tool-calling chat (`messages`: AI SDK UI messages, 1–200). Tools: `searchDocuments`, `currentTime` |
+| POST | `/api/v1/chat` | Bearer | Streaming tool-calling chat. Stateless: `{ messages }` (AI SDK UI messages, 1–200). Stored: `{ message, conversationId? }`; the server replays the history and saves the reply; new conversations return `x-conversation-id`. Remembered facts relevant to the message are added as data. Tools: `searchDocuments`, `rememberFact`, `currentTime` |
+| GET | `/api/v1/memory/conversations` | Bearer | Your conversations, most recently active first |
+| GET / DELETE | `/api/v1/memory/conversations/{id}` | Bearer | A conversation with its messages / delete it |
+| GET / POST | `/api/v1/memory/facts` | Bearer | Facts the assistant remembers about you / remember one (`content` ≤ 500; same text stored once) |
+| DELETE | `/api/v1/memory/facts/{id}` | Bearer | Forget one fact |
+| DELETE | `/api/v1/memory` | Bearer | Delete all your conversations and facts → `{ conversations, facts }` |
 | GET | `/api/v1/audit/events` | Bearer | Your event history, newest first (`limit` ≤ 200, optional `action`): answers with provenance, ingests, deletes, auth and approval events; personal data in `data` is redacted |
 | GET | `/api/docs` | — | Scalar API reference |
 | GET | `/api/openapi.json` | — | OpenAPI 3.1 document |

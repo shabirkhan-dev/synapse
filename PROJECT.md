@@ -32,6 +32,7 @@ synapse/
 │   ├── evaluation/           # @synapse/evaluation: retrieval evals, baselines
 │   ├── audit/                # @synapse/audit: append-only event history, answer provenance
 │   ├── human-oversight/      # @synapse/human-oversight: approvals, review queue, feedback
+│   ├── memory/               # @synapse/memory: conversation history, long-term facts
 │   ├── orchestration/        # @synapse/orchestration: LangGraph graphs, checkpoints
 │   ├── security/             # @synapse/security: passwords, access + refresh tokens
 │   ├── core/                 # @synapse/core: errors, config, shared types, contracts
@@ -73,6 +74,7 @@ synapse/
 | `packages/evaluation` | `@synapse/evaluation` | Retrieval evals, baselines, CI regression |
 | `packages/audit` | `@synapse/audit` | Append-only event history with provenance |
 | `packages/human-oversight` | `@synapse/human-oversight` | Approvals, review queue, decisions, feedback |
+| `packages/memory` | `@synapse/memory` | Conversation history and long-term facts |
 | `packages/orchestration` | `@synapse/orchestration` | LangGraph graphs with Postgres checkpoints |
 | `packages/security` | `@synapse/security` | Authentication: passwords, access tokens, refresh tokens |
 | `packages/core` | `@synapse/core` | Errors, config loading, shared types, contracts |
