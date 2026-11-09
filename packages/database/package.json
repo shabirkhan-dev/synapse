@@ -12,8 +12,8 @@
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
 		"typecheck": "tsc --noEmit",
-		"test": "bun test",
-		"test:coverage": "bun test --coverage",
+		"test": "bun --env-file=../../.env test",
+		"test:coverage": "bun --env-file=../../.env test --coverage",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "bun --env-file=../../.env src/migrate.ts"
 	},

@@ -152,12 +152,19 @@ jobs:
           restore-keys: ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile --filter api --filter worker
+        run: bun install --frozen-lockfile --filter api --filter worker --filter @synapse/database
 
       # Unit tests mock the LLM and embeddings; the pgvector integration test uses the service above.
       - name: Test (with pgvector integration)
         working-directory: apps/api
         run: bun test --coverage
+        env:
+          API_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
+
+      # Migrations under an advisory lock: two runners on a fresh database apply each one once.
+      - name: Database test (migration lock)
+        working-directory: packages/database
+        run: bun test
         env:
           API_TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
 
