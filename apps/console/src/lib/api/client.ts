@@ -12,6 +12,8 @@ export type RequestOptions<TSchema extends z.ZodType> = {
 	signal?: AbortSignal;
 	/** Send the access token (default). Sign-in, sign-up and the emailed-link calls pass `false`. */
 	auth?: boolean;
+	/** Extra request headers, e.g. a client-chosen `x-request-id`. */
+	headers?: Record<string, string>;
 	/** Validates `data` from the success envelope (frontend rule 10). */
 	schema: TSchema;
 };
@@ -45,7 +47,7 @@ export function restoreSession(): Promise<boolean> {
 
 async function send(
 	path: string,
-	{ method = "GET", body, signal }: Omit<RequestOptions<z.ZodType>, "schema">,
+	{ method = "GET", body, signal, headers }: Omit<RequestOptions<z.ZodType>, "schema">,
 	useAuth: boolean,
 ): Promise<Response> {
 	const token = useAuth ? getAccessToken() : null;
@@ -54,6 +56,7 @@ async function send(
 			method,
 			credentials: "include",
 			headers: {
+				...headers,
 				accept: "application/json",
 				...(body === undefined ? {} : { "content-type": "application/json" }),
 				...(token ? { authorization: `Bearer ${token}` } : {}),

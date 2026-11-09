@@ -21,6 +21,9 @@ export function AppShell({ children, onSignOut, signingOut }: AppShellProps) {
 						<Link href="/documents" className="hover:text-foreground">
 							Documents
 						</Link>
+						<Link href="/playground" className="hover:text-foreground">
+							Playground
+						</Link>
 					</nav>
 					<Button
 						className="ml-auto"

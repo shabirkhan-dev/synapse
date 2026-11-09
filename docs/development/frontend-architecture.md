@@ -1,7 +1,8 @@
 # Frontend architecture
 
 > **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
-> two features: `auth` (sign-in, session gate) and `documents` (list + add) — syn-018.
+> three features: `auth` (sign-in/up, verify, reset, session gate — syn-018, syn-037), `documents`
+> (list + add — syn-018) and `playground` (ask, cited answer, passages, provenance, feedback — syn-038).
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.
@@ -62,6 +63,7 @@ api(endpoints.auth.signIn, { method: "POST", body: input, auth: false, schema: s
 
 | Concern | How |
 | --- | --- |
+| Request ids | Pass `headers: { "x-request-id": … }` to tie a call to a later one (the API keeps a well-formed id): the playground names each question `console_<uuid>` and sends it with the feedback |
 | Base URL | `apiConfig.baseUrl` (`NEXT_PUBLIC_API_URL`, default `http://localhost:8000/api/v1`) |
 | Auth | `authorization: Bearer <access token>` from `lib/api/session.ts` unless `auth: false`; `credentials: "include"` on every call (the API scopes its cookie to `/auth`) |
 | Refresh | On a 401: `POST /auth/refresh` with `{}` — the httpOnly cookie carries the refresh token (ADR-0007). One at a time per tab and, through the Web Locks API, across tabs (refresh tokens are single-use; two tabs sending the same cookie would look like reuse and revoke the session); then one retry. A refused refresh signs the tab out; an unreachable API does not |
@@ -73,7 +75,10 @@ Nothing auth-related is in web storage or `document.cookie`. Console and API mus
 site for the `SameSite=Strict` cookie (ADR-0007). Pages: `(auth)/sign-in`, `sign-up`,
 `forgot-password`, `reset-password?token=`, `verify-email?token=` (the last two read the token
 server-side, send no referrer, spend it once and remove it from the address bar);
-`(workspace)/documents` behind `SessionGate`.
+`(workspace)/documents` and `(workspace)/playground` behind `SessionGate`.
+
+Untrusted text from the model or documents is rendered as React text only (never HTML); `[n]`
+markers become in-page links, and sources become links only for `http(s)` URLs.
 
 ## Feature service
 

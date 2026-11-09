@@ -86,7 +86,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
-- **Console** (syn-018, syn-037): auth pages and documents (list + add). Refresh token in the API's
+- **Console** (syn-018, syn-037, syn-038): auth pages, documents (list + add) and the playground
+  (non-streaming `/rag/query`; no chat UI, no answer history across reloads). A signed-out visit
+  logs one expected 401 in the browser console (the session-restore refresh). Refresh token in the API's
   httpOnly cookie, access token in memory (ADR-0007): console and API must share a site (same
   registrable domain, or localhost), and every page load costs one refresh. The gate is client-side,
   so workspace pages render nothing until the session is restored. Browsers without Web Locks

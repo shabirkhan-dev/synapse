@@ -59,9 +59,10 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | --- | --- | --- |
 | Console: `@synapse/ui` wired + sign-in + first feature (documents) | ✅ | syn-018 |
 | Console: sign-up, verify email, reset password; httpOnly-cookie session (ADR-0007) | ✅ | syn-037 |
-| Console: playground (ask, citations, provenance, feedback) | ⏭️ | syn-038 |
+| Console: playground (ask, citations, provenance, feedback) | ✅ | syn-038 |
+| Console: approvals and activity (oversight, audit) | ⬜ | syn-040 |
 | Console features: knowledge, ingestion, retrieval, agents, evaluations, observability | ⬜ | — |
-| `tests/` — Playwright e2e for console + API in CI | ⬜ | syn-039 |
+| `tests/` — Playwright e2e for console + API in CI | ⏭️ | syn-039 |
 | `tests/` — load, chaos, security suites | ⬜ | — |
 | `deploy/` — docker, compose, migrations, backups, monitoring | ⬜ | — |
 | Real CD deploy + runbooks filled in | ⬜ | — |

@@ -9,6 +9,12 @@ export const endpoints = {
 		forgotPassword: "/auth/password/forgot",
 		resetPassword: "/auth/password/reset",
 	},
+	rag: {
+		query: "/rag/query",
+	},
+	oversight: {
+		feedback: "/oversight/feedback",
+	},
 	documents: {
 		list: "/rag/documents",
 		ingest: "/rag/documents",
