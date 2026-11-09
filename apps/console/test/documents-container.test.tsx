@@ -2,13 +2,13 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 
 import { DocumentsContainer } from "@/features/documents";
-import { setSession } from "@/lib/api/session";
+import { setAccessToken } from "@/lib/api/session";
 
 import { failure, mockFetch, ok, renderWithQuery, signedIn } from "./helpers";
 
 afterEach(() => {
 	cleanup();
-	setSession(null);
+	setAccessToken(null);
 });
 
 const doc = (id: string, title: string) => ({

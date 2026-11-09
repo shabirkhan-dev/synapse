@@ -63,14 +63,17 @@ api(endpoints.auth.signIn, { method: "POST", body: input, auth: false, schema: s
 | Concern | How |
 | --- | --- |
 | Base URL | `apiConfig.baseUrl` (`NEXT_PUBLIC_API_URL`, default `http://localhost:8000/api/v1`) |
-| Auth | `authorization: Bearer <access token>` from `lib/api/session.ts` unless `auth: false` |
-| Refresh | On a 401 with a session: one shared `POST /auth/refresh` (refresh tokens are single-use, so concurrent 401s wait for the same rotation), then one retry; a failed refresh clears the session |
+| Auth | `authorization: Bearer <access token>` from `lib/api/session.ts` unless `auth: false`; `credentials: "include"` on every call (the API scopes its cookie to `/auth`) |
+| Refresh | On a 401: `POST /auth/refresh` with `{}` — the httpOnly cookie carries the refresh token (ADR-0007). One at a time per tab and, through the Web Locks API, across tabs (refresh tokens are single-use; two tabs sending the same cookie would look like reuse and revoke the session); then one retry. A refused refresh signs the tab out; an unreachable API does not |
 | Responses | Success envelope → `data`, validated with the call's Zod `schema` (`INVALID_RESPONSE` otherwise) |
 | Errors | Error envelope → `ApiError { status, code, message, details?, requestId? }`; unreachable API → `NETWORK_ERROR` (status 0). Branch on `code`, show `message` |
-| Session | Tokens in memory + `sessionStorage` (`synapse.session`): a reload keeps the session, closing the tab ends it; `useSessionStatus()` re-renders on change (`unknown` during SSR) |
+| Session | Only the 15-minute access token, in memory. A page load starts `unknown`; `useSessionStatus()` restores the session with one cookie refresh (`restoreSession`) and re-renders on change |
 
-The session lives where page scripts can read it — the trade-off of a browser-only client. Moving
-the refresh token into an httpOnly cookie behind a same-origin BFF is part of syn-037.
+Nothing auth-related is in web storage or `document.cookie`. Console and API must be on the same
+site for the `SameSite=Strict` cookie (ADR-0007). Pages: `(auth)/sign-in`, `sign-up`,
+`forgot-password`, `reset-password?token=`, `verify-email?token=` (the last two read the token
+server-side, send no referrer, spend it once and remove it from the address bar);
+`(workspace)/documents` behind `SessionGate`.
 
 ## Feature service
 

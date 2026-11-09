@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { SignInForm } from "../components/sign-in-form";
+import { AUTH_ROUTES } from "../constants/auth.constants";
 import { useSessionStatus } from "../hooks/use-session";
 import { useSignInMutation } from "../hooks/mutations/use-sign-in-mutation";
 
@@ -14,7 +15,7 @@ export function SignInContainer() {
 	const signIn = useSignInMutation();
 
 	useEffect(() => {
-		if (status === "signed-in") router.replace("/documents");
+		if (status === "signed-in") router.replace(AUTH_ROUTES.HOME);
 	}, [status, router]);
 
 	return (

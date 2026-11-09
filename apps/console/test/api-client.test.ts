@@ -3,16 +3,16 @@ import { z } from "zod";
 
 import { ApiError } from "@/lib/api/api-error";
 import { api } from "@/lib/api/client";
-import { getSession, setSession } from "@/lib/api/session";
+import { getAccessToken, getSessionStatus, setAccessToken } from "@/lib/api/session";
 
 import { API, failure, mockFetch, ok, signedIn } from "./helpers";
 
 const item = z.object({ id: z.string() });
 
-afterEach(() => setSession(null));
+afterEach(() => setAccessToken(null));
 
 describe("api client", () => {
-	test("sends JSON with the bearer token and returns validated data", async () => {
+	test("sends JSON with the bearer token and credentials, and returns validated data", async () => {
 		signedIn();
 		const calls = mockFetch(() => ok({ id: "d1", extra: true }, 201));
 		const data = await api("/rag/documents", {
@@ -26,6 +26,7 @@ describe("api client", () => {
 			url: `${API}/rag/documents`,
 			method: "POST",
 			body: { title: "t" },
+			credentials: "include",
 		});
 		expect(calls[0]?.headers.get("authorization")).toBe("Bearer access-1");
 		expect(calls[0]?.headers.get("content-type")).toBe("application/json");
@@ -57,11 +58,11 @@ describe("api client", () => {
 		});
 	});
 
-	test("a 401 refreshes once, retries with the new token, and stores the rotated tokens", async () => {
-		signedIn("old-access", "refresh-1");
+	test("a 401 refreshes once from the cookie (no token in the body) and retries", async () => {
+		signedIn("old-access");
 		const calls = mockFetch((call) => {
 			if (call.url.endsWith("/auth/refresh")) {
-				return ok({ tokenType: "Bearer", accessToken: "new-access", refreshToken: "refresh-2" });
+				return ok({ tokenType: "Bearer", accessToken: "new-access" });
 			}
 			return call.headers.get("authorization") === "Bearer new-access"
 				? ok({ id: "d1" })
@@ -71,14 +72,11 @@ describe("api client", () => {
 		const results = await Promise.all([api("/a", { schema: item }), api("/b", { schema: item })]);
 
 		expect(results).toEqual([{ id: "d1" }, { id: "d1" }]);
-		expect(calls.filter((call) => call.url.endsWith("/auth/refresh"))).toHaveLength(1);
-		expect(calls.find((call) => call.url.endsWith("/auth/refresh"))?.body).toEqual({
-			refreshToken: "refresh-1",
-		});
-		expect(getSession()).toEqual({ accessToken: "new-access", refreshToken: "refresh-2" });
-		expect(JSON.parse(sessionStorage.getItem("synapse.session") ?? "{}")).toMatchObject({
-			refreshToken: "refresh-2",
-		});
+		const refreshes = calls.filter((call) => call.url.endsWith("/auth/refresh"));
+		expect(refreshes).toHaveLength(1);
+		expect(refreshes[0]).toMatchObject({ method: "POST", body: {}, credentials: "include" });
+		expect(refreshes[0]?.headers.get("authorization")).toBeNull();
+		expect(getAccessToken()).toBe("new-access");
 	});
 
 	test("a failed refresh signs out and surfaces the 401", async () => {
@@ -89,7 +87,18 @@ describe("api client", () => {
 				: failure(401, "AUTH_ACCESS_TOKEN_INVALID", "expired"),
 		);
 		await expect(api("/x", { schema: item })).rejects.toMatchObject({ status: 401 });
-		expect(getSession()).toBeNull();
+		expect(getSessionStatus()).toBe("signed-out");
+		expect(getAccessToken()).toBeNull();
+	});
+
+	test("an unreachable API during refresh keeps a signed-in tab signed in", async () => {
+		signedIn();
+		mockFetch((call) => {
+			if (call.url.endsWith("/auth/refresh")) throw new TypeError("fetch failed");
+			return failure(401, "AUTH_ACCESS_TOKEN_INVALID", "expired");
+		});
+		await expect(api("/x", { schema: item })).rejects.toMatchObject({ status: 401 });
+		expect(getSessionStatus()).toBe("signed-in");
 	});
 
 	test("sign-in style calls send no token and never try to refresh", async () => {
@@ -99,10 +108,13 @@ describe("api client", () => {
 		);
 		await expect(
 			api("/auth/sign-in", { method: "POST", body: {}, auth: false, schema: item }),
-		).rejects.toMatchObject({
-			message: "Email or password is incorrect",
-		});
+		).rejects.toMatchObject({ message: "Email or password is incorrect" });
 		expect(calls).toHaveLength(1);
 		expect(calls[0]?.headers.get("authorization")).toBeNull();
+	});
+
+	test("nothing is written to web storage", async () => {
+		signedIn("secret-access");
+		expect(JSON.stringify({ ...sessionStorage, ...localStorage })).not.toContain("secret-access");
 	});
 });

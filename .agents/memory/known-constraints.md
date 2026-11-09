@@ -10,8 +10,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   the user id. Members are added by existing email only (no invite emails). Unverified users can sign in
   (`emailVerifiedAt: null`). Emails are sent from `synapse@rabtx.dev` (rabtx.dev is verified in
   Resend; `synapse.rabtx.dev` is not, and the current key cannot send from it). Without `RESEND_API_KEY` emails go to the API log (development only;
-  production requires the key). Old auth rows are pruned daily by the worker. Console pages `/verify-email`, `/reset-password` and sign-up do not
-  exist yet (syn-037); sign-in does. Tests may still mint tokens (`signAccessToken`).
+  production requires the key). Old auth rows are pruned daily by the worker. The console has sign-in, sign-up, verify-email,
+  forgot and reset password (syn-037); no "resend verification" button or session list yet. Tests may still mint tokens (`signAccessToken`).
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
@@ -86,9 +86,11 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
-- **Console** (syn-018): sign-in and documents (list + add) only. Tokens live in `sessionStorage`
-  (readable by page scripts; httpOnly-cookie BFF planned in syn-037); the gate is client-side, so
-  workspace pages render nothing until the session is read. `NEXT_PUBLIC_API_URL` is inlined at
+- **Console** (syn-018, syn-037): auth pages and documents (list + add). Refresh token in the API's
+  httpOnly cookie, access token in memory (ADR-0007): console and API must share a site (same
+  registrable domain, or localhost), and every page load costs one refresh. The gate is client-side,
+  so workspace pages render nothing until the session is restored. Browsers without Web Locks
+  refresh without the cross-tab lock. `NEXT_PUBLIC_API_URL` is inlined at
   build time (Docker build arg). No committed e2e suite; the browser flow was checked by script.
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
 - Integration tests need Postgres with pgvector; they are skipped unless `API_TEST_DATABASE_URL` is set.

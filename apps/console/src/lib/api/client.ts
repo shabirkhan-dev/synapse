@@ -4,22 +4,23 @@ import { apiConfig } from "@/config/api.config";
 
 import { ApiError, CLIENT_ERROR_CODES, fromErrorEnvelope } from "./api-error";
 import { endpoints } from "./endpoints";
-import { getSession, setSession } from "./session";
+import { getAccessToken, getSessionStatus, setAccessToken } from "./session";
 
 export type RequestOptions<TSchema extends z.ZodType> = {
 	method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 	body?: unknown;
 	signal?: AbortSignal;
-	/** Send the access token (default). Sign-in and refresh pass `false`. */
+	/** Send the access token (default). Sign-in, sign-up and the emailed-link calls pass `false`. */
 	auth?: boolean;
 	/** Validates `data` from the success envelope (frontend rule 10). */
 	schema: TSchema;
 };
 
 /**
- * The only code that calls `fetch`. Sends JSON with the bearer token, unwraps the success
+ * The only code that calls `fetch`. Sends JSON with the bearer token and the session cookie
+ * (`credentials: "include"`; the API scopes the cookie to its auth routes), unwraps the success
  * envelope (`data`), turns the error envelope into `ApiError`, and on a 401 refreshes the session
- * once and retries. A failed refresh clears the session.
+ * once and retries.
  */
 export async function api<TSchema extends z.ZodType>(
 	path: string,
@@ -27,10 +28,19 @@ export async function api<TSchema extends z.ZodType>(
 ): Promise<z.infer<TSchema>> {
 	const useAuth = options.auth ?? true;
 	let response = await send(path, options, useAuth);
-	if (response.status === 401 && useAuth && getSession() && (await refreshSession())) {
+	if (response.status === 401 && useAuth && (await refreshSession())) {
 		response = await send(path, options, useAuth);
 	}
 	return parse(response, options.schema);
+}
+
+/**
+ * On page load the tab has no access token: try the cookie once. Afterwards the status is
+ * `signed-in` or `signed-out`.
+ */
+export function restoreSession(): Promise<boolean> {
+	if (getSessionStatus() !== "unknown") return Promise.resolve(getSessionStatus() === "signed-in");
+	return refreshSession();
 }
 
 async function send(
@@ -38,10 +48,11 @@ async function send(
 	{ method = "GET", body, signal }: Omit<RequestOptions<z.ZodType>, "schema">,
 	useAuth: boolean,
 ): Promise<Response> {
-	const token = useAuth ? getSession()?.accessToken : undefined;
+	const token = useAuth ? getAccessToken() : null;
 	try {
 		return await fetch(`${apiConfig.baseUrl}${path}`, {
 			method,
+			credentials: "include",
 			headers: {
 				accept: "application/json",
 				...(body === undefined ? {} : { "content-type": "application/json" }),
@@ -78,36 +89,39 @@ async function parse<TSchema extends z.ZodType>(
 	return result.data;
 }
 
+const REFRESH_LOCK = "synapse-session-refresh";
 let refreshing: Promise<boolean> | null = null;
 
-/** One refresh at a time: concurrent 401s wait for the same rotation (refresh tokens are single-use). */
+/**
+ * One refresh at a time, in this tab and across tabs: refresh tokens are single-use, and two
+ * requests carrying the same cookie would look like reuse to the API (which revokes the session).
+ * Concurrent 401s in a tab share one call; other tabs wait on a Web Lock, then send the rotated cookie.
+ */
 function refreshSession(): Promise<boolean> {
-	refreshing ??= rotate().finally(() => {
+	refreshing ??= withLock(rotate).finally(() => {
 		refreshing = null;
 	});
 	return refreshing;
 }
 
+function withLock(task: () => Promise<boolean>): Promise<boolean> {
+	const locks = typeof navigator === "undefined" ? undefined : navigator.locks;
+	return locks ? locks.request(REFRESH_LOCK, task) : task();
+}
+
 async function rotate(): Promise<boolean> {
-	const refreshToken = getSession()?.refreshToken;
-	if (!refreshToken) return false;
-	const response = await send(
-		endpoints.auth.refresh,
-		{ method: "POST", body: { refreshToken } },
-		false,
-	).catch(() => null);
-	const body = (await response?.json().catch(() => null)) as {
-		data?: { accessToken?: unknown; refreshToken?: unknown };
-	} | null;
-	const tokens = body?.data;
-	if (
-		!response?.ok ||
-		typeof tokens?.accessToken !== "string" ||
-		typeof tokens.refreshToken !== "string"
-	) {
-		setSession(null);
+	const response = await send(endpoints.auth.refresh, { method: "POST", body: {} }, false).catch(
+		() => null,
+	);
+	if (!response) {
+		// Unreachable API: keep a signed-in tab signed in, let a restoring tab show sign-in.
+		if (getSessionStatus() === "unknown") setAccessToken(null);
 		return false;
 	}
-	setSession({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
-	return true;
+	const body = (await response.json().catch(() => null)) as {
+		data?: { accessToken?: unknown };
+	} | null;
+	const token = response.ok ? body?.data?.accessToken : undefined;
+	setAccessToken(typeof token === "string" ? token : null);
+	return typeof token === "string";
 }

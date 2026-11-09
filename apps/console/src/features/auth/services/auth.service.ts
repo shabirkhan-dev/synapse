@@ -2,30 +2,69 @@ import { z } from "zod";
 
 import { api } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
-import { setSession } from "@/lib/api/session";
+import { setAccessToken } from "@/lib/api/session";
 
-import { signedInSchema } from "../schemas/auth.schema";
-import type { SignedIn, SignInInput } from "../types/auth.types";
+import { signedInSchema, verifiedUserSchema } from "../schemas/auth.schema";
+import type {
+	ForgotPasswordInput,
+	ResetPasswordInput,
+	SignedIn,
+	SignInInput,
+	SignUpInput,
+} from "../types/auth.types";
+
+/** Sign-in and sign-up ask for the cookie transport (ADR-0007) and keep only the access token. */
+async function startSession(path: string, body: Record<string, unknown>): Promise<SignedIn> {
+	const signedIn = await api(path, {
+		method: "POST",
+		body: { ...body, session: "cookie" },
+		auth: false,
+		schema: signedInSchema,
+	});
+	setAccessToken(signedIn.tokens.accessToken);
+	return signedIn;
+}
 
 export const authService = {
-	/** Signs in and keeps the session's tokens for the API client. */
-	async signIn(input: SignInInput): Promise<SignedIn> {
-		const signedIn = await api(endpoints.auth.signIn, {
-			method: "POST",
-			body: input,
-			auth: false,
-			schema: signedInSchema,
-		});
-		setSession(signedIn.tokens);
-		return signedIn;
-	},
+	signIn: ({ email, password }: SignInInput) =>
+		startSession(endpoints.auth.signIn, { email, password }),
 
-	/** Revokes the session on the API, then forgets it locally (even if the API call failed). */
+	/** Creates the account and signs in; the API emails a verification link. */
+	signUp: ({ email, password }: SignUpInput) =>
+		startSession(endpoints.auth.signUp, { email, password }),
+
+	/** Revokes the session and clears the cookie on the API, then forgets it locally (always). */
 	async signOut(): Promise<void> {
 		try {
 			await api(endpoints.auth.signOut, { method: "POST", schema: z.null() });
 		} finally {
-			setSession(null);
+			setAccessToken(null);
 		}
 	},
+
+	/** Uses the emailed link's single-use token. */
+	verifyEmail: (token: string) =>
+		api(endpoints.auth.verifyEmail, {
+			method: "POST",
+			body: { token },
+			auth: false,
+			schema: verifiedUserSchema,
+		}),
+
+	/** Always answers the same, whether or not the email has an account. */
+	requestPasswordReset: ({ email }: ForgotPasswordInput) =>
+		api(endpoints.auth.forgotPassword, {
+			method: "POST",
+			body: { email },
+			auth: false,
+			schema: z.null(),
+		}),
+
+	resetPassword: ({ token, password }: ResetPasswordInput) =>
+		api(endpoints.auth.resetPassword, {
+			method: "POST",
+			body: { token, password },
+			auth: false,
+			schema: z.null(),
+		}),
 };
