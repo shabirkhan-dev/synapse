@@ -6,7 +6,7 @@
 	"license": "MIT OR Apache-2.0",
 	"scripts": {
 		"dev": "bun --env-file=../../.env --watch src/server.ts",
-		"build": "bun build src/server.ts src/migrate.ts --target=bun --outdir=dist --root=src && rm -rf dist/migrations && cp -r ../../packages/database/migrations dist/migrations",
+		"build": "bun build src/server.ts src/migrate.ts --target=bun --outdir=dist --root=src && rm -rf dist/migrations && cp -r ../../packages/database/migrations dist/migrations && bun ../../packages/native/scripts/copy-binding.ts dist/bin",
 		"start": "bun dist/server.js",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
@@ -30,6 +30,7 @@
 		"@synapse/knowledge": "workspace:*",
 		"@synapse/memory": "workspace:*",
 		"@synapse/observability": "workspace:*",
+		"@synapse/native": "workspace:*",
 		"@synapse/orchestration": "workspace:*",
 		"@synapse/providers": "workspace:*",
 		"@synapse/reliability": "workspace:*",

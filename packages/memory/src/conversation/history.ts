@@ -7,12 +7,14 @@ export type StoredMessage<TMessage = unknown> = {
 };
 
 export type HistoryBudget = {
-	/** Rough token budget (~4 characters per token, like the RAG context budget). */
+	/** Token budget, counted on each message's JSON (`countTokens`, default ~4 characters per token). */
 	maxTokens: number;
 	maxMessages: number;
+	/** e.g. the Rust tokenizer from `@synapse/native`, wired by the app. */
+	countTokens?: (text: string) => number;
 };
 
-const estimateTokens = (message: unknown): number => Math.ceil(JSON.stringify(message).length / 4);
+const estimateTokens = (text: string): number => Math.ceil(text.length / 4);
 
 /**
  * The newest messages that fit the budget, oldest first. Always keeps the latest message, and never
@@ -20,12 +22,12 @@ const estimateTokens = (message: unknown): number => Math.ceil(JSON.stringify(me
  */
 export function selectHistory<TMessage>(
 	messages: Array<StoredMessage<TMessage>>,
-	{ maxTokens, maxMessages }: HistoryBudget,
+	{ maxTokens, maxMessages, countTokens = estimateTokens }: HistoryBudget,
 ): Array<StoredMessage<TMessage>> {
 	const kept: Array<StoredMessage<TMessage>> = [];
 	let tokens = 0;
 	for (const message of messages.toReversed()) {
-		const cost = estimateTokens(message.message);
+		const cost = countTokens(JSON.stringify(message.message));
 		if (kept.length > 0 && (kept.length >= maxMessages || tokens + cost > maxTokens)) {
 			break;
 		}

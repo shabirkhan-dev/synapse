@@ -23,10 +23,13 @@ export type BuiltContext = {
 	omitted: number;
 };
 
-/** Rough token estimate (~4 characters per token); good enough for budgeting without a tokenizer. */
+/** Rough token estimate (~4 characters per token): the default when no tokenizer is supplied. */
 export function estimateTokens(text: string): number {
 	return Math.ceil(text.length / 4);
 }
+
+/** Counts tokens in a text, e.g. the Rust tokenizer from `@synapse/native` (wired by the app). */
+export type CountTokens = (text: string) => number;
 
 /**
  * Number passages `[1]…[n]` in rank order until `maxTokens` is used. The first passage is always
@@ -34,7 +37,7 @@ export function estimateTokens(text: string): number {
  */
 export function buildContext(
 	passages: ContextPassage[],
-	{ maxTokens }: { maxTokens: number },
+	{ maxTokens, countTokens = estimateTokens }: { maxTokens: number; countTokens?: CountTokens },
 ): BuiltContext {
 	const blocks: string[] = [];
 	const citations: Citation[] = [];
@@ -44,15 +47,15 @@ export function buildContext(
 		const index = citations.length + 1;
 		const header = `[${index}] ${passage.title}${passage.source ? ` (${passage.source})` : ""}\n`;
 		let block = header + passage.content;
-		const cost = estimateTokens(block);
+		const cost = countTokens(block);
 		if (used + cost > maxTokens) {
 			if (citations.length > 0) {
 				break;
 			}
-			block = block.slice(0, maxTokens * 4);
+			block = truncateToTokens(block, maxTokens, countTokens);
 		}
 		blocks.push(block);
-		used += estimateTokens(block);
+		used += countTokens(block);
 		citations.push({
 			index,
 			chunkId: passage.chunkId,
@@ -63,4 +66,20 @@ export function buildContext(
 	}
 
 	return { text: blocks.join("\n\n"), citations, omitted: passages.length - citations.length };
+}
+
+/**
+ * Cut `text` to about `maxTokens`: first at ~4 characters per token, then — when a real tokenizer
+ * counts more (e.g. CJK text) — shrink in proportion until it fits.
+ */
+function truncateToTokens(text: string, maxTokens: number, countTokens: CountTokens): string {
+	let cut = text.slice(0, maxTokens * 4);
+	for (
+		let tokens = countTokens(cut);
+		tokens > maxTokens && cut.length > 0;
+		tokens = countTokens(cut)
+	) {
+		cut = cut.slice(0, Math.floor((cut.length * maxTokens) / tokens) - 1);
+	}
+	return cut;
 }

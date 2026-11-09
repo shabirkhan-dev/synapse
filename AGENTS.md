@@ -90,8 +90,12 @@ synapse/
 │   ├── memory/          # @synapse/memory: conversation history, long-term facts
 │   ├── orchestration/   # @synapse/orchestration: LangGraph graphs with Postgres checkpoints
 │   ├── security/        # @synapse/security: passwords, access tokens, rotating refresh tokens
+│   ├── reliability/     # @synapse/reliability: timeouts, retries, circuit breakers, fallbacks
+│   ├── providers/       # @synapse/providers: OpenAI, Anthropic, Google, Cohere model SDKs
+│   ├── native/          # @synapse/native: loads the Rust binding (token counting), TS fallback
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
+├── crates/              # Rust (napi-rs): text-processing, bindings (ADR-0004)
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/
 ├── docker/              # Docker Compose fragments (see docker/README.md)
 ├── .agents/             # agent rules, skills, memory, roadmap, board
@@ -127,6 +131,7 @@ synapse/
 | `bun run test:coverage` | Run TS coverage + all language tests |
 | `bun run architecture:check` | Enforce architecture import boundaries + kebab-case naming |
 | `bun run eval:retrieval` | Retrieval eval vs committed baseline (needs `DATABASE_URL`) |
+| `bun run native:build` | Build the Rust binding (`crates/bindings`, needs cargo) into `packages/native/bin/` |
 | `bun run naming:check` | Enforce kebab-case (dotted, e.g. `rag.service.ts`) file/folder names |
 
 ## Conventions

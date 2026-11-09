@@ -24,6 +24,12 @@ Run Rust **in-process** using **napi-rs**:
 - Builds need prebuilt binaries per platform (CI matrix) once crates exist.
 - Rust is used only where benchmarks show a clear win.
 
+## Status of implementation
+
+First crates (syn-036): `crates/text-processing` (o200k_base token counting via `tiktoken-rs`) and
+`crates/bindings`, loaded by `packages/native` with a TypeScript fallback. The chunker was
+benchmarked first and kept in TypeScript (no measurable win); see `docs/packages/native.md`.
+
 ## Alternatives considered
 
 - Rust HTTP/gRPC service: isolation, but more ops and latency.

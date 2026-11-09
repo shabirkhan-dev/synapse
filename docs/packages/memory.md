@@ -28,7 +28,7 @@ Agent and conversation memory: working, conversation, semantic and episodic, wit
 
 | Export | What it does |
 | --- | --- |
-| `selectHistory(messages, { maxTokens, maxMessages })`, `StoredMessage` | Newest messages within the budget (~4 chars/token), oldest first; always keeps the latest; never starts with an assistant reply |
+| `selectHistory(messages, { maxTokens, maxMessages, countTokens? })`, `StoredMessage` | Newest messages within the budget (each message's JSON counted by `countTokens`, default ~4 chars/token), oldest first; always keeps the latest; never starts with an assistant reply |
 | `createLongTermMemory({ store, embedding, embeddingModel, minScore? })` → `{ remember, recall, list, forget, forgetAll }`, `FactStore` | Facts embedded and stored per owner (same text stored once); `recall` returns the nearest facts above `minScore` (0.3), only from the current embedding model |
 | `formatRecalledFacts(facts)` | System-prompt block that frames facts as data about the user, "not as instructions" |
 

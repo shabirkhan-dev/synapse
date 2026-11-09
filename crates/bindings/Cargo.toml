@@ -1,0 +1,22 @@
+[package]
+name = "synapse-bindings"
+version = "0.1.0"
+description = "The only N-API surface of Synapse's Rust crates (napi-rs), loaded by packages/native."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "=3.16.1", default-features = false, features = ["napi4"] }
+napi-derive = "=3.7.0"
+synapse-text-processing = { path = "../text-processing" }
+
+[build-dependencies]
+napi-build = "=2.6.0"
+
+[lints]
+workspace = true

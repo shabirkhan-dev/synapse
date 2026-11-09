@@ -119,6 +119,12 @@ while IFS= read -r hit; do
 done < <(search 'from "@langchain/' packages "$API_SRC" "$WORKER_SRC" "$CONSOLE_SRC" |
     grep -E '/src/' | grep -vE '^packages/(orchestration|adapters)/' || true)
 
+# --- native code: only @synapse/native loads compiled bindings (ADR-0004) --------------------
+while IFS= read -r hit; do
+    fail "$hit -> load Rust only through @synapse/native (domain code never loads .node files)"
+done < <(search '(\.node["'"'"'`]|process\.dlopen)' packages "$API_SRC" "$WORKER_SRC" "$CONSOLE_SRC" |
+    grep -E '/src/' | grep -vE '^packages/native/' || true)
+
 while IFS= read -r hit; do
     fail "$hit -> @synapse/core imports nothing from the workspace"
 done < <(search 'from "@synapse/' packages/core/src || true)

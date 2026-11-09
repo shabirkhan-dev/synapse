@@ -33,8 +33,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `controllers/` folders yet; add one when a handler grows real HTTP logic.
 - **Every answer is stored in `audit_events`** with its provenance (awaited: an audit write failure
   fails the request). Audit rows are never pruned yet (no retention policy) and redaction is
-  pattern-based (names and addresses are not detected). Token counts in the context budget are
-  estimates (~4 chars/token).
+  pattern-based (names and addresses are not detected). Token counts in the context and history
+  budgets come from the Rust o200k_base tokenizer when its binding is built, else ~4 chars/token.
 - **Retrieval eval uses hashing embeddings** (no key needed): it gates the pipeline, not embedding
   quality. Changing the dataset needs a `version` bump and a new baseline (`EVAL_UPDATE_BASELINE=true`).
 - **Keyword search matches any term** and drops an English stopword list from the query only
@@ -81,7 +81,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   replaces the fused one (not comparable). CI gates the step with an offline word-overlap reranker,
   which says nothing about Cohere's quality: run `EVAL_RERANKER=cohere` with a key to measure it.
   Reranking also applies to the chat `searchDocuments` tool. **Query rewriting** is planned.
-- **No Rust crates yet**; CI has no Rust toolchain step.
+- **Rust** (syn-036): the binding is built per machine (`bun run native:build`, needs cargo); it is
+  not committed and the Docker images do not build it, so containers use the chars/4 fallback (the
+  api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
+  parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
 - **Console has no UI and no tests**; `@synapse/ui` is not wired into it yet.
 - Integration tests need Postgres with pgvector; they are skipped unless `API_TEST_DATABASE_URL` is set.

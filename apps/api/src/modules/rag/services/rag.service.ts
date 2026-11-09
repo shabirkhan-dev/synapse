@@ -37,6 +37,8 @@ export type RagServiceOptions = {
 	defaultTopK: number;
 	searchMode: RetrievalMode;
 	maxContextTokens: number;
+	/** Token counter for the context budget (default: ~4 characters per token). */
+	countTokens?: (text: string) => number;
 	/** Answers (with provenance), ingests and deletes are recorded here. */
 	audit: AuditLog;
 	/** Input policy, passage sanitizing (prompt injection) and answer checks. */
@@ -117,6 +119,7 @@ export class RagService {
 			embeddingModel: knowledge.embeddingModel,
 			chunkerVersion: knowledge.chunkerVersion,
 			maxContextTokens: options.maxContextTokens,
+			...(options.countTokens ? { countTokens: options.countTokens } : {}),
 		};
 		this.generator = createAnswerGenerator(generatorOptions);
 		this.citedGenerator = createAnswerGenerator({

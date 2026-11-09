@@ -10,6 +10,7 @@ export {
 	buildContext,
 	type Citation,
 	type ContextPassage,
+	type CountTokens,
 	estimateTokens,
 } from "./context/build-context";
 export { type PromptTemplate, promptVersion } from "./prompts/prompt";

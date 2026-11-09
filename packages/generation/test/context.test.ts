@@ -10,6 +10,9 @@ const passage = (n: number, content = `passage ${n}`) => ({
 	content,
 });
 
+/** A tokenizer that counts ~1 token per character (like CJK text). */
+const perChar = (text: string) => text.length;
+
 describe("buildContext", () => {
 	test("numbers passages in order with title and source", () => {
 		const context = buildContext([passage(1), passage(2)], { maxTokens: 1000 });
@@ -30,6 +33,19 @@ describe("buildContext", () => {
 		const tiny = buildContext([passage(1, long)], { maxTokens: 10 });
 		expect(tiny.citations).toHaveLength(1);
 		expect(tiny.text.length).toBe(40);
+	});
+
+	test("uses the supplied token counter, and a truncated first passage fits its count", () => {
+		const long = "x".repeat(400);
+		const counted = buildContext([passage(1, "short"), passage(2, long)], {
+			maxTokens: 100,
+			countTokens: perChar,
+		});
+		expect(counted.citations).toHaveLength(1);
+
+		const tiny = buildContext([passage(1, long)], { maxTokens: 10, countTokens: perChar });
+		expect(perChar(tiny.text)).toBeLessThanOrEqual(10);
+		expect(tiny.text.length).toBeGreaterThan(0);
 	});
 });
 

@@ -29,9 +29,9 @@
 | Langfuse export (OTLP) | ✅ | syn-020 |
 | `evaluation` — datasets, retrieval metrics, CI regression | ✅ | syn-016 |
 
-## Phase 2 — Platform capabilities (after the RAG path works)
+## Phase 2 — Platform capabilities (after the RAG path works) ✅
 
-The two retrieval fixes found by the Phase 1 evaluation and in-house auth are done.
+Every Phase 2 step is done (syn-021 … syn-036).
 
 | Step | Status | Card |
 | --- | --- | --- |
@@ -51,13 +51,14 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | `reliability` — retry, breakers, timeouts, fallbacks | ✅ | syn-033 |
 | `providers` — OpenAI, Anthropic, Google, Cohere | ✅ | syn-034 |
 | Reranking (Cohere via adapter) | ✅ | syn-035 |
-| `native` + `crates/` (napi-rs) | ⏭️ | syn-036 |
+| `native` + `crates/` (napi-rs): Rust token counting | ✅ | syn-036 |
 
 ## Phase 3 — Product and operations
 
 | Step | Status | Card |
 | --- | --- | --- |
-| Console: `@synapse/ui` wired + first feature (documents); unblocked by syn-017 | ⬜ | syn-018 |
+| Console: `@synapse/ui` wired + first feature (documents); unblocked by syn-017 | ⏭️ | syn-018 |
+| Console: auth pages (sign in/up, verify email, reset password) | ⬜ | syn-037 |
 | Console features: knowledge, ingestion, retrieval, playground, agents, evaluations, observability | ⬜ | — |
 | `tests/` — cross-package e2e, load, chaos, security | ⬜ | — |
 | `deploy/` — docker, compose, migrations, backups, monitoring | ⬜ | — |

@@ -12,6 +12,8 @@ roles:
     team: backend
     paths:
       - apps/api/**
+      - crates/**
+      - packages/native/**
     reviewers:
       - reviewer
       - qa

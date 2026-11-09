@@ -20,6 +20,7 @@ COPY packages/human-oversight/package.json ./packages/human-oversight/
 COPY packages/ingestion/package.json ./packages/ingestion/
 COPY packages/knowledge/package.json ./packages/knowledge/
 COPY packages/memory/package.json ./packages/memory/
+COPY packages/native/package.json ./packages/native/
 COPY packages/observability/package.json ./packages/observability/
 COPY packages/orchestration/package.json ./packages/orchestration/
 COPY packages/retrieval/package.json ./packages/retrieval/
@@ -45,6 +46,7 @@ COPY packages/human-oversight ./packages/human-oversight
 COPY packages/ingestion ./packages/ingestion
 COPY packages/knowledge ./packages/knowledge
 COPY packages/memory ./packages/memory
+COPY packages/native ./packages/native
 COPY packages/observability ./packages/observability
 COPY packages/orchestration ./packages/orchestration
 COPY packages/retrieval ./packages/retrieval

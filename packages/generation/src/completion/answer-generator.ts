@@ -2,7 +2,12 @@ import type { ChatGateway, ModelInfo } from "@synapse/core/contracts";
 import type { AnswerProvenance } from "@synapse/core/types";
 
 import { extractCitations } from "../citations/extract-citations";
-import { buildContext, type Citation, type ContextPassage } from "../context/build-context";
+import {
+	buildContext,
+	type Citation,
+	type ContextPassage,
+	type CountTokens,
+} from "../context/build-context";
 import { type PromptTemplate, promptVersion } from "../prompts/prompt";
 import { RAG_ANSWER_PROMPT } from "../prompts/templates";
 
@@ -13,6 +18,8 @@ export type AnswerGeneratorOptions = {
 	chunkerVersion: string;
 	/** Token budget for the numbered passages. */
 	maxContextTokens: number;
+	/** Defaults to the ~4 characters per token estimate. */
+	countTokens?: CountTokens;
 	prompt?: PromptTemplate;
 };
 
@@ -35,6 +42,7 @@ export function createAnswerGenerator({
 	embeddingModel,
 	chunkerVersion,
 	maxContextTokens,
+	countTokens,
 	prompt = RAG_ANSWER_PROMPT,
 }: AnswerGeneratorOptions) {
 	return {
@@ -47,7 +55,10 @@ export function createAnswerGenerator({
 			passages: ContextPassage[];
 			abortSignal?: AbortSignal;
 		}): Promise<GeneratedAnswer> {
-			const context = buildContext(passages, { maxTokens: maxContextTokens });
+			const context = buildContext(passages, {
+				maxTokens: maxContextTokens,
+				...(countTokens ? { countTokens } : {}),
+			});
 			const result = await chat.generateText({
 				system: prompt.system,
 				prompt: `${context.text}\n\nQuestion: ${question}`,

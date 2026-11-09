@@ -94,3 +94,4 @@ apps/c/build/
 
 # root workspace generated / temp (remove from .gitignore to track)
 root.ts
+packages/native/bin/

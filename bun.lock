@@ -29,6 +29,7 @@
         "@synapse/ingestion": "workspace:*",
         "@synapse/knowledge": "workspace:*",
         "@synapse/memory": "workspace:*",
+        "@synapse/native": "workspace:*",
         "@synapse/observability": "workspace:*",
         "@synapse/orchestration": "workspace:*",
         "@synapse/providers": "workspace:*",
@@ -221,6 +222,17 @@
       "devDependencies": {
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/native": {
+      "name": "@synapse/native",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@synapse/evaluation": "workspace:*",
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "js-tiktoken": "1.0.21",
         "typescript": "^7.0.2",
       },
     },
@@ -762,6 +774,8 @@
     "@synapse/knowledge": ["@synapse/knowledge@workspace:packages/knowledge"],
 
     "@synapse/memory": ["@synapse/memory@workspace:packages/memory"],
+
+    "@synapse/native": ["@synapse/native@workspace:packages/native"],
 
     "@synapse/observability": ["@synapse/observability@workspace:packages/observability"],
 

@@ -35,6 +35,18 @@ describe("selectHistory", () => {
 		]);
 	});
 
+	test("counts with the supplied tokenizer", () => {
+		const counted: string[] = [];
+		const countTokens = (text: string) => {
+			counted.push(text);
+			return 1;
+		};
+		expect(
+			selectHistory(history, { maxTokens: 3, maxMessages: 10, countTokens }).map((m) => m.id),
+		).toEqual(["3", "4", "5"]);
+		expect(counted[0]).toBe(JSON.stringify(history[4]?.message));
+	});
+
 	test("never starts with an assistant reply and always keeps the latest message", () => {
 		expect(selectHistory(history, { maxTokens: 150, maxMessages: 10 }).map((m) => m.id)).toEqual([
 			"3",

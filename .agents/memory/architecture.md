@@ -19,11 +19,12 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/memory` (conversation history within a budget, long-term facts by similarity),
   `packages/guardrails` (input policy, prompt-injection defense, tool allowlist, output checks),
   `packages/reliability` (timeouts, retries, circuit breakers, chat fallback),
-  `packages/providers` (OpenAI, Anthropic, Google, Cohere, OpenAI-compatible models).
-- **Planned:** packages
-  `native`; more adapters
+  `packages/providers` (OpenAI, Anthropic, Google, Cohere, OpenAI-compatible models),
+  `packages/native` (Rust binding loader; o200k_base token counting from `crates/text-processing`
+  via `crates/bindings`, TS fallback).
+- **Planned:** more adapters
   (vector-store, cache, storage);
-  `crates/*`; root `tests/` and `deploy/`.
+  more `crates/*` (only with a benchmark win); root `tests/` and `deploy/`.
 - `apps/api/src/modules/rag` composes ingestion → knowledge → retrieval → generation; Phase 1 of the
   roadmap (core RAG path) is complete.
 - One owner per capability; domain packages never import vendor SDKs.

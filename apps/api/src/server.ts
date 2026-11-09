@@ -3,6 +3,7 @@ import { createAuditLog } from "@synapse/audit";
 import { createDatabase } from "@synapse/database";
 import { embeddingVersion } from "@synapse/knowledge";
 import { createLongTermMemory } from "@synapse/memory";
+import { createTokenCounter } from "@synapse/native";
 import { createLogger, startTracing } from "@synapse/observability";
 import { redactPiiDeep } from "@synapse/security";
 
@@ -78,12 +79,16 @@ const auth = new AuthService({
 	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 });
 const gateway = createModelGateway(config, logger);
+// Rust BPE tokenizer when its binding is built for this platform, else the ~4 chars/token estimate.
+const tokens = createTokenCounter();
+logger.info("token counting", { tokenizer: tokens.tokenizer, native: tokens.native });
 const reranker = createReranker(config, logger);
 const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
 	searchMode: config.rag.searchMode,
 	maxContextTokens: config.rag.maxContextTokens,
+	countTokens: tokens.count,
 	audit,
 	guardrails,
 	...(reranker
@@ -105,7 +110,7 @@ const memory = new MemoryService({
 		embeddingModel: embeddingVersion(gateway.embedding.info),
 	}),
 	audit,
-	history: config.rag.chatHistory,
+	history: { ...config.rag.chatHistory, countTokens: tokens.count },
 	guardrails,
 });
 const chat = new ChatService({

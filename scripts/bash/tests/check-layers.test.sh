@@ -79,6 +79,8 @@ put apps/worker/src/modules/maintenance/jobs/cross.job.ts 'import { x } from "@/
 put apps/worker/src/queue.ts 'import { PgBoss } from "pg-boss";'
 put packages/generation/src/agent.ts 'import { StateGraph } from "@langchain/langgraph";'
 put apps/api/src/modules/rag/services/rag-graph.service.ts 'import { MemorySaver } from "@langchain/langgraph";'
+put packages/knowledge/src/fast-chunker.ts 'const binding = require("../bin/synapse-bindings.linux-x64.node");'
+put packages/native/src/load.ts 'const binding = require("../bin/synapse-bindings.linux-x64.node");'
 
 if out="$(bash "$CHECK" "$fixture" 2>&1)"; then
     echo "violating fixture should fail"
@@ -125,5 +127,11 @@ expect "cross.job.ts imports module internals"
 expect "apps/worker/src/queue.ts:1:"
 expect "packages/generation/src/agent.ts:1:"
 expect "rag-graph.service.ts:1:"
+expect "packages/knowledge/src/fast-chunker.ts:1:"
+
+if grep -q "packages/native/src/load.ts" <<<"$out"; then
+    echo "@synapse/native may load its own binding, but was reported"
+    exit 1
+fi
 
 echo "check-layers test passed"
