@@ -72,6 +72,8 @@ export const envSchema = z
 		APP_URL: z.url().default("http://localhost:3000"),
 		/** Read the client IP from `x-forwarded-for` (only behind a proxy you control). */
 		TRUST_PROXY: booleanFromString,
+		/** `Secure` on the console's refresh-token cookie; defaults to true in production (ADR-0007). */
+		AUTH_COOKIE_SECURE: z.enum(["true", "false"]).optional(),
 		/** Resend API key; without it (outside production) emails are written to the log instead. */
 		RESEND_API_KEY: z.string().min(1).optional(),
 		/** Sender on a domain verified in Resend (rabtx.dev). */
@@ -150,6 +152,13 @@ export const envSchema = z
 				code: "custom",
 				path: ["OTEL_EXPORTER_OTLP_ENDPOINT"],
 				message: "Export traces to Langfuse or to OTEL_EXPORTER_OTLP_ENDPOINT, not both",
+			});
+		}
+		if (env.CORS_ORIGIN.split(",").some((origin) => origin.trim() === "*")) {
+			context.addIssue({
+				code: "custom",
+				path: ["CORS_ORIGIN"],
+				message: "CORS_ORIGIN must list origins: credentials (the session cookie) rule out *",
 			});
 		}
 		if (env.RAG_CHUNK_OVERLAP >= env.RAG_CHUNK_SIZE) {

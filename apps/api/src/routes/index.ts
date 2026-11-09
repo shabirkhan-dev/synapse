@@ -58,7 +58,7 @@ export function registerRoutes(
 	app.use(`${basePath}/chat/*`, authenticate);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
-	app.route(`${basePath}/auth`, createAuthRoutes(auth, { trustProxy: config.auth.trustProxy }));
+	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
 	app.route(`${basePath}/rag`, createRagRoutes(rag, oversight));
 	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));
 	app.route(`${basePath}/audit`, createAuditRoutes(audit));

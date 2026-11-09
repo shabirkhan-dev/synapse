@@ -70,4 +70,25 @@ describe("ai config", () => {
 			}),
 		).toThrow(/COHERE_API_KEY is required/);
 	});
+
+	test("the session cookie is Secure in production unless overridden, and CORS * is refused", () => {
+		const production = {
+			NODE_ENV: "production",
+			JWT_SECRET: "x".repeat(40),
+			RESEND_API_KEY: "re_test_not_real",
+			AI_API_KEY: "or",
+		};
+		expect(loadConfiguration(production).auth.cookie).toEqual({
+			name: "synapse_refresh",
+			path: "/api/v1/auth",
+			secure: true,
+		});
+		expect(loadConfiguration({}).auth.cookie.secure).toBe(false);
+		expect(
+			loadConfiguration({ ...production, AUTH_COOKIE_SECURE: "false" }).auth.cookie.secure,
+		).toBe(false);
+		expect(() => loadConfiguration({ CORS_ORIGIN: "http://localhost:3000,*" })).toThrow(
+			/CORS_ORIGIN/,
+		);
+	});
 });

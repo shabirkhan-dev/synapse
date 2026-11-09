@@ -7,9 +7,10 @@ import { AppError } from "@/shared/errors/app-error";
 import { errorResponses } from "@/shared/responses/error-response";
 import { apiErrorSchema, successEnvelope } from "@/shared/responses/response.types";
 import { success } from "@/shared/responses/success-response";
+import type { AuthConfig } from "@/config";
 import type { AppBindings } from "@/shared/types/app-types";
 
-import { AUTH_MAX_BODY_BYTES, AUTH_MESSAGES } from "../constants/auth.constants";
+import { AUTH_ERROR_CODES, AUTH_MAX_BODY_BYTES, AUTH_MESSAGES } from "../constants/auth.constants";
 import {
 	authTokensSchema,
 	forgotPasswordBodySchema,
@@ -25,6 +26,7 @@ import {
 } from "../schemas/auth.schemas";
 import type { AuthService } from "../services/auth.service";
 import { clientIp } from "./client-ip";
+import { clearRefreshCookie, moveRefreshTokenToCookie, readRefreshCookie } from "./session-cookie";
 
 const tags = ["Auth"];
 const security = [{ bearerAuth: [] }];
@@ -231,29 +233,56 @@ const switchOrganizationRoute = createRoute({
 	},
 });
 
-export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy: boolean }) {
+export function createAuthRoutes(
+	auth: AuthService,
+	{ trustProxy, cookie }: Pick<AuthConfig, "trustProxy" | "cookie">,
+) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(signUpRoute, async (c) => {
-		const signedUp = await auth.signUp(c.req.valid("json"), clientIp(c, trustProxy), {
+		const { session, ...input } = c.req.valid("json");
+		const signedUp = await auth.signUp(input, clientIp(c, trustProxy), {
 			requestId: c.get("requestId"),
 		});
-		return success(c, signedUp, AUTH_MESSAGES.SIGNED_UP, HTTP_STATUS.CREATED);
+		const body =
+			session === "cookie"
+				? { ...signedUp, tokens: moveRefreshTokenToCookie(c, signedUp.tokens, cookie) }
+				: signedUp;
+		return success(c, body, AUTH_MESSAGES.SIGNED_UP, HTTP_STATUS.CREATED);
 	});
 
 	app.openapi(signInRoute, async (c) => {
-		const signedIn = await auth.signIn(c.req.valid("json"), clientIp(c, trustProxy), {
+		const { session, ...input } = c.req.valid("json");
+		const signedIn = await auth.signIn(input, clientIp(c, trustProxy), {
 			requestId: c.get("requestId"),
 		});
-		return success(c, signedIn, AUTH_MESSAGES.SIGNED_IN);
+		const body =
+			session === "cookie"
+				? { ...signedIn, tokens: moveRefreshTokenToCookie(c, signedIn.tokens, cookie) }
+				: signedIn;
+		return success(c, body, AUTH_MESSAGES.SIGNED_IN);
 	});
 
+	// A body token wins; otherwise the cookie. The JSON body is required (the route validates its
+	// content type), so a cross-origin page cannot trigger a cookie refresh without a CORS preflight.
 	app.openapi(refreshRoute, async (c) => {
-		const tokens = await auth.refresh(c.req.valid("json").refreshToken);
-		return success(c, tokens, AUTH_MESSAGES.REFRESHED);
+		const fromBody = c.req.valid("json").refreshToken;
+		const fromCookie = fromBody ? undefined : readRefreshCookie(c, cookie);
+		try {
+			const tokens = await auth.refresh(fromBody ?? fromCookie ?? "");
+			const body = fromCookie ? moveRefreshTokenToCookie(c, tokens, cookie) : tokens;
+			return success(c, body, AUTH_MESSAGES.REFRESHED);
+		} catch (error) {
+			// A dead token is dropped; an outage (e.g. the database) keeps the cookie for a retry.
+			const dead =
+				error instanceof AppError && error.code === AUTH_ERROR_CODES.REFRESH_TOKEN_INVALID;
+			if (fromCookie && dead) clearRefreshCookie(c, cookie);
+			throw error;
+		}
 	});
 
 	app.openapi(signOutRoute, async (c) => {
+		clearRefreshCookie(c, cookie);
 		await auth.signOut(c.get("user"), { requestId: c.get("requestId") });
 		return success(c, null, AUTH_MESSAGES.SIGNED_OUT);
 	});

@@ -50,6 +50,9 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
   winner) and keeps the session's expiry. Presenting the *previous* token again revokes the session:
   someone copied it.
 - **Sign-out** revokes the session; its refresh token stops working at once.
+- **Browsers (the console)** take the refresh token as an httpOnly cookie instead of in the body
+  (`session: "cookie"`, ADR-0007) and keep the access token in memory; the API route layer moves
+  the token into the cookie, the service is unchanged.
 - **Access tokens are checked by signature and expiry only**, not against the session, so after
   sign-out an access token keeps working until it expires (at most 15 minutes).
 - Emails are trimmed and lowercased; sign-in returns one message for unknown emails and wrong

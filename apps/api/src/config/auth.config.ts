@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 
 const SECONDS_PER_DAY = 86_400;
+const REFRESH_COOKIE_NAME = "synapse_refresh";
 
 export type AuthConfig = {
 	/** HS256 secret for access tokens. */
@@ -12,6 +13,8 @@ export type AuthConfig = {
 	appUrl: string;
 	/** Take the client IP from `x-forwarded-for` (rate limits). */
 	trustProxy: boolean;
+	/** The console's refresh-token cookie (ADR-0007): sent only to the auth routes. */
+	cookie: { name: string; path: string; secure: boolean };
 };
 
 export function createAuthConfig(env: Env): AuthConfig {
@@ -21,5 +24,12 @@ export function createAuthConfig(env: Env): AuthConfig {
 		sessionTtlSeconds: env.AUTH_SESSION_TTL_DAYS * SECONDS_PER_DAY,
 		appUrl: env.APP_URL.replace(/\/$/, ""),
 		trustProxy: env.TRUST_PROXY,
+		cookie: {
+			name: REFRESH_COOKIE_NAME,
+			path: `/${env.API_PREFIX}/v${env.API_VERSION}/auth`,
+			secure: env.AUTH_COOKIE_SECURE
+				? env.AUTH_COOKIE_SECURE === "true"
+				: env.NODE_ENV === "production",
+		},
 	};
 }

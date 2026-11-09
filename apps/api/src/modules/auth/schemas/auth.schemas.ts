@@ -12,18 +12,31 @@ const newPassword = z
 /** Token from an emailed link (`?token=`). */
 const linkToken = z.string().min(1).max(512);
 
-export const signUpBodySchema = z.object({ email, password: newPassword }).openapi("SignUpBody");
+/**
+ * Where the refresh token goes: in the response body (default), or — for the console — an
+ * httpOnly cookie the page cannot read (ADR-0007); the body then omits it.
+ */
+const sessionTransport = z
+	.enum(["body", "cookie"])
+	.default("body")
+	.openapi({ description: "`cookie`: refresh token in an httpOnly cookie, not the body" });
+
+export const signUpBodySchema = z
+	.object({ email, password: newPassword, session: sessionTransport })
+	.openapi("SignUpBody");
 
 /** Sign-in does not re-check the policy: a wrong password gets the same answer either way. */
 export const signInBodySchema = z
 	.object({
 		email,
 		password: z.string().min(1).max(PASSWORD_POLICY.maxLength),
+		session: sessionTransport,
 	})
 	.openapi("SignInBody");
 
+/** Without `refreshToken`, the cookie set by a `session: "cookie"` sign-in is used. */
 export const refreshBodySchema = z
-	.object({ refreshToken: z.string().min(1).max(512) })
+	.object({ refreshToken: z.string().min(1).max(512).optional() })
 	.openapi("RefreshBody");
 
 export const verifyEmailBodySchema = z.object({ token: linkToken }).openapi("VerifyEmailBody");
@@ -48,8 +61,9 @@ export const authTokensSchema = z
 		tokenType: z.literal("Bearer"),
 		accessToken: z.string(),
 		accessTokenExpiresAt: z.string(),
-		refreshToken: z.string(),
-		refreshTokenExpiresAt: z.string(),
+		/** Absent when the refresh token travels in the httpOnly cookie. */
+		refreshToken: z.string().optional(),
+		refreshTokenExpiresAt: z.string().optional(),
 	})
 	.openapi("AuthTokens");
 

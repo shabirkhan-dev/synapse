@@ -11,6 +11,7 @@ reverse. Agents keep a short summary in `.agents/memory/decisions.md`.
 | [0004](adr/ADR-0004-rust-integration.md) | Rust integration via napi-rs | Accepted |
 | [0005](adr/ADR-0005-in-house-authentication.md) | In-house authentication | Accepted |
 | [0006](adr/ADR-0006-organizations-as-tenants.md) | Organizations are the tenants (personal org id = user id) | Accepted |
+| [0007](adr/ADR-0007-console-session-cookie.md) | Console sessions: refresh token in an httpOnly cookie set by the API | Accepted |
 
 ## Template
 
