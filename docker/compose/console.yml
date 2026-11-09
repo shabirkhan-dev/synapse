@@ -4,6 +4,9 @@ services:
     build:
       context: ../..
       dockerfile: apps/console/Dockerfile
+      args:
+        # The browser calls the API directly: use the URL the browser can reach.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
     image: synapse-console:local
     restart: unless-stopped
     environment:

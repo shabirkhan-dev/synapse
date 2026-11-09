@@ -36,7 +36,14 @@ longer ships an MCP config of its own.
 
 ## Regression path
 
-The console has no e2e suite yet. When one is added, document its command and config here.
+The console has no committed e2e suite yet (unit and container tests: `bun --cwd=apps/console test`).
+Without the Playwright MCP, drive the pre-installed Playwright from a script: start the API
+(`bun run dev:api`, or the built `apps/api/dist/server.js`), build and start the console
+(`bun --cwd=apps/console run build` then `node .next/standalone/apps/console/server.js`, or
+`bun run dev:console`), sign up a throwaway user with `POST /api/v1/auth/sign-up`, then script the
+flow with `require("playwright").chromium` and assert on roles and text (syn-018 checked: redirect
+when signed out, field errors, API error message, empty state, add → row, reload keeps session,
+sign-out).
 
 ## Base UI / shadcn composition traps (common crash sources)
 

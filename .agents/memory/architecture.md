@@ -6,7 +6,7 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `apps/`, capabilities in `packages/`, Rust in `crates/` (napi-rs, in-process).
 - **Today (live):** `apps/api` (Hono, RAG + streaming tool chat on Postgres/pgvector),
   `apps/worker` (pg-boss jobs: re-embedding with checkpoints, daily pruning),
-  `apps/console` (bare Next.js 16), `packages/ui` (shadcn on Base UI, HugeIcons, Tailwind v4),
+  `apps/console` (Next.js 16 on `@synapse/ui` + TanStack Query: sign-in, documents list/add), `packages/ui` (shadcn on Base UI, HugeIcons, Tailwind v4),
   `packages/typescript-config`, `packages/core` (errors, config, types, model-gateway contract),
   `packages/database` (Drizzle client, schema, migrations), `packages/adapters` (model gateway),
   `packages/ingestion` (normalize, content-hash dedup, pipeline), `packages/knowledge` (chunking,

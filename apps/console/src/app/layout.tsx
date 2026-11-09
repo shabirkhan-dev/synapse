@@ -1,5 +1,9 @@
+import "@synapse/ui/globals.css";
+
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+
+import { QueryProvider } from "@/providers/query-provider";
 
 export const metadata: Metadata = {
 	title: "Synapse Console",
@@ -9,7 +13,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang="en">
-			<body>{children}</body>
+			<body className="min-h-dvh bg-background text-foreground antialiased">
+				<QueryProvider>{children}</QueryProvider>
+			</body>
 		</html>
 	);
 }

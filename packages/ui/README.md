@@ -14,6 +14,8 @@ bunx --bun shadcn@latest add dialog
 
 Components land in `src/components/` and import `cn` from `@synapse/ui/lib/utils`.
 
+Installed: `alert`, `button`, `card`, `input`, `label`, `table`, `textarea`.
+
 ## Use it in an app
 
 ```ts

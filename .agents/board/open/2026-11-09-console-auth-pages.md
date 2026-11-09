@@ -1,6 +1,6 @@
 ---
 id: syn-037
-title: Console auth pages: sign in, sign up, verify email, reset password
+title: Console auth pages: sign up, verify email, reset password; tokens behind an httpOnly cookie
 type: feature
 from: pm
 to: web
@@ -21,7 +21,8 @@ updated: 2026-11-09
 ## What
 
 Verification and password-reset emails link to console pages (`/verify-email`, `/reset-password`)
-that do not exist, and there is no sign-in UI.
+that do not exist, and there is no sign-up page. Sign-in exists (syn-018) but keeps tokens in
+`sessionStorage`, readable by page scripts.
 
 ## Why / Context
 
@@ -29,9 +30,10 @@ Auth is complete in the API (syn-017, syn-026); users need the pages the emails 
 
 ## Proposal or Ask
 
-`features/auth` per the frontend standard (pages → containers → mutation hooks → plain services →
-`lib/api`): sign-in, sign-up, verify-email (token from the link), forgot/reset password; token
-storage and refresh in the API client; Zod-validated forms with `@synapse/ui`.
+Extend `features/auth` (syn-018 pattern): sign-up, verify-email (token from the link),
+forgot/reset password, Zod-validated forms with `@synapse/ui`. Decide (ADR) and implement moving
+the refresh token into an httpOnly cookie via a same-origin Next route handler (BFF), so page
+scripts never see it.
 
 ## Scope
 

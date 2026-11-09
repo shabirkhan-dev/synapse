@@ -1,7 +1,7 @@
 # Frontend architecture
 
-> **Status:** Live standard. `apps/console` is bare; this structure is created with the first
-> feature (TanStack Query, `lib/api`, `lib/query` are not installed yet).
+> **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
+> two features: `auth` (sign-in, session gate) and `documents` (list + add) — syn-018.
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.
@@ -53,49 +53,39 @@ features/users/
 
 ## API client
 
-Created once in `lib/api/client.ts`; the only place that calls `fetch`.
+`lib/api/client.ts` is the only code that calls `fetch`:
 
 ```ts
-import { apiConfig } from "@/config/api.config";
-import { ApiError } from "./api-error";
-
-type RequestOptions = {
-	method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-	body?: unknown;
-	headers?: HeadersInit;
-	signal?: AbortSignal;
-};
-
-export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
-	const response = await fetch(`${apiConfig.baseUrl}${path}`, {
-		method: options.method ?? "GET",
-		headers: { "Content-Type": "application/json", ...options.headers },
-		body: options.body === undefined ? undefined : JSON.stringify(options.body),
-		signal: options.signal,
-		credentials: "include",
-	});
-	const result = await response.json();
-	// error envelope: { message, error: { code, details? } } — branch on error.code
-	if (!response.ok) throw new ApiError(result, response.status);
-	return result.data as T;
-}
+api(endpoints.documents.list, { schema: documentListSchema }); // → z.infer<typeof schema>
+api(endpoints.auth.signIn, { method: "POST", body: input, auth: false, schema: signedInSchema });
 ```
 
-A starting point: auth refresh, non-JSON responses, request ids (`x-request-id`) and response
-validation must be handled deliberately before production.
+| Concern | How |
+| --- | --- |
+| Base URL | `apiConfig.baseUrl` (`NEXT_PUBLIC_API_URL`, default `http://localhost:8000/api/v1`) |
+| Auth | `authorization: Bearer <access token>` from `lib/api/session.ts` unless `auth: false` |
+| Refresh | On a 401 with a session: one shared `POST /auth/refresh` (refresh tokens are single-use, so concurrent 401s wait for the same rotation), then one retry; a failed refresh clears the session |
+| Responses | Success envelope → `data`, validated with the call's Zod `schema` (`INVALID_RESPONSE` otherwise) |
+| Errors | Error envelope → `ApiError { status, code, message, details?, requestId? }`; unreachable API → `NETWORK_ERROR` (status 0). Branch on `code`, show `message` |
+| Session | Tokens in memory + `sessionStorage` (`synapse.session`): a reload keeps the session, closing the tab ends it; `useSessionStatus()` re-renders on change (`unknown` during SSR) |
+
+The session lives where page scripts can read it — the trade-off of a browser-only client. Moving
+the refresh token into an httpOnly cookie behind a same-origin BFF is part of syn-037.
 
 ## Feature service
 
 ```ts
-// features/users/services/user.service.ts — plain functions, no React / TanStack Query
+// features/documents/services/documents.service.ts — plain functions, no React / TanStack Query
 import { api } from "@/lib/api/client";
-import type { CreateUserInput, User } from "../types/user.types";
+import { endpoints } from "@/lib/api/endpoints";
+import { documentListSchema, documentSchema } from "../schemas/document.schema";
+import type { DocumentSummary, IngestDocumentInput } from "../types/document.types";
 
-export const userService = {
-	getAll: () => api<User[]>("/api/v1/users"),
-	getById: (id: string) => api<User>(`/api/v1/users/${id}`),
-	create: (input: CreateUserInput) => api<User>("/api/v1/users", { method: "POST", body: input }),
-	delete: (id: string) => api<void>(`/api/v1/users/${id}`, { method: "DELETE" }),
+export const documentsService = {
+	list: (): Promise<DocumentSummary[]> =>
+		api(endpoints.documents.list, { schema: documentListSchema }),
+	ingest: (input: IngestDocumentInput): Promise<DocumentSummary> =>
+		api(endpoints.documents.ingest, { method: "POST", body: input, schema: documentSchema }),
 };
 ```
 
@@ -148,6 +138,13 @@ export function UsersContainer() {
 ```
 
 Don't create a container for a component that needs no data.
+
+## Tests
+
+`bun --cwd=apps/console test` (Bun + happy-dom + Testing Library, `test/setup.ts` preloaded):
+presentation components with props, containers inside a fresh `QueryClient` with `fetch` mocked at
+the boundary (`test/helpers.tsx`: `mockFetch`, `ok`, `failure`), and the API client (envelope,
+schema, network error, single shared refresh). Browser checks: `.agents/skills/browser-ui-test/`.
 
 ## Configuration
 

@@ -10,16 +10,21 @@ FROM base AS deps
 COPY package.json bun.lock ./
 COPY apps/console/package.json ./apps/console/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/ui/package.json ./packages/ui/
 # Only this app's dependency graph (and its workspace packages) is installed.
 RUN bun install --frozen-lockfile --filter console --ignore-scripts
 
 FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+# Inlined into the browser bundle at build time (Next), so it is a build argument.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json bun.lock turbo.json ./
 COPY apps/console ./apps/console
 COPY packages/typescript-config ./packages/typescript-config
+COPY packages/ui ./packages/ui
 
 WORKDIR /app/apps/console
 RUN bun run build
