@@ -9,4 +9,5 @@ export type {
 	TokenUsage,
 } from "./model-gateway";
 export type { EmailMessage, EmailSender } from "./email-sender";
+export type { RerankedDocument, Reranker, RerankRequest } from "./reranker";
 export type { JobHandler, JobQueue, QueueJob, QueueOptions } from "./job-queue";

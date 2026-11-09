@@ -1,9 +1,20 @@
 import {
 	type AiSdkModelGateway,
+	createReranker as createVendorReranker,
 	createModelGateway as createVendorModelGateway,
 } from "@synapse/adapters/model-gateway";
-import { addSpanEvent, instrumentModelGateway, type Logger } from "@synapse/observability";
-import { type ReliabilityEvent, withModelReliability } from "@synapse/reliability";
+import type { Reranker } from "@synapse/core/contracts";
+import {
+	addSpanEvent,
+	instrumentModelGateway,
+	instrumentReranker,
+	type Logger,
+} from "@synapse/observability";
+import {
+	createCallPolicy,
+	type ReliabilityEvent,
+	withModelReliability,
+} from "@synapse/reliability";
 
 import type { Configuration } from "@/config";
 
@@ -26,6 +37,34 @@ export function createModelGateway(config: Configuration, logger: Logger): AiSdk
 		logger,
 		prices: config.observability.modelPrices,
 	});
+}
+
+/**
+ * The configured reranker, or none. One attempt within `AI_RERANK_TIMEOUT_MS` behind its own
+ * circuit breaker: retrieval falls back to the fused order, so retrying would only add latency.
+ */
+export function createReranker(config: Configuration, logger: Logger): Reranker | undefined {
+	const { rerank } = config.ai;
+	if (!rerank) return undefined;
+	const vendor = createVendorReranker(rerank.spec);
+	const policy = createCallPolicy({
+		name: "rerank",
+		timeoutMs: rerank.timeoutMs,
+		retry: { ...config.reliability.retry, attempts: 1 },
+		breaker: config.reliability.breaker,
+		onEvent: reportReliabilityEvent(logger),
+	});
+	return instrumentReranker(
+		{
+			info: vendor.info,
+			rerank: (request) =>
+				policy.run(
+					(signal) => vendor.rerank({ ...request, ...(signal ? { abortSignal: signal } : {}) }),
+					request.abortSignal,
+				),
+		},
+		{ logger },
+	);
 }
 
 /** Retries, circuit changes and fallbacks become a warning log and an event on the active span. */

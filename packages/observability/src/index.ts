@@ -6,6 +6,7 @@ export {
 	instrumentModelGateway,
 	type ModelGatewayInstrumentationOptions,
 } from "./instrumentation/model-gateway";
+export { instrumentReranker } from "./instrumentation/reranker";
 export {
 	createLogger,
 	type LogFields,

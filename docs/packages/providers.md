@@ -2,8 +2,8 @@
 
 Thin model-vendor integrations: OpenAI, Anthropic, Google, Cohere and any OpenAI-compatible endpoint.
 
-> **Status:** Live (chat models from all five, embedding models from all but Anthropic, chosen per
-> use by config) · Planned (Cohere rerank for syn-035, per-organization keys). Langfuse needs no SDK:
+> **Status:** Live (chat models from all five, embedding models from all but Anthropic, Cohere
+> reranking, chosen per use by config) · Planned (per-organization keys). Langfuse needs no SDK:
 > traces go over OTLP from `observability`.
 
 ## Internal modules
@@ -33,6 +33,7 @@ Thin model-vendor integrations: OpenAI, Anthropic, Google, Cohere and any OpenAI
 | `createChatModel(spec)` | `{ model, info }`: an AI SDK chat model and `{ provider, model }` for provenance. OpenAI uses the Responses API |
 | `createEmbeddingModel(spec)` | `{ model, info }`; `dimensions` is sent as OpenAI `dimensions`, Google `outputDimensionality` or Cohere `outputDimension` (OpenAI-compatible endpoints use the model's default) |
 | `ChatModelSpec`, `EmbeddingModelSpec` | `{ provider, model, apiKey?, baseUrl?, fetch? }`; `openai-compatible` adds `name` and a required `baseUrl` |
+| `createRerankingModel(spec)`, `RerankingModelSpec`, `RERANK_PROVIDERS`, `resolveRerankingModelSpec` | Cohere rerank (`/v2/rerank`); `AI_RERANK_PROVIDER=cohere`, `AI_RERANK_MODEL` (default `rerank-v3.5`) |
 | `CHAT_PROVIDERS`, `EMBEDDING_PROVIDERS` | `openai-compatible`, `openai`, `anthropic`, `google`, `cohere` (embeddings: no `anthropic`) |
 | `ProviderCredentials`, `resolveChatModelSpec`, `resolveEmbeddingModelSpec`, `apiKeyFor` | Turn an app's settings into specs; a separate OpenAI-compatible embeddings endpoint is recorded as `<name>-embeddings` |
 | `PROVIDER_KEY_VARIABLES` | The env variable each app reads a vendor key from (named in config errors) |

@@ -9,8 +9,12 @@ export const CHAT_PROVIDERS = [
 /** Vendors with embedding models (Anthropic has none). */
 export const EMBEDDING_PROVIDERS = ["openai-compatible", "openai", "google", "cohere"] as const;
 
+/** Vendors with reranking models. */
+export const RERANK_PROVIDERS = ["cohere"] as const;
+
 export type ChatProvider = (typeof CHAT_PROVIDERS)[number];
 export type EmbeddingProvider = (typeof EMBEDDING_PROVIDERS)[number];
+export type RerankProvider = (typeof RERANK_PROVIDERS)[number];
 
 type Connection = {
 	apiKey?: string;
@@ -34,3 +38,5 @@ export type EmbeddingModelSpec = (
 	/** Vector size to request where the vendor supports it (must match the pgvector column). */
 	dimensions?: number;
 };
+
+export type RerankingModelSpec = { provider: RerankProvider; model: string } & Connection;

@@ -3,6 +3,8 @@ import type {
 	ChatProvider,
 	EmbeddingModelSpec,
 	EmbeddingProvider,
+	RerankingModelSpec,
+	RerankProvider,
 } from "./model-spec";
 
 /** Everything an app knows about its model vendors, read from its config. */
@@ -121,4 +123,12 @@ export function resolveEmbeddingModelSpec(
 				...apiKey,
 			}
 		: { provider, name, baseUrl, model, dimensions, ...apiKey };
+}
+
+export function resolveRerankingModelSpec(
+	provider: RerankProvider,
+	model: string,
+	credentials: ProviderCredentials,
+): RerankingModelSpec {
+	return { provider, model, ...withKey(apiKeyFor(provider, credentials)) };
 }

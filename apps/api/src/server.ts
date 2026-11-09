@@ -10,7 +10,7 @@ import { createApp } from "./app";
 import { DrizzleAuditRepository } from "./modules/audit";
 import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
-import { createModelGateway } from "./infrastructure/models/create-model-gateway";
+import { createModelGateway, createReranker } from "./infrastructure/models/create-model-gateway";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { GuardrailsService } from "./modules/guardrails";
@@ -78,6 +78,7 @@ const auth = new AuthService({
 	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 });
 const gateway = createModelGateway(config, logger);
+const reranker = createReranker(config, logger);
 const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
@@ -85,6 +86,16 @@ const rag = new RagService(repository, gateway, {
 	maxContextTokens: config.rag.maxContextTokens,
 	audit,
 	guardrails,
+	...(reranker
+		? {
+				rerank: {
+					reranker,
+					candidates: config.rag.rerankCandidates,
+					onError: (error: unknown) =>
+						logger.warn("rerank failed: using the fused order", { error }),
+				},
+			}
+		: {}),
 });
 const memory = new MemoryService({
 	conversations: new DrizzleConversationRepository(database.db),

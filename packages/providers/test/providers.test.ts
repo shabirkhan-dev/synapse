@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { embedMany, generateText } from "ai";
+import { embedMany, generateText, rerank } from "ai";
 
 import {
 	apiKeyFor,
 	type ChatModelSpec,
 	createChatModel,
 	createEmbeddingModel,
+	createRerankingModel,
 	type EmbeddingModelSpec,
 	resolveChatModelSpec,
 	resolveEmbeddingModelSpec,
@@ -291,5 +292,42 @@ describe("resolving specs from credentials", () => {
 			provider: "openai",
 			model: "gpt-test",
 		});
+	});
+});
+
+describe("reranking models", () => {
+	test("cohere: calls /v2/rerank with the key and returns the ranking", async () => {
+		const captured: Captured[] = [];
+		const { model, info } = createRerankingModel({
+			provider: "cohere",
+			model: "rerank-v3.5",
+			apiKey: "co-test",
+			fetch: fakeFetch(
+				{
+					id: "r_1",
+					results: [
+						{ index: 1, relevance_score: 0.92 },
+						{ index: 0, relevance_score: 0.11 },
+					],
+					meta: { billed_units: { search_units: 1 } },
+				},
+				captured,
+			),
+		});
+		const { ranking } = await rerank({
+			model,
+			query: "refunds",
+			documents: ["office cat", "refund policy"],
+			topN: 2,
+			maxRetries: 0,
+		});
+		expect(ranking.map(({ originalIndex, score }) => [originalIndex, score])).toEqual([
+			[1, 0.92],
+			[0, 0.11],
+		]);
+		expect(info).toEqual({ provider: "cohere", model: "rerank-v3.5" });
+		expect(captured[0]?.url).toBe("https://api.cohere.com/v2/rerank");
+		expect(captured[0]?.headers.get("authorization")).toBe("Bearer co-test");
+		expect(captured[0]?.body).toMatchObject({ model: "rerank-v3.5", query: "refunds", top_n: 2 });
 	});
 });

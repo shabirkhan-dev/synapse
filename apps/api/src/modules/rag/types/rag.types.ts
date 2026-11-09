@@ -38,7 +38,7 @@ export type RagMatch = {
 	/** Relevance, higher is better: cosine similarity (vector) or RRF score (hybrid). */
 	score: number;
 	/** 1-based rank in the vector and keyword lists that found this chunk. */
-	ranks?: { vector?: number; keyword?: number };
+	ranks?: { vector?: number; keyword?: number; rerank?: number };
 };
 
 /** Persistence port; the Drizzle implementation is DrizzleRagRepository, tests use an in-memory one. */

@@ -6,6 +6,7 @@ import {
 	EMBEDDING_PROVIDERS,
 	PROVIDER_KEY_VARIABLES,
 	providerCredentials,
+	RERANK_PROVIDERS,
 } from "@synapse/providers";
 
 /** Development-only default; production rejects it. */
@@ -104,6 +105,13 @@ export const envSchema = z
 		/** Chat model used when the primary is down; its vendor defaults to AI_CHAT_PROVIDER. */
 		AI_FALLBACK_CHAT_MODEL: z.string().min(1).optional(),
 		AI_FALLBACK_CHAT_PROVIDER: z.enum(CHAT_PROVIDERS).optional(),
+		/** Second-stage reranking of search results; unset = off. */
+		AI_RERANK_PROVIDER: z.enum(RERANK_PROVIDERS).optional(),
+		AI_RERANK_MODEL: z.string().min(1).default("rerank-v3.5"),
+		/** One attempt within this deadline; on failure the fused order is used. */
+		AI_RERANK_TIMEOUT_MS: z.coerce.number().int().min(200).max(60_000).default(5000),
+		/** First-stage matches sent to the reranker (at least the requested topK). */
+		RAG_RERANK_CANDIDATES: z.coerce.number().int().min(1).max(100).default(20),
 		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
 		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
@@ -172,6 +180,9 @@ export const envSchema = z
 							use: "chat" as const,
 						},
 					]
+				: []),
+			...(env.AI_RERANK_PROVIDER
+				? [{ provider: env.AI_RERANK_PROVIDER, use: "chat" as const }]
 				: []),
 		];
 		for (const { provider, use } of needed) {

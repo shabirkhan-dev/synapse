@@ -10,5 +10,7 @@ export interface AnswerProvenance {
 	embeddingModel: string;
 	/** Chunker that produced the passages, e.g. `text-v1;size=1000;overlap=150`. */
 	chunkerVersion: string;
+	/** `provider:model` of the reranker that ordered the passages; absent when none ran. */
+	reranker?: string;
 	usage: TokenUsage;
 }

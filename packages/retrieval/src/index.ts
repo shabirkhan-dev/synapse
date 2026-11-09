@@ -7,6 +7,7 @@ export {
 	createRetriever,
 	type KeywordSearchRequest,
 	type RetrievalMode,
+	type RerankOptions,
 	type RetrievalPorts,
 	type RetrievedMatch,
 	type Retriever,

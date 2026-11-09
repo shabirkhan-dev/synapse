@@ -291,6 +291,9 @@
     "packages/retrieval": {
       "name": "@synapse/retrieval",
       "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
       "devDependencies": {
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",

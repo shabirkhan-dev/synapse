@@ -4,7 +4,7 @@ import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import { type AuditStore, createAuditLog, type StoredAuditEvent } from "@synapse/audit";
-import type { EmailMessage, EmailSender } from "@synapse/core/contracts";
+import type { EmailMessage, EmailSender, Reranker } from "@synapse/core/contracts";
 import type {
 	AnswerFeedback,
 	ApprovalRequest,
@@ -780,7 +780,9 @@ export function buildTestApp({
 	blockedTerms = [],
 	reliability = testReliability,
 	fallbackChatModel,
+	reranker,
 }: {
+	reranker?: Reranker;
 	chatModel?: MockLanguageModelV4;
 	reliability?: typeof testReliability;
 	fallbackChatModel?: MockLanguageModelV4;
@@ -824,6 +826,15 @@ export function buildTestApp({
 		maxContextTokens: testConfig.rag.maxContextTokens,
 		audit,
 		guardrails,
+		...(reranker
+			? {
+					rerank: {
+						reranker,
+						candidates: testConfig.rag.rerankCandidates,
+						onError: () => {},
+					},
+				}
+			: {}),
 	});
 	const conversations = new InMemoryConversationStore();
 	const facts = new InMemoryFactStore();

@@ -41,11 +41,18 @@ export const ragMatchSchema = z
 		source: z.string().nullable(),
 		chunkIndex: z.number().int(),
 		content: z.string(),
-		/** Higher is better: cosine similarity in `vector` mode, RRF score in `hybrid` mode. */
+		/**
+		 * Higher is better: cosine similarity in `vector` mode, RRF score in `hybrid` mode, the
+		 * reranker's relevance when `ranks.rerank` is set. Never compare scores across these.
+		 */
 		score: z.number(),
-		/** 1-based rank in each list that found the chunk. */
+		/** 1-based rank in each list that found the chunk, and after reranking when it ran. */
 		ranks: z
-			.object({ vector: z.number().int().optional(), keyword: z.number().int().optional() })
+			.object({
+				vector: z.number().int().optional(),
+				keyword: z.number().int().optional(),
+				rerank: z.number().int().optional(),
+			})
 			.optional(),
 	})
 	.openapi("RagMatch");
@@ -81,6 +88,7 @@ export const answerProvenanceSchema = z
 		promptVersion: z.string().openapi({ example: "rag-answer@2" }),
 		embeddingModel: z.string().openapi({ example: "openrouter:openai/text-embedding-3-small" }),
 		chunkerVersion: z.string().openapi({ example: "text-v1;size=1000;overlap=150" }),
+		reranker: z.string().optional().openapi({ example: "cohere:rerank-v3.5" }),
 		usage: z.object({
 			inputTokens: z.number().int().optional(),
 			outputTokens: z.number().int().optional(),

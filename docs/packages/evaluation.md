@@ -41,6 +41,13 @@ hashing embeddings (`@synapse/adapters`), scores it, compares to
 `baselines/<dataset>@<version>.<embedding>.<mode>.k<k>.json`, deletes its documents, and exits 1 on
 a regression. CI runs it in the `api` job.
 
-Current baseline (`retrieval-seed@1`, `hashing:bow-v1`, hybrid, k=3): recall@3 0.889, MRR 0.824.
+Current baselines (`retrieval-seed@1`, `hashing:bow-v1`, hybrid, k=3): recall@3 0.944, MRR 0.944;
+with the offline term-overlap reranker the same (one case reorders below the top hit).
+
+**Reranking:** `EVAL_RERANKER=term-overlap` (offline; CI runs it as a second step) or `cohere`
+(needs `COHERE_API_KEY`, `AI_RERANK_MODEL`) searches the same ingested cases with and without the
+reranker, prints both, and compares the reranked run to
+`baselines/<dataset>@<version>.<embedding>.<mode>.<reranker>.k<k>.json`. Any reranker failure fails
+the run (the retriever's silent fallback would otherwise be scored as reranked).
 Hashing embeddings measure the pipeline (chunking, keyword, fusion, filters), not embedding-model
 quality.

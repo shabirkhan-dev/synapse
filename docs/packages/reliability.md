@@ -51,6 +51,8 @@ instrumentModelGateway(                        // one span per logical call
 - **api:** `infrastructure/models/create-model-gateway.ts`; email retries 429/5xx/network
   failures behind an `email` breaker (`infrastructure/email`). The error handler maps
   `RELIABILITY_CIRCUIT_OPEN` → `503` and `RELIABILITY_TIMEOUT` → `504`.
+- **api, reranker:** one attempt within `AI_RERANK_TIMEOUT_MS` behind a `rerank` breaker; retrieval
+  falls back to the fused order, so a retry would only add latency.
 - **worker:** embeddings for re-embedding; a batch that still fails fails the job attempt, pg-boss
   retries the job and the checkpoint resumes it.
 - Gateway calls in `@synapse/adapters` make one attempt (`maxRetries: 0`), so retries are not

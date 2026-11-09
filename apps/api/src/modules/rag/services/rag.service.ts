@@ -1,5 +1,5 @@
 import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
-import type { ModelGateway } from "@synapse/core/contracts";
+import type { ModelGateway, Reranker } from "@synapse/core/contracts";
 import type { AnswerProvenance } from "@synapse/core/types";
 import { isSynapseError } from "@synapse/core/errors";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
@@ -41,6 +41,8 @@ export type RagServiceOptions = {
 	audit: AuditLog;
 	/** Input policy, passage sanitizing (prompt injection) and answer checks. */
 	guardrails: GuardrailsService;
+	/** Second-stage ranking of the best `candidates`; a failure falls back to the fused order. */
+	rerank?: { reranker: Reranker; candidates: number; onError: (error: unknown) => void };
 };
 
 const NO_REQUEST: RequestContext = { requestId: null };
@@ -102,7 +104,13 @@ export class RagService {
 				vectorSearch: (request) => repository.searchChunks(request),
 				keywordSearch: (request) => repository.keywordSearch(request),
 			},
-			{ mode: options.searchMode, embeddingModel: knowledge.embeddingModel },
+			{
+				mode: options.searchMode,
+				embeddingModel: knowledge.embeddingModel,
+				...(options.rerank
+					? { rerank: { ...options.rerank, text: (match: RagMatch) => match.content } }
+					: {}),
+			},
 		);
 		const generatorOptions = {
 			chat: models.chat,
@@ -238,6 +246,11 @@ export class RagService {
 			};
 		}
 		const text = await this.options.guardrails.guardAnswer(ownerId, answer.text, context);
+		// Only when the reranker actually ordered these passages (not after a fallback).
+		const reranker = matches.some((match) => match.ranks?.rerank !== undefined)
+			? this.retriever.reranker
+			: null;
+		const provenance = reranker ? { ...answer.provenance, reranker } : answer.provenance;
 		// Recorded before returning: an answer is only given out once it is traceable.
 		await this.options.audit.record({
 			ownerId,
@@ -252,13 +265,13 @@ export class RagService {
 				citedChunkIds: answer.citations.map((citation) => citation.chunkId),
 				contextChunkIds: answer.context.map((citation) => citation.chunkId),
 			},
-			provenance: answer.provenance,
+			provenance,
 		});
 		return {
 			answer: text,
 			matches,
 			citations: answer.citations,
-			provenance: answer.provenance,
+			provenance,
 		};
 	}
 

@@ -50,8 +50,8 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | `security` — organizations, roles, permissions (ADR-0006) | ✅ | syn-032 |
 | `reliability` — retry, breakers, timeouts, fallbacks | ✅ | syn-033 |
 | `providers` — OpenAI, Anthropic, Google, Cohere | ✅ | syn-034 |
-| Reranking (Cohere via adapter) | ⏭️ | syn-035 |
-| `native` + `crates/` (napi-rs) | ⬜ | syn-036 |
+| Reranking (Cohere via adapter) | ✅ | syn-035 |
+| `native` + `crates/` (napi-rs) | ⏭️ | syn-036 |
 
 ## Phase 3 — Product and operations
 

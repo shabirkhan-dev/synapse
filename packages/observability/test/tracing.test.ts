@@ -7,6 +7,7 @@ import {
 	estimateCostUsd,
 	InMemorySpanExporter,
 	instrumentModelGateway,
+	instrumentReranker,
 	type LogLevel,
 	startTracing,
 	type Tracing,
@@ -93,6 +94,35 @@ describe("instrumentModelGateway", () => {
 		const logged = lines.map((line) => JSON.parse(line));
 		expect(logged[0]).toMatchObject({ msg: "llm call", model: "test:chat-1", costUsd: 0.002 });
 		expect(logged[1]).toMatchObject({ operation: "embeddings", inputs: 2 });
+	});
+});
+
+describe("instrumentReranker", () => {
+	test("one span and log line per rerank, with the document count", async () => {
+		const lines: string[] = [];
+		const logger = createLogger({
+			service: "test",
+			format: "json",
+			sink: (line: string, _level: LogLevel) => lines.push(line),
+		});
+		const reranker = instrumentReranker(
+			{
+				info: { provider: "test", model: "rerank-1" },
+				rerank: async () => [{ index: 1, score: 0.9 }],
+			},
+			{ logger },
+		);
+		expect(await reranker.rerank({ query: "q", documents: ["a", "b"], topN: 1 })).toEqual([
+			{ index: 1, score: 0.9 },
+		]);
+		const [span] = exporter.getFinishedSpans();
+		expect(span?.name).toBe("rerank rerank-1");
+		expect(span?.attributes).toMatchObject({
+			"gen_ai.operation.name": "rerank",
+			"gen_ai.provider.name": "test",
+			"synapse.rerank.documents": 2,
+		});
+		expect(JSON.parse(lines[0] ?? "{}")).toMatchObject({ operation: "rerank", documents: 2 });
 	});
 });
 

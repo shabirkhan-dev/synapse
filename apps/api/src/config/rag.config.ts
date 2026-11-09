@@ -5,6 +5,8 @@ export type RagConfig = {
 	topK: number;
 	searchMode: Env["RAG_SEARCH_MODE"];
 	maxContextTokens: number;
+	/** First-stage matches sent to the reranker, when one is configured. */
+	rerankCandidates: number;
 	/** Max tool-calling steps per chat turn. */
 	chatMaxSteps: number;
 	/** How much stored conversation history goes back to the model. */
@@ -17,6 +19,7 @@ export function createRagConfig(env: Env): RagConfig {
 		topK: env.RAG_TOP_K,
 		searchMode: env.RAG_SEARCH_MODE,
 		maxContextTokens: env.RAG_MAX_CONTEXT_TOKENS,
+		rerankCandidates: env.RAG_RERANK_CANDIDATES,
 		chatMaxSteps: env.CHAT_MAX_STEPS,
 		chatHistory: {
 			maxTokens: env.CHAT_HISTORY_MAX_TOKENS,

@@ -29,6 +29,7 @@ Implement `core` contracts against infrastructure: vector store, cache, queue, s
 
 | Export | Import | What it does |
 | --- | --- | --- |
+| `createReranker(spec)`, `createAiSdkReranker({ model, info })`, `createTermOverlapReranker()` | `@synapse/adapters/model-gateway` | `Reranker` on a vendor model (one attempt, `maxRetries: 0`), or the offline word-overlap reranker for evaluations |
 | `createModelGateway({ chat, embedding })`, `ModelGatewayOptions` | `@synapse/adapters/model-gateway` | `ModelGateway` from two `@synapse/providers` specs: chat and embeddings can each come from a different vendor |
 | `createHashingEmbeddingGateway({ dimensions })` | `@synapse/adapters/model-gateway` | Offline deterministic bag-of-words embeddings (`hashing:bow-v1`) for evals and tests |
 | `createAiSdkModelGateway({ chatModel, embeddingModel, chatInfo, embeddingInfo })`, `AiSdkModelGateway` | `@synapse/adapters/model-gateway` | Wrap any AI SDK models (tests pass mocks); also exposes `chatModel`. One attempt per call (`maxRetries: 0`): retries come from `@synapse/reliability` |

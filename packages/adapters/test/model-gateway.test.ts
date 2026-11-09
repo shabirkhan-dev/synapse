@@ -2,7 +2,13 @@ import { describe, expect, test } from "bun:test";
 
 import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 
-import { createAiSdkModelGateway, createHashingEmbeddingGateway, createModelGateway } from "../src";
+import {
+	createAiSdkModelGateway,
+	createHashingEmbeddingGateway,
+	createModelGateway,
+	createReranker,
+	createTermOverlapReranker,
+} from "../src";
 
 const chatInfo = { provider: "test", model: "chat-1" };
 const embeddingInfo = { provider: "test", model: "embed-1" };
@@ -123,5 +129,44 @@ describe("hashing embedding gateway", () => {
 		expect(dot(a, b)).toBeGreaterThan(dot(a, c));
 		expect(gateway.info).toEqual({ provider: "hashing", model: "bow-v1" });
 		expect(await gateway.embed("refund policy")).toEqual(a ?? []);
+	});
+});
+
+describe("rerankers", () => {
+	test("the offline term-overlap reranker scores by shared words and keeps ties in order", async () => {
+		const reranker = createTermOverlapReranker();
+		const ranked = await reranker.rerank({
+			query: "refund policy days",
+			documents: ["office cat", "refund window in days", "refund policy days", "policy"],
+			topN: 3,
+		});
+		expect(ranked).toEqual([
+			{ index: 2, score: 1 },
+			{ index: 1, score: 2 / 3 },
+			{ index: 3, score: 1 / 3 },
+		]);
+		expect(reranker.info).toEqual({ provider: "offline", model: "term-overlap-v1" });
+	});
+
+	test("a vendor reranker maps the ranking to document indexes", async () => {
+		const fakeFetch = Object.assign(
+			async () =>
+				Response.json({
+					id: "r_1",
+					results: [{ index: 1, relevance_score: 0.8 }],
+					meta: { billed_units: { search_units: 1 } },
+				}),
+			{ preconnect: fetch.preconnect },
+		);
+		const reranker = createReranker({
+			provider: "cohere",
+			model: "rerank-v3.5",
+			apiKey: "co",
+			fetch: fakeFetch,
+		});
+		expect(await reranker.rerank({ query: "q", documents: ["a", "b"], topN: 1 })).toEqual([
+			{ index: 1, score: 0.8 },
+		]);
+		expect(reranker.info).toEqual({ provider: "cohere", model: "rerank-v3.5" });
 	});
 });

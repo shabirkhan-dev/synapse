@@ -216,3 +216,12 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
         run: bun run eval:retrieval
 
+      # Same cases with the offline term-overlap reranker: gates the reranking step (candidates,
+      # reorder, fallback) against its own baseline. Measuring Cohere needs EVAL_RERANKER=cohere + a key.
+      - name: Retrieval evaluation with reranking (regression vs baseline)
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/api_test
+          EVAL_RERANKER: term-overlap
+        run: bun run eval:retrieval
+

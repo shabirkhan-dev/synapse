@@ -8,15 +8,17 @@ import {
 	defaultEmbeddingSettingsMiddleware,
 	type EmbeddingModel,
 	type LanguageModel,
+	type RerankingModel,
 	wrapEmbeddingModel,
 } from "ai";
 
-import type { ChatModelSpec, EmbeddingModelSpec } from "./model-spec";
+import type { ChatModelSpec, EmbeddingModelSpec, RerankingModelSpec } from "./model-spec";
 
 type VendorEmbeddingModel = Parameters<typeof wrapEmbeddingModel>[0]["model"];
 
 export type ChatModelHandle = { model: LanguageModel; info: ModelInfo };
 export type EmbeddingModelHandle = { model: EmbeddingModel; info: ModelInfo };
+export type RerankingModelHandle = { model: RerankingModel; info: ModelInfo };
 
 /** Settings shared by every vendor factory. Keys and URLs are always passed, never read from env. */
 function connection(spec: { apiKey?: string; baseUrl?: string; fetch?: typeof fetch }) {
@@ -101,4 +103,12 @@ export function createEmbeddingModel(spec: EmbeddingModelSpec): EmbeddingModelHa
 				),
 			};
 	}
+}
+
+/** An AI SDK reranking model for `spec` (Cohere rerank). */
+export function createRerankingModel(spec: RerankingModelSpec): RerankingModelHandle {
+	return {
+		info: { provider: spec.provider, model: spec.model },
+		model: createCohere(connection(spec)).reranking(spec.model),
+	};
 }

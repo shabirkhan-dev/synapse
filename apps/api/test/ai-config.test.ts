@@ -48,4 +48,26 @@ describe("ai config", () => {
 			model: "openai/gpt-test",
 		});
 	});
+
+	test("reranking is off unless a provider is set; then it uses that vendor's key", () => {
+		expect(loadConfiguration({}).ai.rerank).toBeUndefined();
+		const { ai, rag } = loadConfiguration({ AI_RERANK_PROVIDER: "cohere", COHERE_API_KEY: "co" });
+		expect(ai.rerank).toEqual({
+			spec: { provider: "cohere", model: "rerank-v3.5", apiKey: "co" },
+			timeoutMs: 5000,
+		});
+		expect(rag.rerankCandidates).toBe(20);
+	});
+
+	test("in production a reranker needs its key", () => {
+		expect(() =>
+			loadConfiguration({
+				NODE_ENV: "production",
+				JWT_SECRET: "x".repeat(40),
+				RESEND_API_KEY: "re_test_not_real",
+				AI_API_KEY: "or",
+				AI_RERANK_PROVIDER: "cohere",
+			}),
+		).toThrow(/COHERE_API_KEY is required/);
+	});
 });

@@ -77,7 +77,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   chat uses the Responses API (point `AI_BASE_URL`-style proxies at `openai-compatible` instead).
   OpenAI-compatible embeddings are not sent a dimension: the model's default must be 1536.
   Provider tests use recorded-shape fake responses; no live vendor call has been made from CI.
-- **Reranking, query rewriting** are planned, not installed.
+- **Reranking** (syn-035) is optional and off by default; only Cohere is wired. The reranked `score`
+  replaces the fused one (not comparable). CI gates the step with an offline word-overlap reranker,
+  which says nothing about Cohere's quality: run `EVAL_RERANKER=cohere` with a key to measure it.
+  Reranking also applies to the chat `searchDocuments` tool. **Query rewriting** is planned.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
 - **Console has no UI and no tests**; `@synapse/ui` is not wired into it yet.
