@@ -10,6 +10,8 @@ export const RESPONSE_MESSAGES = {
 		VALIDATION_FAILED: "Request validation failed",
 		REQUEST_FAILED: "Request failed",
 		INTERNAL: "Internal server error",
+		DEPENDENCY_UNAVAILABLE: "A provider is unavailable right now; try again shortly",
+		DEPENDENCY_TIMEOUT: "A provider did not answer in time; try again",
 		ROUTE_NOT_FOUND: (method: string, path: string) => `Route ${method} ${path} not found`,
 	},
 } as const;

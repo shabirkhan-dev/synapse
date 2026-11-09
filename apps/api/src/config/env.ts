@@ -78,6 +78,16 @@ export const envSchema = z
 		AI_EMBEDDING_BASE_URL: z.url().optional(),
 		AI_EMBEDDING_API_KEY: z.string().min(1).optional(),
 		AI_EMBEDDING_MODEL: z.string().min(1).default("openai/text-embedding-3-small"),
+		/** Per-attempt deadlines for model calls (streaming chat is not covered). */
+		AI_CHAT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(60_000),
+		AI_EMBEDDING_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(30_000),
+		/** Total attempts per model or email call, for retryable errors only (timeouts, 429, 5xx). */
+		AI_RETRY_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
+		/** Consecutive failures that open a circuit, and how long it stays open. */
+		AI_CIRCUIT_FAILURE_THRESHOLD: z.coerce.number().int().min(1).max(100).default(5),
+		AI_CIRCUIT_RESET_MS: z.coerce.number().int().min(1000).max(3_600_000).default(30_000),
+		/** Chat model on the same endpoint, used when the primary is down. */
+		AI_FALLBACK_CHAT_MODEL: z.string().min(1).optional(),
 		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
 		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),

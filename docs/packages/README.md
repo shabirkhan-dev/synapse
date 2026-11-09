@@ -37,7 +37,7 @@ it are internal modules. Rules: `.agents/rules/architecture.md`. How to add one:
 | [`evaluation`](evaluation.md) | Measure quality: datasets and scorers for retrieval, generation, agents and safety, plus regression runs. | Live (retrieval evals, CI regression) |
 | [`observability`](observability.md) | See what the system does: tracing, instrumentation, cost tracking and exporters. | Live (logs, tracing, LLM usage/cost) |
 | [`security`](security.md) | Who you are and what you may do: authentication, authorization, tenancy, permissions, PII and secrets. | Live (authentication) · Planned (authorization, tenancy, permissions, PII) |
-| [`reliability`](reliability.md) | Make external calls and jobs dependable: retry, circuit breakers, idempotency, timeouts, fallbacks, health. | Planned |
+| [`reliability`](reliability.md) | Make external calls dependable: timeouts, retry with backoff, circuit breakers, model fallback. | Live |
 | [`adapters`](adapters.md) | Implement `core` contracts against infrastructure: vector store, cache, queue, storage and the model gateway. | Live (model gateway) |
 | [`providers`](providers.md) | Thin vendor integrations: OpenAI, Anthropic, Google, Cohere and Langfuse. | Planned |
 | [`native`](native.md) | TypeScript wrapper over the Rust crates (napi-rs). | Planned |

@@ -46,7 +46,23 @@ describe("resend email sender", () => {
 		});
 		const error = await sender.send(message).catch((caught: unknown) => caught);
 		expect(error).toBeInstanceOf(SynapseError);
-		expect(error).toMatchObject({ code: "EMAIL_SEND_FAILED", details: ["domain not verified"] });
+		expect(error).toMatchObject({
+			code: "EMAIL_SEND_FAILED",
+			details: ["domain not verified"],
+			retryable: false,
+		});
+	});
+
+	test("marks rate limits and provider errors as retryable", async () => {
+		for (const status of [429, 503]) {
+			const sender = createResendEmailSender({
+				apiKey: "re_test",
+				from: "x@example.com",
+				fetch: fakeFetch(new Response("busy", { status }), []),
+			});
+			// oxlint-disable-next-line no-await-in-loop
+			await expect(sender.send(message)).rejects.toMatchObject({ retryable: true });
+		}
 	});
 
 	test("turns network failures into EMAIL_SEND_FAILED", async () => {
@@ -57,6 +73,9 @@ describe("resend email sender", () => {
 			{ preconnect: fetch.preconnect },
 		);
 		const sender = createResendEmailSender({ apiKey: "k", from: "x@example.com", fetch: failing });
-		await expect(sender.send(message)).rejects.toMatchObject({ code: "EMAIL_SEND_FAILED" });
+		await expect(sender.send(message)).rejects.toMatchObject({
+			code: "EMAIL_SEND_FAILED",
+			retryable: true,
+		});
 	});
 });

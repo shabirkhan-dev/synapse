@@ -31,7 +31,7 @@ Implement `core` contracts against infrastructure: vector store, cache, queue, s
 | --- | --- | --- |
 | `createOpenAICompatibleModelGateway(options)`, `OpenAICompatibleGatewayOptions` | `@synapse/adapters/model-gateway` | `ModelGateway` for any OpenAI-compatible endpoint (OpenRouter default), optional separate embeddings endpoint |
 | `createHashingEmbeddingGateway({ dimensions })` | `@synapse/adapters/model-gateway` | Offline deterministic bag-of-words embeddings (`hashing:bow-v1`) for evals and tests |
-| `createAiSdkModelGateway({ chatModel, embeddingModel, chatInfo, embeddingInfo })`, `AiSdkModelGateway` | `@synapse/adapters/model-gateway` | Wrap any AI SDK models (tests pass mocks); also exposes `chatModel` |
+| `createAiSdkModelGateway({ chatModel, embeddingModel, chatInfo, embeddingInfo })`, `AiSdkModelGateway` | `@synapse/adapters/model-gateway` | Wrap any AI SDK models (tests pass mocks); also exposes `chatModel`. One attempt per call (`maxRetries: 0`): retries come from `@synapse/reliability` |
 | `createPostgresCheckpointer({ connectionString, schema? })` → `{ saver, setup, close }` | `@synapse/adapters/checkpointer` | LangGraph checkpoints in Postgres (`langgraph` schema; `setup()` creates/migrates the tables) |
 | `createPgBossJobQueue({ connectionString, schema?, ssl?, onError })` | `@synapse/adapters/queue` | `JobQueue` on pg-boss 12 (`exclusive`/`standard` policies, retries with backoff, expiry, UTC cron schedules, graceful stop) |
 | `createResendEmailSender({ apiKey, from, timeoutMs? })`, `EMAIL_ERROR_CODES` | `@synapse/adapters/email` | `EmailSender` over Resend's HTTP API (no SDK), 10 s timeout; failures throw `EMAIL_SEND_FAILED` with the provider's reason |

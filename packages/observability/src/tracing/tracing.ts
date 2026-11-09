@@ -74,6 +74,11 @@ export function startTracing({
 	};
 }
 
+/** Add an event (e.g. a retry or a circuit opening) to the active span, if there is one. */
+export function addSpanEvent(name: string, attributes: Attributes = {}): void {
+	trace.getActiveSpan()?.addEvent(name, attributes);
+}
+
 /**
  * Run `fn` inside an active span. Errors are recorded on the span (status ERROR) and rethrown;
  * the span always ends.

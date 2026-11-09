@@ -23,6 +23,7 @@ COPY packages/memory/package.json ./packages/memory/
 COPY packages/observability/package.json ./packages/observability/
 COPY packages/orchestration/package.json ./packages/orchestration/
 COPY packages/retrieval/package.json ./packages/retrieval/
+COPY packages/reliability/package.json ./packages/reliability/
 COPY packages/security/package.json ./packages/security/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
@@ -46,6 +47,7 @@ COPY packages/memory ./packages/memory
 COPY packages/observability ./packages/observability
 COPY packages/orchestration ./packages/orchestration
 COPY packages/retrieval ./packages/retrieval
+COPY packages/reliability ./packages/reliability
 COPY packages/security ./packages/security
 COPY packages/typescript-config ./packages/typescript-config
 COPY apps/api ./apps/api

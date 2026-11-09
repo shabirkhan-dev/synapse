@@ -24,6 +24,7 @@ import { redactPiiDeep } from "@synapse/security";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import { createLogger, instrumentModelGateway } from "@synapse/observability";
+import { withModelReliability } from "@synapse/reliability";
 
 import { createApp } from "@/app";
 import { loadConfiguration } from "@/config";
@@ -68,6 +69,12 @@ export const testConfig = loadConfiguration({
 	RAG_CHUNK_SIZE: "200",
 	RAG_CHUNK_OVERLAP: "20",
 });
+
+/** Production reliability settings without the backoff waits. */
+export const testReliability = {
+	...testConfig.reliability,
+	retry: { ...testConfig.reliability.retry, baseDelayMs: 0, maxDelayMs: 0 },
+};
 
 export const usage = {
 	inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
@@ -771,8 +778,12 @@ export function buildTestApp({
 	pingDatabase = async () => {},
 	searchMode = testConfig.rag.searchMode,
 	blockedTerms = [],
+	reliability = testReliability,
+	fallbackChatModel,
 }: {
 	chatModel?: MockLanguageModelV4;
+	reliability?: typeof testReliability;
+	fallbackChatModel?: MockLanguageModelV4;
 	embeddingModel?: MockEmbeddingModelV4;
 	repository?: RagRepository;
 	authRepository?: InMemoryAuthRepository;
@@ -782,14 +793,25 @@ export function buildTestApp({
 	blockedTerms?: string[];
 } = {}) {
 	const logger = createLogger({ service: "test", level: "ERROR" });
-	// Instrumented like server.ts, so tests exercise the same tracing path.
+	// Wrapped like server.ts (reliability inside instrumentation), so tests exercise the same path.
+	const fallbackChat = fallbackChatModel
+		? createAiSdkModelGateway({
+				chatModel: fallbackChatModel,
+				embeddingModel,
+				chatInfo: { provider: "mock", model: "mock-fallback" },
+				embeddingInfo: { provider: "mock", model: "mock-embedding" },
+			}).chat
+		: undefined;
 	const gateway = instrumentModelGateway(
-		createAiSdkModelGateway({
-			chatModel,
-			embeddingModel,
-			chatInfo: { provider: "mock", model: "mock-chat" },
-			embeddingInfo: { provider: "mock", model: "mock-embedding" },
-		}),
+		withModelReliability(
+			createAiSdkModelGateway({
+				chatModel,
+				embeddingModel,
+				chatInfo: { provider: "mock", model: "mock-chat" },
+				embeddingInfo: { provider: "mock", model: "mock-embedding" },
+			}),
+			{ ...reliability, ...(fallbackChat ? { fallbackChat } : {}) },
+		),
 		{ logger },
 	);
 	const auditEvents = new InMemoryAuditStore();

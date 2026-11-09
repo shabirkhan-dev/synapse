@@ -69,6 +69,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Guardrails are pattern-based:** paraphrased injections can slip through (prompts v2 are the second
   line). Streaming chat text is not checked for secrets; RAG answers are. Returned `matches` show
   sanitized passage text. Blocked-term matching is whole-word, English-centric.
+- **Reliability** (syn-033): circuit breakers are per process (replicas do not share state); streaming
+  chat (`/chat`) still relies on the AI SDK's own 2 retries with no timeout, breaker or fallback;
+  `Retry-After` is ignored. A request that exhausts retries on a 5xx returns `500` (only an open
+  circuit is `503` and a timeout `504`).
 - **Reranking, query rewriting** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).

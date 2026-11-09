@@ -7,6 +7,7 @@ import { type Env, parseEnv } from "./env";
 import { createGuardrailsConfig, type GuardrailsConfig } from "./guardrails.config";
 import { createObservabilityConfig, type ObservabilityConfig } from "./observability.config";
 import { createRagConfig, type RagConfig } from "./rag.config";
+import { createReliabilityConfig, type ReliabilityConfig } from "./reliability.config";
 
 export type {
 	AiConfig,
@@ -18,6 +19,7 @@ export type {
 	GuardrailsConfig,
 	ObservabilityConfig,
 	RagConfig,
+	ReliabilityConfig,
 };
 
 export type Configuration = {
@@ -29,6 +31,7 @@ export type Configuration = {
 	rag: RagConfig;
 	guardrails: GuardrailsConfig;
 	observability: ObservabilityConfig;
+	reliability: ReliabilityConfig;
 };
 
 /** Build the typed domain configs from a parsed environment. */
@@ -42,6 +45,7 @@ export function createConfiguration(env: Env): Configuration {
 		rag: createRagConfig(env),
 		guardrails: createGuardrailsConfig(env),
 		observability: createObservabilityConfig(env),
+		reliability: createReliabilityConfig(env),
 	};
 }
 

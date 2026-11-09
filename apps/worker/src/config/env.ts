@@ -18,6 +18,12 @@ export const envSchema = z
 		AI_EMBEDDING_BASE_URL: z.url().optional(),
 		AI_EMBEDDING_API_KEY: z.string().min(1).optional(),
 		AI_EMBEDDING_MODEL: z.string().min(1).default("openai/text-embedding-3-small"),
+		/** Same meaning as in the api: per-attempt deadline, attempts, circuit breaker. */
+		AI_CHAT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(60_000),
+		AI_EMBEDDING_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(30_000),
+		AI_RETRY_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
+		AI_CIRCUIT_FAILURE_THRESHOLD: z.coerce.number().int().min(1).max(100).default(5),
+		AI_CIRCUIT_RESET_MS: z.coerce.number().int().min(1000).max(3_600_000).default(30_000),
 		/** Chunks embedded per call (and per checkpoint) when re-embedding. */
 		WORKER_REEMBED_BATCH_SIZE: z.coerce.number().int().min(1).max(2048).default(100),
 	})

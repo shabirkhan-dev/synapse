@@ -16,6 +16,7 @@ export {
 	type LogSink,
 } from "./logging/logger";
 export {
+	addSpanEvent,
 	startTracing,
 	TRACER_NAME,
 	type Tracing,

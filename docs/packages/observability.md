@@ -32,6 +32,7 @@ See what the system does: tracing, instrumentation, cost tracking and exporters.
 | `createLogger({ service, level, format, fields })`, `Logger` | JSON or pretty lines; `child(fields)`; adds active `traceId`/`spanId`; serializes errors |
 | `startTracing({ serviceName, otlpEndpoint?, otlpHeaders?, exporter? })`, `Tracing` | Global tracer provider + AsyncLocalStorage context; OTLP/HTTP batch export (with headers, e.g. auth) when an endpoint is set; `shutdown()` flushes |
 | `withSpan(name, attributes, fn)` | Active span around `fn`; errors recorded (status ERROR) and rethrown |
+| `addSpanEvent(name, attributes?)` | Event on the active span, if any (retries, circuit changes, fallbacks) |
 | `instrumentModelGateway(gateway, { logger, prices? })` | Spans `chat <model>` / `embeddings <model>` with `gen_ai.*` attributes (model, tokens, `gen_ai.usage.cost`), one `llm call` log line with tokens, duration and cost |
 | `estimateCostUsd(usage, price)`, `ModelPrices` | USD from per-million-token prices keyed by `provider:model` |
 | `InMemorySpanExporter`, `SpanStatusCode` | Re-exported for tests and status codes |

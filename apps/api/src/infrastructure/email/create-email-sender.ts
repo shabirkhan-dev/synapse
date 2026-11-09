@@ -1,16 +1,30 @@
 import { createResendEmailSender } from "@synapse/adapters/email";
 import type { EmailSender } from "@synapse/core/contracts";
 import type { Logger } from "@synapse/observability";
+import { createCallPolicy } from "@synapse/reliability";
 
-import type { EmailConfig } from "@/config";
+import type { EmailConfig, ReliabilityConfig } from "@/config";
+import { reportReliabilityEvent } from "@/infrastructure/models/create-model-gateway";
 
 /**
  * Resend when a key is configured. Without one (development only: production config requires the
  * key) the message is logged so links can be opened locally — never do this with real users.
+ * Resend calls retry 429/5xx and network failures, behind their own circuit breaker.
  */
-export function createEmailSender(config: EmailConfig, logger: Logger): EmailSender {
+export function createEmailSender(
+	config: EmailConfig,
+	reliability: ReliabilityConfig,
+	logger: Logger,
+): EmailSender {
 	if (config.resendApiKey) {
-		return createResendEmailSender({ apiKey: config.resendApiKey, from: config.from });
+		const resend = createResendEmailSender({ apiKey: config.resendApiKey, from: config.from });
+		const policy = createCallPolicy({
+			name: "email",
+			retry: reliability.retry,
+			breaker: reliability.breaker,
+			onEvent: reportReliabilityEvent(logger),
+		});
+		return { send: (message) => policy.run(() => resend.send(message)) };
 	}
 	return {
 		async send({ to, subject, text }) {

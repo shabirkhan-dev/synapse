@@ -1,16 +1,16 @@
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
 import { createAuditLog } from "@synapse/audit";
-import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
 import { createDatabase } from "@synapse/database";
 import { embeddingVersion } from "@synapse/knowledge";
 import { createLongTermMemory } from "@synapse/memory";
-import { createLogger, instrumentModelGateway, startTracing } from "@synapse/observability";
+import { createLogger, startTracing } from "@synapse/observability";
 import { redactPiiDeep } from "@synapse/security";
 
 import { createApp } from "./app";
 import { DrizzleAuditRepository } from "./modules/audit";
 import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
+import { createModelGateway } from "./infrastructure/models/create-model-gateway";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { GuardrailsService } from "./modules/guardrails";
@@ -64,16 +64,13 @@ const organizations = new OrganizationsService({
 const auth = new AuthService({
 	repository: authRepository,
 	rateLimiter: new DrizzleRateLimiter(database.db),
-	email: createEmailSender(config.email, logger),
+	email: createEmailSender(config.email, config.reliability, logger),
 	logger,
 	config: config.auth,
 	audit,
 	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 });
-const gateway = instrumentModelGateway(createOpenAICompatibleModelGateway(config.ai), {
-	logger,
-	prices: config.observability.modelPrices,
-});
+const gateway = createModelGateway(config, logger);
 const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,

@@ -8,5 +8,7 @@
 - Unknown errors become `500 INTERNAL_SERVER_ERROR`; log the stack server-side, never return it.
 - No silent catches. Either handle the error meaningfully, or add context and rethrow.
 - External calls (LLMs, embeddings, rerankers, DB) get **timeouts**, bounded **retries** with
-  backoff for retryable errors, and **circuit breakers / fallbacks** from `packages/reliability` (planned; until then, set them per call).
+  backoff for retryable errors, and **circuit breakers / fallbacks** from `@synapse/reliability`
+  (`withModelReliability`, `createCallPolicy`). Mark your own errors `retryable` when trying again
+  may help.
 - Long jobs record failure state so they can resume or be retried idempotently.

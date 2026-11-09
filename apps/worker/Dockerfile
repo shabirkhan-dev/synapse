@@ -14,6 +14,7 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/database/package.json ./packages/database/
 COPY packages/knowledge/package.json ./packages/knowledge/
 COPY packages/observability/package.json ./packages/observability/
+COPY packages/reliability/package.json ./packages/reliability/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
 RUN bun install --frozen-lockfile --filter worker --ignore-scripts
@@ -27,6 +28,7 @@ COPY packages/core ./packages/core
 COPY packages/database ./packages/database
 COPY packages/knowledge ./packages/knowledge
 COPY packages/observability ./packages/observability
+COPY packages/reliability ./packages/reliability
 COPY packages/typescript-config ./packages/typescript-config
 COPY apps/worker ./apps/worker
 WORKDIR /app/apps/worker

@@ -1,4 +1,6 @@
+import { isSynapseError } from "@synapse/core/errors";
 import type { Logger } from "@synapse/observability";
+import { RELIABILITY_ERROR_CODES } from "@synapse/reliability";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -24,6 +26,15 @@ export function createErrorHandler(logger: Logger) {
 				error.message || RESPONSE_MESSAGES.ERRORS.REQUEST_FAILED,
 			);
 		}
+		const dependency = dependencyFailure(error);
+		if (dependency) {
+			logger.warn("dependency unavailable", {
+				path: c.req.path,
+				requestId: c.get("requestId"),
+				error,
+			});
+			return failure(c, dependency.status, dependency.code, dependency.message);
+		}
 		logger.error("unhandled error", {
 			method: c.req.method,
 			path: c.req.path,
@@ -46,6 +57,26 @@ export function notFoundHandler(c: Context<AppBindings>) {
 		ERROR_CODES.NOT_FOUND,
 		RESPONSE_MESSAGES.ERRORS.ROUTE_NOT_FOUND(c.req.method, c.req.path),
 	);
+}
+
+/** A timeout or open circuit from `@synapse/reliability` (models, email) is a 504/503, not a 500. */
+function dependencyFailure(error: Error) {
+	if (!isSynapseError(error)) return null;
+	if (error.code === RELIABILITY_ERROR_CODES.CIRCUIT_OPEN) {
+		return {
+			status: HTTP_STATUS.SERVICE_UNAVAILABLE,
+			code: error.code,
+			message: RESPONSE_MESSAGES.ERRORS.DEPENDENCY_UNAVAILABLE,
+		};
+	}
+	if (error.code === RELIABILITY_ERROR_CODES.TIMEOUT) {
+		return {
+			status: HTTP_STATUS.GATEWAY_TIMEOUT,
+			code: error.code,
+			message: RESPONSE_MESSAGES.ERRORS.DEPENDENCY_TIMEOUT,
+		};
+	}
+	return null;
 }
 
 function codeForStatus(status: number): string {

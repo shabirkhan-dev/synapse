@@ -31,6 +31,7 @@
         "@synapse/memory": "workspace:*",
         "@synapse/observability": "workspace:*",
         "@synapse/orchestration": "workspace:*",
+        "@synapse/reliability": "workspace:*",
         "@synapse/retrieval": "workspace:*",
         "@synapse/security": "workspace:*",
         "ai": "^7.0.164",
@@ -71,6 +72,7 @@
         "@synapse/database": "workspace:*",
         "@synapse/knowledge": "workspace:*",
         "@synapse/observability": "workspace:*",
+        "@synapse/reliability": "workspace:*",
         "drizzle-orm": "^0.45.4",
         "zod": "^4.6.7",
       },
@@ -249,6 +251,18 @@
       },
       "devDependencies": {
         "@synapse/adapters": "workspace:*",
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/reliability": {
+      "name": "@synapse/reliability",
+      "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
+      "devDependencies": {
         "@synapse/typescript-config": "workspace:*",
         "@types/bun": "^1.4.4",
         "typescript": "^7.0.2",
@@ -721,6 +735,8 @@
     "@synapse/observability": ["@synapse/observability@workspace:packages/observability"],
 
     "@synapse/orchestration": ["@synapse/orchestration@workspace:packages/orchestration"],
+
+    "@synapse/reliability": ["@synapse/reliability@workspace:packages/reliability"],
 
     "@synapse/retrieval": ["@synapse/retrieval@workspace:packages/retrieval"],
 

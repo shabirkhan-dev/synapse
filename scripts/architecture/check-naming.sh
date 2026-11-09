@@ -27,6 +27,7 @@ SCOPES=(
     packages/generation/src
     packages/observability/src
     packages/evaluation/src
+    packages/reliability/src
 )
 
 # Whole stem is one or more kebab segments joined by dots

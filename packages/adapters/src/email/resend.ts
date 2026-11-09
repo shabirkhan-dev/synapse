@@ -33,6 +33,7 @@ export function createResendEmailSender({
 			} catch (cause) {
 				throw new SynapseError(EMAIL_ERROR_CODES.SEND_FAILED, "Email provider unreachable", {
 					cause,
+					retryable: true,
 				});
 			}
 			if (!response.ok) {
@@ -41,7 +42,10 @@ export function createResendEmailSender({
 				throw new SynapseError(
 					EMAIL_ERROR_CODES.SEND_FAILED,
 					`Email provider rejected the message (${response.status})`,
-					{ details: [detail.slice(0, 500)] },
+					{
+						details: [detail.slice(0, 500)],
+						retryable: response.status === 429 || response.status >= 500,
+					},
 				);
 			}
 		},

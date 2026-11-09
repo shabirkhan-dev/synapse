@@ -1,6 +1,7 @@
 import type { OpenAICompatibleGatewayOptions } from "@synapse/adapters/model-gateway";
 import type { DatabaseOptions } from "@synapse/database";
 import type { LogFormat, LogLevel } from "@synapse/observability";
+import type { ModelReliabilityOptions } from "@synapse/reliability";
 
 import { type Env, parseEnv } from "./env";
 
@@ -11,7 +12,15 @@ export type WorkerConfiguration = {
 	database: DatabaseOptions;
 	ai: OpenAICompatibleGatewayOptions;
 	reembedBatchSize: number;
+	reliability: Pick<
+		ModelReliabilityOptions,
+		"chatTimeoutMs" | "embeddingTimeoutMs" | "retry" | "breaker"
+	>;
 };
+
+/** Backoff before attempt 2 (doubling, full jitter), capped; same as the api. */
+const RETRY_BASE_DELAY_MS = 250;
+const RETRY_MAX_DELAY_MS = 4_000;
 
 export function createConfiguration(env: Env): WorkerConfiguration {
 	const embeddingApiKey = env.AI_EMBEDDING_API_KEY ?? env.AI_API_KEY;
@@ -36,6 +45,19 @@ export function createConfiguration(env: Env): WorkerConfiguration {
 			},
 		},
 		reembedBatchSize: env.WORKER_REEMBED_BATCH_SIZE,
+		reliability: {
+			chatTimeoutMs: env.AI_CHAT_TIMEOUT_MS,
+			embeddingTimeoutMs: env.AI_EMBEDDING_TIMEOUT_MS,
+			retry: {
+				attempts: env.AI_RETRY_ATTEMPTS,
+				baseDelayMs: RETRY_BASE_DELAY_MS,
+				maxDelayMs: RETRY_MAX_DELAY_MS,
+			},
+			breaker: {
+				failureThreshold: env.AI_CIRCUIT_FAILURE_THRESHOLD,
+				resetAfterMs: env.AI_CIRCUIT_RESET_MS,
+			},
+		},
 	};
 }
 

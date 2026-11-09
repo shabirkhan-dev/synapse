@@ -4,6 +4,7 @@ import { embed, embedMany, type EmbeddingModel, generateText, type LanguageModel
 /**
  * `ModelGateway` on top of AI SDK models. Also exposes the raw `chatModel` for callers that need
  * AI SDK features the contract does not cover yet (streaming tool-calling chat in apps/api).
+ * Gateway calls make one attempt (`maxRetries: 0`): retries belong to `@synapse/reliability`.
  */
 export type AiSdkModelGateway = ModelGateway & {
 	chatModel: LanguageModel;
@@ -30,6 +31,7 @@ export function createAiSdkModelGateway({
 				const result = await generateText({
 					model: chatModel,
 					prompt,
+					maxRetries: 0,
 					...(system ? { system } : {}),
 					...(abortSignal ? { abortSignal } : {}),
 				});
@@ -50,11 +52,21 @@ export function createAiSdkModelGateway({
 		embedding: {
 			info: embeddingInfo,
 			async embed(value, options = {}) {
-				const { embedding } = await embed({ model: embeddingModel, value, ...options });
+				const { embedding } = await embed({
+					model: embeddingModel,
+					value,
+					maxRetries: 0,
+					...options,
+				});
 				return embedding;
 			},
 			async embedMany(values, options = {}) {
-				const { embeddings } = await embedMany({ model: embeddingModel, values, ...options });
+				const { embeddings } = await embedMany({
+					model: embeddingModel,
+					values,
+					maxRetries: 0,
+					...options,
+				});
 				return embeddings;
 			},
 		},
