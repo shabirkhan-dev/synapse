@@ -19,11 +19,11 @@
 		"test:coverage": "bun test --coverage"
 	},
 	"dependencies": {
-		"@ai-sdk/openai-compatible": "^3.0.86",
 		"@langchain/core": "1.2.20",
 		"@langchain/langgraph-checkpoint": "1.2.1",
 		"@langchain/langgraph-checkpoint-postgres": "1.1.2",
 		"@synapse/core": "workspace:*",
+		"@synapse/providers": "workspace:*",
 		"ai": "^7.0.164",
 		"pg-boss": "12.38.0"
 	},

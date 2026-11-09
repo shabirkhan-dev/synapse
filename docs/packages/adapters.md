@@ -29,7 +29,7 @@ Implement `core` contracts against infrastructure: vector store, cache, queue, s
 
 | Export | Import | What it does |
 | --- | --- | --- |
-| `createOpenAICompatibleModelGateway(options)`, `OpenAICompatibleGatewayOptions` | `@synapse/adapters/model-gateway` | `ModelGateway` for any OpenAI-compatible endpoint (OpenRouter default), optional separate embeddings endpoint |
+| `createModelGateway({ chat, embedding })`, `ModelGatewayOptions` | `@synapse/adapters/model-gateway` | `ModelGateway` from two `@synapse/providers` specs: chat and embeddings can each come from a different vendor |
 | `createHashingEmbeddingGateway({ dimensions })` | `@synapse/adapters/model-gateway` | Offline deterministic bag-of-words embeddings (`hashing:bow-v1`) for evals and tests |
 | `createAiSdkModelGateway({ chatModel, embeddingModel, chatInfo, embeddingInfo })`, `AiSdkModelGateway` | `@synapse/adapters/model-gateway` | Wrap any AI SDK models (tests pass mocks); also exposes `chatModel`. One attempt per call (`maxRetries: 0`): retries come from `@synapse/reliability` |
 | `createPostgresCheckpointer({ connectionString, schema? })` → `{ saver, setup, close }` | `@synapse/adapters/checkpointer` | LangGraph checkpoints in Postgres (`langgraph` schema; `setup()` creates/migrates the tables) |

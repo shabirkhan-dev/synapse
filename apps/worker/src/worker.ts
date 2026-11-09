@@ -1,4 +1,4 @@
-import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
+import { createModelGateway } from "@synapse/adapters/model-gateway";
 import { createPgBossJobQueue } from "@synapse/adapters/queue";
 import { createDatabase } from "@synapse/database";
 import { createLogger, instrumentModelGateway } from "@synapse/observability";
@@ -19,7 +19,7 @@ const logger = createLogger({
 const database = createDatabase(config.database);
 // A failed batch fails the job attempt; pg-boss retries the job and the checkpoint resumes it.
 const gateway = instrumentModelGateway(
-	withModelReliability(createOpenAICompatibleModelGateway(config.ai), {
+	withModelReliability(createModelGateway(config.ai), {
 		...config.reliability,
 		onEvent: (event) =>
 			event.type === "circuit"

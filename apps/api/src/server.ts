@@ -43,8 +43,15 @@ const logger = createLogger({
 	format: config.observability.logFormat,
 });
 
-if (!config.ai.apiKey) {
-	logger.warn("AI_API_KEY is not set: ingest, query and chat will fail until it is configured.");
+for (const [use, spec] of [
+	["chat", config.ai.chat],
+	["embedding", config.ai.embedding],
+] as const) {
+	if (!spec.apiKey) {
+		logger.warn(
+			`no API key for ${use} (${spec.provider}): calls will fail until one is configured`,
+		);
+	}
 }
 
 const database = createDatabase(config.database);

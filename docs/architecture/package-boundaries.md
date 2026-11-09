@@ -23,7 +23,7 @@ Each capability has **one owner**. If you need it elsewhere, depend on the owner
 | Postgres client, schema, migrations | `database` |
 | Domain queries (repositories) | the module that owns the data |
 | Vector store, cache, queue, storage, model gateway | `adapters` |
-| Vendor SDKs (OpenAI, Anthropic, Google, Cohere, Langfuse) | `providers` |
+| Model vendor SDKs (OpenAI, Anthropic, Google, Cohere, OpenAI-compatible) | `providers` |
 | Rust bridge | `native` (+ `crates/`) |
 | UI primitives | `ui` |
 

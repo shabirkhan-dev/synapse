@@ -31,6 +31,7 @@
         "@synapse/memory": "workspace:*",
         "@synapse/observability": "workspace:*",
         "@synapse/orchestration": "workspace:*",
+        "@synapse/providers": "workspace:*",
         "@synapse/reliability": "workspace:*",
         "@synapse/retrieval": "workspace:*",
         "@synapse/security": "workspace:*",
@@ -72,6 +73,7 @@
         "@synapse/database": "workspace:*",
         "@synapse/knowledge": "workspace:*",
         "@synapse/observability": "workspace:*",
+        "@synapse/providers": "workspace:*",
         "@synapse/reliability": "workspace:*",
         "drizzle-orm": "^0.45.4",
         "zod": "^4.6.7",
@@ -86,11 +88,11 @@
       "name": "@synapse/adapters",
       "version": "0.0.0",
       "dependencies": {
-        "@ai-sdk/openai-compatible": "^3.0.86",
         "@langchain/core": "1.2.20",
         "@langchain/langgraph-checkpoint": "1.2.1",
         "@langchain/langgraph-checkpoint-postgres": "1.1.2",
         "@synapse/core": "workspace:*",
+        "@synapse/providers": "workspace:*",
         "ai": "^7.0.164",
         "pg-boss": "12.38.0",
       },
@@ -256,6 +258,24 @@
         "typescript": "^7.0.2",
       },
     },
+    "packages/providers": {
+      "name": "@synapse/providers",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ai-sdk/anthropic": "4.0.98",
+        "@ai-sdk/cohere": "4.0.77",
+        "@ai-sdk/google": "4.0.113",
+        "@ai-sdk/openai": "4.0.110",
+        "@ai-sdk/openai-compatible": "^3.0.86",
+        "@synapse/core": "workspace:*",
+        "ai": "^7.0.164",
+      },
+      "devDependencies": {
+        "@synapse/typescript-config": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/reliability": {
       "name": "@synapse/reliability",
       "version": "0.0.0",
@@ -330,7 +350,15 @@
     "lightningcss": "1.33.0",
   },
   "packages": {
+    "@ai-sdk/anthropic": ["@ai-sdk/anthropic@4.0.98", "", { "dependencies": { "@ai-sdk/provider": "4.0.36", "@ai-sdk/provider-utils": "5.0.75" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-NYo+vOKMo10YnbotYZXtTk/MGR2a1dVpp0gIVBuDPnTDmdEQ/WFiRVHzYJVF00o4SDn5iCV19Ym0qBUdGhOzuQ=="],
+
+    "@ai-sdk/cohere": ["@ai-sdk/cohere@4.0.77", "", { "dependencies": { "@ai-sdk/provider": "4.0.36", "@ai-sdk/provider-utils": "5.0.75" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-HVgvF+Zf+Il3sx8UtqlZuG/pyvEzlbsNfJvSyZaJ+4ac2cdYz7ERlzfLORuI+7a80mfM2oP4Cgh4ctBVbxME3Q=="],
+
     "@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.137", "", { "dependencies": { "@ai-sdk/provider": "4.0.36", "@ai-sdk/provider-utils": "5.0.75", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-AYAoZmMGEGOWnMpBvEYc3lONumD3WZIc3GqTv2Q2QLHXr7BY1JVwCbm6ZA3dd8tT1xx5eSJSBbYfZZ3xSRfskQ=="],
+
+    "@ai-sdk/google": ["@ai-sdk/google@4.0.113", "", { "dependencies": { "@ai-sdk/provider": "4.0.36", "@ai-sdk/provider-utils": "5.0.75" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-EmqgVqzKczE9iOneEQ5uCE39skwl9pe5i0ulAuHQyoxmQpzE5yXTSmR1/e51FBYJaVxxOAx/F0FvEGnlZJ0V/Q=="],
+
+    "@ai-sdk/openai": ["@ai-sdk/openai@4.0.110", "", { "dependencies": { "@ai-sdk/provider": "4.0.36", "@ai-sdk/provider-utils": "5.0.75" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-NIehl+lMI21kTFYM692tBMUiWVhwMZc/pVttnrRYkwc4Y8J9l4aN67F8Ld3exY8Uwa3o+lTb0zCu9KhLdAzDHg=="],
 
     "@ai-sdk/openai-compatible": ["@ai-sdk/openai-compatible@3.0.86", "", { "dependencies": { "@ai-sdk/provider": "4.0.36", "@ai-sdk/provider-utils": "5.0.75" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-yZ/opPIih5uaisLhjY6FT1uI94VcC0bDE7LLhhKMeOMVFCSEWwrN+WGOmoTo8CxRjLBUflvrnUExwLLdJrArmA=="],
 
@@ -735,6 +763,8 @@
     "@synapse/observability": ["@synapse/observability@workspace:packages/observability"],
 
     "@synapse/orchestration": ["@synapse/orchestration@workspace:packages/orchestration"],
+
+    "@synapse/providers": ["@synapse/providers@workspace:packages/providers"],
 
     "@synapse/reliability": ["@synapse/reliability@workspace:packages/reliability"],
 

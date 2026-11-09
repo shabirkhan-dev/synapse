@@ -21,8 +21,9 @@ the embedding model and version.
 - Swapping or adding a model is a configuration/adapter change, not a domain change.
 - Fallback chains, retries, cost tracking and tracing live in one place.
 - Implemented: the contract is `ModelGateway` in `@synapse/core/contracts`, the implementation is
-  `@synapse/adapters/model-gateway` (AI SDK, OpenAI-compatible endpoint,
-  OpenRouter by default). Domain code (the RAG service) depends only on the contract. Streaming
+  `@synapse/adapters/model-gateway` (AI SDK) over models from `@synapse/providers` (OpenAI,
+  Anthropic, Google, Cohere or an OpenAI-compatible endpoint, OpenRouter by default; syn-034), with
+  timeouts, retries, breakers and a fallback chat model from `@synapse/reliability` (syn-033). Domain code (the RAG service) depends only on the contract. Streaming
   tool-calling chat still uses the AI SDK directly in `apps/api` through the gateway's `chatModel`
   until a streaming contract is added with `orchestration`.
 

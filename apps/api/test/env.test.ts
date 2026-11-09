@@ -35,6 +35,35 @@ describe("env", () => {
 		expect(env.NODE_ENV).toBe("production");
 	});
 
+	test("in production each selected vendor needs its own key", () => {
+		const base = {
+			NODE_ENV: "production",
+			JWT_SECRET: "x".repeat(40),
+			RESEND_API_KEY: "re_test_not_real",
+			AI_CHAT_PROVIDER: "anthropic",
+			AI_EMBEDDING_PROVIDER: "cohere",
+		};
+		expect(() => parseEnv(base)).toThrow(
+			/ANTHROPIC_API_KEY is required.*COHERE_API_KEY is required/,
+		);
+		expect(() =>
+			parseEnv({
+				...base,
+				ANTHROPIC_API_KEY: "ak",
+				COHERE_API_KEY: "co",
+				AI_FALLBACK_CHAT_MODEL: "gpt-x",
+				AI_FALLBACK_CHAT_PROVIDER: "openai",
+			}),
+		).toThrow(/OPENAI_API_KEY is required/);
+		expect(
+			parseEnv({ ...base, ANTHROPIC_API_KEY: "ak", COHERE_API_KEY: "co" }).AI_CHAT_PROVIDER,
+		).toBe("anthropic");
+	});
+
+	test("rejects an unknown vendor", () => {
+		expect(() => parseEnv({ AI_EMBEDDING_PROVIDER: "anthropic" })).toThrow(/AI_EMBEDDING_PROVIDER/);
+	});
+
 	test("rejects overlap >= chunk size and short secrets", () => {
 		expect(() => parseEnv({ RAG_CHUNK_SIZE: "300", RAG_CHUNK_OVERLAP: "300" })).toThrow(
 			/RAG_CHUNK_OVERLAP/,

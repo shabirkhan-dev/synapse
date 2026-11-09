@@ -31,6 +31,7 @@
 		"@synapse/memory": "workspace:*",
 		"@synapse/observability": "workspace:*",
 		"@synapse/orchestration": "workspace:*",
+		"@synapse/providers": "workspace:*",
 		"@synapse/reliability": "workspace:*",
 		"@synapse/retrieval": "workspace:*",
 		"@synapse/security": "workspace:*",

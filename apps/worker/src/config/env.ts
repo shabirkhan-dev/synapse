@@ -1,4 +1,11 @@
 import { type ConfigSource, loadConfig } from "@synapse/core/config";
+import {
+	apiKeyFor,
+	CHAT_PROVIDERS,
+	EMBEDDING_PROVIDERS,
+	PROVIDER_KEY_VARIABLES,
+	providerCredentials,
+} from "@synapse/providers";
 import { z } from "zod";
 
 /** Only what the worker needs: the database, embeddings and logging. */
@@ -11,6 +18,13 @@ export const envSchema = z
 		DATABASE_URL: z.url().default("postgresql://synapse:synapse@localhost:5433/synapse"),
 		DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
 		DATABASE_SSL: z.enum(["true", "false"]).optional(),
+		/** Same meaning as in the api (`openai-compatible` = AI_BASE_URL, or a direct vendor). */
+		AI_CHAT_PROVIDER: z.enum(CHAT_PROVIDERS).default("openai-compatible"),
+		AI_EMBEDDING_PROVIDER: z.enum(EMBEDDING_PROVIDERS).default("openai-compatible"),
+		OPENAI_API_KEY: z.string().min(1).optional(),
+		ANTHROPIC_API_KEY: z.string().min(1).optional(),
+		GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
+		COHERE_API_KEY: z.string().min(1).optional(),
 		AI_BASE_URL: z.url().default("https://openrouter.ai/api/v1"),
 		AI_PROVIDER_NAME: z.string().min(1).default("openrouter"),
 		AI_API_KEY: z.string().min(1).optional(),
@@ -28,11 +42,15 @@ export const envSchema = z
 		WORKER_REEMBED_BATCH_SIZE: z.coerce.number().int().min(1).max(2048).default(100),
 	})
 	.superRefine((env, context) => {
-		if (env.NODE_ENV === "production" && !(env.AI_EMBEDDING_API_KEY ?? env.AI_API_KEY)) {
+		const provider = env.AI_EMBEDDING_PROVIDER;
+		if (
+			env.NODE_ENV === "production" &&
+			!apiKeyFor(provider, providerCredentials(env), "embedding")
+		) {
 			context.addIssue({
 				code: "custom",
-				path: ["AI_API_KEY"],
-				message: "AI_API_KEY (or AI_EMBEDDING_API_KEY) is required in production",
+				path: [PROVIDER_KEY_VARIABLES[provider]],
+				message: `${PROVIDER_KEY_VARIABLES[provider]} is required in production (${provider} embeddings)`,
 			});
 		}
 	});

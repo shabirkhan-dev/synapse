@@ -1,0 +1,31 @@
+{
+	"name": "@synapse/providers",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"typecheck": "tsc --noEmit",
+		"test": "bun test",
+		"test:coverage": "bun test --coverage"
+	},
+	"dependencies": {
+		"@ai-sdk/anthropic": "4.0.98",
+		"@ai-sdk/cohere": "4.0.77",
+		"@ai-sdk/google": "4.0.113",
+		"@ai-sdk/openai": "4.0.110",
+		"@ai-sdk/openai-compatible": "^3.0.86",
+		"@synapse/core": "workspace:*",
+		"ai": "^7.0.164"
+	},
+	"devDependencies": {
+		"@synapse/typescript-config": "workspace:*",
+		"@types/bun": "^1.4.4",
+		"typescript": "^7.0.2"
+	}
+}

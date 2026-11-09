@@ -4,13 +4,12 @@ import type { Env } from "./env";
 const RETRY_BASE_DELAY_MS = 250;
 const RETRY_MAX_DELAY_MS = 4_000;
 
-/** Timeouts, retries, circuit breakers and fallback for model and email calls (`@synapse/reliability`). */
+/** Timeouts, retries and circuit breakers for model and email calls (`@synapse/reliability`). */
 export type ReliabilityConfig = {
 	chatTimeoutMs: number;
 	embeddingTimeoutMs: number;
 	retry: { attempts: number; baseDelayMs: number; maxDelayMs: number };
 	breaker: { failureThreshold: number; resetAfterMs: number };
-	fallbackChatModel?: string;
 };
 
 export function createReliabilityConfig(env: Env): ReliabilityConfig {
@@ -26,6 +25,5 @@ export function createReliabilityConfig(env: Env): ReliabilityConfig {
 			failureThreshold: env.AI_CIRCUIT_FAILURE_THRESHOLD,
 			resetAfterMs: env.AI_CIRCUIT_RESET_MS,
 		},
-		...(env.AI_FALLBACK_CHAT_MODEL ? { fallbackChatModel: env.AI_FALLBACK_CHAT_MODEL } : {}),
 	};
 }

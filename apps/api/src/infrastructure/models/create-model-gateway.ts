@@ -1,6 +1,6 @@
 import {
 	type AiSdkModelGateway,
-	createOpenAICompatibleModelGateway,
+	createModelGateway as createVendorModelGateway,
 } from "@synapse/adapters/model-gateway";
 import { addSpanEvent, instrumentModelGateway, type Logger } from "@synapse/observability";
 import { type ReliabilityEvent, withModelReliability } from "@synapse/reliability";
@@ -13,13 +13,12 @@ import type { Configuration } from "@/config";
  * model. Streaming chat (`chatModel`) is passed through unwrapped.
  */
 export function createModelGateway(config: Configuration, logger: Logger): AiSdkModelGateway {
-	const { reliability } = config;
-	const fallbackChat = reliability.fallbackChatModel
-		? createOpenAICompatibleModelGateway({ ...config.ai, chatModel: reliability.fallbackChatModel })
-				.chat
+	const { ai } = config;
+	const fallbackChat = ai.fallbackChat
+		? createVendorModelGateway({ chat: ai.fallbackChat, embedding: ai.embedding }).chat
 		: undefined;
-	const reliable = withModelReliability(createOpenAICompatibleModelGateway(config.ai), {
-		...reliability,
+	const reliable = withModelReliability(createVendorModelGateway(ai), {
+		...config.reliability,
 		...(fallbackChat ? { fallbackChat } : {}),
 		onEvent: reportReliabilityEvent(logger),
 	});

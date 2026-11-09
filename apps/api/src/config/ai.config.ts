@@ -1,21 +1,35 @@
-import type { OpenAICompatibleGatewayOptions } from "@synapse/adapters/model-gateway";
+import type { ModelGatewayOptions } from "@synapse/adapters/model-gateway";
+import { EMBEDDING_DIMENSIONS } from "@synapse/database";
+import {
+	type ChatModelSpec,
+	providerCredentials,
+	resolveChatModelSpec,
+	resolveEmbeddingModelSpec,
+} from "@synapse/providers";
 
 import type { Env } from "./env";
 
-/** Model gateway settings (`@synapse/adapters`). Embedding key falls back to `AI_API_KEY`. */
-export type AiConfig = OpenAICompatibleGatewayOptions;
+/** Which vendor and model serve chat and embeddings (`@synapse/providers`), plus the fallback. */
+export type AiConfig = ModelGatewayOptions & { fallbackChat?: ChatModelSpec };
 
 export function createAiConfig(env: Env): AiConfig {
-	const embeddingApiKey = env.AI_EMBEDDING_API_KEY ?? env.AI_API_KEY;
+	const credentials = providerCredentials(env);
 	return {
-		providerName: env.AI_PROVIDER_NAME,
-		baseUrl: env.AI_BASE_URL,
-		...(env.AI_API_KEY ? { apiKey: env.AI_API_KEY } : {}),
-		chatModel: env.AI_CHAT_MODEL,
-		embedding: {
-			model: env.AI_EMBEDDING_MODEL,
-			...(env.AI_EMBEDDING_BASE_URL ? { baseUrl: env.AI_EMBEDDING_BASE_URL } : {}),
-			...(embeddingApiKey ? { apiKey: embeddingApiKey } : {}),
-		},
+		chat: resolveChatModelSpec(env.AI_CHAT_PROVIDER, env.AI_CHAT_MODEL, credentials),
+		embedding: resolveEmbeddingModelSpec(
+			env.AI_EMBEDDING_PROVIDER,
+			env.AI_EMBEDDING_MODEL,
+			credentials,
+			EMBEDDING_DIMENSIONS,
+		),
+		...(env.AI_FALLBACK_CHAT_MODEL
+			? {
+					fallbackChat: resolveChatModelSpec(
+						env.AI_FALLBACK_CHAT_PROVIDER ?? env.AI_CHAT_PROVIDER,
+						env.AI_FALLBACK_CHAT_MODEL,
+						credentials,
+					),
+				}
+			: {}),
 	};
 }

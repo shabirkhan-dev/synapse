@@ -73,6 +73,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   chat (`/chat`) still relies on the AI SDK's own 2 retries with no timeout, breaker or fallback;
   `Retry-After` is ignored. A request that exhausts retries on a 5xx returns `500` (only an open
   circuit is `503` and a timeout `504`).
+- **Providers** (syn-034): one key per vendor per deployment (no per-organization keys). OpenAI
+  chat uses the Responses API (point `AI_BASE_URL`-style proxies at `openai-compatible` instead).
+  OpenAI-compatible embeddings are not sent a dimension: the model's default must be 1536.
+  Provider tests use recorded-shape fake responses; no live vendor call has been made from CI.
 - **Reranking, query rewriting** are planned, not installed.
 - **No Rust crates yet**; CI has no Rust toolchain step.
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).

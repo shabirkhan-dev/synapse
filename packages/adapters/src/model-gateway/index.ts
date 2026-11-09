@@ -3,8 +3,5 @@ export {
 	type AiSdkModelGatewayOptions,
 	createAiSdkModelGateway,
 } from "./ai-sdk-model-gateway";
-export {
-	createOpenAICompatibleModelGateway,
-	type OpenAICompatibleGatewayOptions,
-} from "./openai-compatible";
+export { createModelGateway, type ModelGatewayOptions } from "./create-model-gateway";
 export { createHashingEmbeddingGateway } from "./hashing-embedding";

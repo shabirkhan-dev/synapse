@@ -18,9 +18,10 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/audit` (append-only events, answer provenance; PII redacted by `security`),
   `packages/memory` (conversation history within a budget, long-term facts by similarity),
   `packages/guardrails` (input policy, prompt-injection defense, tool allowlist, output checks),
-  `packages/reliability` (timeouts, retries, circuit breakers, chat fallback).
+  `packages/reliability` (timeouts, retries, circuit breakers, chat fallback),
+  `packages/providers` (OpenAI, Anthropic, Google, Cohere, OpenAI-compatible models).
 - **Planned:** packages
-  `providers`, `native`; more adapters
+  `native`; more adapters
   (vector-store, cache, storage);
   `crates/*`; root `tests/` and `deploy/`.
 - `apps/api/src/modules/rag` composes ingestion → knowledge → retrieval → generation; Phase 1 of the

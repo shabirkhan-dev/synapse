@@ -27,6 +27,7 @@ SCOPES=(
     packages/generation/src
     packages/observability/src
     packages/evaluation/src
+    packages/providers/src
     packages/reliability/src
 )
 

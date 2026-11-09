@@ -5,18 +5,15 @@ Implementations of `@synapse/core` contracts against infrastructure. Full descri
 
 | Module | Import | Status |
 | --- | --- | --- |
-| `model-gateway/` | `@synapse/adapters/model-gateway` | Live — `ModelGateway` on the AI SDK (OpenAI-compatible) |
+| `model-gateway/` | `@synapse/adapters/model-gateway` | Live — `ModelGateway` on the AI SDK, models from `@synapse/providers` |
 | `vector-store/`, `cache/`, `queue/`, `storage/` | — | Planned |
 
 ```ts
-import { createOpenAICompatibleModelGateway } from "@synapse/adapters/model-gateway";
+import { createModelGateway } from "@synapse/adapters/model-gateway";
 
-const gateway = createOpenAICompatibleModelGateway({
-	providerName: "openrouter",
-	baseUrl: "https://openrouter.ai/api/v1",
-	apiKey,
-	chatModel: "openai/gpt-4o-mini",
-	embedding: { model: "openai/text-embedding-3-small" },
+const gateway = createModelGateway({
+	chat: { provider: "anthropic", model: "claude-sonnet-5-5", apiKey: anthropicKey },
+	embedding: { provider: "openai", model: "text-embedding-3-small", apiKey, dimensions: 1536 },
 });
 const vector = await gateway.embedding.embed("refund policy");
 const { text, model, usage } = await gateway.chat.generateText({ prompt: "Hello" });

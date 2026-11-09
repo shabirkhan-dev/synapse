@@ -1,5 +1,12 @@
 import { z } from "@hono/zod-openapi";
 import { type ConfigSource, loadConfig } from "@synapse/core/config";
+import {
+	apiKeyFor,
+	CHAT_PROVIDERS,
+	EMBEDDING_PROVIDERS,
+	PROVIDER_KEY_VARIABLES,
+	providerCredentials,
+} from "@synapse/providers";
 
 /** Development-only default; production rejects it. */
 export const developmentJwtSecret = "development-only-jwt-secret-change-me";
@@ -69,6 +76,14 @@ export const envSchema = z
 		/** Sender on a domain verified in Resend (rabtx.dev). */
 		EMAIL_FROM: z.string().min(3).default("Synapse <synapse@rabtx.dev>"),
 		CORS_ORIGIN: z.string().min(1).default("http://localhost:3000,http://127.0.0.1:3000"),
+		/** Vendor per use: `openai-compatible` (AI_BASE_URL, default OpenRouter) or a direct vendor. */
+		AI_CHAT_PROVIDER: z.enum(CHAT_PROVIDERS).default("openai-compatible"),
+		AI_EMBEDDING_PROVIDER: z.enum(EMBEDDING_PROVIDERS).default("openai-compatible"),
+		/** Direct vendor keys, used when that vendor is selected above (or as the fallback). */
+		OPENAI_API_KEY: z.string().min(1).optional(),
+		ANTHROPIC_API_KEY: z.string().min(1).optional(),
+		GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
+		COHERE_API_KEY: z.string().min(1).optional(),
 		/** Any OpenAI-compatible endpoint. Defaults to OpenRouter. */
 		AI_BASE_URL: z.url().default("https://openrouter.ai/api/v1"),
 		AI_PROVIDER_NAME: z.string().min(1).default("openrouter"),
@@ -86,8 +101,9 @@ export const envSchema = z
 		/** Consecutive failures that open a circuit, and how long it stays open. */
 		AI_CIRCUIT_FAILURE_THRESHOLD: z.coerce.number().int().min(1).max(100).default(5),
 		AI_CIRCUIT_RESET_MS: z.coerce.number().int().min(1000).max(3_600_000).default(30_000),
-		/** Chat model on the same endpoint, used when the primary is down. */
+		/** Chat model used when the primary is down; its vendor defaults to AI_CHAT_PROVIDER. */
 		AI_FALLBACK_CHAT_MODEL: z.string().min(1).optional(),
+		AI_FALLBACK_CHAT_PROVIDER: z.enum(CHAT_PROVIDERS).optional(),
 		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
 		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
@@ -145,12 +161,27 @@ export const envSchema = z
 				message: "JWT_SECRET must be changed in production",
 			});
 		}
-		if (!env.AI_API_KEY) {
-			context.addIssue({
-				code: "custom",
-				path: ["AI_API_KEY"],
-				message: "AI_API_KEY is required in production",
-			});
+		const credentials = providerCredentials(env);
+		const needed = [
+			{ provider: env.AI_CHAT_PROVIDER, use: "chat" as const },
+			{ provider: env.AI_EMBEDDING_PROVIDER, use: "embedding" as const },
+			...(env.AI_FALLBACK_CHAT_MODEL
+				? [
+						{
+							provider: env.AI_FALLBACK_CHAT_PROVIDER ?? env.AI_CHAT_PROVIDER,
+							use: "chat" as const,
+						},
+					]
+				: []),
+		];
+		for (const { provider, use } of needed) {
+			if (!apiKeyFor(provider, credentials, use)) {
+				context.addIssue({
+					code: "custom",
+					path: [PROVIDER_KEY_VARIABLES[provider]],
+					message: `${PROVIDER_KEY_VARIABLES[provider]} is required in production (${provider} ${use})`,
+				});
+			}
 		}
 		if (!env.RESEND_API_KEY) {
 			context.addIssue({

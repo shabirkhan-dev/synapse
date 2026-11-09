@@ -19,6 +19,7 @@
 		"@synapse/database": "workspace:*",
 		"@synapse/knowledge": "workspace:*",
 		"@synapse/observability": "workspace:*",
+		"@synapse/providers": "workspace:*",
 		"@synapse/reliability": "workspace:*",
 		"drizzle-orm":"^0.45.4",
 		"zod":"^4.6.7"
