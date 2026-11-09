@@ -14,6 +14,7 @@ import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { GuardrailsService } from "./modules/guardrails";
+import { DrizzleOrganizationRepository, OrganizationsService } from "./modules/organizations";
 import {
 	DrizzleConversationRepository,
 	DrizzleFactRepository,
@@ -54,13 +55,20 @@ const audit = createAuditLog({
 	redact: redactPiiDeep,
 });
 const guardrails = new GuardrailsService(config.guardrails, audit);
+const authRepository = new DrizzleAuthRepository(database.db);
+const organizations = new OrganizationsService({
+	store: new DrizzleOrganizationRepository(database.db),
+	findUserIdByEmail: async (email) => (await authRepository.findUserByEmail(email))?.id ?? null,
+	audit,
+});
 const auth = new AuthService({
-	repository: new DrizzleAuthRepository(database.db),
+	repository: authRepository,
 	rateLimiter: new DrizzleRateLimiter(database.db),
 	email: createEmailSender(config.email, logger),
 	logger,
 	config: config.auth,
 	audit,
+	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 });
 const gateway = instrumentModelGateway(createOpenAICompatibleModelGateway(config.ai), {
 	logger,
@@ -114,6 +122,7 @@ const app = createApp({
 	oversight,
 	audit,
 	memory,
+	organizations,
 	chat,
 	pingDatabase: () => repository.ping(),
 });

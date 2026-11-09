@@ -22,7 +22,13 @@ export type StoredAuditEvent = AuditEvent & { id: string; createdAt: string };
 
 export interface AuditStore {
 	append(event: AuditEvent): Promise<StoredAuditEvent>;
-	list(input: { ownerId: string; limit: number; action?: string }): Promise<StoredAuditEvent[]>;
+	/** Newest first; only `actorId`'s events when given. */
+	list(input: {
+		ownerId: string;
+		limit: number;
+		action?: string;
+		actorId?: string;
+	}): Promise<StoredAuditEvent[]>;
 }
 
 export type AuditLogOptions = {
@@ -40,8 +46,16 @@ export function createAuditLog({ store, redact }: AuditLogOptions) {
 		record: (event: AuditEvent): Promise<StoredAuditEvent> =>
 			store.append({ ...event, data: redact(event.data) }),
 		/** Newest first. */
-		list: (ownerId: string, { limit, action }: { limit: number; action?: string }) =>
-			store.list({ ownerId, limit, ...(action ? { action } : {}) }),
+		list: (
+			ownerId: string,
+			{ limit, action, actorId }: { limit: number; action?: string; actorId?: string },
+		) =>
+			store.list({
+				ownerId,
+				limit,
+				...(action ? { action } : {}),
+				...(actorId ? { actorId } : {}),
+			}),
 	};
 }
 

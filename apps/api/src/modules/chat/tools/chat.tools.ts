@@ -12,6 +12,7 @@ export function createChatTools({
 	memory,
 	guardrails,
 	ownerId,
+	organizationId = ownerId,
 	topK,
 	context = { requestId: null },
 	now = () => new Date(),
@@ -19,7 +20,10 @@ export function createChatTools({
 	rag: RagService;
 	memory: MemoryService;
 	guardrails: GuardrailsService;
+	/** The user (memory). */
 	ownerId: string;
+	/** Active organization (documents); defaults to the personal one. */
+	organizationId?: string;
 	topK: number;
 	context?: RequestContext;
 	now?: () => Date;
@@ -33,10 +37,10 @@ export function createChatTools({
 				topK: z.number().int().min(1).max(20).optional().describe("How many passages to return"),
 			}),
 			async execute({ query, topK: requested }) {
-				const found = await rag.search(ownerId, query, requested ?? topK);
+				const found = await rag.search(organizationId, query, requested ?? topK);
 				// Tool output is untrusted: instruction-like text is removed before the model reads it.
 				const matches = await guardrails.sanitizePassages(
-					ownerId,
+					organizationId,
 					found.map((match) => Object.assign({}, match, { id: match.chunkId })),
 					"chat.search",
 					context,

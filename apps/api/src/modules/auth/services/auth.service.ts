@@ -8,6 +8,7 @@ import {
 	createSecretToken,
 	hashPassword,
 	hashSecretToken,
+	type OrganizationRole,
 	SECURITY_ERROR_CODES,
 	verifyPassword,
 	verifyPasswordAgainstNothing,
@@ -34,6 +35,7 @@ import type {
 	RateLimiter,
 	RateLimitRule,
 	SignedIn,
+	SwitchedOrganization,
 	User,
 } from "../types/auth.types";
 
@@ -47,6 +49,8 @@ export type AuthServiceDependencies = {
 	config: AuthConfig;
 	/** Sign-ups, sign-ins, sign-outs, verifications and resets are recorded here. */
 	audit: AuditLog;
+	/** The user's role in an organization (organizations module), `null` if not a member. */
+	roleOf: (organizationId: string, userId: string) => Promise<OrganizationRole | null>;
 };
 
 const NO_REQUEST: RequestContext = { requestId: null };
@@ -66,8 +70,19 @@ export class AuthService {
 	private readonly audit: AuditLog;
 	private readonly accessTokens: AccessTokens;
 
-	constructor({ repository, rateLimiter, email, logger, config, audit }: AuthServiceDependencies) {
+	private readonly roleOf: AuthServiceDependencies["roleOf"];
+
+	constructor({
+		repository,
+		rateLimiter,
+		email,
+		logger,
+		config,
+		audit,
+		roleOf,
+	}: AuthServiceDependencies) {
 		this.audit = audit;
+		this.roleOf = roleOf;
 		this.repository = repository;
 		this.rateLimiter = rateLimiter;
 		this.email = email;
@@ -146,7 +161,47 @@ export class AuthService {
 		if (!rotated) {
 			throw invalidRefreshToken();
 		}
-		return this.tokens(session.userId, session.id, nextToken, session.expiresAt);
+		// Back to the personal organization if the user has left the session's one.
+		const organizationId =
+			session.organizationId && (await this.roleOf(session.organizationId, session.userId))
+				? session.organizationId
+				: session.userId;
+		return this.tokens(session.userId, session.id, nextToken, session.expiresAt, organizationId);
+	}
+
+	/**
+	 * Make another organization (one the user belongs to) active for this session. Returns a new
+	 * access token for it; the refresh token keeps working and refreshes into the same organization.
+	 */
+	async switchOrganization(
+		user: AuthUser,
+		organizationId: string,
+		context: RequestContext = NO_REQUEST,
+	): Promise<SwitchedOrganization> {
+		const role = await this.roleOf(organizationId, user.sub);
+		if (!role) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.NOT_FOUND,
+				code: AUTH_ERROR_CODES.ORGANIZATION_NOT_FOUND,
+				message: AUTH_MESSAGES.ORGANIZATION_NOT_FOUND,
+			});
+		}
+		await this.repository.setSessionOrganization({
+			sessionId: user.sid,
+			userId: user.sub,
+			organizationId: organizationId === user.sub ? null : organizationId,
+		});
+		const access = await this.accessTokens.issue(claims(user.sub, user.sid, organizationId));
+		await this.record(AUDIT_ACTIONS.AUTH_ORGANIZATION_SWITCHED, user.sub, context, {
+			organizationId,
+		});
+		return {
+			tokenType: TOKEN_TYPE,
+			accessToken: access.token,
+			accessTokenExpiresAt: access.expiresAt.toISOString(),
+			organizationId,
+			role,
+		};
 	}
 
 	async signOut({ sub, sid }: AuthUser, context: RequestContext = NO_REQUEST): Promise<void> {
@@ -223,8 +278,9 @@ export class AuthService {
 
 	/** Verify a bearer access token (signature, algorithm, expiry, `sub` + `sid`). */
 	async authenticate(token: string): Promise<AuthUser> {
+		let verified: { sub: string; sid: string; org?: string };
 		try {
-			return await this.accessTokens.verify(token);
+			verified = await this.accessTokens.verify(token);
 		} catch (error) {
 			if (isSynapseError(error) && error.code === SECURITY_ERROR_CODES.ACCESS_TOKEN_INVALID) {
 				throw unauthorized(
@@ -235,6 +291,13 @@ export class AuthService {
 			}
 			throw error;
 		}
+		const orgId = verified.org ?? verified.sub;
+		// Checked on every request, so a removed member loses access immediately.
+		const role = await this.roleOf(orgId, verified.sub);
+		if (!role) {
+			throw unauthorized(AUTH_ERROR_CODES.NOT_A_MEMBER, AUTH_MESSAGES.NOT_A_MEMBER);
+		}
+		return { sub: verified.sub, sid: verified.sid, orgId, role };
 	}
 
 	/** Account events: owner, actor and subject are the user. */
@@ -325,8 +388,9 @@ export class AuthService {
 		sessionId: string,
 		refreshToken: string,
 		refreshTokenExpiresAt: Date,
+		organizationId: string = userId,
 	): Promise<AuthTokens> {
-		const access = await this.accessTokens.issue({ sub: userId, sid: sessionId });
+		const access = await this.accessTokens.issue(claims(userId, sessionId, organizationId));
 		return {
 			tokenType: TOKEN_TYPE,
 			accessToken: access.token,
@@ -335,6 +399,11 @@ export class AuthService {
 			refreshTokenExpiresAt: refreshTokenExpiresAt.toISOString(),
 		};
 	}
+}
+
+/** The personal organization is implied (no `org` claim), so tokens minted before stay valid. */
+function claims(sub: string, sid: string, organizationId: string) {
+	return organizationId === sub ? { sub, sid } : { sub, sid, org: organizationId };
 }
 
 function normalizeEmail(email: string): string {

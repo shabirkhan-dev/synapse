@@ -28,6 +28,8 @@ export const authSessions = pgTable(
 		refreshTokenHash: text("refresh_token_hash").notNull(),
 		/** Hash of the token this one replaced: presenting it again means the token was stolen. */
 		previousRefreshTokenHash: text("previous_refresh_token_hash"),
+		/** Active organization for this session's access tokens; `null` = the personal one. */
+		organizationId: uuid("organization_id"),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 		revokedAt: timestamp("revoked_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -44,6 +44,7 @@ src/
     guardrails/         # constants/ services/ (policy checks + audit)
     health/             # constants/ routes/ schemas/
     memory/             # constants/ mappers/ repositories/ routes/ schemas/ services/ types/ (conversations, facts)
+    organizations/      # constants/ mappers/ repositories/ routes/ schemas/ services/ types/ (tenants, roles)
     oversight/          # constants/ mappers/ repositories/ routes/ schemas/ services/ (approvals, feedback)
     rag/                # constants/ mappers/ repositories/ routes/ schemas/ services/ types/
 test/                   # bun test (mocks in helpers.ts)

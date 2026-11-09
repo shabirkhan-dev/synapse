@@ -1,6 +1,13 @@
 import { and, eq, gt, isNull, or, sql } from "drizzle-orm";
 
-import { authSessions, authTokens, type Database, users } from "@synapse/database";
+import {
+	authSessions,
+	authTokens,
+	type Database,
+	organizationMembers,
+	organizations,
+	users,
+} from "@synapse/database";
 
 import { toUser, toUserCredentials } from "../mappers/auth.mapper";
 import type {
@@ -21,12 +28,22 @@ export class DrizzleAuthRepository implements AuthRepository {
 		email: string;
 		passwordHash: string;
 	}): Promise<User | null> {
-		const [row] = await this.db
-			.insert(users)
-			.values({ email, passwordHash })
-			.onConflictDoNothing({ target: users.email })
-			.returning();
-		return row ? toUser(row) : null;
+		return this.db.transaction(async (tx) => {
+			const [row] = await tx
+				.insert(users)
+				.values({ email, passwordHash })
+				.onConflictDoNothing({ target: users.email })
+				.returning();
+			if (!row) {
+				return null;
+			}
+			// The personal organization shares the user's id (see organizations schema).
+			await tx.insert(organizations).values({ id: row.id, name: "Personal", kind: "personal" });
+			await tx
+				.insert(organizationMembers)
+				.values({ organizationId: row.id, userId: row.id, role: "owner" });
+			return toUser(row);
+		});
 	}
 
 	async findUserByEmail(email: string): Promise<UserCredentials | null> {
@@ -73,6 +90,7 @@ export class DrizzleAuthRepository implements AuthRepository {
 			userId: row.userId,
 			expiresAt: row.expiresAt,
 			revokedAt: row.revokedAt,
+			organizationId: row.organizationId,
 			matched: row.refreshTokenHash === hash ? "current" : "previous",
 		};
 	}
@@ -188,5 +206,20 @@ export class DrizzleAuthRepository implements AuthRepository {
 			.update(users)
 			.set({ passwordHash, updatedAt: sql`now()` })
 			.where(eq(users.id, userId));
+	}
+
+	async setSessionOrganization({
+		sessionId,
+		userId,
+		organizationId,
+	}: {
+		sessionId: string;
+		userId: string;
+		organizationId: string | null;
+	}): Promise<void> {
+		await this.db
+			.update(authSessions)
+			.set({ organizationId, updatedAt: sql`now()` })
+			.where(and(eq(authSessions.id, sessionId), eq(authSessions.userId, userId)));
 	}
 }

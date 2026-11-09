@@ -10,6 +10,7 @@ reverse. Agents keep a short summary in `.agents/memory/decisions.md`.
 | [0003](adr/ADR-0003-llm-provider-abstraction.md) | LLM provider abstraction | Accepted |
 | [0004](adr/ADR-0004-rust-integration.md) | Rust integration via napi-rs | Accepted |
 | [0005](adr/ADR-0005-in-house-authentication.md) | In-house authentication | Accepted |
+| [0006](adr/ADR-0006-organizations-as-tenants.md) | Organizations are the tenants (personal org id = user id) | Accepted |
 
 ## Template
 

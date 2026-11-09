@@ -55,4 +55,5 @@ numbers, JWTs, bearer tokens and provider keys in any string of `data` become `[
 
 Writes are awaited: an answer is returned only after its event is stored, so every answer is
 traceable (architecture rule 6). Answer feedback (`answer_feedback.request_id`) joins
-`audit_events.request_id`. Your history: `GET /audit/events?limit=&action=`.
+`audit_events.request_id`. Your history: `GET /audit/events?limit=&action=`: an organization's admins see all its events,
+members only those they did (`actorId`); the actor is always the user, also for organization data.

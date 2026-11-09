@@ -125,7 +125,10 @@ export class RagService {
 						context.ownerId,
 						matches.map((match) => Object.assign({}, match, { id: match.chunkId })),
 						"rag.query",
-						{ requestId: context.requestId },
+						{
+							requestId: context.requestId,
+							...(context.actorId ? { actorId: context.actorId } : {}),
+						},
 					);
 					return sanitized.map(({ id: _id, ...match }) => match);
 				},
@@ -151,7 +154,7 @@ export class RagService {
 		if (result.status === "created") {
 			await this.options.audit.record({
 				ownerId,
-				actorId: ownerId,
+				actorId: context.actorId ?? ownerId,
 				action: AUDIT_ACTIONS.RAG_DOCUMENT_INGESTED,
 				subjectType: "document",
 				subjectId: document.id,
@@ -219,7 +222,12 @@ export class RagService {
 		await this.options.guardrails.checkInput(ownerId, question, "rag.query", context);
 		const { passages: matches, answer } = await this.answerGraph.run({
 			question,
-			context: { ownerId, requestId: context.requestId, ...(topK === undefined ? {} : { topK }) },
+			context: {
+				ownerId,
+				requestId: context.requestId,
+				...(context.actorId ? { actorId: context.actorId } : {}),
+				...(topK === undefined ? {} : { topK }),
+			},
 		});
 		if (!answer) {
 			return {
@@ -233,7 +241,7 @@ export class RagService {
 		// Recorded before returning: an answer is only given out once it is traceable.
 		await this.options.audit.record({
 			ownerId,
-			actorId: ownerId,
+			actorId: context.actorId ?? ownerId,
 			action: AUDIT_ACTIONS.RAG_QUERY_ANSWERED,
 			subjectType: "query",
 			subjectId: null,
@@ -259,11 +267,12 @@ export class RagService {
 	}
 
 	/** Runs only after an approval (`rag.purge-documents`, see the oversight module). */
-	async purgeDocuments(ownerId: string): Promise<{ deleted: number }> {
+	async purgeDocuments(ownerId: string, actorId: string = ownerId): Promise<{ deleted: number }> {
+		const context: RequestContext = { requestId: null, actorId };
 		const deleted = await this.repository.deleteAllDocuments(ownerId);
 		await this.options.audit.record({
 			ownerId,
-			actorId: ownerId,
+			actorId: context.actorId ?? ownerId,
 			action: AUDIT_ACTIONS.RAG_DOCUMENTS_PURGED,
 			subjectType: "document",
 			subjectId: null,
@@ -289,7 +298,7 @@ export class RagService {
 		}
 		await this.options.audit.record({
 			ownerId,
-			actorId: ownerId,
+			actorId: context.actorId ?? ownerId,
 			action: AUDIT_ACTIONS.RAG_DOCUMENT_DELETED,
 			subjectType: "document",
 			subjectId: documentId,
@@ -323,7 +332,7 @@ function emptyDocumentError(): AppError {
 }
 
 /** Who and how much to retrieve for one answer run. */
-type AnswerScope = { ownerId: string; requestId: string | null; topK?: number };
+type AnswerScope = { ownerId: string; requestId: string | null; actorId?: string; topK?: number };
 
 function toContextPassage(match: RagMatch) {
 	return {

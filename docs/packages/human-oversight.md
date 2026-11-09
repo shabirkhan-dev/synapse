@@ -47,6 +47,7 @@ approval id is the paused run's thread id.
 | `POST /oversight/approvals/{id}/reject` | Writes the decision; the run ends without running the action |
 | `POST /oversight/feedback` | `{ requestId, rating, comment? }` for an answered `/rag/query` |
 
-Until roles exist (security tenancy), the approver is the owner: a purge is a two-step confirmation
-that survives restarts. Feedback joins answers by `x-request-id`: `answer_feedback.request_id` = the
+Requests belong to the active organization and record `requestedBy`. Admins and owners see all of
+the organization's pending requests and decide them; members see only their own and get `403` when
+deciding (ADR-0006). In a personal organization the user is the owner, so they confirm their own. Feedback joins answers by `x-request-id`: `answer_feedback.request_id` = the
 `rag.query.answered` event's `request_id` in `audit_events`, which carries the provenance.

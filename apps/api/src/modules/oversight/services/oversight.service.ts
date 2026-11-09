@@ -1,5 +1,6 @@
 import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
 import { isSynapseError } from "@synapse/core/errors";
+import { can } from "@synapse/security";
 import {
 	type ApprovalRequest,
 	type ApprovalStore,
@@ -27,7 +28,12 @@ import {
 } from "../constants/oversight.constants";
 
 /** Every gated action runs for one owner; extra fields are the action's own input. */
-export type ActionInput = { ownerId: string };
+export type ActionInput = {
+	/** Organization the action runs in (its admins decide). */
+	ownerId: string;
+	/** User who asked. */
+	requestedBy: string;
+};
 
 export type GatedAction<TInput extends ActionInput, TResult> = {
 	/** One line for the reviewer, e.g. "Delete all 12 documents". */
@@ -69,6 +75,7 @@ export class OversightService {
 					this.approvals.request({
 						id: approvalId,
 						ownerId: input.ownerId,
+						requestedBy: input.requestedBy,
 						action,
 						summary: await describe(input),
 					}),
@@ -94,8 +101,12 @@ export class OversightService {
 		return approval;
 	}
 
-	pending(ownerId: string): Promise<ApprovalRequest[]> {
-		return this.approvals.pending(ownerId, OVERSIGHT_PENDING_LIMIT);
+	/** Admins see every pending request of the organization; members only their own. */
+	pending(user: AuthUser): Promise<ApprovalRequest[]> {
+		return this.approvals.pending(user.orgId, {
+			limit: OVERSIGHT_PENDING_LIMIT,
+			...(can(user.role, "approvals.decide") ? {} : { requestedBy: user.sub }),
+		});
 	}
 
 	/**
@@ -110,9 +121,16 @@ export class OversightService {
 	): Promise<{ approval: ApprovalRequest; outcome: ActionOutcome }> {
 		const decision = { approved, decidedBy: user.sub, ...(reason ? { reason } : {}) };
 		// Read before deciding: only a new decision is an event; a repeated one (retry) is not.
+		if (!can(user.role, "approvals.decide")) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.FORBIDDEN,
+				code: OVERSIGHT_API_ERROR_CODES.FORBIDDEN,
+				message: OVERSIGHT_MESSAGES.FORBIDDEN,
+			});
+		}
 		const isNewDecision =
-			(await this.approvals.get(id, user.sub).catch(toAppError)).status === "pending";
-		const approval = await this.approvals.decide(id, user.sub, decision).catch(toAppError);
+			(await this.approvals.get(id, user.orgId).catch(toAppError)).status === "pending";
+		const approval = await this.approvals.decide(id, user.orgId, decision).catch(toAppError);
 		const outcome = await this.graph(approval.action).decide(id, decision);
 		if (isNewDecision) {
 			await this.record(AUDIT_ACTIONS.OVERSIGHT_APPROVAL_DECIDED, approval, context, {
@@ -140,7 +158,7 @@ export class OversightService {
 	): Promise<void> {
 		await this.audit.record({
 			ownerId: approval.ownerId,
-			actorId: approval.decidedBy ?? approval.ownerId,
+			actorId: approval.decidedBy ?? approval.requestedBy ?? approval.ownerId,
 			action,
 			subjectType: "approval",
 			subjectId: approval.id,

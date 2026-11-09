@@ -12,7 +12,7 @@ migration runner. Any app or package that needs Postgres depends on this package
 ## Owns
 
 - `createDatabase(options)` — postgres.js + Drizzle client (`Database` type), SSL for Neon
-- The Drizzle schema (today: `audit_events` (append-only), `users`, `auth_sessions`, `auth_tokens`, `auth_rate_limits`, `job_checkpoints`, `approval_requests`, `answer_feedback`, `chat_conversations`, `chat_messages`, `memory_facts`, `rag_documents`, `rag_chunks`, `EMBEDDING_DIMENSIONS = 1536`)
+- The Drizzle schema (today: `audit_events` (append-only), `organizations`, `organization_members`, `users`, `auth_sessions`, `auth_tokens`, `auth_rate_limits`, `job_checkpoints`, `approval_requests`, `answer_feedback`, `chat_conversations`, `chat_messages`, `memory_facts`, `rag_documents`, `rag_chunks`, `EMBEDDING_DIMENSIONS = 1536`)
 - Generated, reviewed SQL migrations and the journal table (`MIGRATIONS_TABLE`)
 - `runMigrations(db, folder)` and the `bun run db:migrate` CLI
 
@@ -47,3 +47,8 @@ migration runner. Any app or package that needs Postgres depends on this package
 A bundle (e.g. the API image) must ship its own copy of `migrations/` and pass that path to
 `runMigrations`: inside a bundle `import.meta.dir` points at the bundle, not this package. The API
 build copies it to `apps/api/dist/migrations`.
+
+**Concurrent migrations:** `runMigrations` runs inside one transaction that takes
+`pg_advisory_xact_lock` first, so two processes starting together (API replicas, parallel test
+suites) apply each migration once; the second waits and finds nothing to do (tested on a fresh
+database; it failed every time without the lock).

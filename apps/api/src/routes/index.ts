@@ -6,6 +6,7 @@ import type { AuditLog } from "@synapse/audit";
 import { createAuditRoutes } from "@/modules/audit";
 import { type AuthService, createAuthMiddleware, createAuthRoutes } from "@/modules/auth";
 import { createMemoryRoutes, type MemoryService } from "@/modules/memory";
+import { createOrganizationRoutes, type OrganizationsService } from "@/modules/organizations";
 import { type ChatService, createChatRoutes } from "@/modules/chat";
 import { createHealthRoutes } from "@/modules/health";
 import { createOversightRoutes, type OversightService } from "@/modules/oversight";
@@ -19,6 +20,7 @@ export type RouteDependencies = {
 	oversight: OversightService;
 	audit: AuditLog;
 	memory: MemoryService;
+	organizations: OrganizationsService;
 	chat: ChatService;
 	pingDatabase: () => Promise<void>;
 };
@@ -26,7 +28,17 @@ export type RouteDependencies = {
 /** Mount every module router under the versioned base path. Protected modules get auth first. */
 export function registerRoutes(
 	app: OpenAPIHono<AppBindings>,
-	{ config, auth, rag, oversight, audit, memory, chat, pingDatabase }: RouteDependencies,
+	{
+		config,
+		auth,
+		rag,
+		oversight,
+		audit,
+		memory,
+		organizations,
+		chat,
+		pingDatabase,
+	}: RouteDependencies,
 ) {
 	const { basePath, serviceName } = config.app;
 	const authenticate = createAuthMiddleware(auth);
@@ -34,6 +46,9 @@ export function registerRoutes(
 	app.use(`${basePath}/auth/sign-out`, authenticate);
 	app.use(`${basePath}/auth/me`, authenticate);
 	app.use(`${basePath}/auth/verify-email/resend`, authenticate);
+	app.use(`${basePath}/auth/switch-organization`, authenticate);
+	app.use(`${basePath}/organizations`, authenticate);
+	app.use(`${basePath}/organizations/*`, authenticate);
 	app.use(`${basePath}/rag/*`, authenticate);
 	app.use(`${basePath}/oversight/*`, authenticate);
 	app.use(`${basePath}/audit/*`, authenticate);
@@ -48,5 +63,6 @@ export function registerRoutes(
 	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));
 	app.route(`${basePath}/audit`, createAuditRoutes(audit));
 	app.route(`${basePath}/memory`, createMemoryRoutes(memory));
+	app.route(`${basePath}/organizations`, createOrganizationRoutes(organizations));
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
 }

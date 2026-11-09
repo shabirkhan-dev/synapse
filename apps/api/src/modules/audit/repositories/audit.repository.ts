@@ -21,16 +21,22 @@ export class DrizzleAuditRepository implements AuditStore {
 		ownerId,
 		limit,
 		action,
+		actorId,
 	}: {
 		ownerId: string;
 		limit: number;
 		action?: string;
+		actorId?: string;
 	}): Promise<StoredAuditEvent[]> {
 		const rows = await this.db
 			.select()
 			.from(auditEvents)
 			.where(
-				and(eq(auditEvents.ownerId, ownerId), action ? eq(auditEvents.action, action) : undefined),
+				and(
+					eq(auditEvents.ownerId, ownerId),
+					action ? eq(auditEvents.action, action) : undefined,
+					actorId ? eq(auditEvents.actorId, actorId) : undefined,
+				),
 			)
 			.orderBy(desc(auditEvents.createdAt))
 			.limit(limit);

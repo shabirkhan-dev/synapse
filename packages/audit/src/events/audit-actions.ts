@@ -18,6 +18,10 @@ export const AUDIT_ACTIONS = {
 	GUARDRAILS_INPUT_BLOCKED: "guardrails.input.blocked",
 	GUARDRAILS_PASSAGES_FLAGGED: "guardrails.passages.flagged",
 	GUARDRAILS_OUTPUT_REDACTED: "guardrails.output.redacted",
+	ORGANIZATION_CREATED: "organization.created",
+	ORGANIZATION_MEMBER_SAVED: "organization.member.saved",
+	ORGANIZATION_MEMBER_REMOVED: "organization.member.removed",
+	AUTH_ORGANIZATION_SWITCHED: "auth.session.organization_switched",
 } as const;
 
 /** Actor for work no user did directly (approved actions, jobs). */

@@ -4,8 +4,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 
 - **Auth is in-house** (ADR-0005): `/auth/sign-up|sign-in|refresh|sign-out|me`. Access tokens are
   checked by signature only, so they outlive sign-out by up to `AUTH_ACCESS_TOKEN_TTL_SECONDS` (15 min).
-  Rate limits, email verification and password reset exist (syn-026); **no MFA, session list or
-  organizations** yet: `sub` (user id) is the tenant. Unverified users can sign in
+  Rate limits, email verification and password reset exist (syn-026); **no MFA or session list**.
+  **Tenancy (ADR-0006):** shared data (documents, approvals, their audit) uses `owner_id` = the
+  active organization (token `org`, else personal = user id); memory, feedback and account events use
+  the user id. Members are added by existing email only (no invite emails). Unverified users can sign in
   (`emailVerifiedAt: null`). Emails are sent from `synapse@rabtx.dev` (rabtx.dev is verified in
   Resend; `synapse.rabtx.dev` is not, and the current key cannot send from it). Without `RESEND_API_KEY` emails go to the API log (development only;
   production requires the key). Old auth rows are pruned daily by the worker. Console pages `/verify-email` and `/reset-password` do not exist yet
@@ -19,6 +21,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `embedding_model` (or null), so changing the embedding model hides old vectors until re-embedded
   (the worker's `knowledge.reembed-chunks` job re-embeds them on its next start). Keyword search still finds them.
 - **Embeddings are fixed at 1536 dimensions** (`vector(1536)`); the embedding model must match.
+- **Migrations take an advisory lock** (`runMigrations`), so concurrent runners are safe.
 - **Migrations journal table** is still `__drizzle_migrations_ai_api` (`MIGRATIONS_TABLE` in
   `@synapse/database`, kept so existing databases do not re-run migrations).
 - **Bundled migrations:** the API build copies `packages/database/migrations` to `dist/migrations`;
@@ -56,8 +59,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   yet); the worker has logs but no tracing yet. Docker images were not built in the agent sandbox
   (no DNS inside build containers); the bundles build and boot.
 - **The API's RAG answer graph has no checkpointer** (in-request); approval-gated actions do (the
-  API calls `checkpointer.setup()` on start: `langgraph` schema). The approver is the owner until
-  roles exist; approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
+  API calls `checkpointer.setup()` on start: `langgraph` schema). Admins/owners decide approvals (members request);
+  approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
   LangGraph keeps the AsyncLocalStorage trace context, so LLM spans stay children of the request.
 - **Memory:** stored chat saves the reply in `onFinish` after streaming (a failed save is logged, the
   user already has the reply). Long histories are cut to the budget, not summarized. Facts use the

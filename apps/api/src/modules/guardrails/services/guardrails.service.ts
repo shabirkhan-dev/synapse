@@ -132,7 +132,7 @@ export class GuardrailsService {
 	) {
 		await this.audit.record({
 			ownerId,
-			actorId: ownerId,
+			actorId: context.actorId ?? ownerId,
 			action,
 			subjectType: "guardrail",
 			subjectId: null,

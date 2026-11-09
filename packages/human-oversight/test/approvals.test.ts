@@ -19,8 +19,13 @@ function memoryStore(): ApprovalStore {
 		async find({ id, ownerId }) {
 			return rows.find((row) => row.id === id && row.ownerId === ownerId) ?? null;
 		},
-		async listPending(ownerId) {
-			return rows.filter((row) => row.ownerId === ownerId && row.status === "pending");
+		async listPending(ownerId, _limit, requestedBy) {
+			return rows.filter(
+				(row) =>
+					row.ownerId === ownerId &&
+					row.status === "pending" &&
+					(!requestedBy || row.requestedBy === requestedBy),
+			);
 		},
 		async decide({ id, ownerId, approved, decidedBy, reason }) {
 			const row = rows.find((r) => r.id === id && r.ownerId === ownerId && r.status === "pending");
@@ -41,6 +46,7 @@ const request = {
 	ownerId: "u1",
 	action: "rag.purge-documents",
 	summary: "Delete 3 documents",
+	requestedBy: "u1",
 };
 
 describe("approvals", () => {
@@ -50,6 +56,7 @@ describe("approvals", () => {
 		await approvals.request(request);
 		expect(await approvals.pending("u1")).toHaveLength(1);
 		expect(await approvals.pending("u2")).toEqual([]);
+		expect(await approvals.pending("u1", { requestedBy: "someone-else" })).toEqual([]);
 
 		const decided = await approvals.decide("a1", "u1", { approved: true, decidedBy: "u1" });
 		expect(decided).toMatchObject({ status: "approved", decidedBy: "u1" });

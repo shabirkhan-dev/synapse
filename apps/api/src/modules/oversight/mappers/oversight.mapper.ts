@@ -12,6 +12,7 @@ export function toApprovalRequest(row: ApprovalRequestRow): ApprovalRequest {
 		ownerId: row.ownerId,
 		action: row.action,
 		summary: row.summary,
+		requestedBy: row.requestedBy,
 		status: row.status as ApprovalStatus,
 		reason: row.reason,
 		decidedBy: row.decidedBy,

@@ -7,6 +7,8 @@ export const AUTH_ERROR_CODES = {
 	USER_NOT_FOUND: "AUTH_USER_NOT_FOUND",
 	RATE_LIMITED: "AUTH_RATE_LIMITED",
 	LINK_INVALID: "AUTH_LINK_INVALID",
+	NOT_A_MEMBER: "AUTH_NOT_A_MEMBER",
+	ORGANIZATION_NOT_FOUND: "AUTH_ORGANIZATION_NOT_FOUND",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -31,6 +33,9 @@ export const AUTH_MESSAGES = {
 	// Same answer whether or not the account exists.
 	RESET_REQUESTED: "If an account exists for this email, a reset link is on its way",
 	PASSWORD_RESET: "Password changed; sign in again",
+	NOT_A_MEMBER: "You are no longer a member of this organization; switch organization",
+	ORGANIZATION_NOT_FOUND: "Organization not found",
+	ORGANIZATION_SWITCHED: "Organization switched",
 } as const;
 
 const MINUTE = 60;

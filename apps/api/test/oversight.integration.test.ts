@@ -51,7 +51,7 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 			checkpointer.saver,
 			createAuditLog({ store: new DrizzleAuditRepository(database.db), redact: redactPiiDeep }),
 		);
-		oversight.registerAction<{ ownerId: string }, { by: string }>(
+		oversight.registerAction<{ ownerId: string; requestedBy: string }, { by: string }>(
 			OVERSIGHT_ACTIONS.PURGE_DOCUMENTS,
 			{
 				describe: async () => "Delete all 3 of your documents and their chunks",
@@ -66,13 +66,16 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 
 	test("a request made before a restart is approved after it, and the action runs once", async () => {
 		const executed: string[] = [];
+		const user = { sub: owner, sid: "s1", orgId: owner, role: "owner" as const };
 		const before = await startProcess(executed, "before");
-		const approval = await before.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, { ownerId: owner });
+		const approval = await before.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
+			ownerId: owner,
+			requestedBy: owner,
+		});
 		expect(approval).toMatchObject({ ownerId: owner, status: "pending" });
-		expect((await before.pending(owner)).map((a) => a.id)).toEqual([approval.id]);
+		expect((await before.pending(user)).map((a) => a.id)).toEqual([approval.id]);
 
 		const after = await startProcess(executed, "after");
-		const user = { sub: owner, sid: "s1" };
 		const decided = await after.decide(approval.id, user, { approved: true });
 		expect(decided.approval).toMatchObject({ status: "approved", decidedBy: owner });
 		expect(decided.outcome).toEqual({
@@ -87,7 +90,7 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 			code: "OVERSIGHT_APPROVAL_ALREADY_DECIDED",
 		});
 		expect(executed).toEqual(["after"]);
-		expect(await after.pending(owner)).toEqual([]);
+		expect(await after.pending(user)).toEqual([]);
 	}, 30_000);
 
 	test("feedback is one row per user and request", async () => {

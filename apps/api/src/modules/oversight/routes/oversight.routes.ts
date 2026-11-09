@@ -105,7 +105,7 @@ export function createOversightRoutes(oversight: OversightService) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(pendingRoute, async (c) => {
-		const pending = await oversight.pending(c.get("user").sub);
+		const pending = await oversight.pending(c.get("user"));
 		return success(c, pending, OVERSIGHT_MESSAGES.APPROVALS_FETCHED);
 	});
 

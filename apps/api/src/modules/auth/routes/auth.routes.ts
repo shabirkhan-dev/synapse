@@ -18,6 +18,8 @@ import {
 	signedInSchema,
 	signInBodySchema,
 	signUpBodySchema,
+	switchedOrganizationSchema,
+	switchOrganizationBodySchema,
 	userSchema,
 	verifyEmailBodySchema,
 } from "../schemas/auth.schemas";
@@ -208,6 +210,27 @@ const resetPasswordRoute = createRoute({
 	},
 });
 
+const switchOrganizationRoute = createRoute({
+	method: "post",
+	path: "/switch-organization",
+	tags,
+	summary: "Act in another organization you belong to: returns a new access token for it",
+	security,
+	middleware: [smallBody] as const,
+	request: { body: jsonBody(switchOrganizationBodySchema) },
+	responses: {
+		200: {
+			description: "Access token for the organization (the refresh token keeps working)",
+			content: { "application/json": { schema: successEnvelope(switchedOrganizationSchema) } },
+		},
+		404: {
+			description: "Not a member of that organization",
+			content: { "application/json": { schema: apiErrorSchema } },
+		},
+		...errorResponses,
+	},
+});
+
 export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy: boolean }) {
 	const app = new OpenAPIHono<AppBindings>();
 
@@ -262,6 +285,17 @@ export function createAuthRoutes(auth: AuthService, { trustProxy }: { trustProxy
 		const { token, password } = c.req.valid("json");
 		await auth.resetPassword(token, password, { requestId: c.get("requestId") });
 		return success(c, null, AUTH_MESSAGES.PASSWORD_RESET);
+	});
+
+	app.openapi(switchOrganizationRoute, async (c) => {
+		const switched = await auth.switchOrganization(
+			c.get("user"),
+			c.req.valid("json").organizationId,
+			{
+				requestId: c.get("requestId"),
+			},
+		);
+		return success(c, switched, AUTH_MESSAGES.ORGANIZATION_SWITCHED, HTTP_STATUS.OK);
 	});
 
 	return app;

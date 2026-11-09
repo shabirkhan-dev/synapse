@@ -9,6 +9,8 @@ export const approvalRequests = pgTable(
 		/** e.g. `rag.purge-documents`. */
 		action: text("action").notNull(),
 		summary: text("summary").notNull(),
+		/** User who asked (the organization's admins decide). `null` on rows from before roles. */
+		requestedBy: text("requested_by"),
 		/** `pending`, `approved` or `rejected`; a decision is written once. */
 		status: text("status").notNull().default("pending"),
 		reason: text("reason"),

@@ -32,8 +32,9 @@ export function createChatRoutes(chat: ChatService) {
 	app.openapi(chatRoute, async (c) => {
 		const { result, conversationId, stream } = await chat.streamReply({
 			ownerId: c.get("user").sub,
+			organizationId: c.get("user").orgId,
 			body: c.req.valid("json"),
-			context: { requestId: c.get("requestId") },
+			context: { requestId: c.get("requestId"), actorId: c.get("user").sub },
 			abortSignal: c.req.raw.signal,
 		});
 		return result.toUIMessageStreamResponse({

@@ -23,6 +23,7 @@ export const approvalRequestSchema = z
 		ownerId: z.string(),
 		action: z.string(),
 		summary: z.string(),
+		requestedBy: z.string().nullable(),
 		status: z.enum(["pending", "approved", "rejected"]),
 		reason: z.string().nullable(),
 		decidedBy: z.string().nullable(),

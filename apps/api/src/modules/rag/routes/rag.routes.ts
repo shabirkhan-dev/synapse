@@ -133,15 +133,16 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	app.openapi(purgeRoute, async (c) => {
 		const approval = await oversight.request(
 			OVERSIGHT_ACTIONS.PURGE_DOCUMENTS,
-			{ ownerId: c.get("user").sub },
-			{ requestId: c.get("requestId") },
+			{ ownerId: c.get("user").orgId, requestedBy: c.get("user").orgId },
+			{ requestId: c.get("requestId"), actorId: c.get("user").sub },
 		);
 		return success(c, approval, RAG_MESSAGES.PURGE_REQUESTED, HTTP_STATUS.ACCEPTED);
 	});
 
 	app.openapi(ingestRoute, async (c) => {
-		const { document, created } = await rag.ingest(c.get("user").sub, c.req.valid("json"), {
+		const { document, created } = await rag.ingest(c.get("user").orgId, c.req.valid("json"), {
 			requestId: c.get("requestId"),
+			actorId: c.get("user").sub,
 		});
 		if (!created) {
 			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
@@ -153,33 +154,42 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 		const { limit } = c.req.valid("query");
 		return success(
 			c,
-			await rag.listDocuments(c.get("user").sub, limit),
+			await rag.listDocuments(c.get("user").orgId, limit),
 			RAG_MESSAGES.DOCUMENTS_FETCHED,
 		);
 	});
 
 	app.openapi(deleteRoute, async (c) => {
 		const { id } = c.req.valid("param");
-		await rag.deleteDocument(c.get("user").sub, id, { requestId: c.get("requestId") });
+		await rag.deleteDocument(c.get("user").orgId, id, {
+			requestId: c.get("requestId"),
+			actorId: c.get("user").sub,
+		});
 		return success(c, { id }, RAG_MESSAGES.DOCUMENT_DELETED);
 	});
 
 	app.openapi(queryRoute, async (c) => {
 		const { query, topK, answer } = c.req.valid("json");
-		const ownerId = c.get("user").sub;
+		const ownerId = c.get("user").orgId;
 		if (!answer) {
 			return success(
 				c,
 				{
 					answer: null,
-					matches: await rag.retrieve(ownerId, query, topK, { requestId: c.get("requestId") }),
+					matches: await rag.retrieve(ownerId, query, topK, {
+						requestId: c.get("requestId"),
+						actorId: c.get("user").sub,
+					}),
 					citations: [],
 					provenance: null,
 				},
 				RAG_MESSAGES.MATCHES_FOUND,
 			);
 		}
-		const answered = await rag.answer(ownerId, query, topK, { requestId: c.get("requestId") });
+		const answered = await rag.answer(ownerId, query, topK, {
+			requestId: c.get("requestId"),
+			actorId: c.get("user").sub,
+		});
 		return success(c, answered, RAG_MESSAGES.QUERY_ANSWERED);
 	});
 

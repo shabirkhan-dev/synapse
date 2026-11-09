@@ -1,3 +1,5 @@
+import type { OrganizationRole } from "@synapse/security";
+
 export type User = {
 	id: string;
 	email: string;
@@ -24,6 +26,8 @@ export type AuthSession = {
 	userId: string;
 	expiresAt: Date;
 	revokedAt: Date | null;
+	/** Active organization; `null` = the personal one. */
+	organizationId: string | null;
 	/** Which hash the presented refresh token matched: `previous` means it was already used. */
 	matched: "current" | "previous";
 };
@@ -38,8 +42,16 @@ export type AuthTokens = {
 
 export type SignedIn = { user: User; tokens: AuthTokens };
 
+export type SwitchedOrganization = {
+	tokenType: "Bearer";
+	accessToken: string;
+	accessTokenExpiresAt: string;
+	organizationId: string;
+	role: OrganizationRole;
+};
+
 export interface AuthRepository {
-	/** `null` when the email is already registered. */
+	/** Creates the user and their personal organization (same id). `null` if the email exists. */
 	createUser(input: { email: string; passwordHash: string }): Promise<User | null>;
 	findUserByEmail(email: string): Promise<UserCredentials | null>;
 	findUserById(userId: string): Promise<User | null>;
@@ -61,6 +73,11 @@ export interface AuthRepository {
 	}): Promise<boolean>;
 	revokeSession(input: { sessionId: string; userId: string }): Promise<void>;
 	revokeAllSessions(userId: string): Promise<void>;
+	setSessionOrganization(input: {
+		sessionId: string;
+		userId: string;
+		organizationId: string | null;
+	}): Promise<void>;
 	/** Store a single-use token, voiding any unused one with the same purpose for the user. */
 	replaceAuthToken(input: {
 		userId: string;

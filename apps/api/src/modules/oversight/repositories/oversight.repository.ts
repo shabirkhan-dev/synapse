@@ -36,11 +36,21 @@ export class DrizzleApprovalRepository implements ApprovalStore {
 		return row ? toApprovalRequest(row) : null;
 	}
 
-	async listPending(ownerId: string, limit: number): Promise<ApprovalRequest[]> {
+	async listPending(
+		ownerId: string,
+		limit: number,
+		requestedBy?: string,
+	): Promise<ApprovalRequest[]> {
 		const rows = await this.db
 			.select()
 			.from(approvalRequests)
-			.where(and(eq(approvalRequests.ownerId, ownerId), eq(approvalRequests.status, "pending")))
+			.where(
+				and(
+					eq(approvalRequests.ownerId, ownerId),
+					eq(approvalRequests.status, "pending"),
+					requestedBy ? eq(approvalRequests.requestedBy, requestedBy) : undefined,
+				),
+			)
 			.orderBy(desc(approvalRequests.createdAt))
 			.limit(limit);
 		return rows.map(toApprovalRequest);

@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-08. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-09. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -47,9 +47,9 @@ The two retrieval fixes found by the Phase 1 evaluation and in-house auth are do
 | `audit` — event history, provenance, retention | ✅ | syn-029 |
 | `memory` — conversation, semantic, episodic | ✅ | syn-030 |
 | `guardrails` — input/output/tool policies, injection defense | ✅ | syn-031 |
-| `security` — organizations, roles, permissions | ⏭️ | syn-032 |
-| `reliability` — retry, breakers, timeouts, fallbacks | ⬜ | syn-033 |
-| `providers` — OpenAI, Anthropic, Google, Cohere, Langfuse | ⬜ | — |
+| `security` — organizations, roles, permissions (ADR-0006) | ✅ | syn-032 |
+| `reliability` — retry, breakers, timeouts, fallbacks | ⏭️ | syn-033 |
+| `providers` — OpenAI, Anthropic, Google, Cohere | ⬜ | syn-034 |
 | Reranking (Cohere via adapter) | ⬜ | — |
 | `native` + `crates/` (napi-rs) | ⬜ | — |
 

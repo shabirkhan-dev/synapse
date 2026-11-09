@@ -41,11 +41,15 @@ export class ChatService {
 
 	async streamReply({
 		ownerId,
+		organizationId,
 		body,
 		context,
 		abortSignal,
 	}: {
+		/** The user: conversations and facts are per user. */
 		ownerId: string;
+		/** Active organization: document search is scoped to it. */
+		organizationId: string;
 		body: ChatBody;
 		context: RequestContext;
 		abortSignal?: AbortSignal;
@@ -74,7 +78,7 @@ export class ChatService {
 		}
 		const recalled = await memory.recallContext(ownerId, lastUserText(validated));
 		const tools = guardrails.allowedTools(
-			createChatTools({ rag, memory, guardrails, ownerId, topK, context }),
+			createChatTools({ rag, memory, guardrails, ownerId, organizationId, topK, context }),
 		);
 		const result = streamText({
 			model: chatModel,

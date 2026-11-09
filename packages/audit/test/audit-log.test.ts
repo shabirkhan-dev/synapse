@@ -11,9 +11,14 @@ function memoryStore(): AuditStore & { rows: StoredAuditEvent[] } {
 			rows.push(stored);
 			return stored;
 		},
-		async list({ ownerId, limit, action }) {
+		async list({ ownerId, limit, action, actorId }) {
 			return rows
-				.filter((row) => row.ownerId === ownerId && (!action || row.action === action))
+				.filter(
+					(row) =>
+						row.ownerId === ownerId &&
+						(!action || row.action === action) &&
+						(!actorId || row.actorId === actorId),
+				)
 				.toReversed()
 				.slice(0, limit);
 		},
@@ -53,5 +58,7 @@ describe("audit log", () => {
 			"rag.query.answered",
 		]);
 		expect(await audit.list("u1", { limit: 10, action: "rag.query.answered" })).toHaveLength(1);
+		await audit.record({ ...event, actorId: "u9" });
+		expect(await audit.list("u1", { limit: 10, actorId: "u9" })).toHaveLength(1);
 	});
 });

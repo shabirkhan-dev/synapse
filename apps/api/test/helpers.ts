@@ -19,6 +19,7 @@ import {
 	type StoredMessage,
 } from "@synapse/memory";
 import { MemorySaver } from "@synapse/orchestration";
+import type { OrganizationRole } from "@synapse/security";
 import { redactPiiDeep } from "@synapse/security";
 import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
@@ -39,6 +40,11 @@ import {
 } from "@/modules/auth";
 import { ChatService } from "@/modules/chat";
 import { GuardrailsService } from "@/modules/guardrails";
+import {
+	type Organization,
+	OrganizationsService,
+	type OrganizationStore,
+} from "@/modules/organizations";
 import {
 	type Conversation,
 	type ConversationStore,
@@ -283,6 +289,7 @@ export class InMemoryAuthRepository implements AuthRepository {
 			id: crypto.randomUUID(),
 			revokedAt: null,
 			previousRefreshTokenHash: null,
+			organizationId: null as string | null,
 		};
 		this.sessions.push(session);
 		return { id: session.id };
@@ -298,6 +305,7 @@ export class InMemoryAuthRepository implements AuthRepository {
 			userId: session.userId,
 			expiresAt: session.expiresAt,
 			revokedAt: session.revokedAt,
+			organizationId: session.organizationId,
 			matched: session.refreshTokenHash === hash ? "current" : "previous",
 		};
 	}
@@ -324,6 +332,19 @@ export class InMemoryAuthRepository implements AuthRepository {
 		for (const session of this.sessions) {
 			if (session.id === sessionId && session.userId === userId) session.revokedAt ??= new Date();
 		}
+	}
+
+	async setSessionOrganization({
+		sessionId,
+		userId,
+		organizationId,
+	}: {
+		sessionId: string;
+		userId: string;
+		organizationId: string | null;
+	}) {
+		const session = this.sessions.find((s) => s.id === sessionId && s.userId === userId);
+		if (session) session.organizationId = organizationId;
 	}
 
 	async revokeAllSessions(userId: string) {
@@ -377,7 +398,13 @@ export class InMemoryAuthRepository implements AuthRepository {
 export class InMemoryApprovalStore implements ApprovalStore {
 	rows: ApprovalRequest[] = [];
 
-	async create(input: { id: string; ownerId: string; action: string; summary: string }) {
+	async create(input: {
+		id: string;
+		ownerId: string;
+		action: string;
+		summary: string;
+		requestedBy: string;
+	}) {
 		if (this.rows.some((row) => row.id === input.id)) return;
 		this.rows.push({
 			...input,
@@ -393,8 +420,13 @@ export class InMemoryApprovalStore implements ApprovalStore {
 		return this.rows.find((row) => row.id === id && row.ownerId === ownerId) ?? null;
 	}
 
-	async listPending(ownerId: string) {
-		return this.rows.filter((row) => row.ownerId === ownerId && row.status === "pending");
+	async listPending(ownerId: string, _limit: number, requestedBy?: string) {
+		return this.rows.filter(
+			(row) =>
+				row.ownerId === ownerId &&
+				row.status === "pending" &&
+				(!requestedBy || row.requestedBy === requestedBy),
+		);
 	}
 
 	async decide({
@@ -428,6 +460,93 @@ export class InMemoryFeedbackStore implements FeedbackStore {
 		const row = { ...input, createdAt: new Date().toISOString() };
 		this.rows.push(row);
 		return row;
+	}
+}
+
+export class InMemoryOrganizationStore implements OrganizationStore {
+	organizations: Array<Organization> = [];
+	memberships: Array<{
+		organizationId: string;
+		userId: string;
+		role: OrganizationRole;
+		createdAt: string;
+	}> = [];
+
+	constructor(private readonly users: () => UserCredentials[]) {}
+
+	async create(name: string, ownerId: string) {
+		const organization = {
+			id: crypto.randomUUID(),
+			name,
+			kind: "team" as const,
+			createdAt: new Date().toISOString(),
+		};
+		this.organizations.push(organization);
+		this.memberships.push({
+			organizationId: organization.id,
+			userId: ownerId,
+			role: "owner",
+			createdAt: organization.createdAt,
+		});
+		return organization;
+	}
+
+	async find(id: string) {
+		return (
+			this.organizations.find((o) => o.id === id) ??
+			(this.users().some((u) => u.id === id)
+				? { id, name: "Personal", kind: "personal" as const, createdAt: "" }
+				: null)
+		);
+	}
+
+	async listForUser(userId: string) {
+		return this.memberships
+			.filter((m) => m.userId === userId)
+			.flatMap((m) => {
+				const organization = this.organizations.find((o) => o.id === m.organizationId);
+				return organization ? [{ ...organization, role: m.role }] : [];
+			});
+	}
+
+	async role(organizationId: string, userId: string) {
+		return (
+			this.memberships.find((m) => m.organizationId === organizationId && m.userId === userId)
+				?.role ?? null
+		);
+	}
+
+	async members(organizationId: string) {
+		return this.memberships
+			.filter((m) => m.organizationId === organizationId)
+			.map((m) => ({
+				userId: m.userId,
+				email: this.users().find((u) => u.id === m.userId)?.email ?? "",
+				role: m.role,
+				createdAt: m.createdAt,
+			}));
+	}
+
+	async saveMember(organizationId: string, userId: string, role: OrganizationRole) {
+		const existing = this.memberships.find(
+			(m) => m.organizationId === organizationId && m.userId === userId,
+		);
+		if (existing) existing.role = role;
+		else
+			this.memberships.push({ organizationId, userId, role, createdAt: new Date().toISOString() });
+	}
+
+	async removeMember(organizationId: string, userId: string) {
+		const before = this.memberships.length;
+		this.memberships = this.memberships.filter(
+			(m) => !(m.organizationId === organizationId && m.userId === userId),
+		);
+		return this.memberships.length < before;
+	}
+
+	async countOwners(organizationId: string) {
+		return this.memberships.filter((m) => m.organizationId === organizationId && m.role === "owner")
+			.length;
 	}
 }
 
@@ -568,9 +687,24 @@ export class InMemoryAuditStore implements AuditStore {
 		return stored;
 	}
 
-	async list({ ownerId, limit, action }: { ownerId: string; limit: number; action?: string }) {
+	async list({
+		ownerId,
+		limit,
+		action,
+		actorId,
+	}: {
+		ownerId: string;
+		limit: number;
+		action?: string;
+		actorId?: string;
+	}) {
 		return this.events
-			.filter((e) => e.ownerId === ownerId && (!action || e.action === action))
+			.filter(
+				(e) =>
+					e.ownerId === ownerId &&
+					(!action || e.action === action) &&
+					(!actorId || e.actorId === actorId),
+			)
 			.toReversed()
 			.slice(0, limit);
 	}
@@ -691,6 +825,13 @@ export function buildTestApp({
 		maxSteps: testConfig.rag.chatMaxSteps,
 		topK: testConfig.rag.topK,
 	});
+	const organizationStore = new InMemoryOrganizationStore(() => authRepository.users);
+	const organizations = new OrganizationsService({
+		store: organizationStore,
+		findUserIdByEmail: async (address) =>
+			(await authRepository.findUserByEmail(address))?.id ?? null,
+		audit,
+	});
 	const auth = new AuthService({
 		repository: authRepository,
 		rateLimiter: new InMemoryRateLimiter(),
@@ -698,6 +839,7 @@ export function buildTestApp({
 		logger,
 		config: testConfig.auth,
 		audit,
+		roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 	});
 	const approvals = new InMemoryApprovalStore();
 	const feedback = new InMemoryFeedbackStore();
@@ -711,6 +853,7 @@ export function buildTestApp({
 		oversight,
 		audit,
 		memory,
+		organizations,
 		chat,
 		pingDatabase,
 	});
@@ -727,6 +870,8 @@ export function buildTestApp({
 		facts,
 		memory,
 		guardrails,
+		organizations,
+		organizationStore,
 		chatModel,
 		embeddingModel,
 	};

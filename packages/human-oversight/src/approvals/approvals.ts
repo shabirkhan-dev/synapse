@@ -10,6 +10,8 @@ export type ApprovalRequest = {
 	ownerId: string;
 	/** What will run when approved, e.g. `rag.purge-documents`. */
 	action: string;
+	/** User who asked; `null` on requests from before organizations. */
+	requestedBy: string | null;
 	/** One line for the reviewer. */
 	summary: string;
 	status: ApprovalStatus;
@@ -23,9 +25,16 @@ export type Decision = { approved: boolean; decidedBy: string; reason?: string }
 
 export interface ApprovalStore {
 	/** Insert a pending request; an existing id is left as is (safe to repeat). */
-	create(input: { id: string; ownerId: string; action: string; summary: string }): Promise<void>;
+	create(input: {
+		id: string;
+		ownerId: string;
+		action: string;
+		summary: string;
+		requestedBy: string;
+	}): Promise<void>;
 	find(input: { id: string; ownerId: string }): Promise<ApprovalRequest | null>;
-	listPending(ownerId: string, limit: number): Promise<ApprovalRequest[]>;
+	/** Pending requests of the owner (tenant); only `requestedBy`'s when given. */
+	listPending(ownerId: string, limit: number, requestedBy?: string): Promise<ApprovalRequest[]>;
 	/** Set the decision only while pending; returns the updated request, or `null` if not pending. */
 	decide(input: { id: string; ownerId: string } & Decision): Promise<ApprovalRequest | null>;
 }
@@ -48,10 +57,18 @@ export function createApprovals(store: ApprovalStore) {
 	}
 
 	return {
-		request: (input: { id: string; ownerId: string; action: string; summary: string }) =>
-			store.create(input),
+		request: (input: {
+			id: string;
+			ownerId: string;
+			action: string;
+			summary: string;
+			requestedBy: string;
+		}) => store.create(input),
 		get,
-		pending: (ownerId: string, limit = 50) => store.listPending(ownerId, limit),
+		pending: (
+			ownerId: string,
+			{ limit = 50, requestedBy }: { limit?: number; requestedBy?: string } = {},
+		) => store.listPending(ownerId, limit, requestedBy),
 
 		async decide(id: string, ownerId: string, decision: Decision): Promise<ApprovalRequest> {
 			const decided = await store.decide({ id, ownerId, ...decision });

@@ -14,3 +14,11 @@ export {
 export { createSecretToken, hashSecretToken } from "./authentication/secret-token";
 export { SECURITY_ERROR_CODES } from "./authentication/security-error-codes";
 export { redactPii, redactPiiDeep, redactSecrets } from "./pii/redact";
+export {
+	can,
+	isOrganizationRole,
+	ORGANIZATION_ROLES,
+	type OrganizationRole,
+	type Permission,
+	PERMISSIONS,
+} from "./permissions/roles";

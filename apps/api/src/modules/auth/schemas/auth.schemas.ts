@@ -56,3 +56,17 @@ export const authTokensSchema = z
 export const signedInSchema = z
 	.object({ user: userSchema, tokens: authTokensSchema })
 	.openapi("SignedIn");
+
+export const switchOrganizationBodySchema = z
+	.object({ organizationId: z.uuid() })
+	.openapi("SwitchOrganizationBody");
+
+export const switchedOrganizationSchema = z
+	.object({
+		tokenType: z.literal("Bearer"),
+		accessToken: z.string(),
+		accessTokenExpiresAt: z.string(),
+		organizationId: z.uuid(),
+		role: z.enum(["owner", "admin", "member"]),
+	})
+	.openapi("SwitchedOrganization");
