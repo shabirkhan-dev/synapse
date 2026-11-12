@@ -259,6 +259,9 @@ export class InMemoryRagRepository implements RagRepository {
 type StoredSession = Omit<AuthSession, "matched"> & {
 	refreshTokenHash: string;
 	previousRefreshTokenHash: string | null;
+	userAgent: string | null;
+	createdAt: Date;
+	updatedAt: Date;
 };
 
 export class InMemoryAuthRepository implements AuthRepository {
@@ -290,9 +293,16 @@ export class InMemoryAuthRepository implements AuthRepository {
 		return user;
 	}
 
-	async createSession(input: { userId: string; refreshTokenHash: string; expiresAt: Date }) {
+	async createSession(input: {
+		userId: string;
+		refreshTokenHash: string;
+		expiresAt: Date;
+		userAgent: string | null;
+	}) {
 		const session = {
 			...input,
+			createdAt: new Date(),
+			updatedAt: new Date(),
 			id: crypto.randomUUID(),
 			revokedAt: null,
 			previousRefreshTokenHash: null,
@@ -335,13 +345,41 @@ export class InMemoryAuthRepository implements AuthRepository {
 		session.previousRefreshTokenHash = currentHash;
 		session.refreshTokenHash = nextHash;
 		session.rotatedAt = new Date();
+		session.updatedAt = new Date();
 		return true;
 	}
 
+	private active = (session: StoredSession) =>
+		!session.revokedAt && session.expiresAt.getTime() > Date.now();
+
+	async listActiveSessions(userId: string) {
+		return this.sessions
+			.filter((session) => session.userId === userId && this.active(session))
+			.toSorted((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+			.map((session) => ({
+				id: session.id,
+				userAgent: session.userAgent,
+				createdAt: session.createdAt.toISOString(),
+				lastActiveAt: session.updatedAt.toISOString(),
+				expiresAt: session.expiresAt.toISOString(),
+			}));
+	}
+
 	async revokeSession({ sessionId, userId }: { sessionId: string; userId: string }) {
-		for (const session of this.sessions) {
-			if (session.id === sessionId && session.userId === userId) session.revokedAt ??= new Date();
-		}
+		const session = this.sessions.find(
+			(s) => s.id === sessionId && s.userId === userId && this.active(s),
+		);
+		if (!session) return false;
+		session.revokedAt = new Date();
+		return true;
+	}
+
+	async revokeOtherSessions({ userId, keepSessionId }: { userId: string; keepSessionId: string }) {
+		const others = this.sessions.filter(
+			(s) => s.userId === userId && s.id !== keepSessionId && !s.revokedAt,
+		);
+		for (const session of others) session.revokedAt = new Date();
+		return others.length;
 	}
 
 	async setSessionOrganization({

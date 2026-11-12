@@ -9,6 +9,7 @@ export const AUTH_ERROR_CODES = {
 	LINK_INVALID: "AUTH_LINK_INVALID",
 	NOT_A_MEMBER: "AUTH_NOT_A_MEMBER",
 	ORGANIZATION_NOT_FOUND: "AUTH_ORGANIZATION_NOT_FOUND",
+	SESSION_NOT_FOUND: "AUTH_SESSION_NOT_FOUND",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -36,7 +37,14 @@ export const AUTH_MESSAGES = {
 	NOT_A_MEMBER: "You are no longer a member of this organization; switch organization",
 	ORGANIZATION_NOT_FOUND: "Organization not found",
 	ORGANIZATION_SWITCHED: "Organization switched",
+	SESSIONS_FETCHED: "Sessions retrieved",
+	SESSION_REVOKED: "Session signed out",
+	OTHER_SESSIONS_REVOKED: "Other sessions signed out",
+	SESSION_NOT_FOUND: "No active session with this id",
 } as const;
+
+/** Longest `User-Agent` kept on a session; real ones are a few hundred characters. */
+export const USER_AGENT_MAX_LENGTH = 512;
 
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;

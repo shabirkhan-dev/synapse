@@ -4,14 +4,16 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 
 - **Auth is in-house** (ADR-0005): `/auth/sign-up|sign-in|refresh|sign-out|me`. Access tokens are
   checked by signature only, so they outlive sign-out by up to `AUTH_ACCESS_TOKEN_TTL_SECONDS` (15 min).
-  Rate limits, email verification and password reset exist (syn-026); **no MFA or session list**.
+  Rate limits, email verification and password reset exist (syn-026); sessions can be listed and
+  revoked (syn-045, `User-Agent` stored per session, no IP); **no MFA**.
   **Tenancy (ADR-0006):** shared data (documents, approvals, their audit) uses `owner_id` = the
   active organization (token `org`, else personal = user id); memory, feedback and account events use
   the user id. Members are added by existing email only (no invite emails). Unverified users can sign in
   (`emailVerifiedAt: null`). Emails are sent from `synapse@rabtx.dev` (rabtx.dev is verified in
   Resend; `synapse.rabtx.dev` is not, and the current key cannot send from it). Without `RESEND_API_KEY` emails go to the API log (development only;
   production requires the key). Old auth rows are pruned daily by the worker. The console has sign-in, sign-up, verify-email,
-  forgot and reset password (syn-037); no "resend verification" button or session list yet. Tests may still mint tokens (`signAccessToken`).
+  forgot and reset password (syn-037), and an account page (syn-045: resend verification, devices,
+  sign out one or all others; an unverified user sees a notice on every page). Tests may still mint tokens (`signAccessToken`).
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
@@ -86,7 +88,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
-- **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044): auth pages, documents (list +
+- **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044, syn-045): auth pages, documents (list +
   add, delete-all request), the playground (non-streaming `/rag/query`, no history), chat (streaming
   `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; no
   rename, no Markdown rendering, a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members

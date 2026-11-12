@@ -10,6 +10,10 @@ export const endpoints = {
 		resetPassword: "/auth/password/reset",
 		me: "/auth/me",
 		switchOrganization: "/auth/switch-organization",
+		resendVerification: "/auth/verify-email/resend",
+		sessions: "/auth/sessions",
+		session: (id: string) => `/auth/sessions/${encodeURIComponent(id)}`,
+		revokeOtherSessions: "/auth/sessions/revoke-others",
 	},
 	organizations: {
 		list: "/organizations",

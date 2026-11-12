@@ -63,7 +63,8 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | Console: approvals and activity (oversight, audit) | ✅ | syn-040 |
 | Console: teams — organization switcher, members, roles | ✅ | syn-043 |
 | Console: chat — streaming answers, stored conversations (+ first UI/UX review) | ✅ | syn-044 |
-| Console: account — resend verification, active sessions | ⏭️ | syn-045 |
+| Console: account — resend verification, active sessions | ✅ | syn-045 |
+| Console: knowledge — document detail, chunk versions, delete a document | ⏭️ | syn-046 |
 | Fix first CI e2e run (refresh reuse grace, pre-hydration clicks) | ✅ | syn-042 |
 | Console features: knowledge, ingestion, retrieval, agents, evaluations, observability | ⬜ | — |
 | `tests/` — Playwright e2e for console + API in CI | ✅ | syn-039 |

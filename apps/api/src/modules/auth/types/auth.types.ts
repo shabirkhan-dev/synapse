@@ -8,6 +8,21 @@ export type User = {
 	createdAt: string;
 };
 
+/** A signed-in session as the account page lists it (never its tokens). */
+export type ActiveSession = {
+	id: string;
+	userAgent: string | null;
+	createdAt: string;
+	/** Last sign-in or refresh. */
+	lastActiveAt: string;
+	expiresAt: string;
+};
+
+export type SessionView = ActiveSession & { current: boolean };
+
+/** Who signed in from where: the client IP (rate limits) and its `User-Agent` (session list). */
+export type ClientInfo = { ip: string; userAgent: string | null };
+
 export type CurrentUser = User & { organization: { id: string; role: OrganizationRole } };
 
 export type AuthTokenPurpose = "email_verification" | "password_reset";
@@ -64,7 +79,10 @@ export interface AuthRepository {
 		userId: string;
 		refreshTokenHash: string;
 		expiresAt: Date;
+		userAgent: string | null;
 	}): Promise<{ id: string }>;
+	/** Sessions not revoked and not expired, most recently active first (at most 50). */
+	listActiveSessions(userId: string): Promise<ActiveSession[]>;
 	/** The session whose current or previous refresh-token hash equals `hash`. */
 	findSessionByRefreshTokenHash(hash: string): Promise<AuthSession | null>;
 	/**
@@ -76,7 +94,10 @@ export interface AuthRepository {
 		currentHash: string;
 		nextHash: string;
 	}): Promise<boolean>;
-	revokeSession(input: { sessionId: string; userId: string }): Promise<void>;
+	/** `false` when the user has no such active session. */
+	revokeSession(input: { sessionId: string; userId: string }): Promise<boolean>;
+	/** Revokes every active session of the user except `keepSessionId`; returns how many. */
+	revokeOtherSessions(input: { userId: string; keepSessionId: string }): Promise<number>;
 	revokeAllSessions(userId: string): Promise<void>;
 	setSessionOrganization(input: {
 		sessionId: string;

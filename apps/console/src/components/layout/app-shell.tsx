@@ -9,6 +9,8 @@ export type AppShellProps = {
 	email: string | null;
 	/** The organization picker, next to the product name. */
 	switcher?: ReactNode;
+	/** A one-line notice under the header (e.g. verify your email). */
+	notice?: ReactNode;
 	onSignOut: () => void;
 	signingOut: boolean;
 };
@@ -21,9 +23,17 @@ const NAV = [
 	{ href: "/approvals", label: "Approvals" },
 	{ href: "/activity", label: "Activity" },
 	{ href: "/team", label: "Team" },
+	{ href: "/account", label: "Account" },
 ] as const;
 
-export function AppShell({ children, email, switcher, onSignOut, signingOut }: AppShellProps) {
+export function AppShell({
+	children,
+	email,
+	switcher,
+	notice,
+	onSignOut,
+	signingOut,
+}: AppShellProps) {
 	const pathname = usePathname();
 	return (
 		<div className="flex min-h-dvh flex-col">
@@ -60,6 +70,11 @@ export function AppShell({ children, email, switcher, onSignOut, signingOut }: A
 						</Button>
 					</div>
 				</div>
+				{notice ? (
+					<div className="border-t bg-muted">
+						<div className="mx-auto w-full max-w-5xl px-4 py-2">{notice}</div>
+					</div>
+				) : null}
 			</header>
 			<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
 		</div>

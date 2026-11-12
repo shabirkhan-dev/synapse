@@ -91,3 +91,24 @@ export const switchedOrganizationSchema = z
 		role: z.enum(["owner", "admin", "member"]),
 	})
 	.openapi("SwitchedOrganization");
+
+export const sessionIdParamsSchema = z.object({
+	id: z.uuid().openapi({ param: { name: "id", in: "path" } }),
+});
+
+export const sessionSchema = z
+	.object({
+		id: z.uuid(),
+		/** The `User-Agent` the session signed in with; `null` for clients that sent none. */
+		userAgent: z.string().nullable(),
+		createdAt: z.string(),
+		lastActiveAt: z.string(),
+		expiresAt: z.string(),
+		/** The session making this request. */
+		current: z.boolean(),
+	})
+	.openapi("Session");
+
+export const revokedSessionsSchema = z
+	.object({ revoked: z.number().int() })
+	.openapi("RevokedSessions");

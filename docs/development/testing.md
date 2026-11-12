@@ -36,7 +36,8 @@ limit; browser requests carry none. Tests read emailed links from `.output/api.l
 | `oversight.spec.ts` | delete-all needs approval (dialog closes, request survives a reload) → approve → documents gone → activity shows request and decision; reject keeps the documents |
 | `teams.spec.ts` | two browsers: owner creates a team and adds an admin (the role picker then resets to Member) and a member; the member switches in, adds a document, asks to delete all and sees "waiting", cannot manage the team; the owner approves; personal workspace untouched; promoting the member shows on their next load |
 | `chat.spec.ts` | Enter sends; Stop shows while streaming; the answer streams after a "Searched your documents for …" row with its sources; the conversation gets an address, survives a reload, is listed, reopens after "New chat", and is deleted after a confirmation |
-| `layout.spec.ts` | at 320 px (WCAG reflow) every workspace page has no sideways scroll, every main-nav link and Sign out fully on screen, and the current page marked `aria-current` |
+| `account.spec.ts` | an unverified user sees the notice on every page → Account → "Send a new link" → the new link (not the sign-up one) verifies → notice gone; a second browser (iPhone UA) signs in → listed as "Safari on iOS" next to "This device" → "Sign out everywhere else" (confirmed) → the other browser is sent to sign-in on reload, this one stays |
+| `layout.spec.ts` | at 320 px (WCAG reflow) every workspace page (incl. account) has no sideways scroll, every main-nav link and Sign out fully on screen, and the current page marked `aria-current` |
 
 Debug a failure: `bun run test:e2e -- --trace on -g "<test name>"`, then open
 `tests/e2e/.output/results`. Locally a running console on `:3100` is reused (stop it after

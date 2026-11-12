@@ -3,6 +3,8 @@ import { getConnInfo } from "hono/bun";
 
 import type { AppBindings } from "@/shared/types/app-types";
 
+import type { ClientInfo } from "../types/auth.types";
+
 import { UNKNOWN_CLIENT_IP } from "../constants/auth.constants";
 
 /**
@@ -18,4 +20,9 @@ export function clientIp(c: Context<AppBindings>, trustProxy: boolean): string {
 	const server = c.env as { requestIP?: unknown } | undefined;
 	if (typeof server?.requestIP !== "function") return UNKNOWN_CLIENT_IP;
 	return getConnInfo(c).remote.address ?? UNKNOWN_CLIENT_IP;
+}
+
+/** IP for rate limits plus the `User-Agent`, stored on a new session to tell devices apart. */
+export function clientInfo(c: Context<AppBindings>, trustProxy: boolean): ClientInfo {
+	return { ip: clientIp(c, trustProxy), userAgent: c.req.header("user-agent") ?? null };
 }

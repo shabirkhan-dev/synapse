@@ -51,6 +51,10 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
   (someone copied it) — except within `AUTH_REFRESH_REUSE_GRACE_SECONDS` (10 s) of its rotation,
   when it gets an access token only (two tabs, a retried request, the race's loser; ADR-0007).
 - **Sign-out** revokes the session; its refresh token stops working at once.
+- **Sessions list** (syn-045): each session stores the `User-Agent` it signed in with (≤ 512
+  chars, no IP). `GET /auth/sessions` lists the active ones (current marked), `DELETE
+  /auth/sessions/{id}` and `POST /auth/sessions/revoke-others` revoke; audited as
+  `auth.sessions.revoked`. A revoked device keeps its access token until it expires (≤ 15 min).
 - **Browsers (the console)** take the refresh token as an httpOnly cookie instead of in the body
   (`session: "cookie"`, ADR-0007) and keep the access token in memory; the API route layer moves
   the token into the cookie, the service is unchanged.

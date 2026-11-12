@@ -37,6 +37,28 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 		expect(await repository.findUserById(user?.id ?? "")).toEqual(user);
 	});
 
+	test("lists a user's active sessions with their user agent and signs out the others", async () => {
+		const user = await repository.createUser({ email: email("dev"), passwordHash: "h" });
+		const userId = user?.id ?? "";
+		const open = (agent: string | null) =>
+			repository.createSession({
+				userId,
+				refreshTokenHash: `dev-${crypto.randomUUID()}`,
+				expiresAt: inAMonth(),
+				userAgent: agent,
+			});
+		const laptop = await open("Mozilla/5.0 (Macintosh) Firefox/140.0");
+		const phone = await open("Mozilla/5.0 (iPhone) Safari/605");
+		const cli = await open(null);
+		const listed = await repository.listActiveSessions(userId);
+		expect(listed.map((s) => s.id).toSorted()).toEqual([laptop.id, phone.id, cli.id].toSorted());
+		expect(listed.find((s) => s.id === phone.id)?.userAgent).toContain("iPhone");
+		expect(await repository.revokeSession({ sessionId: cli.id, userId })).toBe(true);
+		expect(await repository.revokeSession({ sessionId: cli.id, userId })).toBe(false);
+		expect(await repository.revokeOtherSessions({ userId, keepSessionId: laptop.id })).toBe(1);
+		expect((await repository.listActiveSessions(userId)).map((s) => s.id)).toEqual([laptop.id]);
+	});
+
 	test("rotates refresh tokens atomically and remembers the previous hash", async () => {
 		const user = await repository.createUser({ email: email("rot"), passwordHash: "h" });
 		const userId = user?.id ?? "";
@@ -44,6 +66,7 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 			userId,
 			refreshTokenHash: "hash-1",
 			expiresAt: inAMonth(),
+			userAgent: null,
 		});
 		expect(await repository.findSessionByRefreshTokenHash("hash-1")).toMatchObject({
 			id,
@@ -67,9 +90,11 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 		expect(Date.now() - (replaced?.rotatedAt?.getTime() ?? 0)).toBeLessThan(60_000);
 
 		// Only the owner can revoke; a revoked session cannot rotate.
-		await repository.revokeSession({ sessionId: id, userId: crypto.randomUUID() });
+		expect(await repository.revokeSession({ sessionId: id, userId: crypto.randomUUID() })).toBe(
+			false,
+		);
 		expect((await repository.findSessionByRefreshTokenHash(winner))?.revokedAt).toBeNull();
-		await repository.revokeSession({ sessionId: id, userId });
+		expect(await repository.revokeSession({ sessionId: id, userId })).toBe(true);
 		expect((await repository.findSessionByRefreshTokenHash(winner))?.revokedAt).toBeInstanceOf(
 			Date,
 		);
@@ -82,6 +107,7 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 			userId: user?.id ?? "",
 			refreshTokenHash: `del-${crypto.randomUUID()}`,
 			expiresAt: inAMonth(),
+			userAgent: null,
 		});
 		await database.db.execute(sql`delete from users where id = ${user?.id}`);
 		const left = await database.db.execute(
@@ -159,7 +185,12 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 		const hashes = [`a-${userId}`, `b-${userId}`];
 		await Promise.all(
 			hashes.map((refreshTokenHash) =>
-				repository.createSession({ userId, refreshTokenHash, expiresAt: inAMonth() }),
+				repository.createSession({
+					userId,
+					refreshTokenHash,
+					expiresAt: inAMonth(),
+					userAgent: null,
+				}),
 			),
 		);
 		await repository.revokeAllSessions(userId);

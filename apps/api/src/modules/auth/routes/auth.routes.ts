@@ -16,6 +16,9 @@ import {
 	forgotPasswordBodySchema,
 	refreshBodySchema,
 	resetPasswordBodySchema,
+	revokedSessionsSchema,
+	sessionIdParamsSchema,
+	sessionSchema,
 	signedInSchema,
 	signInBodySchema,
 	signUpBodySchema,
@@ -26,7 +29,7 @@ import {
 	verifyEmailBodySchema,
 } from "../schemas/auth.schemas";
 import type { AuthService } from "../services/auth.service";
-import { clientIp } from "./client-ip";
+import { clientInfo, clientIp } from "./client-ip";
 import { clearRefreshCookie, moveRefreshTokenToCookie, readRefreshCookie } from "./session-cookie";
 
 const tags = ["Auth"];
@@ -234,6 +237,57 @@ const switchOrganizationRoute = createRoute({
 	},
 });
 
+const listSessionsRoute = createRoute({
+	method: "get",
+	path: "/sessions",
+	tags,
+	summary: "Your signed-in sessions (browsers and devices), the current one marked",
+	security,
+	responses: {
+		200: {
+			description: "Active sessions, most recently active first",
+			content: { "application/json": { schema: successEnvelope(z.array(sessionSchema)) } },
+		},
+		...errorResponses,
+	},
+});
+
+const revokeSessionRoute = createRoute({
+	method: "delete",
+	path: "/sessions/{id}",
+	tags,
+	summary:
+		"Sign out one of your sessions: its refresh token stops working (an access token it holds lasts until it expires)",
+	security,
+	request: { params: sessionIdParamsSchema },
+	responses: {
+		200: {
+			description: "Signed out",
+			content: { "application/json": { schema: successEnvelope(z.null()) } },
+		},
+		404: {
+			description: "No active session of yours with this id",
+			content: { "application/json": { schema: apiErrorSchema } },
+		},
+		...errorResponses,
+	},
+});
+
+const revokeOtherSessionsRoute = createRoute({
+	method: "post",
+	path: "/sessions/revoke-others",
+	tags,
+	summary: "Sign out every session except the one making this request",
+	security,
+	responses: {
+		200: {
+			description: "How many sessions were signed out",
+			content: { "application/json": { schema: successEnvelope(revokedSessionsSchema) } },
+		},
+		...errorResponses,
+	},
+});
+
 export function createAuthRoutes(
 	auth: AuthService,
 	{ trustProxy, cookie }: Pick<AuthConfig, "trustProxy" | "cookie">,
@@ -242,7 +296,7 @@ export function createAuthRoutes(
 
 	app.openapi(signUpRoute, async (c) => {
 		const { session, ...input } = c.req.valid("json");
-		const signedUp = await auth.signUp(input, clientIp(c, trustProxy), {
+		const signedUp = await auth.signUp(input, clientInfo(c, trustProxy), {
 			requestId: c.get("requestId"),
 		});
 		const body =
@@ -254,7 +308,7 @@ export function createAuthRoutes(
 
 	app.openapi(signInRoute, async (c) => {
 		const { session, ...input } = c.req.valid("json");
-		const signedIn = await auth.signIn(input, clientIp(c, trustProxy), {
+		const signedIn = await auth.signIn(input, clientInfo(c, trustProxy), {
 			requestId: c.get("requestId"),
 		});
 		const body =
@@ -286,6 +340,25 @@ export function createAuthRoutes(
 		clearRefreshCookie(c, cookie);
 		await auth.signOut(c.get("user"), { requestId: c.get("requestId") });
 		return success(c, null, AUTH_MESSAGES.SIGNED_OUT);
+	});
+
+	app.openapi(listSessionsRoute, async (c) => {
+		const sessions = await auth.listSessions(c.get("user"));
+		return success(c, sessions, AUTH_MESSAGES.SESSIONS_FETCHED);
+	});
+
+	app.openapi(revokeSessionRoute, async (c) => {
+		await auth.revokeSession(c.get("user"), c.req.valid("param").id, {
+			requestId: c.get("requestId"),
+		});
+		return success(c, null, AUTH_MESSAGES.SESSION_REVOKED, HTTP_STATUS.OK);
+	});
+
+	app.openapi(revokeOtherSessionsRoute, async (c) => {
+		const result = await auth.revokeOtherSessions(c.get("user"), {
+			requestId: c.get("requestId"),
+		});
+		return success(c, result, AUTH_MESSAGES.OTHER_SESSIONS_REVOKED);
 	});
 
 	app.openapi(meRoute, async (c) => {

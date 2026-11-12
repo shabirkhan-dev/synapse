@@ -4,6 +4,7 @@ export const queryKeys = {
 		all: ["documents"] as const,
 	},
 	currentUser: ["current-user"] as const,
+	sessions: ["sessions"] as const,
 	conversations: {
 		all: ["conversations"] as const,
 		detail: (id: string) => ["conversations", id] as const,

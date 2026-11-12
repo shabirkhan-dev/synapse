@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
 	authSessions,
@@ -11,6 +11,7 @@ import {
 
 import { toUser, toUserCredentials } from "../mappers/auth.mapper";
 import type {
+	ActiveSession,
 	AuthRepository,
 	AuthSession,
 	AuthTokenPurpose,
@@ -60,6 +61,7 @@ export class DrizzleAuthRepository implements AuthRepository {
 		userId: string;
 		refreshTokenHash: string;
 		expiresAt: Date;
+		userAgent: string | null;
 	}): Promise<{ id: string }> {
 		const [row] = await this.db
 			.insert(authSessions)
@@ -69,6 +71,34 @@ export class DrizzleAuthRepository implements AuthRepository {
 			throw new Error("Failed to insert auth session");
 		}
 		return row;
+	}
+
+	async listActiveSessions(userId: string): Promise<ActiveSession[]> {
+		const rows = await this.db
+			.select({
+				id: authSessions.id,
+				userAgent: authSessions.userAgent,
+				createdAt: authSessions.createdAt,
+				updatedAt: authSessions.updatedAt,
+				expiresAt: authSessions.expiresAt,
+			})
+			.from(authSessions)
+			.where(
+				and(
+					eq(authSessions.userId, userId),
+					isNull(authSessions.revokedAt),
+					gt(authSessions.expiresAt, sql`now()`),
+				),
+			)
+			.orderBy(desc(authSessions.updatedAt))
+			.limit(50);
+		return rows.map((row) => ({
+			id: row.id,
+			userAgent: row.userAgent,
+			createdAt: row.createdAt.toISOString(),
+			lastActiveAt: row.updatedAt.toISOString(),
+			expiresAt: row.expiresAt.toISOString(),
+		}));
 	}
 
 	async findSessionByRefreshTokenHash(hash: string): Promise<AuthSession | null> {
@@ -124,8 +154,14 @@ export class DrizzleAuthRepository implements AuthRepository {
 		return rows.length > 0;
 	}
 
-	async revokeSession({ sessionId, userId }: { sessionId: string; userId: string }): Promise<void> {
-		await this.db
+	async revokeSession({
+		sessionId,
+		userId,
+	}: {
+		sessionId: string;
+		userId: string;
+	}): Promise<boolean> {
+		const rows = await this.db
 			.update(authSessions)
 			.set({ revokedAt: sql`now()`, updatedAt: sql`now()` })
 			.where(
@@ -133,8 +169,32 @@ export class DrizzleAuthRepository implements AuthRepository {
 					eq(authSessions.id, sessionId),
 					eq(authSessions.userId, userId),
 					isNull(authSessions.revokedAt),
+					gt(authSessions.expiresAt, sql`now()`),
 				),
-			);
+			)
+			.returning({ id: authSessions.id });
+		return rows.length > 0;
+	}
+
+	async revokeOtherSessions({
+		userId,
+		keepSessionId,
+	}: {
+		userId: string;
+		keepSessionId: string;
+	}): Promise<number> {
+		const rows = await this.db
+			.update(authSessions)
+			.set({ revokedAt: sql`now()`, updatedAt: sql`now()` })
+			.where(
+				and(
+					eq(authSessions.userId, userId),
+					ne(authSessions.id, keepSessionId),
+					isNull(authSessions.revokedAt),
+				),
+			)
+			.returning({ id: authSessions.id });
+		return rows.length;
 	}
 
 	async revokeAllSessions(userId: string): Promise<void> {

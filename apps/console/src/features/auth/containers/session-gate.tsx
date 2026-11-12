@@ -5,6 +5,7 @@ import { type ReactNode, useEffect } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
 
+import { UnverifiedNotice } from "../components/unverified-notice";
 import { AUTH_ROUTES } from "../constants/auth.constants";
 import { useCurrentUserQuery } from "../hooks/queries/use-current-user-query";
 import { useSessionStatus } from "../hooks/use-session";
@@ -32,6 +33,9 @@ export function SessionGate({ children, switcher }: SessionGateProps) {
 		<AppShell
 			email={me.data?.email ?? null}
 			switcher={switcher}
+			notice={
+				me.data && !me.data.emailVerifiedAt ? <UnverifiedNotice email={me.data.email} /> : null
+			}
 			signingOut={signOut.isPending}
 			onSignOut={() => signOut.mutate()}
 		>

@@ -1,12 +1,12 @@
 # Frontend architecture
 
 > **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
-> seven features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
+> eight features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
 > `documents` (list + add — syn-018), `playground` (ask, cited answer, passages, provenance,
 > feedback — syn-038), `oversight` (approvals queue, approve/reject, the purge request on Documents
 > — syn-040), `activity` (the audit trail — syn-040) and `organizations` (header switcher, team
 > page: create a team, members, roles — syn-043) and `chat` (streaming answers with tool calls,
-> stored conversations — syn-044).
+> stored conversations — syn-044) and `account` (email verification, signed-in devices — syn-045).
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.
@@ -79,7 +79,10 @@ streams over happy-dom's (`test/setup.ts`), or `pipeThrough` fails.
 first `better-interface` pass (syn-044) moved shared tokens in `packages/ui/src/styles/globals.css`:
 `--ring` 0.556 and a solid `outline-ring` (focus indicators 4.7:1, were 1.5–2.6:1), `--muted-foreground`
 0.52 (5.05:1 on `--muted`, was 4.34:1); inputs and textareas use 16px below `md` (no iOS zoom);
-the main nav wraps at 320px and marks the current page with `aria-current`.
+the main nav wraps at 320px and marks the current page with `aria-current`. The syn-045 pass made
+`CardTitle` a real heading (`h2`, `render={<h1 />}` where the card is the page, as on the auth
+pages, which had no `h1`) and keeps empty `role="status"` regions out of the layout
+(`empty:sr-only`, still in the accessibility tree so their next message is announced).
 
 | Concern | How |
 | --- | --- |

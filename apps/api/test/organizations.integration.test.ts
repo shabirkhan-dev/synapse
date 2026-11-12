@@ -66,6 +66,7 @@ describe.skipIf(!url)("organizations (postgres)", () => {
 			userId: user,
 			refreshTokenHash: hash,
 			expiresAt: new Date(Date.now() + 86_400_000),
+			userAgent: null,
 		});
 		expect((await auth.findSessionByRefreshTokenHash(hash))?.organizationId).toBeNull();
 		await auth.setSessionOrganization({ sessionId: id, userId: user, organizationId: team.id });

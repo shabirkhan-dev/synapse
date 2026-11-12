@@ -33,6 +33,8 @@ export const authSessions = pgTable(
 		 * a few seconds after this (two tabs refreshing at once); later it means it was stolen.
 		 */
 		refreshTokenRotatedAt: timestamp("refresh_token_rotated_at", { withTimezone: true }),
+		/** The browser or client that signed in (`User-Agent`, cut to 512 chars), to tell sessions apart. */
+		userAgent: text("user_agent"),
 		/** Active organization for this session's access tokens; `null` = the personal one. */
 		organizationId: uuid("organization_id"),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

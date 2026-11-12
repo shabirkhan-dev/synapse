@@ -27,15 +27,18 @@ import {
 	AUTH_MESSAGES,
 	AUTH_RATE_LIMITS,
 	TOKEN_TYPE,
+	USER_AGENT_MAX_LENGTH,
 } from "../constants/auth.constants";
 import type {
 	AuthRepository,
 	AuthSession,
 	AuthTokenPurpose,
 	AuthTokens,
+	ClientInfo,
 	CurrentUser,
 	RateLimiter,
 	RateLimitRule,
+	SessionView,
 	SignedIn,
 	SwitchedOrganization,
 	User,
@@ -98,7 +101,7 @@ export class AuthService {
 
 	async signUp(
 		{ email, password }: Credentials,
-		ip: string,
+		{ ip, userAgent }: ClientInfo,
 		context: RequestContext = NO_REQUEST,
 	): Promise<SignedIn> {
 		await this.limit(`sign-up:ip:${ip}`, AUTH_RATE_LIMITS.SIGN_UP_PER_IP);
@@ -114,14 +117,14 @@ export class AuthService {
 			});
 		}
 		await this.sendLink(user, "email_verification");
-		const tokens = await this.startSession(user.id);
+		const tokens = await this.startSession(user.id, userAgent);
 		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_UP, user.id, context);
 		return { user, tokens };
 	}
 
 	async signIn(
 		{ email, password }: Credentials,
-		ip: string,
+		{ ip, userAgent }: ClientInfo,
 		context: RequestContext = NO_REQUEST,
 	): Promise<SignedIn> {
 		const normalized = normalizeEmail(email);
@@ -135,7 +138,7 @@ export class AuthService {
 			throw unauthorized(AUTH_ERROR_CODES.INVALID_CREDENTIALS, AUTH_MESSAGES.INVALID_CREDENTIALS);
 		}
 		const { passwordHash: _passwordHash, ...user } = account;
-		const tokens = await this.startSession(user.id);
+		const tokens = await this.startSession(user.id, userAgent);
 		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_IN, user.id, context);
 		return { user, tokens };
 	}
@@ -233,6 +236,43 @@ export class AuthService {
 	async signOut({ sub, sid }: AuthUser, context: RequestContext = NO_REQUEST): Promise<void> {
 		await this.repository.revokeSession({ sessionId: sid, userId: sub });
 		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_OUT, sub, context, { sessionId: sid });
+	}
+
+	/** The caller's signed-in sessions, the one making this request marked `current`. */
+	async listSessions({ sub, sid }: AuthUser): Promise<SessionView[]> {
+		const sessions = await this.repository.listActiveSessions(sub);
+		return sessions.map((session) => Object.assign(session, { current: session.id === sid }));
+	}
+
+	/** Sign out one of the caller's sessions (another device, or this one). */
+	async revokeSession(
+		{ sub }: AuthUser,
+		sessionId: string,
+		context: RequestContext = NO_REQUEST,
+	): Promise<void> {
+		const revoked = await this.repository.revokeSession({ sessionId, userId: sub });
+		if (!revoked) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.NOT_FOUND,
+				code: AUTH_ERROR_CODES.SESSION_NOT_FOUND,
+				message: AUTH_MESSAGES.SESSION_NOT_FOUND,
+			});
+		}
+		await this.record(AUDIT_ACTIONS.AUTH_SESSIONS_REVOKED, sub, context, {
+			sessionIds: [sessionId],
+		});
+	}
+
+	/** Sign out every other session of the caller; this one stays signed in. */
+	async revokeOtherSessions(
+		{ sub, sid }: AuthUser,
+		context: RequestContext = NO_REQUEST,
+	): Promise<{ revoked: number }> {
+		const revoked = await this.repository.revokeOtherSessions({ userId: sub, keepSessionId: sid });
+		if (revoked > 0) {
+			await this.record(AUDIT_ACTIONS.AUTH_SESSIONS_REVOKED, sub, context, { count: revoked });
+		}
+		return { revoked };
 	}
 
 	/** The user and the organization their token acts in (role read on this request). */
@@ -404,13 +444,14 @@ export class AuthService {
 		return userId;
 	}
 
-	private async startSession(userId: string): Promise<AuthTokens> {
+	private async startSession(userId: string, userAgent: string | null): Promise<AuthTokens> {
 		const refreshToken = createSecretToken();
 		const expiresAt = new Date(Date.now() + this.config.sessionTtlSeconds * 1000);
 		const { id } = await this.repository.createSession({
 			userId,
 			refreshTokenHash: hashSecretToken(refreshToken),
 			expiresAt,
+			userAgent: userAgent?.slice(0, USER_AGENT_MAX_LENGTH) || null,
 		});
 		return this.tokens(userId, id, refreshToken, expiresAt);
 	}

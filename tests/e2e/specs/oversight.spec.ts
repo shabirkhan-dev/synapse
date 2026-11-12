@@ -9,7 +9,7 @@ test("deleting all documents waits for approval; approving runs it; activity rec
 	const email = uniqueEmail("oversight");
 	await signUpViaApi(email);
 	await signIn(page, email);
-	await expect(page.getByText(email)).toBeVisible();
+	await expect(page.getByText(email).first()).toBeVisible();
 
 	await page.getByLabel("Title").fill("Refund policy");
 	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");

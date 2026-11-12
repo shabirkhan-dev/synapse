@@ -7,6 +7,7 @@ export const AUDIT_ACTIONS = {
 	AUTH_SIGNED_UP: "auth.user.signed_up",
 	AUTH_SIGNED_IN: "auth.user.signed_in",
 	AUTH_SIGNED_OUT: "auth.session.signed_out",
+	AUTH_SESSIONS_REVOKED: "auth.sessions.revoked",
 	AUTH_PASSWORD_RESET: "auth.password.reset",
 	AUTH_EMAIL_VERIFIED: "auth.email.verified",
 	OVERSIGHT_APPROVAL_REQUESTED: "oversight.approval.requested",

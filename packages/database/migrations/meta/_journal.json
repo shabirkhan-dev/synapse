@@ -99,6 +99,13 @@
       "when": 1794455380671,
       "tag": "0013_refresh_token_rotated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794480734090,
+      "tag": "0014_session_user_agent",
+      "breakpoints": true
     }
   ]
 }

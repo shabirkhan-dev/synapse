@@ -3,7 +3,15 @@ import { expect, test } from "@playwright/test";
 import { signIn, signUpViaApi } from "../support/accounts";
 import { uniqueEmail } from "../support/env";
 
-const PAGES = ["/documents", "/playground", "/chat", "/approvals", "/activity", "/team"];
+const PAGES = [
+	"/documents",
+	"/playground",
+	"/chat",
+	"/approvals",
+	"/activity",
+	"/team",
+	"/account",
+];
 
 // 320 CSS px is the WCAG 1.4.10 reflow width: nothing may scroll sideways or hide past the edge.
 test("at 320px every workspace page reflows: no sideways scroll, every nav link and sign-out on screen", async ({
@@ -20,7 +28,7 @@ test("at 320px every workspace page reflows: no sideways scroll, every nav link 
 		// oxlint-disable-next-line no-await-in-loop
 		await expect(nav.locator("a[aria-current=page]")).toHaveAttribute("href", path);
 		// oxlint-disable-next-line no-await-in-loop
-		await expect(page.getByRole("button", { name: "Sign out" })).toBeInViewport();
+		await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeInViewport();
 		// oxlint-disable-next-line no-await-in-loop
 		const links = await nav.getByRole("link").all();
 		// oxlint-disable-next-line no-await-in-loop

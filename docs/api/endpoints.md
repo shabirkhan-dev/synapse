@@ -19,6 +19,9 @@
 | GET / POST | `/api/v1/organizations/{id}/members` | Bearer | Members / add an existing account by email or change a role (`member`, `admin`, `owner`); admins only, owners for admin/owner |
 | DELETE | `/api/v1/organizations/{id}/members/{userId}` | Bearer | Remove a member (access ends on their next request); never the last owner (`409`) |
 | GET | `/api/v1/auth/me` | Bearer | The signed-in user (`id`, `email`, `emailVerifiedAt`, `createdAt`) and `organization: { id, role }`: the organization the token acts in and the role read on this request |
+| GET | `/api/v1/auth/sessions` | Bearer | Your signed-in sessions, most recently active first: `id`, `userAgent` (as sent at sign-in, ≤ 512 chars, or `null`), `createdAt`, `lastActiveAt` (last sign-in or refresh), `expiresAt`, `current` (the session making the request). Tokens are never listed |
+| DELETE | `/api/v1/auth/sessions/{id}` | Bearer | Sign out one of your sessions: its refresh token stops working (an access token it already holds lasts until it expires, ≤ 15 min). `404 AUTH_SESSION_NOT_FOUND` if it is not your active session. Audited as `auth.sessions.revoked` |
+| POST | `/api/v1/auth/sessions/revoke-others` | Bearer | Sign out every session except this one → `{ revoked }` |
 | POST | `/api/v1/rag/documents` | Bearer | Ingest a document (`title`, `content`, optional `source`, `metadata`): normalize, dedup, chunk, embed, store. Body ≤ 2 MB. `201` new; `200` if you already ingested the same content (existing document returned, nothing re-embedded) |
 | GET | `/api/v1/rag/documents` | Bearer | List your documents, newest first |
 | POST | `/api/v1/rag/documents/purge` | Bearer | Ask to delete **all** your documents: `202` with a pending approval request; nothing is deleted until it is approved |

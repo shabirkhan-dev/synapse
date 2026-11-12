@@ -45,6 +45,8 @@ export function registerRoutes(
 
 	app.use(`${basePath}/auth/sign-out`, authenticate);
 	app.use(`${basePath}/auth/me`, authenticate);
+	app.use(`${basePath}/auth/sessions`, authenticate);
+	app.use(`${basePath}/auth/sessions/*`, authenticate);
 	app.use(`${basePath}/auth/verify-email/resend`, authenticate);
 	app.use(`${basePath}/auth/switch-organization`, authenticate);
 	app.use(`${basePath}/organizations`, authenticate);
