@@ -28,6 +28,23 @@ export type RagDocument = {
 	createdAt: string;
 };
 
+/** One chunk as the document page shows it (never its vector). */
+export type RagChunk = {
+	id: string;
+	chunkIndex: number;
+	content: string;
+	chunkerVersion: string | null;
+	embeddingModel: string | null;
+};
+
+/** A document with one page of its chunks, in order, and the versions new chunks get today. */
+export type RagDocumentDetail = RagDocument & {
+	chunks: RagChunk[];
+	/** Chunks before `offset` / after the page: page with `offset` + `limit`. */
+	page: { offset: number; limit: number; total: number };
+	current: { chunkerVersion: string; embeddingModel: string };
+};
+
 export type RagMatch = {
 	chunkId: string;
 	documentId: string;
@@ -46,6 +63,14 @@ export interface RagRepository {
 	createDocument(document: NewRagDocument, chunks: NewRagChunk[]): Promise<RagDocument>;
 	listDocuments(ownerId: string, limit: number): Promise<RagDocument[]>;
 	findByContentHash(ownerId: string, contentHash: string): Promise<RagDocument | null>;
+	findDocument(ownerId: string, documentId: string): Promise<RagDocument | null>;
+	/** The document's chunks ordered by index; owner-scoped like everything else. */
+	listChunks(input: {
+		ownerId: string;
+		documentId: string;
+		offset: number;
+		limit: number;
+	}): Promise<RagChunk[]>;
 	deleteDocument(ownerId: string, documentId: string): Promise<boolean>;
 	/** Delete every document (and chunk) of the owner; returns how many documents went. */
 	deleteAllDocuments(ownerId: string): Promise<number>;

@@ -1,6 +1,10 @@
 import { z } from "@hono/zod-openapi";
 
-import { RAG_DEFAULT_LIST_LIMIT } from "../constants/rag.constants";
+import {
+	RAG_DEFAULT_CHUNK_PAGE,
+	RAG_DEFAULT_LIST_LIMIT,
+	RAG_MAX_CHUNK_PAGE,
+} from "../constants/rag.constants";
 
 export const ingestDocumentBodySchema = z
 	.object({
@@ -114,3 +118,28 @@ export const documentIdParamsSchema = z.object({
 export const listDocumentsQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(200).default(RAG_DEFAULT_LIST_LIMIT),
 });
+
+export const documentChunksQuerySchema = z.object({
+	offset: z.coerce.number().int().min(0).default(0),
+	limit: z.coerce.number().int().min(1).max(RAG_MAX_CHUNK_PAGE).default(RAG_DEFAULT_CHUNK_PAGE),
+});
+
+export const ragChunkSchema = z
+	.object({
+		id: z.uuid(),
+		chunkIndex: z.number().int(),
+		content: z.string(),
+		/** `null` for chunks stored before versions were recorded. */
+		chunkerVersion: z.string().nullable(),
+		embeddingModel: z.string().nullable(),
+	})
+	.openapi("RagChunk");
+
+export const ragDocumentDetailSchema = ragDocumentSchema
+	.extend({
+		chunks: z.array(ragChunkSchema),
+		page: z.object({ offset: z.number().int(), limit: z.number().int(), total: z.number().int() }),
+		/** What a chunk stored now gets; a different `embeddingModel` is skipped by vector search. */
+		current: z.object({ chunkerVersion: z.string(), embeddingModel: z.string() }),
+	})
+	.openapi("RagDocumentDetail");

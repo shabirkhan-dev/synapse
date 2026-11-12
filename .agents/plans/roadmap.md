@@ -65,7 +65,8 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | Console: chat — streaming answers, stored conversations (+ first UI/UX review) | ✅ | syn-044 |
 | Console: account — resend verification, active sessions | ✅ | syn-045 |
 | Console: shell — sidebar + inset content, system dark mode | ✅ | syn-047 |
-| Console: knowledge — document detail, chunk versions, delete a document | ⏭️ | syn-046 |
+| Console: knowledge — document detail, chunk versions, delete a document | ✅ | syn-046 |
+| Console: retrieval inspector — one query through each search mode | ⏭️ | syn-048 |
 | Fix first CI e2e run (refresh reuse grace, pre-hydration clicks) | ✅ | syn-042 |
 | Console features: knowledge, ingestion, retrieval, agents, evaluations, observability | ⬜ | — |
 | `tests/` — Playwright e2e for console + API in CI | ✅ | syn-039 |

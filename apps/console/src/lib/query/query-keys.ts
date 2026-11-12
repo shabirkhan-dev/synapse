@@ -2,6 +2,7 @@
 export const queryKeys = {
 	documents: {
 		all: ["documents"] as const,
+		detail: (id: string, offset: number) => ["documents", id, { offset }] as const,
 	},
 	currentUser: ["current-user"] as const,
 	sessions: ["sessions"] as const,

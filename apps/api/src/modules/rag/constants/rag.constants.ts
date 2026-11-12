@@ -8,6 +8,7 @@ export const RAG_MESSAGES = {
 	DOCUMENT_INGESTED: "Document ingested",
 	DOCUMENT_ALREADY_INGESTED: "Document already ingested",
 	DOCUMENTS_FETCHED: "Documents retrieved",
+	DOCUMENT_FETCHED: "Document retrieved",
 	DOCUMENT_DELETED: "Document deleted",
 	QUERY_ANSWERED: "Query answered",
 	MATCHES_FOUND: "Matching passages retrieved",
@@ -26,3 +27,7 @@ export const RAG_MESSAGES = {
 export const RAG_MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 
 export const RAG_DEFAULT_LIST_LIMIT = 50;
+
+/** Chunks per page on a document's detail. */
+export const RAG_DEFAULT_CHUNK_PAGE = 50;
+export const RAG_MAX_CHUNK_PAGE = 200;

@@ -6,6 +6,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@synapse/ui/components/table";
+import Link from "next/link";
 
 import type { DocumentSummary } from "../types/document.types";
 
@@ -25,7 +26,14 @@ export function DocumentsTable({ documents }: { documents: DocumentSummary[] }) 
 			<TableBody>
 				{documents.map((document) => (
 					<TableRow key={document.id}>
-						<TableCell className="font-medium">{document.title}</TableCell>
+						<TableCell className="font-medium">
+							<Link
+								href={`/documents/${encodeURIComponent(document.id)}`}
+								className="underline-offset-2 hover:underline"
+							>
+								{document.title}
+							</Link>
+						</TableCell>
 						<TableCell className="max-w-64 truncate text-muted-foreground">
 							{document.source ?? "—"}
 						</TableCell>

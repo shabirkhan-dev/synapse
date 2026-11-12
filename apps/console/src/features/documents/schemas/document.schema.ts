@@ -13,6 +13,21 @@ export const documentSchema = z.object({
 
 export const documentListSchema = z.array(documentSchema);
 
+export const chunkSchema = z.object({
+	id: z.string(),
+	chunkIndex: z.number().int(),
+	content: z.string(),
+	chunkerVersion: z.string().nullable(),
+	embeddingModel: z.string().nullable(),
+});
+
+/** `GET /rag/documents/{id}`: the document, one page of chunks and today's versions. */
+export const documentDetailSchema = documentSchema.extend({
+	chunks: z.array(chunkSchema),
+	page: z.object({ offset: z.number().int(), limit: z.number().int(), total: z.number().int() }),
+	current: z.object({ chunkerVersion: z.string(), embeddingModel: z.string() }),
+});
+
 export const ingestDocumentFormSchema = z.object({
 	title: z
 		.string()

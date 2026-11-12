@@ -100,7 +100,12 @@ export function AppShell({
 								<SidebarGroupContent>
 									<SidebarMenu>
 										{group.items.map((item) => (
-											<NavLink key={item.href} item={item} active={item === current} />
+											<NavLink
+												key={item.href}
+												item={item}
+												active={item === current}
+												here={pathname === item.href}
+											/>
 										))}
 									</SidebarMenu>
 								</SidebarGroupContent>
@@ -133,7 +138,17 @@ export function AppShell({
 }
 
 /** A sidebar link; on phones following it also closes the drawer. */
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({
+	item,
+	active,
+	here,
+}: {
+	item: NavItem;
+	/** This section (also on its sub-pages, e.g. one document). */
+	active: boolean;
+	/** Exactly this page. */
+	here: boolean;
+}) {
 	const { setOpenMobile } = useSidebar();
 	return (
 		<SidebarMenuItem>
@@ -142,7 +157,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 				render={
 					<Link
 						href={item.href}
-						aria-current={active ? "page" : undefined}
+						aria-current={here ? "page" : active ? "true" : undefined}
 						onClick={() => setOpenMobile(false)}
 					/>
 				}

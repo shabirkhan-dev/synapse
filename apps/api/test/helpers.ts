@@ -185,6 +185,37 @@ export class InMemoryRagRepository implements RagRepository {
 		return document;
 	}
 
+	async findDocument(ownerId: string, documentId: string): Promise<RagDocument | null> {
+		const found = this.documents.find((d) => d.id === documentId && d.ownerId === ownerId);
+		if (!found) return null;
+		const { ownerId: _ownerId, ...document } = found;
+		return document;
+	}
+
+	async listChunks({
+		ownerId,
+		documentId,
+		offset,
+		limit,
+	}: {
+		ownerId: string;
+		documentId: string;
+		offset: number;
+		limit: number;
+	}) {
+		return this.chunks
+			.filter((c) => c.documentId === documentId && c.ownerId === ownerId)
+			.toSorted((a, b) => a.chunkIndex - b.chunkIndex)
+			.slice(offset, offset + limit)
+			.map((c) => ({
+				id: c.id,
+				chunkIndex: c.chunkIndex,
+				content: c.content,
+				chunkerVersion: c.chunkerVersion ?? null,
+				embeddingModel: c.embeddingModel ?? null,
+			}));
+	}
+
 	async deleteAllDocuments(ownerId: string): Promise<number> {
 		const mine = this.documents.filter((d) => d.ownerId === ownerId);
 		this.documents = this.documents.filter((d) => d.ownerId !== ownerId);

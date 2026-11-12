@@ -30,7 +30,7 @@ import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
 
 import { RAG_DEFAULT_LIST_LIMIT, RAG_ERROR_CODES, RAG_MESSAGES } from "../constants/rag.constants";
-import type { RagDocument, RagMatch, RagRepository } from "../types/rag.types";
+import type { RagDocument, RagDocumentDetail, RagMatch, RagRepository } from "../types/rag.types";
 
 export type RagServiceOptions = {
 	chunk: ChunkOptions;
@@ -297,6 +297,32 @@ export class RagService {
 			provenance: null,
 		});
 		return { deleted };
+	}
+
+	/** A document and one page of its chunks; 404 unless it belongs to the owner. */
+	async getDocument(
+		ownerId: string,
+		documentId: string,
+		{ offset, limit }: { offset: number; limit: number },
+	): Promise<RagDocumentDetail> {
+		const document = await this.repository.findDocument(ownerId, documentId);
+		if (!document) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.NOT_FOUND,
+				code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND,
+				message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
+			});
+		}
+		const chunks = await this.repository.listChunks({ ownerId, documentId, offset, limit });
+		return {
+			...document,
+			chunks,
+			page: { offset, limit, total: document.chunkCount },
+			current: {
+				chunkerVersion: this.knowledge.chunkerVersion,
+				embeddingModel: this.knowledge.embeddingModel,
+			},
+		};
 	}
 
 	async deleteDocument(

@@ -56,6 +56,42 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		await database.close();
 	});
 
+	test("finds a document and pages its chunks in order, only for its owner", async () => {
+		// Its own owner, so these chunks never show up in the other tests' searches.
+		const paged = `it-${crypto.randomUUID()}`;
+		const document = await repository.createDocument(
+			{ ownerId: paged, title: "Paged" },
+			[2, 0, 1].map((chunkIndex) => ({
+				chunkIndex,
+				content: `part ${chunkIndex}`,
+				embedding: fakeEmbedding(`part ${chunkIndex}`),
+				chunkerVersion: "text-v1",
+				embeddingModel: chunkIndex === 2 ? "old:model" : MODEL,
+			})),
+		);
+		expect(await repository.findDocument(paged, document.id)).toMatchObject({ title: "Paged" });
+		expect(await repository.findDocument(`it-${crypto.randomUUID()}`, document.id)).toBeNull();
+		const page = (offset: number, limit: number) =>
+			repository.listChunks({ ownerId: paged, documentId: document.id, offset, limit });
+		expect((await page(0, 10)).map((chunk) => chunk.content)).toEqual([
+			"part 0",
+			"part 1",
+			"part 2",
+		]);
+		expect(await page(1, 1)).toEqual([
+			expect.objectContaining({ chunkIndex: 1, chunkerVersion: "text-v1", embeddingModel: MODEL }),
+		]);
+		expect((await page(2, 5))[0]?.embeddingModel).toBe("old:model");
+		expect(
+			await repository.listChunks({
+				ownerId: `it-${crypto.randomUUID()}`,
+				documentId: document.id,
+				offset: 0,
+				limit: 10,
+			}),
+		).toEqual([]);
+	});
+
 	test("stores chunks and ranks them by cosine similarity", async () => {
 		const texts = ["refunds are accepted within 30 days", "the office cat sleeps on the printer"];
 		const document = await repository.createDocument(

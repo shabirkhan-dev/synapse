@@ -1,4 +1,4 @@
-import { and, cosineDistance, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, cosineDistance, desc, eq, isNull, or, sql } from "drizzle-orm";
 
 import {
 	type Database,
@@ -13,6 +13,7 @@ import { toRagDocument } from "../mappers/rag.mapper";
 import type {
 	NewRagChunk,
 	NewRagDocument,
+	RagChunk,
 	RagDocument,
 	RagMatch,
 	RagRepository,
@@ -79,6 +80,41 @@ export class DrizzleRagRepository implements RagRepository {
 			.where(and(eq(ragDocuments.ownerId, ownerId), eq(ragDocuments.contentHash, contentHash)))
 			.limit(1);
 		return row ? toRagDocument(row) : null;
+	}
+
+	async findDocument(ownerId: string, documentId: string): Promise<RagDocument | null> {
+		const [row] = await this.db
+			.select()
+			.from(ragDocuments)
+			.where(and(eq(ragDocuments.id, documentId), eq(ragDocuments.ownerId, ownerId)))
+			.limit(1);
+		return row ? toRagDocument(row) : null;
+	}
+
+	async listChunks({
+		ownerId,
+		documentId,
+		offset,
+		limit,
+	}: {
+		ownerId: string;
+		documentId: string;
+		offset: number;
+		limit: number;
+	}): Promise<RagChunk[]> {
+		return this.db
+			.select({
+				id: ragChunks.id,
+				chunkIndex: ragChunks.chunkIndex,
+				content: ragChunks.content,
+				chunkerVersion: ragChunks.chunkerVersion,
+				embeddingModel: ragChunks.embeddingModel,
+			})
+			.from(ragChunks)
+			.where(and(eq(ragChunks.documentId, documentId), eq(ragChunks.ownerId, ownerId)))
+			.orderBy(asc(ragChunks.chunkIndex))
+			.offset(offset)
+			.limit(limit);
 	}
 
 	async deleteDocument(ownerId: string, documentId: string): Promise<boolean> {

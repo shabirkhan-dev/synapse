@@ -5,15 +5,17 @@ import { ERROR_CODES } from "@/shared/constants/error-codes";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import { errorResponses } from "@/shared/responses/error-response";
-import { successEnvelope } from "@/shared/responses/response.types";
+import { apiErrorSchema, successEnvelope } from "@/shared/responses/response.types";
 import { success } from "@/shared/responses/success-response";
 import type { AppBindings } from "@/shared/types/app-types";
 
 import { RAG_MAX_DOCUMENT_BYTES, RAG_MESSAGES } from "../constants/rag.constants";
 import {
+	documentChunksQuerySchema,
 	documentIdParamsSchema,
 	ingestDocumentBodySchema,
 	listDocumentsQuerySchema,
+	ragDocumentDetailSchema,
 	ragDocumentSchema,
 	ragQueryBodySchema,
 	ragQueryResultSchema,
@@ -73,6 +75,26 @@ const listRoute = createRoute({
 		200: {
 			description: "Documents, newest first",
 			content: { "application/json": { schema: successEnvelope(z.array(ragDocumentSchema)) } },
+		},
+		...errorResponses,
+	},
+});
+
+const detailRoute = createRoute({
+	method: "get",
+	path: "/documents/{id}",
+	tags: ["RAG"],
+	summary: "A document with one page of its chunks (in order) and the versions new chunks get",
+	security,
+	request: { params: documentIdParamsSchema, query: documentChunksQuerySchema },
+	responses: {
+		200: {
+			description: "The document",
+			content: { "application/json": { schema: successEnvelope(ragDocumentDetailSchema) } },
+		},
+		404: {
+			description: "Not one of the active organization's documents",
+			content: { "application/json": { schema: apiErrorSchema } },
 		},
 		...errorResponses,
 	},
@@ -158,6 +180,15 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 			await rag.listDocuments(c.get("user").orgId, limit),
 			RAG_MESSAGES.DOCUMENTS_FETCHED,
 		);
+	});
+
+	app.openapi(detailRoute, async (c) => {
+		const detail = await rag.getDocument(
+			c.get("user").orgId,
+			c.req.valid("param").id,
+			c.req.valid("query"),
+		);
+		return success(c, detail, RAG_MESSAGES.DOCUMENT_FETCHED, HTTP_STATUS.OK);
 	});
 
 	app.openapi(deleteRoute, async (c) => {

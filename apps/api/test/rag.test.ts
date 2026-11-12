@@ -205,6 +205,50 @@ describe("rag", () => {
 		expect(query.data.answer).toContain("could not find");
 	});
 
+	test("a document's detail lists its chunks in order with their versions, paged and owner-scoped", async () => {
+		const repository = new InMemoryRagRepository();
+		const { app } = buildTestApp({ repository });
+		const headers = await authHeaders("alice");
+		const created = await (
+			await app.request("/api/v1/rag/documents", {
+				method: "POST",
+				headers,
+				body: JSON.stringify(refundDoc),
+			})
+		).json();
+		const id = created.data.id as string;
+		const total = created.data.chunkCount as number;
+		expect(total).toBeGreaterThan(1);
+
+		const response = await app.request(`/api/v1/rag/documents/${id}`, { headers });
+		expect(response.status).toBe(200);
+		const { data } = await response.json();
+		expect(data).toMatchObject({ id, title: "Refund policy", page: { offset: 0, total } });
+		expect(data.chunks.map((chunk: { chunkIndex: number }) => chunk.chunkIndex)).toEqual(
+			Array.from({ length: total }, (_, index) => index),
+		);
+		expect(data.chunks[0]).not.toHaveProperty("embedding");
+		expect(data.chunks[0].embeddingModel).toBe(data.current.embeddingModel);
+		expect(data.chunks[0].chunkerVersion).toBe(data.current.chunkerVersion);
+
+		const second = await (
+			await app.request(`/api/v1/rag/documents/${id}?offset=1&limit=1`, { headers })
+		).json();
+		expect(second.data.chunks).toHaveLength(1);
+		expect(second.data.chunks[0].chunkIndex).toBe(1);
+		expect(second.data.page).toEqual({ offset: 1, limit: 1, total });
+
+		// Another tenant, an unknown id and a malformed one.
+		const bob = await authHeaders("bob");
+		expect((await app.request(`/api/v1/rag/documents/${id}`, { headers: bob })).status).toBe(404);
+		const unknown = await app.request(`/api/v1/rag/documents/${crypto.randomUUID()}`, { headers });
+		expect((await unknown.json()).error.code).toBe("RAG_DOCUMENT_NOT_FOUND");
+		expect((await app.request("/api/v1/rag/documents/not-a-uuid", { headers })).status).toBe(422);
+		expect((await app.request(`/api/v1/rag/documents/${id}?limit=500`, { headers })).status).toBe(
+			422,
+		);
+	});
+
 	test("delete removes a document and 404s for unknown ids", async () => {
 		const { app, repository } = buildTestApp();
 		const headers = await authHeaders();

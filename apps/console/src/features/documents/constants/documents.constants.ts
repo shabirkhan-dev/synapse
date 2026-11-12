@@ -4,3 +4,8 @@ export const DOCUMENT_LIMITS = {
 	CONTENT_MAX: 500_000,
 	SOURCE_MAX: 2048,
 } as const;
+
+/** Chunks shown per page on a document's page. */
+export const CHUNK_PAGE_SIZE = 50;
+
+export const DOCUMENTS_ROUTE = "/documents";
