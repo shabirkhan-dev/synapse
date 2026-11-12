@@ -33,6 +33,8 @@ limit; browser requests carry none. Tests read emailed links from `.output/api.l
 | --- | --- |
 | `auth.spec.ts` | signed-out redirect; sign-up with policy errors; refresh token only in the httpOnly `SameSite=Strict` cookie; reload restores; verify link; sign-out clears the cookie; two tabs reloading together ×3 (the Web Lock — the test fails without it); forgot → reset → reused link refused → old password refused |
 | `workspace.spec.ts` | no-documents answer → add a document → Ctrl+Enter → cited answer, `[1]` jumps to its source, provenance, rating saved |
+| `oversight.spec.ts` | delete-all needs approval (dialog closes, request survives a reload) → approve → documents gone → activity shows request and decision; reject keeps the documents |
+| `layout.spec.ts` | at 390 px every workspace page keeps Sign out on screen with no horizontal scroll |
 
 Debug a failure: `bun run test:e2e -- --trace on -g "<test name>"`, then open
 `tests/e2e/.output/results`. Locally a running console on `:3100` is reused (stop it after

@@ -3,4 +3,12 @@ export const queryKeys = {
 	documents: {
 		all: ["documents"] as const,
 	},
+	currentUser: ["current-user"] as const,
+	approvals: {
+		pending: ["approvals", "pending"] as const,
+	},
+	activity: {
+		all: ["activity"] as const,
+		list: (limit: number) => ["activity", { limit }] as const,
+	},
 };

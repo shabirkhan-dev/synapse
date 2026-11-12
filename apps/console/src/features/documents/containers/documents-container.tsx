@@ -10,6 +10,8 @@ import {
 	CardTitle,
 } from "@synapse/ui/components/card";
 
+import { PurgeRequestContainer } from "@/features/oversight";
+
 import { DocumentsTable } from "../components/documents-table";
 import { IngestDocumentForm } from "../components/ingest-document-form";
 import { useIngestDocumentMutation } from "../hooks/mutations/use-ingest-document-mutation";
@@ -69,6 +71,7 @@ export function DocumentsContainer() {
 					)}
 				</CardContent>
 			</Card>
+			{documents.data && documents.data.length > 0 ? <PurgeRequestContainer /> : null}
 		</div>
 	);
 }

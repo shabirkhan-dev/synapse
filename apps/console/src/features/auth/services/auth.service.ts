@@ -42,6 +42,9 @@ export const authService = {
 		}
 	},
 
+	/** The signed-in user (`GET /auth/me`). */
+	currentUser: () => api(endpoints.auth.me, { schema: verifiedUserSchema }),
+
 	/** Uses the emailed link's single-use token. */
 	verifyEmail: (token: string) =>
 		api(endpoints.auth.verifyEmail, {

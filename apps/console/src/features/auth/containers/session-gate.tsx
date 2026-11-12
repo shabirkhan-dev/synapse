@@ -6,6 +6,7 @@ import { type ReactNode, useEffect } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 
 import { AUTH_ROUTES } from "../constants/auth.constants";
+import { useCurrentUserQuery } from "../hooks/queries/use-current-user-query";
 import { useSessionStatus } from "../hooks/use-session";
 import { useSignOutMutation } from "../hooks/mutations/use-sign-out-mutation";
 
@@ -14,6 +15,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
 	const router = useRouter();
 	const status = useSessionStatus();
 	const signOut = useSignOutMutation();
+	const me = useCurrentUserQuery({ enabled: status === "signed-in" });
 
 	useEffect(() => {
 		if (status === "signed-out") router.replace(AUTH_ROUTES.SIGN_IN);
@@ -21,7 +23,11 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
 	if (status !== "signed-in") return null;
 	return (
-		<AppShell signingOut={signOut.isPending} onSignOut={() => signOut.mutate()}>
+		<AppShell
+			email={me.data?.email ?? null}
+			signingOut={signOut.isPending}
+			onSignOut={() => signOut.mutate()}
+		>
 			{children}
 		</AppShell>
 	);

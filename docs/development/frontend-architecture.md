@@ -1,8 +1,10 @@
 # Frontend architecture
 
 > **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
-> three features: `auth` (sign-in/up, verify, reset, session gate — syn-018, syn-037), `documents`
-> (list + add — syn-018) and `playground` (ask, cited answer, passages, provenance, feedback — syn-038).
+> five features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
+> `documents` (list + add — syn-018), `playground` (ask, cited answer, passages, provenance,
+> feedback — syn-038), `oversight` (approvals queue, approve/reject, the purge request on Documents
+> — syn-040) and `activity` (the audit trail — syn-040).
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.
@@ -75,7 +77,9 @@ Nothing auth-related is in web storage or `document.cookie`. Console and API mus
 site for the `SameSite=Strict` cookie (ADR-0007). Pages: `(auth)/sign-in`, `sign-up`,
 `forgot-password`, `reset-password?token=`, `verify-email?token=` (the last two read the token
 server-side, send no referrer, spend it once and remove it from the address bar);
-`(workspace)/documents` and `(workspace)/playground` behind `SessionGate`.
+`(workspace)/documents`, `playground`, `approvals` and `activity` behind `SessionGate`. Features
+reuse each other only through `index.ts` (`useCurrentUserQuery` from `auth`, `PurgeRequestContainer`
+from `oversight`).
 
 Forms submit with `components/shared/submit-button.tsx`: disabled in the server HTML and until
 hydration, since a click before React attaches the handler would do nothing.
