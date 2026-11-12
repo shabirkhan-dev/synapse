@@ -68,14 +68,19 @@ describe("audit log", () => {
 		expect(await audit.list("u1", { limit: 10, actorId: "u9" })).toHaveLength(1);
 	});
 
-	test("usage reads answered queries since a date, for one actor when asked", async () => {
+	test("usage reads RAG and chat answers since a date, for one actor when asked", async () => {
 		const log = createAuditLog({ store: memoryStore(), redact: (data) => data });
 		const since = new Date("2026-11-01T00:00:00Z");
 		await log.usage("org-1", { since });
 		await log.usage("org-1", { since, actorId: "u2" });
 		expect(usageCalls.slice(-2)).toEqual([
-			{ ownerId: "org-1", action: "rag.query.answered", since },
-			{ ownerId: "org-1", action: "rag.query.answered", since, actorId: "u2" },
+			{ ownerId: "org-1", actions: ["rag.query.answered", "chat.message.answered"], since },
+			{
+				ownerId: "org-1",
+				actions: ["rag.query.answered", "chat.message.answered"],
+				since,
+				actorId: "u2",
+			},
 		]);
 	});
 });

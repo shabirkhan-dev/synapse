@@ -9,6 +9,7 @@ import { authHeaders, buildTestApp, textGenerateResult } from "./helpers";
 
 const NOW = new Date("2026-11-12T15:00:00Z");
 const group = (day: string, chatModel: string, answers: number, input: number, output: number) => ({
+	action: "rag.query.answered",
 	day,
 	chatModel,
 	promptVersion: "rag-answer@2",

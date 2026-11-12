@@ -5,9 +5,14 @@ import {
 	safeValidateUIMessages,
 	streamText,
 	type LanguageModel,
+	type LanguageModelUsage,
+	type StepResult,
+	type ToolSet,
 	type UIMessage,
 } from "ai";
-import { CHAT_ASSISTANT_PROMPT } from "@synapse/generation";
+import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
+import type { ModelInfo } from "@synapse/core/contracts";
+import { CHAT_ASSISTANT_PROMPT, promptVersion } from "@synapse/generation";
 import type { Logger } from "@synapse/observability";
 
 import type { GuardrailsService } from "@/modules/guardrails";
@@ -26,6 +31,9 @@ export type ChatServiceOptions = {
 	memory: MemoryService;
 	guardrails: GuardrailsService;
 	chatModel: LanguageModel;
+	/** `provider` + `model` of `chatModel`, recorded as each answer's provenance. */
+	chatInfo: ModelInfo;
+	audit: AuditLog;
 	maxSteps: number;
 	topK: number;
 	logger: Logger;
@@ -54,7 +62,7 @@ export class ChatService {
 		context: RequestContext;
 		abortSignal?: AbortSignal;
 	}) {
-		const { rag, memory, guardrails, chatModel, maxSteps, topK, logger } = this.options;
+		const { rag, memory, guardrails, chatModel, maxSteps, topK } = this.options;
 		let conversationId: string | null = null;
 		let messages: unknown[] = body.messages ?? [];
 		if (body.message) {
@@ -88,6 +96,27 @@ export class ChatService {
 			toolChoice: "auto",
 			stopWhen: isStepCount(maxSteps),
 			...(abortSignal ? { abortSignal } : {}),
+			// Every answer is traceable (architecture rule 6), a stopped one too: its finished steps.
+			onEnd: ({ steps, totalUsage, finishReason }) =>
+				this.recordAnswer({
+					ownerId,
+					organizationId,
+					conversationId,
+					context,
+					steps,
+					usage: totalUsage,
+					finishReason,
+				}),
+			onAbort: ({ steps }) =>
+				this.recordAnswer({
+					ownerId,
+					organizationId,
+					conversationId,
+					context,
+					steps,
+					usage: sumUsage(steps),
+					finishReason: "aborted",
+				}),
 		});
 		const storedIn = conversationId;
 		return {
@@ -112,7 +141,10 @@ export class ChatService {
 										})),
 									)
 									.catch((error: unknown) =>
-										logger.error("chat reply not saved", { conversationId: storedIn, error }),
+										this.options.logger.error("chat reply not saved", {
+											conversationId: storedIn,
+											error,
+										}),
 									);
 							},
 						}
@@ -120,6 +152,72 @@ export class ChatService {
 			},
 		};
 	}
+
+	/**
+	 * Writes `chat.message.answered` with provenance once the stream ends or is stopped. The reply
+	 * has already been sent, so a failed write is logged (the RAG path fails the request instead).
+	 */
+	private async recordAnswer({
+		ownerId,
+		organizationId,
+		conversationId,
+		context,
+		steps,
+		usage,
+		finishReason,
+	}: {
+		ownerId: string;
+		organizationId: string;
+		conversationId: string | null;
+		context: RequestContext;
+		steps: ReadonlyArray<StepResult<ToolSet>>;
+		usage: TokenCounts;
+		finishReason: string;
+	}): Promise<void> {
+		const { audit, chatInfo, rag, logger } = this.options;
+		const tools = [
+			...new Set(steps.flatMap((step) => step.toolCalls.map((call) => call.toolName))),
+		];
+		try {
+			await audit.record({
+				ownerId: organizationId,
+				actorId: context.actorId ?? ownerId,
+				action: AUDIT_ACTIONS.CHAT_MESSAGE_ANSWERED,
+				subjectType: "conversation",
+				subjectId: conversationId,
+				requestId: context.requestId,
+				data: { finishReason, steps: steps.length, tools },
+				provenance: {
+					chatModel: `${chatInfo.provider}:${chatInfo.model}`,
+					promptVersion: promptVersion(CHAT_ASSISTANT_PROMPT),
+					...rag.versions,
+					usage: {
+						...(usage.inputTokens === undefined ? {} : { inputTokens: usage.inputTokens }),
+						...(usage.outputTokens === undefined ? {} : { outputTokens: usage.outputTokens }),
+					},
+				},
+			});
+		} catch (error) {
+			logger.error("chat answer not recorded", {
+				conversationId,
+				requestId: context.requestId,
+				error,
+			});
+		}
+	}
+}
+
+type TokenCounts = Pick<LanguageModelUsage, "inputTokens" | "outputTokens">;
+
+/** Summed token use of the steps that finished (a stopped stream reports no total). */
+function sumUsage(steps: ReadonlyArray<{ usage: LanguageModelUsage }>): TokenCounts {
+	let inputTokens = 0;
+	let outputTokens = 0;
+	for (const { usage } of steps) {
+		inputTokens += usage.inputTokens ?? 0;
+		outputTokens += usage.outputTokens ?? 0;
+	}
+	return { inputTokens, outputTokens };
 }
 
 async function validate(messages: unknown[]): Promise<UIMessage[]> {

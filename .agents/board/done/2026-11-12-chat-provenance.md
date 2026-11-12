@@ -5,14 +5,14 @@ type: bug
 from: pm
 to: web
 priority: high
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-049]
 branch: main
 worktree: none
-scope: [apps/api/src/modules/chat, packages/audit]
+scope: [apps/api/src/modules/chat, apps/api/src/modules/audit, apps/api/src/modules/rag, packages/audit, apps/console/src/features/usage, tests/e2e]
 allowed_shared: []
 created: 2026-11-12
 updated: 2026-11-12
@@ -53,4 +53,9 @@ stream cannot). Count chat answers in Usage (action filter becomes a list) with 
 
 ## Resolution
 
-_Open._
+Done in commit `fix(chat): record every chat answer with its provenance`.
+
+- `@synapse/audit`: `chat.message.answered`; `usage` now reads both answer actions and returns `action` per group (SQL groups by it).
+- `ChatService` records the event from `streamText`'s `onEnd` (total usage) and `onAbort` (usage summed over finished steps, `finishReason: "aborted"`): owner = active organization, actor = user, subject = stored conversation, request id, `data { finishReason, steps, tools }`, provenance = `provider:model` from the gateway's chat info, `chat-assistant@n`, `RagService.versions` (embedding model, chunker), tokens. The reply is already sent, so a failed write is logged, not thrown (documented; the RAG path keeps failing the request).
+- Usage: `models[].source` (`rag` | `chat`), console "Source" column (Playground / Chat); activity says "Answered in chat".
+- **Validation:** audit package 3; API 152 with Postgres (recorded once with full provenance and conversation subject, tool answer records tools + summed tokens of 2 steps and shows in usage as chat, a stopped stream is recorded with finished steps, a failing audit store leaves the stream intact; SQL groups chat separately); console 81; e2e 16 (chat reply appears in Usage).

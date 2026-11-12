@@ -1,6 +1,7 @@
 /** Every action name the system records. Add new ones here so the history stays searchable. */
 export const AUDIT_ACTIONS = {
 	RAG_QUERY_ANSWERED: "rag.query.answered",
+	CHAT_MESSAGE_ANSWERED: "chat.message.answered",
 	RAG_DOCUMENT_INGESTED: "rag.document.ingested",
 	RAG_DOCUMENT_DELETED: "rag.document.deleted",
 	RAG_DOCUMENTS_PURGED: "rag.documents.purged",

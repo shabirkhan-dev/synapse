@@ -82,10 +82,10 @@ export function UsageContainer() {
 							</Card>
 							<Card>
 								<CardHeader>
-									<CardTitle>By model and prompt</CardTitle>
+									<CardTitle>By source, model and prompt</CardTitle>
 									<CardDescription>
-										Cost is estimated from the prices in AI_MODEL_PRICES; models without one show
-										“No price”.
+										Playground answers and chat replies. Cost is estimated from the prices in
+										AI_MODEL_PRICES; models without one show “No price”.
 									</CardDescription>
 								</CardHeader>
 								<CardContent>

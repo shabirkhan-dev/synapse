@@ -45,6 +45,8 @@ numbers, JWTs, bearer tokens and provider keys in any string of `data` become `[
 | Action | When | Provenance |
 | --- | --- | --- |
 | `rag.query.answered` | every answered `/rag/query` (question, answer, cited and context chunk ids) | yes |
+| `chat.message.answered` | every `/chat` reply when its stream ends or is stopped (`finishReason`, `steps`, `tools`; subject = stored conversation) | yes: chat model, `chat-assistant@n`, current embedding model and chunker, tokens summed over steps |
+| `auth.sessions.revoked` | a session signed out from the account page (`sessionIds` or `count`) | — |
 | `rag.document.ingested` / `rag.document.deleted` | new document (not duplicates) / delete | — |
 | `rag.documents.purged` | an approved purge ran (`{ deleted }`) | — |
 | `auth.user.signed_up` / `auth.user.signed_in` / `auth.session.signed_out` | account events | — |
@@ -54,6 +56,8 @@ numbers, JWTs, bearer tokens and provider keys in any string of `data` become `[
 | `memory.fact.saved` / `memory.fact.forgotten` / `memory.conversation.deleted` / `memory.all.forgotten` | memory changes | — |
 
 Writes are awaited: an answer is returned only after its event is stored, so every answer is
-traceable (architecture rule 6). Answer feedback (`answer_feedback.request_id`) joins
+traceable (architecture rule 6). Streaming chat is the exception in timing only: its event is
+written when the stream ends (or is stopped, with the finished steps), after the reply was sent, so
+a failed write is logged (`chat answer not recorded`) instead of failing the request (syn-050). Answer feedback (`answer_feedback.request_id`) joins
 `audit_events.request_id`. Your history: `GET /audit/events?limit=&action=`: an organization's admins see all its events,
 members only those they did (`actorId`); the actor is always the user, also for organization data.

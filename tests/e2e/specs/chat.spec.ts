@@ -58,4 +58,10 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	await expect(dialog).toBeHidden();
 	await expect(conversations.getByText("Your conversations appear here.")).toBeVisible();
 	await expect(page.getByRole("heading", { name: "New chat" })).toBeVisible();
+
+	// The chat reply is recorded like any answer: it shows in Usage with its prompt version.
+	await page.getByRole("link", { name: "Usage", exact: true }).click();
+	const chatRow = page.getByRole("row").filter({ hasText: /^Chat/ });
+	await expect(chatRow).toContainText(/chat-assistant@\d/);
+	await expect(chatRow).toContainText("fake:openai/gpt-4o-mini");
 });

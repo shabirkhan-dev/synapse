@@ -24,6 +24,8 @@ export type StoredAuditEvent = AuditEvent & { id: string; createdAt: string };
 
 /** Answers that share a UTC day and the models/prompt behind them, with their summed tokens. */
 export type UsageGroup = {
+	/** Which kind of answer: `rag.query.answered` or `chat.message.answered`. */
+	action: string;
 	/** `YYYY-MM-DD` (UTC). */
 	day: string;
 	chatModel: string;
@@ -43,10 +45,10 @@ export interface AuditStore {
 		action?: string;
 		actorId?: string;
 	}): Promise<StoredAuditEvent[]>;
-	/** Events of `action` since `since` that carry provenance, grouped (see `UsageGroup`). */
+	/** Events of these `actions` since `since` that carry provenance, grouped (see `UsageGroup`). */
 	usage(input: {
 		ownerId: string;
-		action: string;
+		actions: string[];
 		since: Date;
 		actorId?: string;
 	}): Promise<UsageGroup[]>;
@@ -77,11 +79,11 @@ export function createAuditLog({ store, redact }: AuditLogOptions) {
 				...(action ? { action } : {}),
 				...(actorId ? { actorId } : {}),
 			}),
-		/** Answers since `since`, grouped by UTC day and the models behind them (`rag.query.answered`). */
+		/** Answers (RAG and chat) since `since`, grouped by kind, UTC day and the models behind them. */
 		usage: (ownerId: string, { since, actorId }: { since: Date; actorId?: string }) =>
 			store.usage({
 				ownerId,
-				action: AUDIT_ACTIONS.RAG_QUERY_ANSWERED,
+				actions: [AUDIT_ACTIONS.RAG_QUERY_ANSWERED, AUDIT_ACTIONS.CHAT_MESSAGE_ANSWERED],
 				since,
 				...(actorId ? { actorId } : {}),
 			}),

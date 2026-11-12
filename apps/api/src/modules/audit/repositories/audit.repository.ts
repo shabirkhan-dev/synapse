@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { AuditEvent, AuditStore, StoredAuditEvent, UsageGroup } from "@synapse/audit";
 import { auditEvents, type Database } from "@synapse/database";
@@ -45,12 +45,12 @@ export class DrizzleAuditRepository implements AuditStore {
 
 	async usage({
 		ownerId,
-		action,
+		actions,
 		since,
 		actorId,
 	}: {
 		ownerId: string;
-		action: string;
+		actions: string[];
 		since: Date;
 		actorId?: string;
 	}): Promise<UsageGroup[]> {
@@ -60,6 +60,7 @@ export class DrizzleAuditRepository implements AuditStore {
 		const embeddingModel = sql<string>`${auditEvents.provenance}->>'embeddingModel'`;
 		return this.db
 			.select({
+				action: auditEvents.action,
 				day,
 				chatModel,
 				promptVersion,
@@ -72,12 +73,12 @@ export class DrizzleAuditRepository implements AuditStore {
 			.where(
 				and(
 					eq(auditEvents.ownerId, ownerId),
-					eq(auditEvents.action, action),
+					inArray(auditEvents.action, actions),
 					gte(auditEvents.createdAt, since),
 					isNotNull(auditEvents.provenance),
 					actorId ? eq(auditEvents.actorId, actorId) : undefined,
 				),
 			)
-			.groupBy(day, chatModel, promptVersion, embeddingModel);
+			.groupBy(auditEvents.action, day, chatModel, promptVersion, embeddingModel);
 	}
 }

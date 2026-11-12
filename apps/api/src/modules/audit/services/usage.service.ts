@@ -1,4 +1,4 @@
-import type { AuditLog, UsageGroup } from "@synapse/audit";
+import { AUDIT_ACTIONS, type AuditLog, type UsageGroup } from "@synapse/audit";
 import { estimateCostUsd, type ModelPrices } from "@synapse/observability";
 import { can } from "@synapse/security";
 
@@ -72,7 +72,9 @@ function sum(groups: UsageGroup[], key: "answers" | "inputTokens" | "outputToken
 function byModel(groups: UsageGroup[], prices: ModelPrices): Usage["models"] {
 	const merged = new Map<string, Omit<UsageGroup, "day">>();
 	for (const { day: _day, ...group } of groups) {
-		const key = [group.chatModel, group.promptVersion, group.embeddingModel].join("\u0000");
+		const key = [group.action, group.chatModel, group.promptVersion, group.embeddingModel].join(
+			"\u0000",
+		);
 		const current = merged.get(key);
 		merged.set(
 			key,
@@ -87,9 +89,13 @@ function byModel(groups: UsageGroup[], prices: ModelPrices): Usage["models"] {
 		);
 	}
 	return [...merged.values()]
-		.map((model) => {
+		.map(({ action, ...model }) => {
 			const price = prices[model.chatModel];
-			return Object.assign(model, { costUsd: price ? estimateCostUsd(model, price) : null });
+			return Object.assign(model, {
+				source:
+					action === AUDIT_ACTIONS.CHAT_MESSAGE_ANSWERED ? ("chat" as const) : ("rag" as const),
+				costUsd: price ? estimateCostUsd(model, price) : null,
+			});
 		})
 		.toSorted((a, b) => b.answers - a.answers);
 }

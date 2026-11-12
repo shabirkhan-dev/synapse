@@ -130,4 +130,124 @@ describe("chat", () => {
 		);
 		expect(result).toMatchObject({ iso: "2026-10-31T12:00:00.000Z", timeZone: "UTC" });
 	});
+
+	test("every chat answer is recorded with its provenance (architecture rule 6)", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: streamResult(textStreamParts("Hello from the mock")),
+		});
+		const { app, auditEvents } = buildTestApp({ chatModel });
+		const response = await app.request("/api/v1/chat", {
+			method: "POST",
+			headers: { ...(await authHeaders()), "x-request-id": "req_chat_1" },
+			body: JSON.stringify({ message: userMessage("hi") }),
+		});
+		await readStream(response);
+		const conversationId = response.headers.get("x-conversation-id");
+		await waitFor(() => auditEvents.events.some((e) => e.action === "chat.message.answered"));
+		const answered = auditEvents.events.filter((e) => e.action === "chat.message.answered");
+		expect(answered).toHaveLength(1);
+		expect(answered[0]).toMatchObject({
+			ownerId: "user-1",
+			actorId: "user-1",
+			subjectType: "conversation",
+			subjectId: conversationId,
+			requestId: "req_chat_1",
+			data: { finishReason: "stop", steps: 1, tools: [] },
+			provenance: {
+				chatModel: "mock:mock-chat",
+				promptVersion: expect.stringMatching(/^chat-assistant@\d+$/),
+				embeddingModel: "mock:mock-embedding",
+				chunkerVersion: expect.stringContaining("text-v1"),
+				usage: { inputTokens: 10, outputTokens: 5 },
+			},
+		});
+	});
+
+	test("a tool-using answer records the tools and the tokens of every step", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: [
+				streamResult(toolCallStreamParts("searchDocuments", { query: "refund window" })),
+				streamResult(textStreamParts("Refunds are allowed for 30 days.")),
+			],
+		});
+		const { app, auditEvents } = buildTestApp({ chatModel });
+		await readStream(
+			await app.request("/api/v1/chat", {
+				method: "POST",
+				headers: await authHeaders(),
+				body: JSON.stringify({ messages: [userMessage("refunds?")] }),
+			}),
+		);
+		await waitFor(() => auditEvents.events.some((e) => e.action === "chat.message.answered"));
+		const answered = auditEvents.events.find((e) => e.action === "chat.message.answered");
+		expect(answered?.data).toEqual({ finishReason: "stop", steps: 2, tools: ["searchDocuments"] });
+		expect(answered?.provenance?.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
+		// Usage counts it as a chat answer.
+		const usage = (
+			await (
+				await app.request("/api/v1/audit/usage?days=1", { headers: await authHeaders() })
+			).json()
+		).data;
+		expect(usage.models).toEqual([expect.objectContaining({ source: "chat", answers: 1 })]);
+	});
+
+	test("a stopped stream is still recorded, with the steps that finished", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: async () => ({
+				stream: new ReadableStream({
+					start(controller) {
+						controller.enqueue({ type: "stream-start", warnings: [] });
+						controller.enqueue({ type: "text-start", id: "t" });
+						controller.enqueue({ type: "text-delta", id: "t", delta: "Partial" });
+						// Never finishes: the reader stops it.
+					},
+				}),
+			}),
+		});
+		const { app, auditEvents } = buildTestApp({ chatModel });
+		const stop = new AbortController();
+		const response = await app.request("/api/v1/chat", {
+			method: "POST",
+			headers: await authHeaders(),
+			body: JSON.stringify({ messages: [userMessage("hi")] }),
+			signal: stop.signal,
+		});
+		const reader = response.body?.getReader();
+		await reader?.read();
+		stop.abort();
+		await reader?.cancel().catch(() => {});
+		await waitFor(() => auditEvents.events.some((e) => e.action === "chat.message.answered"));
+		const answered = auditEvents.events.find((e) => e.action === "chat.message.answered");
+		expect(answered?.data).toMatchObject({ finishReason: "aborted", steps: 0 });
+		expect(answered?.provenance?.usage).toEqual({ inputTokens: 0, outputTokens: 0 });
+	});
+
+	test("a failed audit write does not break the answer already streaming", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: streamResult(textStreamParts("Still answered")),
+		});
+		const { app, auditEvents } = buildTestApp({ chatModel });
+		auditEvents.append = async () => {
+			throw new Error("audit store down");
+		};
+		const events = await readStream(
+			await app.request("/api/v1/chat", {
+				method: "POST",
+				headers: await authHeaders(),
+				body: JSON.stringify({ messages: [userMessage("hi")] }),
+			}),
+		);
+		expect(events.find((e) => e.type === "text-delta")?.delta).toBe("Still answered");
+		expect(events.at(-1)?.type).toBe("finish");
+	});
 });
+
+/** The recording runs after the stream; poll briefly instead of sleeping a fixed time. */
+async function waitFor(condition: () => boolean, timeoutMs = 2000): Promise<void> {
+	const started = Date.now();
+	while (!condition()) {
+		if (Date.now() - started > timeoutMs) throw new Error("condition not met in time");
+		// oxlint-disable-next-line no-await-in-loop
+		await new Promise((resolve) => setTimeout(resolve, 10));
+	}
+}

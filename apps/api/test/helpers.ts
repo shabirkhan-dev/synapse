@@ -795,12 +795,12 @@ export class InMemoryAuditStore implements AuditStore {
 
 	async usage({
 		ownerId,
-		action,
+		actions,
 		since,
 		actorId,
 	}: {
 		ownerId: string;
-		action: string;
+		actions: string[];
 		since: Date;
 		actorId?: string;
 	}): Promise<UsageGroup[]> {
@@ -810,19 +810,21 @@ export class InMemoryAuditStore implements AuditStore {
 			if (
 				!provenance ||
 				event.ownerId !== ownerId ||
-				event.action !== action ||
+				!actions.includes(event.action) ||
 				new Date(event.createdAt) < since ||
 				(actorId && event.actorId !== actorId)
 			)
 				continue;
 			const day = event.createdAt.slice(0, 10);
 			const key = [
+				event.action,
 				day,
 				provenance.chatModel,
 				provenance.promptVersion,
 				provenance.embeddingModel,
 			].join("|");
 			const group = groups.get(key) ?? {
+				action: event.action,
 				day,
 				chatModel: provenance.chatModel,
 				promptVersion: provenance.promptVersion,
@@ -978,6 +980,8 @@ export function buildTestApp({
 		guardrails,
 		logger,
 		chatModel,
+		chatInfo: gateway.chat.info,
+		audit,
 		maxSteps: testConfig.rag.chatMaxSteps,
 		topK: testConfig.rag.topK,
 	});

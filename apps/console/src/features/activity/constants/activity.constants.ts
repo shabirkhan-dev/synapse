@@ -10,6 +10,7 @@ export const ACTION_LABELS: Record<string, string> = {
 	"auth.user.signed_up": "Created the account",
 	"auth.user.signed_in": "Signed in",
 	"auth.session.signed_out": "Signed out",
+	"chat.message.answered": "Answered in chat",
 	"auth.sessions.revoked": "Signed out other devices",
 	"auth.password.reset": "Reset the password",
 	"auth.email.verified": "Verified the email",

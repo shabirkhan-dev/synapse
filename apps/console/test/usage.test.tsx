@@ -37,6 +37,7 @@ const usage = (days: number, answers: number, scope: "organization" | "you" = "o
 			? []
 			: [
 					{
+						source: "rag" as const,
 						chatModel: "openai:gpt-4o-mini",
 						promptVersion: "rag-answer@2",
 						embeddingModel: "openai:text-embedding-3-small",
@@ -101,6 +102,7 @@ describe("ModelsTable", () => {
 	test("an unpriced model says so in words", () => {
 		render(<ModelsTable models={usage(3, 2).models} />);
 		expect(screen.getByText("openai:gpt-4o-mini")).toBeDefined();
+		expect(screen.getByText("Playground")).toBeDefined();
 		expect(screen.getByText("No price")).toBeDefined();
 	});
 });

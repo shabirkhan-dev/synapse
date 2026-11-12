@@ -16,6 +16,7 @@ export const usageSchema = z.object({
 	daily: z.array(z.object({ day: z.string(), answers: z.number(), ...tokens })),
 	models: z.array(
 		z.object({
+			source: z.enum(["rag", "chat"]),
 			chatModel: z.string(),
 			promptVersion: z.string(),
 			embeddingModel: z.string(),

@@ -10,12 +10,15 @@ import {
 import type { UsageModel } from "../types/usage.types";
 import { formatCount, formatUsd } from "../utils/format";
 
-/** Answers by the chat model, prompt version and embedding model that produced them. */
+const SOURCE_LABELS: Record<UsageModel["source"], string> = { rag: "Playground", chat: "Chat" };
+
+/** Answers by where they came from and the chat model, prompt and embedding model behind them. */
 export function ModelsTable({ models }: { models: UsageModel[] }) {
 	return (
 		<Table>
 			<TableHeader>
 				<TableRow>
+					<TableHead>Source</TableHead>
 					<TableHead>Chat model</TableHead>
 					<TableHead>Prompt</TableHead>
 					<TableHead>Embedding model</TableHead>
@@ -27,7 +30,10 @@ export function ModelsTable({ models }: { models: UsageModel[] }) {
 			</TableHeader>
 			<TableBody className="tabular-nums">
 				{models.map((model) => (
-					<TableRow key={`${model.chatModel} ${model.promptVersion} ${model.embeddingModel}`}>
+					<TableRow
+						key={`${model.source} ${model.chatModel} ${model.promptVersion} ${model.embeddingModel}`}
+					>
+						<TableCell>{SOURCE_LABELS[model.source]}</TableCell>
 						<TableCell className="font-mono text-xs">{model.chatModel}</TableCell>
 						<TableCell className="font-mono text-xs">{model.promptVersion}</TableCell>
 						<TableCell className="font-mono text-xs">{model.embeddingModel}</TableCell>

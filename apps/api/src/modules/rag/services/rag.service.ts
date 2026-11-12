@@ -205,6 +205,14 @@ export class RagService {
 		);
 	}
 
+	/** What new chunks and searches use today: recorded with answers that may have searched. */
+	get versions(): { embeddingModel: string; chunkerVersion: string } {
+		return {
+			embeddingModel: this.knowledge.embeddingModel,
+			chunkerVersion: this.knowledge.chunkerVersion,
+		};
+	}
+
 	async search(
 		ownerId: string,
 		query: string,

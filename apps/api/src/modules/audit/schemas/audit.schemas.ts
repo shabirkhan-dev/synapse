@@ -52,6 +52,8 @@ export const usageSchema = z
 		/** By chat model, prompt version and embedding model, most answers first. */
 		models: z.array(
 			z.object({
+				/** Where the answers came from: `rag` (query/playground) or `chat`. */
+				source: z.enum(["rag", "chat"]),
 				chatModel: z.string(),
 				promptVersion: z.string(),
 				embeddingModel: z.string(),

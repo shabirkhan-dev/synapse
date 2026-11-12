@@ -34,7 +34,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Controllers:** API route handlers are trivial (validate → service → `success`), so there are no
   `controllers/` folders yet; add one when a handler grows real HTTP logic.
 - **Every answer is stored in `audit_events`** with its provenance (awaited: an audit write failure
-  fails the request). Audit rows are never pruned yet (no retention policy) and redaction is
+  fails the request). Streaming chat (syn-050) records `chat.message.answered` when the stream ends
+  or is stopped, after the reply was sent: a failed write is only logged, and its provenance names
+  the current embedding model and chunker even when no search ran (`data.tools` says whether one did). Audit rows are never pruned yet (no retention policy) and redaction is
   pattern-based (names and addresses are not detected). Token counts in the context and history
   budgets come from the Rust o200k_base tokenizer when its binding is built, else ~4 chars/token.
 - **Retrieval eval uses hashing embeddings** (no key needed): it gates the pipeline, not embedding
@@ -88,11 +90,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
-- **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044, syn-045, syn-046, syn-047, syn-048, syn-049): auth pages, documents (list +
+- **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044, syn-045, syn-046, syn-047, syn-048, syn-049, syn-050): auth pages, documents (list +
   add, delete-all request; a document page `/documents/[id]` with chunks, version notes and
-  immediate delete — syn-046; out-of-date counts are per page, not per document), the playground (non-streaming `/rag/query`, no history), usage (`/usage`, syn-049: `rag.query.answered`
-  only, UTC days, cost only for models in `AI_MODEL_PRICES`; **streaming chat answers record no
-  provenance or audit event yet — architecture rule 6 gap, syn-050**), a retrieval inspector (`/retrieval`,
+  immediate delete — syn-046; out-of-date counts are per page, not per document), the playground (non-streaming `/rag/query`, no history), usage (`/usage`, syn-049/050: RAG and chat
+  answers by source, UTC days, cost only for models in `AI_MODEL_PRICES`), a retrieval inspector (`/retrieval`,
   syn-048: three `answer: false` requests, one per mode; reranking still applies when configured), chat (streaming
   `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; no
   rename, no Markdown rendering, a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members

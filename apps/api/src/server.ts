@@ -118,6 +118,8 @@ const chat = new ChatService({
 	memory,
 	guardrails,
 	chatModel: gateway.chatModel,
+	chatInfo: gateway.chat.info,
+	audit,
 	maxSteps: config.rag.chatMaxSteps,
 	topK: config.rag.topK,
 	logger,

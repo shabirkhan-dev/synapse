@@ -137,10 +137,11 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 				row("ada", "2026-11-11T00:30:00Z", "mock:b", 7),
 				row("ada", "2026-10-01T12:00:00Z", "mock:a", 100),
 				{ ...row("ada", "2026-11-11T09:00:00Z", "mock:a", 1), action: "rag.document.ingested" },
+				{ ...row("ada", "2026-11-10T09:00:00Z", "mock:a", 3), action: "chat.message.answered" },
 			]);
 		const store = new DrizzleAuditRepository(database.db);
 		const since = new Date("2026-11-10T00:00:00Z");
-		const all = await store.usage({ ownerId: usageOwner, action: "rag.query.answered", since });
+		const all = await store.usage({ ownerId: usageOwner, actions: ["rag.query.answered"], since });
 		expect(all.toSorted((a, b) => a.day.localeCompare(b.day))).toEqual([
 			expect.objectContaining({
 				day: "2026-11-10",
@@ -157,11 +158,23 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 		]);
 		const ada = await store.usage({
 			ownerId: usageOwner,
-			action: "rag.query.answered",
+			actions: ["rag.query.answered"],
 			since,
 			actorId: "ada",
 		});
 		expect(ada.reduce((total, group) => total + group.answers, 0)).toBe(2);
+		// Chat answers are their own group, with their action.
+		const both = await store.usage({
+			ownerId: usageOwner,
+			actions: ["rag.query.answered", "chat.message.answered"],
+			since,
+		});
+		expect(both.filter((group) => group.day === "2026-11-10")).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ action: "rag.query.answered", answers: 2 }),
+				expect.objectContaining({ action: "chat.message.answered", answers: 1, inputTokens: 3 }),
+			]),
+		);
 		await database.db.execute(sql`delete from audit_events where owner_id = ${usageOwner}`);
 	});
 });
