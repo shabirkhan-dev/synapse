@@ -49,8 +49,12 @@ from [.agents/board/](.agents/board/README.md). The short version: claim a card 
 
 Shared UI lives in `packages/ui` (`@synapse/ui`): shadcn/ui on Base UI (style `base-mira`), HugeIcons, Tailwind v4. Add primitives
 with the shadcn CLI from `packages/ui` (`bunx --bun shadcn@latest add <name>`) rather than writing
-them by hand. Icons are HugeIcons only; do not add lucide. The console's UI is being built from
-zero, so there is no existing design to infer from yet.
+them by hand. Icons are HugeIcons only; do not add lucide.
+
+UI and UX quality: build console screens to the rules in `.agents/skills/better-*` (accessibility,
+layout, writing, typography, colors, UI polish) and run `better-interface` (whole screens) or
+`interface-review` (a change) before calling interactive work done. Installed with
+`bunx skills add jakubkrehel/skills` and pinned in `skills-lock.json`.
 
 ## Documentation
 

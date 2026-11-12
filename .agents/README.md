@@ -21,6 +21,9 @@ Everything AI agents need to work in Synapse: binding **rules**, task **skills**
 │   ├── database-engineering · rust-development · security-review
 │   ├── testing-and-evaluation · observability
 │   └── vendored: shadcn · browser-ui-test · ponytail · coding-guidelines · domain-web · m01–m12
+│       · interface (jakubkrehel/skills): better-interface · better-accessibility · better-layout
+│         · better-writing · better-typography · better-colors · better-ui · interface-review
+│         · break · state-machine · variant · build-design · explain-interface · teardown · afk
 ├── memory/           ← short, durable facts (keep true; delete when stale)
 │   └── architecture.md · decisions.md · conventions.md · known-constraints.md
 │
