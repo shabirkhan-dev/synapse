@@ -96,6 +96,7 @@ synapse/
 │   ├── database/        # @synapse/database: Drizzle client, schema, migrations
 │   └── ui/              # @synapse/ui: shadcn/ui on Base UI + HugeIcons + Tailwind v4
 ├── crates/              # Rust (napi-rs): text-processing, bindings (ADR-0004)
+├── tests/               # cross-package tests: e2e/ (Playwright, console + API)
 ├── scripts/             # Utility scripts: bash/, architecture/, git-hooks/
 ├── docker/              # Docker Compose fragments (see docker/README.md)
 ├── .agents/             # agent rules, skills, memory, roadmap, board
@@ -130,6 +131,7 @@ synapse/
 | `bun run test` | Run workspace tests + script tests |
 | `bun run test:coverage` | Run TS coverage + all language tests |
 | `bun run architecture:check` | Enforce architecture import boundaries + kebab-case naming |
+| `bun run test:e2e` | Browser e2e of console + API (`tests/e2e`, needs `E2E_DATABASE_URL`) |
 | `bun run eval:retrieval` | Retrieval eval vs committed baseline (needs `DATABASE_URL`) |
 | `bun run native:build` | Build the Rust binding (`crates/bindings`, needs cargo) into `packages/native/bin/` |
 | `bun run naming:check` | Enforce kebab-case (dotted, e.g. `rag.service.ts`) file/folder names |

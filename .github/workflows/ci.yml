@@ -157,6 +157,61 @@ jobs:
       - name: Native binding tests
         run: bun --cwd=packages/native run build:native && bun --cwd=packages/native test
 
+  # Console + API in a real browser (tests/e2e): sign-up, cookie session, verify and reset links,
+  # two tabs, documents, playground. Real Postgres, fake model provider, emails read from the API log.
+  e2e:
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg18-trixie
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Cache Bun
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/package.json') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Chromium for Playwright
+        working-directory: tests/e2e
+        run: bunx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        env:
+          E2E_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/e2e
+        run: bun run test:e2e
+
+      - name: Upload the report and API log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: tests/e2e/.output/
+          retention-days: 7
+
   api:
     needs: [lint, typecheck]
     runs-on: ubuntu-latest

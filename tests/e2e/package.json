@@ -1,0 +1,19 @@
+{
+	"name": "e2e",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"e2e": "playwright test",
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@playwright/test": "1.63.0",
+		"@synapse/typescript-config": "workspace:*",
+		"@types/node": "^26.6.6",
+		"postgres": "^4.1.0",
+		"typescript": "^7.0.2"
+	}
+}

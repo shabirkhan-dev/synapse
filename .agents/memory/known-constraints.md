@@ -93,6 +93,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   registrable domain, or localhost), and every page load costs one refresh. The gate is client-side,
   so workspace pages render nothing until the session is restored. Browsers without Web Locks
   refresh without the cross-tab lock. `NEXT_PUBLIC_API_URL` is inlined at
-  build time (Docker build arg). No committed e2e suite; the browser flow was checked by script.
+  build time (Docker build arg). Browser flows are covered by `tests/e2e` (CI job `e2e`).
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
+- **e2e** (`tests/e2e`): needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears
+  `auth_rate_limits` before each run. Locally a running console on `:3100` is reused, so stop it
+  after changing console code. Only Chromium is tested. The upload step uses
+  `actions/upload-artifact@v4` (newest release not checked from the agent sandbox).
 - Integration tests need Postgres with pgvector; they are skipped unless `API_TEST_DATABASE_URL` is set.

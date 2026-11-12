@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-09. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-12. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -60,11 +60,11 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | Console: `@synapse/ui` wired + sign-in + first feature (documents) | ✅ | syn-018 |
 | Console: sign-up, verify email, reset password; httpOnly-cookie session (ADR-0007) | ✅ | syn-037 |
 | Console: playground (ask, citations, provenance, feedback) | ✅ | syn-038 |
-| Console: approvals and activity (oversight, audit) | ⬜ | syn-040 |
+| Console: approvals and activity (oversight, audit) | ⏭️ | syn-040 |
 | Console features: knowledge, ingestion, retrieval, agents, evaluations, observability | ⬜ | — |
-| `tests/` — Playwright e2e for console + API in CI | ⏭️ | syn-039 |
+| `tests/` — Playwright e2e for console + API in CI | ✅ | syn-039 |
 | `tests/` — load, chaos, security suites | ⬜ | — |
-| `deploy/` — docker, compose, migrations, backups, monitoring | ⬜ | — |
+| `deploy/` — docker, compose, migrations, backups, monitoring | ⬜ | syn-041 |
 | Real CD deploy + runbooks filled in | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.
