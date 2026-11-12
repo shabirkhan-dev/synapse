@@ -1,11 +1,12 @@
 "use client";
 
 import { Alert, AlertDescription } from "@synapse/ui/components/alert";
-import { Button } from "@synapse/ui/components/button";
 import { Input } from "@synapse/ui/components/input";
 import { Label } from "@synapse/ui/components/label";
 import { Textarea } from "@synapse/ui/components/textarea";
 import { type FormEvent, useState } from "react";
+
+import { SubmitButton } from "@/components/shared/submit-button";
 
 import { ingestDocumentFormSchema } from "../schemas/document.schema";
 import type { IngestDocumentInput } from "../types/document.types";
@@ -80,9 +81,9 @@ export function IngestDocumentForm({ onSubmit, pending, error }: IngestDocumentF
 					<AlertDescription>{error}</AlertDescription>
 				</Alert>
 			) : null}
-			<Button type="submit" disabled={pending} className="self-start">
+			<SubmitButton disabled={pending} className="self-start">
 				{pending ? "Adding…" : "Add document"}
-			</Button>
+			</SubmitButton>
 		</form>
 	);
 }

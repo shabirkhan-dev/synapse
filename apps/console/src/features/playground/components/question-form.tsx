@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@synapse/ui/components/button";
 import { Label } from "@synapse/ui/components/label";
 import { Textarea } from "@synapse/ui/components/textarea";
 import { type FormEvent, type KeyboardEvent, useState } from "react";
 
+import { SubmitButton } from "@/components/shared/submit-button";
 import { FormField } from "@/components/shared/form-field";
 import { validateForm } from "@/lib/forms/validate-form";
 
@@ -72,9 +72,9 @@ export function QuestionForm({ onSubmit, pending }: QuestionFormProps) {
 						error={errors.topK}
 					/>
 				</div>
-				<Button type="submit" size="lg" disabled={pending}>
+				<SubmitButton size="lg" disabled={pending}>
 					{pending ? "Thinking…" : "Ask"}
-				</Button>
+				</SubmitButton>
 			</div>
 		</form>
 	);

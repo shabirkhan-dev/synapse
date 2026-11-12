@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
+import { SubmitButton } from "@/components/shared/submit-button";
 import { DocumentsTable } from "@/features/documents/components/documents-table";
 import { IngestDocumentForm } from "@/features/documents/components/ingest-document-form";
 import { SignInForm } from "@/features/auth/components/sign-in-form";
@@ -99,5 +100,15 @@ describe("DocumentsTable", () => {
 		expect(rows).toHaveLength(3);
 		expect(rows[1]?.textContent).toContain("Refunds");
 		expect(rows[2]?.textContent).toContain("—");
+	});
+});
+
+describe("SubmitButton", () => {
+	test("is disabled in the server HTML (before hydration) and enabled in the browser", async () => {
+		const { renderToString } = await import("react-dom/server");
+		const html = renderToString(<SubmitButton>Send</SubmitButton>);
+		expect(html).toContain("disabled");
+		render(<SubmitButton>Send</SubmitButton>);
+		expect(screen.getByRole("button", { name: "Send" }).hasAttribute("disabled")).toBe(false);
 	});
 });

@@ -77,6 +77,9 @@ site for the `SameSite=Strict` cookie (ADR-0007). Pages: `(auth)/sign-in`, `sign
 server-side, send no referrer, spend it once and remove it from the address bar);
 `(workspace)/documents` and `(workspace)/playground` behind `SessionGate`.
 
+Forms submit with `components/shared/submit-button.tsx`: disabled in the server HTML and until
+hydration, since a click before React attaches the handler would do nothing.
+
 Untrusted text from the model or documents is rendered as React text only (never HTML); `[n]`
 markers become in-page links, and sources become links only for `http(s)` URLs.
 

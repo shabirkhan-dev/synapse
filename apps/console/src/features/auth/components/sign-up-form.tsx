@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@synapse/ui/components/button";
 import { type FormEvent, useState } from "react";
 
+import { SubmitButton } from "@/components/shared/submit-button";
 import { AuthCard } from "@/components/shared/auth-card";
 import { FormField } from "@/components/shared/form-field";
 import { validateForm } from "@/lib/forms/validate-form";
@@ -62,9 +62,9 @@ export function SignUpForm({ onSubmit, pending, error }: SignUpFormProps) {
 					error={errors.confirm}
 				/>
 				<FormMessage error={error} />
-				<Button type="submit" disabled={pending}>
+				<SubmitButton disabled={pending}>
 					{pending ? "Creating your account…" : "Create account"}
-				</Button>
+				</SubmitButton>
 			</form>
 		</AuthCard>
 	);

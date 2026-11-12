@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@synapse/ui/components/button";
 import { type FormEvent, useState } from "react";
 
+import { SubmitButton } from "@/components/shared/submit-button";
 import { AuthCard } from "@/components/shared/auth-card";
 import { FormField } from "@/components/shared/form-field";
 import { validateForm } from "@/lib/forms/validate-form";
@@ -52,9 +52,9 @@ export function ForgotPasswordForm({ onSubmit, pending, error, sent }: ForgotPas
 							: null
 					}
 				/>
-				<Button type="submit" disabled={pending}>
+				<SubmitButton disabled={pending}>
 					{pending ? "Sending…" : sent ? "Send another link" : "Send reset link"}
-				</Button>
+				</SubmitButton>
 			</form>
 		</AuthCard>
 	);
