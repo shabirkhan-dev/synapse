@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ORGANIZATION_ROLES } from "@/lib/permissions";
+
 import { PASSWORD_RULES } from "../constants/auth.constants";
 
 const email = z.email("Enter a valid email address").trim();
@@ -39,3 +41,8 @@ export const signedInSchema = z.object({ user, tokens: z.object({ accessToken: z
 
 /** `data` of `POST /auth/verify-email`. */
 export const verifiedUserSchema = user;
+
+/** `data` of `GET /auth/me`: the user and the organization the access token acts in. */
+export const currentUserSchema = user.extend({
+	organization: z.object({ id: z.string(), role: z.enum(ORGANIZATION_ROLES) }),
+});

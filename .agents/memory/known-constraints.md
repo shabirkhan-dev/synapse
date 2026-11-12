@@ -88,8 +88,12 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
 - **Console** (syn-018, syn-037, syn-038, syn-040): auth pages, documents (list + add, delete-all
   request), the playground (non-streaming `/rag/query`; no chat UI, no answer history across
-  reloads), approvals and activity. No organization switcher yet: every console user works in their
-  personal organization (owner), so "only admins decide" shows only through the API's 403. A signed-out visit
+  reloads), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
+  are added by existing email only). The active organization is per session, so every tab of a
+  browser shares it: a tab that did not switch keeps acting in the old organization until its access
+  token is refreshed (≤ 15 min), then follows the session, and its labels update on the next load. A
+  removed member's next request refreshes into their personal organization, but the switcher shows
+  the old team until a reload. Role-based hiding copies the API's rules (`lib/permissions.ts`). A signed-out visit
   logs one expected 401 in the browser console (the session-restore refresh). Refresh token in the API's
   httpOnly cookie, access token in memory (ADR-0007): console and API must share a site (same
   registrable domain, or localhost), and every page load costs one refresh. The gate is client-side,

@@ -17,6 +17,8 @@ export type ApprovalsListProps = {
 	approvals: Approval[];
 	/** To say "you" for the signed-in user's own requests. */
 	currentUserId: string | null;
+	/** Admins and owners decide; members only see their requests wait. */
+	canDecide: boolean;
 	/** The request being decided right now (its buttons are disabled). */
 	busyId: string | null;
 	onApprove: (id: string) => void;
@@ -27,6 +29,7 @@ export type ApprovalsListProps = {
 export function ApprovalsList({
 	approvals,
 	currentUserId,
+	canDecide,
 	busyId,
 	onApprove,
 	onReject,
@@ -38,6 +41,7 @@ export function ApprovalsList({
 					key={approval.id}
 					approval={approval}
 					mine={approval.requestedBy !== null && approval.requestedBy === currentUserId}
+					canDecide={canDecide}
 					busy={busyId === approval.id}
 					onApprove={() => onApprove(approval.id)}
 					onReject={(reason) => onReject(approval.id, reason)}
@@ -50,12 +54,14 @@ export function ApprovalsList({
 function ApprovalItem({
 	approval,
 	mine,
+	canDecide,
 	busy,
 	onApprove,
 	onReject,
 }: {
 	approval: Approval;
 	mine: boolean;
+	canDecide: boolean;
 	busy: boolean;
 	onApprove: () => void;
 	onReject: (reason: string | undefined) => void;
@@ -82,25 +88,29 @@ function ApprovalItem({
 				</span>
 			</div>
 			<p className="text-sm">{approval.summary}</p>
-			<form className="flex flex-wrap items-end gap-2" onSubmit={handleReject} noValidate>
-				<Button type="button" disabled={busy} onClick={onApprove}>
-					{busy ? "Working…" : "Approve"}
-				</Button>
-				<div className="flex min-w-48 flex-1 flex-col gap-1">
-					<label htmlFor={reasonId} className="sr-only">
-						Reason for rejecting
-					</label>
-					<Input
-						id={reasonId}
-						name="reason"
-						placeholder="Reason (optional)"
-						aria-invalid={error ? true : undefined}
-					/>
-				</div>
-				<Button type="submit" variant="outline" disabled={busy}>
-					Reject
-				</Button>
-			</form>
+			{canDecide ? (
+				<form className="flex flex-wrap items-end gap-2" onSubmit={handleReject} noValidate>
+					<Button type="button" disabled={busy} onClick={onApprove}>
+						{busy ? "Working…" : "Approve"}
+					</Button>
+					<div className="flex min-w-48 flex-1 flex-col gap-1">
+						<label htmlFor={reasonId} className="sr-only">
+							Reason for rejecting
+						</label>
+						<Input
+							id={reasonId}
+							name="reason"
+							placeholder="Reason (optional)"
+							aria-invalid={error ? true : undefined}
+						/>
+					</div>
+					<Button type="submit" variant="outline" disabled={busy}>
+						Reject
+					</Button>
+				</form>
+			) : (
+				<p className="text-xs text-muted-foreground">Waiting for an admin or owner to decide.</p>
+			)}
 			{error ? <p className="text-xs text-destructive">{error}</p> : null}
 		</li>
 	);

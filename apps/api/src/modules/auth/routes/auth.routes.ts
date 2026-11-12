@@ -21,6 +21,7 @@ import {
 	signUpBodySchema,
 	switchedOrganizationSchema,
 	switchOrganizationBodySchema,
+	currentUserSchema,
 	userSchema,
 	verifyEmailBodySchema,
 } from "../schemas/auth.schemas";
@@ -134,12 +135,12 @@ const meRoute = createRoute({
 	method: "get",
 	path: "/me",
 	tags,
-	summary: "The signed-in user",
+	summary: "The signed-in user, with the active organization and their role in it",
 	security,
 	responses: {
 		200: {
 			description: "Current user",
-			content: { "application/json": { schema: successEnvelope(userSchema) } },
+			content: { "application/json": { schema: successEnvelope(currentUserSchema) } },
 		},
 		...errorResponses,
 	},
@@ -288,8 +289,8 @@ export function createAuthRoutes(
 	});
 
 	app.openapi(meRoute, async (c) => {
-		const user = await auth.currentUser(c.get("user"));
-		return success(c, user, AUTH_MESSAGES.USER_FETCHED);
+		const me = await auth.me(c.get("user"));
+		return success(c, me, AUTH_MESSAGES.USER_FETCHED);
 	});
 
 	app.openapi(verifyEmailRoute, async (c) => {

@@ -6,6 +6,8 @@ export type AppShellProps = {
 	children: ReactNode;
 	/** The signed-in user's email, once known. */
 	email: string | null;
+	/** The organization picker, next to the product name. */
+	switcher?: ReactNode;
 	onSignOut: () => void;
 	signingOut: boolean;
 };
@@ -16,9 +18,10 @@ const NAV = [
 	{ href: "/playground", label: "Playground" },
 	{ href: "/approvals", label: "Approvals" },
 	{ href: "/activity", label: "Activity" },
+	{ href: "/team", label: "Team" },
 ] as const;
 
-export function AppShell({ children, email, onSignOut, signingOut }: AppShellProps) {
+export function AppShell({ children, email, switcher, onSignOut, signingOut }: AppShellProps) {
 	return (
 		<div className="flex min-h-dvh flex-col">
 			<header className="border-b">
@@ -27,6 +30,7 @@ export function AppShell({ children, email, onSignOut, signingOut }: AppShellPro
 					<Link href="/documents" className="text-sm font-semibold">
 						Synapse
 					</Link>
+					{switcher}
 					<nav
 						aria-label="Main"
 						className="order-last flex w-full gap-4 overflow-x-auto pb-1 text-xs text-muted-foreground sm:order-none sm:w-auto sm:pb-0"

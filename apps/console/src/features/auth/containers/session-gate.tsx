@@ -10,8 +10,14 @@ import { useCurrentUserQuery } from "../hooks/queries/use-current-user-query";
 import { useSessionStatus } from "../hooks/use-session";
 import { useSignOutMutation } from "../hooks/mutations/use-sign-out-mutation";
 
+export type SessionGateProps = {
+	children: ReactNode;
+	/** The organization picker for the header (owned by the organizations feature). */
+	switcher?: ReactNode;
+};
+
 /** Workspace pages: signed-out visitors go to `/sign-in`; signed-in ones get the app shell. */
-export function SessionGate({ children }: { children: ReactNode }) {
+export function SessionGate({ children, switcher }: SessionGateProps) {
 	const router = useRouter();
 	const status = useSessionStatus();
 	const signOut = useSignOutMutation();
@@ -25,6 +31,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
 	return (
 		<AppShell
 			email={me.data?.email ?? null}
+			switcher={switcher}
 			signingOut={signOut.isPending}
 			onSignOut={() => signOut.mutate()}
 		>

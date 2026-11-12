@@ -18,7 +18,7 @@
 | GET / POST | `/api/v1/organizations` | Bearer | Your organizations with your role (personal first) / create a team (you are owner) |
 | GET / POST | `/api/v1/organizations/{id}/members` | Bearer | Members / add an existing account by email or change a role (`member`, `admin`, `owner`); admins only, owners for admin/owner |
 | DELETE | `/api/v1/organizations/{id}/members/{userId}` | Bearer | Remove a member (access ends on their next request); never the last owner (`409`) |
-| GET | `/api/v1/auth/me` | Bearer | The signed-in user (`id`, `email`, `createdAt`) |
+| GET | `/api/v1/auth/me` | Bearer | The signed-in user (`id`, `email`, `emailVerifiedAt`, `createdAt`) and `organization: { id, role }`: the organization the token acts in and the role read on this request |
 | POST | `/api/v1/rag/documents` | Bearer | Ingest a document (`title`, `content`, optional `source`, `metadata`): normalize, dedup, chunk, embed, store. Body ≤ 2 MB. `201` new; `200` if you already ingested the same content (existing document returned, nothing re-embedded) |
 | GET | `/api/v1/rag/documents` | Bearer | List your documents, newest first |
 | POST | `/api/v1/rag/documents/purge` | Bearer | Ask to delete **all** your documents: `202` with a pending approval request; nothing is deleted until it is approved |

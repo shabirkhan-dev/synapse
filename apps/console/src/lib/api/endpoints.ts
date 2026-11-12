@@ -9,6 +9,14 @@ export const endpoints = {
 		forgotPassword: "/auth/password/forgot",
 		resetPassword: "/auth/password/reset",
 		me: "/auth/me",
+		switchOrganization: "/auth/switch-organization",
+	},
+	organizations: {
+		list: "/organizations",
+		create: "/organizations",
+		members: (id: string) => `/organizations/${encodeURIComponent(id)}/members`,
+		member: (id: string, userId: string) =>
+			`/organizations/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
 	},
 	rag: {
 		query: "/rag/query",

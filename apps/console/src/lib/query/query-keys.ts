@@ -4,6 +4,10 @@ export const queryKeys = {
 		all: ["documents"] as const,
 	},
 	currentUser: ["current-user"] as const,
+	organizations: {
+		all: ["organizations"] as const,
+		members: (organizationId: string) => ["organizations", organizationId, "members"] as const,
+	},
 	approvals: {
 		pending: ["approvals", "pending"] as const,
 	},

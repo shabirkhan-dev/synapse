@@ -41,7 +41,11 @@ describe("auth flow", () => {
 			headers: { authorization: `Bearer ${tokens.accessToken}` },
 		});
 		expect(me.status).toBe(200);
-		expect((await me.json()).data).toEqual(user);
+		// The personal organization (id = user id) is active until the user switches.
+		expect((await me.json()).data).toEqual({
+			...user,
+			organization: { id: user.id, role: "owner" },
+		});
 	});
 
 	test("the access token works on protected routes, scoped to the new user", async () => {

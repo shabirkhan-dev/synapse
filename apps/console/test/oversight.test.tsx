@@ -14,7 +14,12 @@ afterEach(() => {
 	setAccessToken(null);
 });
 
-const me = { id: "u1", email: "ada@example.com", emailVerifiedAt: null };
+const me = {
+	id: "u1",
+	email: "ada@example.com",
+	emailVerifiedAt: null,
+	organization: { id: "u1", role: "owner" },
+};
 const approval = (id: string, requestedBy: string | null) => ({
 	id,
 	action: "rag.purge-documents",
@@ -35,6 +40,7 @@ describe("ApprovalsList", () => {
 			<ApprovalsList
 				approvals={[approval("a1", "u1"), approval("a2", "u2")]}
 				currentUserId="u1"
+				canDecide
 				busyId={null}
 				onApprove={onApprove}
 				onReject={onReject}
@@ -53,6 +59,24 @@ describe("ApprovalsList", () => {
 		expect(onReject).toHaveBeenCalledWith("a2", "keep them");
 		fireEvent.click(screen.getAllByRole("button", { name: "Reject" })[0] as HTMLElement);
 		expect(onReject).toHaveBeenLastCalledWith("a1", undefined);
+	});
+});
+
+describe("ApprovalsList for a member", () => {
+	test("shows the request waiting, with no approve or reject", () => {
+		render(
+			<ApprovalsList
+				approvals={[approval("a1", "u1")]}
+				currentUserId="u1"
+				canDecide={false}
+				busyId={null}
+				onApprove={mock()}
+				onReject={mock()}
+			/>,
+		);
+		expect(screen.getByText("Waiting for an admin or owner to decide.")).toBeDefined();
+		expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "Reject" })).toBeNull();
 	});
 });
 

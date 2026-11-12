@@ -188,6 +188,15 @@ describe("organizations", () => {
 		expect((await request(app, "GET", "/rag/documents", token)).status).toBe(200);
 	});
 
+	test("me reports the active organization and the caller's role in it", async () => {
+		const { app } = buildTestApp();
+		const { bob, orgId, bobTeam } = await team(app);
+		const personal = (await request(app, "GET", "/auth/me", bob.token)).body.data;
+		expect(personal.organization).toEqual({ id: bob.userId, role: "owner" });
+		const inTeam = (await request(app, "GET", "/auth/me", bobTeam)).body.data;
+		expect(inTeam.organization).toEqual({ id: orgId, role: "member" });
+	});
+
 	test("refresh keeps the active organization", async () => {
 		const { app } = buildTestApp();
 		const { bob, bobTeam } = await team(app);

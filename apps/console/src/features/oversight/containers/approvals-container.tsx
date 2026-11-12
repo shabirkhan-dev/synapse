@@ -6,6 +6,7 @@ import { Card, CardContent } from "@synapse/ui/components/card";
 
 import { useCurrentUserQuery } from "@/features/auth";
 import { ApiError } from "@/lib/api/api-error";
+import { can } from "@/lib/permissions";
 
 import { ApprovalsList } from "../components/approvals-list";
 import { OVERSIGHT_FORBIDDEN } from "../constants/oversight.constants";
@@ -82,6 +83,7 @@ export function ApprovalsContainer() {
 						<ApprovalsList
 							approvals={approvals.data}
 							currentUserId={me.data?.id ?? null}
+							canDecide={me.data ? can(me.data.organization.role, "approvals.decide") : false}
 							busyId={busyId}
 							onApprove={(id) => {
 								reject.reset();

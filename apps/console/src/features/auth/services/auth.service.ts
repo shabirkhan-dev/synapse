@@ -4,7 +4,7 @@ import { api } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import { setAccessToken } from "@/lib/api/session";
 
-import { signedInSchema, verifiedUserSchema } from "../schemas/auth.schema";
+import { currentUserSchema, signedInSchema, verifiedUserSchema } from "../schemas/auth.schema";
 import type {
 	ForgotPasswordInput,
 	ResetPasswordInput,
@@ -42,8 +42,8 @@ export const authService = {
 		}
 	},
 
-	/** The signed-in user (`GET /auth/me`). */
-	currentUser: () => api(endpoints.auth.me, { schema: verifiedUserSchema }),
+	/** The signed-in user, the active organization and their role in it (`GET /auth/me`). */
+	currentUser: () => api(endpoints.auth.me, { schema: currentUserSchema }),
 
 	/** Uses the emailed link's single-use token. */
 	verifyEmail: (token: string) =>

@@ -1,10 +1,11 @@
 # Frontend architecture
 
 > **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
-> five features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
+> six features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
 > `documents` (list + add — syn-018), `playground` (ask, cited answer, passages, provenance,
 > feedback — syn-038), `oversight` (approvals queue, approve/reject, the purge request on Documents
-> — syn-040) and `activity` (the audit trail — syn-040).
+> — syn-040), `activity` (the audit trail — syn-040) and `organizations` (header switcher, team
+> page: create a team, members, roles — syn-043).
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.
@@ -77,9 +78,17 @@ Nothing auth-related is in web storage or `document.cookie`. Console and API mus
 site for the `SameSite=Strict` cookie (ADR-0007). Pages: `(auth)/sign-in`, `sign-up`,
 `forgot-password`, `reset-password?token=`, `verify-email?token=` (the last two read the token
 server-side, send no referrer, spend it once and remove it from the address bar);
-`(workspace)/documents`, `playground`, `approvals` and `activity` behind `SessionGate`. Features
-reuse each other only through `index.ts` (`useCurrentUserQuery` from `auth`, `PurgeRequestContainer`
-from `oversight`).
+`(workspace)/documents`, `playground`, `approvals`, `activity` and `team` behind `SessionGate`.
+Features reuse each other only through `index.ts` (`useCurrentUserQuery` from `auth`,
+`PurgeRequestContainer` from `oversight`); the workspace layout hands `SessionGate` the
+`OrganizationSwitcherContainer` as a slot, so `auth` never imports `organizations`.
+
+**Organizations.** `GET /auth/me` says which organization the access token acts in and the role
+there. Switching (`POST /auth/switch-organization`, or creating a team, which switches into it)
+stores the new access token and calls `queryClient.resetQueries()`: every cached answer belonged
+to the old organization. Controls a role cannot use are hidden with `can(role, permission)` from
+`lib/permissions.ts`, a copy of the API's rules for `approvals.decide` and `members.manage(_admins)`;
+the API still checks every request. Keep the two in step when roles change.
 
 Forms submit with `components/shared/submit-button.tsx`: disabled in the server HTML and until
 hydration, since a click before React attaches the handler would do nothing.

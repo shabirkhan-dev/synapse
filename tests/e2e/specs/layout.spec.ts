@@ -10,7 +10,7 @@ test("on a phone every workspace page fits the width and sign-out stays reachabl
 	await signUpViaApi(email);
 	await page.setViewportSize({ width: 390, height: 800 });
 	await signIn(page, email);
-	for (const path of ["/documents", "/playground", "/approvals", "/activity"]) {
+	for (const path of ["/documents", "/playground", "/approvals", "/activity", "/team"]) {
 		// oxlint-disable-next-line no-await-in-loop
 		await page.goto(path);
 		// oxlint-disable-next-line no-await-in-loop

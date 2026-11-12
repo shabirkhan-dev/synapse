@@ -33,6 +33,7 @@ import type {
 	AuthSession,
 	AuthTokenPurpose,
 	AuthTokens,
+	CurrentUser,
 	RateLimiter,
 	RateLimitRule,
 	SignedIn,
@@ -232,6 +233,12 @@ export class AuthService {
 	async signOut({ sub, sid }: AuthUser, context: RequestContext = NO_REQUEST): Promise<void> {
 		await this.repository.revokeSession({ sessionId: sid, userId: sub });
 		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_OUT, sub, context, { sessionId: sid });
+	}
+
+	/** The user and the organization their token acts in (role read on this request). */
+	async me(caller: AuthUser): Promise<CurrentUser> {
+		const user = await this.currentUser(caller);
+		return { ...user, organization: { id: caller.orgId, role: caller.role } };
 	}
 
 	currentUser({ sub }: AuthUser): Promise<User> {

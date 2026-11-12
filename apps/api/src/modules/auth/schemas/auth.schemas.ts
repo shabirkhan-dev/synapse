@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import { PASSWORD_POLICY } from "@synapse/security";
+import { ORGANIZATION_ROLES, PASSWORD_POLICY } from "@synapse/security";
 
 const email = z.string().trim().pipe(z.email().max(254)).openapi({ example: "ada@example.com" });
 
@@ -55,6 +55,13 @@ export const userSchema = z
 		createdAt: z.string(),
 	})
 	.openapi("User");
+
+/** `GET /auth/me`: the user plus the organization this access token acts in. */
+export const currentUserSchema = userSchema
+	.extend({
+		organization: z.object({ id: z.uuid(), role: z.enum(ORGANIZATION_ROLES) }),
+	})
+	.openapi("CurrentUser");
 
 export const authTokensSchema = z
 	.object({

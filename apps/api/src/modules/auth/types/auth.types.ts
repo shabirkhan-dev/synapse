@@ -8,6 +8,8 @@ export type User = {
 	createdAt: string;
 };
 
+export type CurrentUser = User & { organization: { id: string; role: OrganizationRole } };
+
 export type AuthTokenPurpose = "email_verification" | "password_reset";
 
 export type RateLimitRule = { limit: number; windowSeconds: number };
