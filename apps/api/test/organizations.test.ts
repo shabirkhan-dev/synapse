@@ -91,11 +91,15 @@ describe("organizations", () => {
 
 	test("a member asks; only an admin or owner decides", async () => {
 		const { app } = buildTestApp();
-		const { adaTeam, bobTeam } = await team(app);
+		const { bob, adaTeam, bobTeam } = await team(app);
 		await request(app, "POST", "/rag/documents", bobTeam, doc("Team policy"));
 		const asked = await request(app, "POST", "/rag/documents/purge", bobTeam);
 		expect(asked.status).toBe(202);
 		const id = asked.body.data.id;
+		// The member sees their own request (requestedBy is the person, not the organization).
+		expect(asked.body.data.requestedBy).toBe(bob.userId);
+		const bobsQueue = await request(app, "GET", "/oversight/approvals", bobTeam);
+		expect(bobsQueue.body.data.map((approval: { id: string }) => approval.id)).toEqual([id]);
 
 		const denied = await request(app, "POST", `/oversight/approvals/${id}/approve`, bobTeam);
 		expect(denied.status).toBe(403);

@@ -133,7 +133,8 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	app.openapi(purgeRoute, async (c) => {
 		const approval = await oversight.request(
 			OVERSIGHT_ACTIONS.PURGE_DOCUMENTS,
-			{ ownerId: c.get("user").orgId, requestedBy: c.get("user").orgId },
+			// Owner = the organization (who may decide); requester = the person (who may see it).
+			{ ownerId: c.get("user").orgId, requestedBy: c.get("user").sub },
 			{ requestId: c.get("requestId"), actorId: c.get("user").sub },
 		);
 		return success(c, approval, RAG_MESSAGES.PURGE_REQUESTED, HTTP_STATUS.ACCEPTED);
