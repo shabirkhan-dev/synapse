@@ -25,3 +25,10 @@ import { Button } from "@synapse/ui/components/button";
 
 The app needs Tailwind's PostCSS plugin (`export { default } from "@synapse/ui/postcss.config";`)
 and `transpilePackages: ["@synapse/ui"]` in `next.config.ts`.
+
+## Tokens
+
+Theme tokens live in `src/styles/globals.css`. Light-mode `--ring` (0.556) and `--muted-foreground`
+(0.52) were darkened from the shadcn defaults so focus indicators reach 3:1 and 12px secondary text
+reaches 4.5:1 on both `--background` and `--muted`; re-measure both if either token or `--muted`
+changes. Inputs and textareas render 16px below `md` so iOS does not zoom on focus.
