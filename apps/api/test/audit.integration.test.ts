@@ -4,7 +4,12 @@ import { MockLanguageModelV4 } from "ai/test";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import { createAuditLog } from "@synapse/audit";
-import { createDatabase, runMigrations, sourceMigrationsFolder } from "@synapse/database";
+import {
+	auditEvents,
+	createDatabase,
+	runMigrations,
+	sourceMigrationsFolder,
+} from "@synapse/database";
 import { redactPiiDeep } from "@synapse/security";
 import { sql } from "drizzle-orm";
 
@@ -13,6 +18,14 @@ import { GuardrailsService } from "@/modules/guardrails";
 import { DrizzleRagRepository, RagService } from "@/modules/rag";
 
 import { createMockEmbeddingModel, testConfig, textGenerateResult } from "./helpers";
+
+const provenance = (chatModel: string, inputTokens: number) => ({
+	chatModel,
+	promptVersion: "rag-answer@2",
+	embeddingModel: "mock:embed",
+	chunkerVersion: "text-v1",
+	usage: { inputTokens, outputTokens: 1 },
+});
 
 /** Real Postgres + pgvector. Opt-in: set API_TEST_DATABASE_URL to a throwaway database. */
 const url = process.env.API_TEST_DATABASE_URL;
@@ -101,5 +114,54 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 			sql`select action from audit_events where id = ${event.id}`,
 		);
 		expect(row).toEqual({ action: "rag.document.deleted" });
+	});
+
+	test("usage groups answered queries by UTC day and models, for one actor when asked", async () => {
+		const usageOwner = `it-usage-${crypto.randomUUID()}`;
+		const row = (actorId: string, createdAt: string, chatModel: string, inputTokens: number) => ({
+			ownerId: usageOwner,
+			actorId,
+			action: "rag.query.answered",
+			subjectType: "query",
+			subjectId: null,
+			requestId: null,
+			data: {},
+			provenance: provenance(chatModel, inputTokens),
+			createdAt: new Date(createdAt),
+		});
+		await database.db
+			.insert(auditEvents)
+			.values([
+				row("ada", "2026-11-10T23:30:00Z", "mock:a", 10),
+				row("bob", "2026-11-10T08:00:00Z", "mock:a", 5),
+				row("ada", "2026-11-11T00:30:00Z", "mock:b", 7),
+				row("ada", "2026-10-01T12:00:00Z", "mock:a", 100),
+				{ ...row("ada", "2026-11-11T09:00:00Z", "mock:a", 1), action: "rag.document.ingested" },
+			]);
+		const store = new DrizzleAuditRepository(database.db);
+		const since = new Date("2026-11-10T00:00:00Z");
+		const all = await store.usage({ ownerId: usageOwner, action: "rag.query.answered", since });
+		expect(all.toSorted((a, b) => a.day.localeCompare(b.day))).toEqual([
+			expect.objectContaining({
+				day: "2026-11-10",
+				chatModel: "mock:a",
+				answers: 2,
+				inputTokens: 15,
+			}),
+			expect.objectContaining({
+				day: "2026-11-11",
+				chatModel: "mock:b",
+				answers: 1,
+				inputTokens: 7,
+			}),
+		]);
+		const ada = await store.usage({
+			ownerId: usageOwner,
+			action: "rag.query.answered",
+			since,
+			actorId: "ada",
+		});
+		expect(ada.reduce((total, group) => total + group.answers, 0)).toBe(2);
+		await database.db.execute(sql`delete from audit_events where owner_id = ${usageOwner}`);
 	});
 });

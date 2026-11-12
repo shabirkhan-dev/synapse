@@ -6,4 +6,5 @@ export {
 	type AuditStore,
 	createAuditLog,
 	type StoredAuditEvent,
+	type UsageGroup,
 } from "./events/audit-log";

@@ -1,5 +1,7 @@
 import type { AnswerProvenance } from "@synapse/core/types";
 
+import { AUDIT_ACTIONS } from "./audit-actions";
+
 /** Who did what to which thing, and what produced it. Rows are never changed once written. */
 export type AuditEvent = {
 	/** Tenant whose history this belongs to (JWT `sub` today). */
@@ -20,6 +22,18 @@ export type AuditEvent = {
 
 export type StoredAuditEvent = AuditEvent & { id: string; createdAt: string };
 
+/** Answers that share a UTC day and the models/prompt behind them, with their summed tokens. */
+export type UsageGroup = {
+	/** `YYYY-MM-DD` (UTC). */
+	day: string;
+	chatModel: string;
+	promptVersion: string;
+	embeddingModel: string;
+	answers: number;
+	inputTokens: number;
+	outputTokens: number;
+};
+
 export interface AuditStore {
 	append(event: AuditEvent): Promise<StoredAuditEvent>;
 	/** Newest first; only `actorId`'s events when given. */
@@ -29,6 +43,13 @@ export interface AuditStore {
 		action?: string;
 		actorId?: string;
 	}): Promise<StoredAuditEvent[]>;
+	/** Events of `action` since `since` that carry provenance, grouped (see `UsageGroup`). */
+	usage(input: {
+		ownerId: string;
+		action: string;
+		since: Date;
+		actorId?: string;
+	}): Promise<UsageGroup[]>;
 }
 
 export type AuditLogOptions = {
@@ -54,6 +75,14 @@ export function createAuditLog({ store, redact }: AuditLogOptions) {
 				ownerId,
 				limit,
 				...(action ? { action } : {}),
+				...(actorId ? { actorId } : {}),
+			}),
+		/** Answers since `since`, grouped by UTC day and the models behind them (`rag.query.answered`). */
+		usage: (ownerId: string, { since, actorId }: { since: Date; actorId?: string }) =>
+			store.usage({
+				ownerId,
+				action: AUDIT_ACTIONS.RAG_QUERY_ANSWERED,
+				since,
 				...(actorId ? { actorId } : {}),
 			}),
 	};

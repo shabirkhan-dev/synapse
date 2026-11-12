@@ -10,6 +10,7 @@ const PAGES = [
 	"/chat",
 	"/approvals",
 	"/activity",
+	"/usage",
 	"/team",
 	"/account",
 ];
@@ -40,7 +41,7 @@ test("at 320px every workspace page reflows and the drawer reaches every link an
 		const nav = page.getByRole("navigation", { name: "Main" });
 		// oxlint-disable-next-line no-await-in-loop
 		const links = await nav.getByRole("link").all();
-		expect(links.length).toBe(7);
+		expect(links.length).toBe(8);
 		// oxlint-disable-next-line no-await-in-loop
 		await Promise.all(links.map((link) => expect(link).toBeInViewport({ ratio: 1 })));
 		// oxlint-disable-next-line no-await-in-loop
@@ -69,4 +70,23 @@ test("on a phone, following a drawer link opens the page and closes the drawer",
 	await expect(page).toHaveURL(/\/activity$/);
 	await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
 	await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
+});
+
+test("at 320px a table wider than the screen says so and can be scrolled with the keyboard", async ({
+	page,
+}) => {
+	const email = uniqueEmail("narrow-table");
+	await signUpViaApi(email);
+	await page.setViewportSize({ width: 320, height: 800 });
+	await signIn(page, email);
+	await page.getByLabel("Title").fill("Refund policy");
+	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
+	await page.getByRole("button", { name: "Add document" }).click();
+	const table = page.getByRole("region", { name: "Table, scrolls sideways" });
+	await expect(table).toHaveAttribute("tabindex", "0");
+	await expect(page.getByText("Scroll sideways to see all columns.")).toBeVisible();
+	await table.focus();
+	await page.keyboard.press("ArrowRight");
+	await page.keyboard.press("ArrowRight");
+	await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
 });

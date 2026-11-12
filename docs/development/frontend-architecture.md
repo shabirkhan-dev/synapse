@@ -1,13 +1,14 @@
 # Frontend architecture
 
 > **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
-> nine features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
+> ten features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
 > `documents` (list + add — syn-018; a document's page with its chunks, versions and delete —
 > syn-046), `playground` (ask, cited answer, passages, provenance,
 > feedback — syn-038), `oversight` (approvals queue, approve/reject, the purge request on Documents
 > — syn-040), `activity` (the audit trail — syn-040) and `organizations` (header switcher, team
 > page: create a team, members, roles — syn-043) and `chat` (streaming answers with tool calls,
-> stored conversations — syn-044), `retrieval` (one query through each search mode — syn-048) and `account` (email verification, signed-in devices — syn-045).
+> stored conversations — syn-044), `retrieval` (one query through each search mode — syn-048), `usage` (answers, tokens, cost —
+> syn-049) and `account` (email verification, signed-in devices — syn-045).
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.
@@ -91,7 +92,12 @@ first `better-interface` pass (syn-044) moved shared tokens in `packages/ui/src/
 the main nav wraps at 320px and marks the current page with `aria-current`. The syn-045 pass made
 `CardTitle` a real heading (`h2`, `render={<h1 />}` where the card is the page, as on the auth
 pages, which had no `h1`) and keeps empty `role="status"` regions out of the layout
-(`empty:sr-only`, still in the accessibility tree so their next message is announced).
+(`empty:sr-only`, still in the accessibility tree so their next message is announced). The syn-049
+pass found tables cut off at 320px with no cue (documents, activity, usage): the shared `Table`
+now measures itself and, only when wider than its space, fades its trailing edge, shows "Scroll
+sideways to see all columns." and becomes a focusable region (arrow keys scroll it). The usage
+chart is plain CSS bars (dataviz rules: ≤ 24px, 4px top radius, 2px gaps, one neutral hue, hover
+tooltip per day, the same numbers in a table).
 
 | Concern | How |
 | --- | --- |

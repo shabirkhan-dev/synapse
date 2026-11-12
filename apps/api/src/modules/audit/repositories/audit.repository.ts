@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 
-import type { AuditEvent, AuditStore, StoredAuditEvent } from "@synapse/audit";
+import type { AuditEvent, AuditStore, StoredAuditEvent, UsageGroup } from "@synapse/audit";
 import { auditEvents, type Database } from "@synapse/database";
 
 import { toStoredAuditEvent } from "../mappers/audit.mapper";
@@ -41,5 +41,43 @@ export class DrizzleAuditRepository implements AuditStore {
 			.orderBy(desc(auditEvents.createdAt))
 			.limit(limit);
 		return rows.map(toStoredAuditEvent);
+	}
+
+	async usage({
+		ownerId,
+		action,
+		since,
+		actorId,
+	}: {
+		ownerId: string;
+		action: string;
+		since: Date;
+		actorId?: string;
+	}): Promise<UsageGroup[]> {
+		const day = sql<string>`to_char(${auditEvents.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`;
+		const chatModel = sql<string>`${auditEvents.provenance}->>'chatModel'`;
+		const promptVersion = sql<string>`${auditEvents.provenance}->>'promptVersion'`;
+		const embeddingModel = sql<string>`${auditEvents.provenance}->>'embeddingModel'`;
+		return this.db
+			.select({
+				day,
+				chatModel,
+				promptVersion,
+				embeddingModel,
+				answers: sql<number>`count(*)::int`,
+				inputTokens: sql<number>`coalesce(sum((${auditEvents.provenance}->'usage'->>'inputTokens')::bigint), 0)::int`,
+				outputTokens: sql<number>`coalesce(sum((${auditEvents.provenance}->'usage'->>'outputTokens')::bigint), 0)::int`,
+			})
+			.from(auditEvents)
+			.where(
+				and(
+					eq(auditEvents.ownerId, ownerId),
+					eq(auditEvents.action, action),
+					gte(auditEvents.createdAt, since),
+					isNotNull(auditEvents.provenance),
+					actorId ? eq(auditEvents.actorId, actorId) : undefined,
+				),
+			)
+			.groupBy(day, chatModel, promptVersion, embeddingModel);
 	}
 }

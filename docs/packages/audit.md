@@ -27,7 +27,7 @@ The single owner of event history: who did what, with which inputs, producing wh
 
 | Export | What it does |
 | --- | --- |
-| `createAuditLog({ store, redact })` → `{ record, list }`, `AuditStore`, `AuditEvent`, `StoredAuditEvent` | `record` redacts `data`, then appends; `list(ownerId, { limit, action? })` newest first. No update or delete |
+| `createAuditLog({ store, redact })` → `{ record, list, usage }`, `AuditStore`, `AuditEvent`, `StoredAuditEvent`, `UsageGroup` | `record` redacts `data`, then appends; `list(ownerId, { limit, action? })` newest first; `usage(ownerId, { since, actorId? })` groups `rag.query.answered` events with provenance by UTC day, chat model, prompt version and embedding model, summing tokens (syn-049). No update or delete |
 | `AUDIT_ACTIONS`, `SYSTEM_ACTOR` | Every recorded action name (`<area>.<thing>.<verb>`) |
 
 An event: `ownerId`, `actorId`, `action`, `subjectType`, `subjectId`, `requestId` (`x-request-id`),

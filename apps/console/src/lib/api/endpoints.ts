@@ -40,6 +40,7 @@ export const endpoints = {
 	},
 	audit: {
 		events: "/audit/events",
+		usage: (days: number) => `/audit/usage?days=${days}`,
 	},
 	documents: {
 		list: "/rag/documents",

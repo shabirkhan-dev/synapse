@@ -3,7 +3,12 @@ import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4
 import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
-import { type AuditStore, createAuditLog, type StoredAuditEvent } from "@synapse/audit";
+import {
+	type AuditStore,
+	createAuditLog,
+	type StoredAuditEvent,
+	type UsageGroup,
+} from "@synapse/audit";
 import type { EmailMessage, EmailSender, Reranker } from "@synapse/core/contracts";
 import type {
 	AnswerFeedback,
@@ -786,6 +791,52 @@ export class InMemoryAuditStore implements AuditStore {
 			)
 			.toReversed()
 			.slice(0, limit);
+	}
+
+	async usage({
+		ownerId,
+		action,
+		since,
+		actorId,
+	}: {
+		ownerId: string;
+		action: string;
+		since: Date;
+		actorId?: string;
+	}): Promise<UsageGroup[]> {
+		const groups = new Map<string, UsageGroup>();
+		for (const event of this.events) {
+			const provenance = event.provenance;
+			if (
+				!provenance ||
+				event.ownerId !== ownerId ||
+				event.action !== action ||
+				new Date(event.createdAt) < since ||
+				(actorId && event.actorId !== actorId)
+			)
+				continue;
+			const day = event.createdAt.slice(0, 10);
+			const key = [
+				day,
+				provenance.chatModel,
+				provenance.promptVersion,
+				provenance.embeddingModel,
+			].join("|");
+			const group = groups.get(key) ?? {
+				day,
+				chatModel: provenance.chatModel,
+				promptVersion: provenance.promptVersion,
+				embeddingModel: provenance.embeddingModel,
+				answers: 0,
+				inputTokens: 0,
+				outputTokens: 0,
+			};
+			group.answers += 1;
+			group.inputTokens += provenance.usage.inputTokens ?? 0;
+			group.outputTokens += provenance.usage.outputTokens ?? 0;
+			groups.set(key, group);
+		}
+		return [...groups.values()];
 	}
 }
 

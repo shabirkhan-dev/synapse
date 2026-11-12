@@ -3,6 +3,7 @@
 import {
 	Activity01Icon,
 	AiSearchIcon,
+	Analytics01Icon,
 	BubbleChatIcon,
 	CheckmarkCircle02Icon,
 	Files01Icon,
@@ -60,6 +61,7 @@ const NAV: ReadonlyArray<{ label: string; items: ReadonlyArray<NavItem> }> = [
 		items: [
 			{ href: "/approvals", label: "Approvals", icon: CheckmarkCircle02Icon },
 			{ href: "/activity", label: "Activity", icon: Activity01Icon },
+			{ href: "/usage", label: "Usage", icon: Analytics01Icon },
 		],
 	},
 	{ label: "Organization", items: [{ href: "/team", label: "Team", icon: UserGroupIcon }] },

@@ -38,6 +38,7 @@
 | GET / POST | `/api/v1/memory/facts` | Bearer | Facts the assistant remembers about you / remember one (`content` ≤ 500; same text stored once) |
 | DELETE | `/api/v1/memory/facts/{id}` | Bearer | Forget one fact |
 | DELETE | `/api/v1/memory` | Bearer | Delete all your conversations and facts → `{ conversations, facts }` |
+| GET | `/api/v1/audit/usage` | Bearer | Answered queries over the last `days` UTC days (`?days=30`, 1–90): `scope` (`organization` for admins/owners, `you` for members), `totals` (`answers`, `inputTokens`, `outputTokens`, `costUsd` estimated from `AI_MODEL_PRICES` or `null`, `unpricedAnswers`), `daily[]` (every day, zeros included), `models[]` (by chat model, prompt version, embedding model, with `costUsd` or `null`). From `rag.query.answered` provenance only: streaming chat answers are not recorded yet (syn-050) |
 | GET | `/api/v1/audit/events` | Bearer | Your event history, newest first (`limit` ≤ 200, optional `action`): answers with provenance, ingests, deletes, auth and approval events; personal data in `data` is redacted |
 | GET | `/api/docs` | — | Scalar API reference |
 | GET | `/api/openapi.json` | — | OpenAPI 3.1 document |

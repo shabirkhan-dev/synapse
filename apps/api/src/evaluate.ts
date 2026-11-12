@@ -44,7 +44,11 @@ const database = createDatabase({
 const embedding = createHashingEmbeddingGateway({ dimensions: EMBEDDING_DIMENSIONS });
 // Evaluation is not user activity: nothing goes to the audit trail.
 const evaluationAudit = createAuditLog({
-	store: { append: async (event) => ({ ...event, id: "", createdAt: "" }), list: async () => [] },
+	store: {
+		append: async (event) => ({ ...event, id: "", createdAt: "" }),
+		list: async () => [],
+		usage: async () => [],
+	},
 	redact: (data) => data,
 });
 const rerankErrors: unknown[] = [];
