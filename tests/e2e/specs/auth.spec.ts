@@ -23,6 +23,8 @@ test("sign up, keep the session in an httpOnly cookie, verify the email, sign ou
 	const email = uniqueEmail("signup");
 	await page.goto("/sign-in");
 	await page.getByRole("link", { name: "Create an account" }).click();
+	// Both pages have an "Email" field: wait for the new page before typing.
+	await expect(page.getByText("Create your Synapse account", { exact: true })).toBeVisible();
 	await page.getByLabel("Email").fill(email);
 	await page.getByLabel("Password", { exact: true }).fill("short");
 	await page.getByLabel("Repeat the password").fill("short");
@@ -93,6 +95,7 @@ test("forgot password: emailed link, new password, old one refused, link single-
 
 	await page.goto("/sign-in");
 	await page.getByRole("link", { name: "Forgot your password?" }).click();
+	await expect(page.getByText("Reset your password", { exact: true })).toBeVisible();
 	await page.getByLabel("Email").fill(email);
 	await page.getByRole("button", { name: "Send reset link" }).click();
 	await expect(page.getByText(/If that address has an account/)).toBeVisible();

@@ -92,7 +92,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   httpOnly cookie, access token in memory (ADR-0007): console and API must share a site (same
   registrable domain, or localhost), and every page load costs one refresh. The gate is client-side,
   so workspace pages render nothing until the session is restored. Browsers without Web Locks
-  refresh without the cross-tab lock. `NEXT_PUBLIC_API_URL` is inlined at
+  refresh without the cross-tab lock; the API's 10 s reuse grace window covers them (and the lock
+  is not enough on its own under load). Submit buttons stay disabled until hydration. `NEXT_PUBLIC_API_URL` is inlined at
   build time (Docker build arg). Browser flows are covered by `tests/e2e` (CI job `e2e`).
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
 - **e2e** (`tests/e2e`): needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears

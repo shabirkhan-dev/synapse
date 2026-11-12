@@ -14,6 +14,10 @@ const apiEnv = {
 	APP_URL: E2E.consoleUrl,
 	CORS_ORIGIN: E2E.consoleUrl,
 	LOG_FORMAT: "json",
+	// Lets the runner's API-side sign-ups each claim their own client IP (support/accounts.ts), so
+	// the 10-per-hour sign-up limit only counts what the browser does. Browser calls carry no
+	// x-forwarded-for, so they are limited by their real address as in production.
+	TRUST_PROXY: "true",
 	AI_PROVIDER_NAME: "fake",
 	AI_BASE_URL: `http://127.0.0.1:${E2E.modelPort}/v1`,
 	AI_API_KEY: "e2e-not-a-key",

@@ -204,12 +204,18 @@ jobs:
           E2E_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/e2e
         run: bun run test:e2e
 
+      - name: Show the API log
+        if: failure()
+        run: tail -n 150 tests/e2e/.output/api.log || true
+
       - name: Upload the report and API log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-report
           path: tests/e2e/.output/
+          # `.output` starts with a dot: hidden folders are skipped unless asked for.
+          include-hidden-files: true
           retention-days: 7
 
   api:

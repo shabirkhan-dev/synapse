@@ -23,8 +23,11 @@ build, test and an `api` job with a pgvector service (integration test + boot sm
 cited answer), the API from source (`:8100`, development mode, so emails are written to its log),
 and the console built for that API (`:3100`). Before the API starts, `support/prepare-database.ts`
 migrates `E2E_DATABASE_URL` (a throwaway Postgres with pgvector) and clears `auth_rate_limits`
-(every test signs up from 127.0.0.1). Tests read emailed links from `.output/api.log`
-(`support/mail.ts`).
+(every test signs up from 127.0.0.1). The API runs with `TRUST_PROXY=true` so API-side sign-ups
+(`support/accounts.ts`) each send their own `x-forwarded-for` and do not use up the per-IP sign-up
+limit; browser requests carry none. Tests read emailed links from `.output/api.log`
+(`support/mail.ts`). After clicking a link to another auth page, wait for that page (both have an
+"Email" field) before typing. Stress check: `bun run test:e2e -- --repeat-each=5 --workers=4 --retries=0`.
 
 | Spec | Covers |
 | --- | --- |
