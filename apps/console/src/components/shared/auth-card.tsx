@@ -21,7 +21,7 @@ export function AuthCard({ title, description, children, footer }: AuthCardProps
 	return (
 		<Card className="w-full max-w-sm">
 			<CardHeader>
-				<CardTitle>{title}</CardTitle>
+				<CardTitle render={<h1>{title}</h1>} />
 				<CardDescription>{description}</CardDescription>
 			</CardHeader>
 			<CardContent>{children}</CardContent>

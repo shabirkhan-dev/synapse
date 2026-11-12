@@ -2,6 +2,7 @@ import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 
+import { AuthCard } from "@/components/shared/auth-card";
 import { ForgotPasswordForm } from "@/features/auth/components/forgot-password-form";
 import { ResetPasswordForm } from "@/features/auth/components/reset-password-form";
 import { SignUpForm } from "@/features/auth/components/sign-up-form";
@@ -120,5 +121,18 @@ describe("VerifyEmailContainer (mocked API)", () => {
 		renderWithQuery(<VerifyEmailContainer token={null} />);
 		await waitFor(() => expect(screen.getByText("The link has no token in it.")).toBeDefined());
 		expect(calls).toHaveLength(1);
+	});
+});
+
+describe("AuthCard", () => {
+	test("its title is the page's h1, with the card's heading style", () => {
+		render(
+			<AuthCard title="Sign in to Synapse" description="Use your email and password.">
+				<p>form</p>
+			</AuthCard>,
+		);
+		const heading = screen.getByRole("heading", { level: 1, name: "Sign in to Synapse" });
+		expect(heading.className).toContain("font-heading");
+		expect(heading.getAttribute("data-slot")).toBe("card-title");
 	});
 });
