@@ -25,6 +25,7 @@ export function OrganizationSwitcher({
 	onSwitch,
 }: OrganizationSwitcherProps) {
 	const items = memberships.map((membership) => ({ value: membership.id, label: membership.name }));
+	const active = memberships.find((membership) => membership.id === activeId);
 	return (
 		<Select
 			items={items}
@@ -34,8 +35,17 @@ export function OrganizationSwitcher({
 				if (id && id !== activeId) onSwitch(id);
 			}}
 		>
-			<SelectTrigger size="sm" aria-label="Organization" className="max-w-44">
-				<SelectValue />
+			<SelectTrigger
+				aria-label="Organization"
+				className="h-9 w-full gap-2 border-transparent bg-transparent px-2 text-sm hover:bg-sidebar-accent dark:bg-transparent"
+			>
+				<span
+					aria-hidden="true"
+					className="flex size-6 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground uppercase"
+				>
+					{active?.name.slice(0, 1) ?? "?"}
+				</span>
+				<SelectValue className="truncate font-medium" />
 			</SelectTrigger>
 			<SelectContent>
 				{items.map((item) => (

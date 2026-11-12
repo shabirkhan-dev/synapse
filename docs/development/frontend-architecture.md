@@ -75,6 +75,14 @@ messages, Stop (abort) and a failed send's draft; the open conversation is `/cha
 its thread mounted when the API returns `x-conversation-id`. Console tests keep Bun's native web
 streams over happy-dom's (`test/setup.ts`), or `pipeThrough` fails.
 
+**Shell (syn-047).** `components/layout/app-shell.tsx` is shadcn's `sidebar` (Base UI, `inset`
+variant): organization picker at the top, nav groups Workspace / Oversight / Organization with
+HugeIcons, the user (Account) and Sign out at the bottom, the page in a rounded inset panel under a
+top bar with the sidebar toggle and the page name. Below 768px the sidebar is a drawer (Sheet) that
+closes when a link is followed; Ctrl/⌘+B collapses it on wider screens and the open state is kept
+in the non-auth `sidebar_state` cookie. Dark mode follows the system (`prefers-color-scheme`,
+`color-scheme: light dark`); there is no `.dark` class and no toggle.
+
 **UI quality.** Screens follow `.agents/skills/better-*` (installed from `jakubkrehel/skills`). The
 first `better-interface` pass (syn-044) moved shared tokens in `packages/ui/src/styles/globals.css`:
 `--ring` 0.556 and a solid `outline-ring` (focus indicators 4.7:1, were 1.5–2.6:1), `--muted-foreground`

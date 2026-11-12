@@ -8,7 +8,7 @@ test("add a document, ask about it, follow the citation, rate the answer", async
 	await signUpViaApi(email);
 	await signIn(page, email);
 
-	await page.getByRole("link", { name: "Playground" }).click();
+	await page.getByRole("link", { name: "Playground", exact: true }).click();
 	await page.getByLabel("Question").fill("How long do refunds take?");
 	await page.getByRole("button", { name: "Ask" }).click();
 	await expect(
@@ -25,7 +25,7 @@ test("add a document, ask about it, follow the citation, rate the answer", async
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 	await expect(page.getByLabel("Title")).toHaveValue("");
 
-	await page.getByRole("link", { name: "Playground" }).click();
+	await page.getByRole("link", { name: "Playground", exact: true }).click();
 	await page.getByLabel("Question").fill("How long do refunds take?");
 	await page.getByLabel("Question").press("Control+Enter");
 	const answer = page.getByRole("region", { name: "Answer" });

@@ -38,7 +38,7 @@ test("account: resend the verification link, then sign out another device from t
 	// Three sessions (the API sign-up, this laptop, the phone): this one is marked.
 	await signIn(phone, email);
 	await laptop.reload();
-	const devices = laptop.getByRole("listitem");
+	const devices = laptop.getByRole("main").getByRole("listitem");
 	await expect(devices).toHaveCount(3);
 	await expect(devices.filter({ hasText: "This device" })).toHaveCount(1);
 	await expect(devices.filter({ hasText: "Safari on iOS" })).toBeVisible();

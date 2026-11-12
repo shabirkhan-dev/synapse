@@ -26,17 +26,17 @@ test("deleting all documents waits for approval; approving runs it; activity rec
 	await page.reload();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 
-	await page.getByRole("link", { name: "Approvals" }).click();
+	await page.getByRole("link", { name: "Approvals", exact: true }).click();
 	await expect(page.getByText(/Requested by you/)).toBeVisible();
 	await expect(page.getByText("Delete all documents", { exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "Approve" }).click();
 	await expect(page.getByText("Approved. 1 document deleted.")).toBeVisible();
 	await expect(page.getByText("Nothing is waiting for a decision.")).toBeVisible();
 
-	await page.getByRole("link", { name: "Documents" }).click();
+	await page.getByRole("link", { name: "Documents", exact: true }).click();
 	await expect(page.getByText("No documents yet")).toBeVisible();
 
-	await page.getByRole("link", { name: "Activity" }).click();
+	await page.getByRole("link", { name: "Activity", exact: true }).click();
 	const rows = page.getByRole("row");
 	for (const what of [
 		"Deleted all documents",
@@ -67,6 +67,6 @@ test("a rejected request deletes nothing", async ({ page }) => {
 	await page.getByRole("button", { name: "Reject" }).click();
 	await expect(page.getByText("Rejected. The action did not run.")).toBeVisible();
 
-	await page.getByRole("link", { name: "Documents" }).click();
+	await page.getByRole("link", { name: "Documents", exact: true }).click();
 	await expect(page.getByRole("cell", { name: "Keep me" })).toBeVisible();
 });

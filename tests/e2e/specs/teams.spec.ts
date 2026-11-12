@@ -6,7 +6,7 @@ import { uniqueEmail } from "../support/env";
 async function switchTo(page: Page, organization: string): Promise<void> {
 	await page.getByRole("combobox", { name: "Organization" }).click();
 	await page.getByRole("option", { name: organization }).click();
-	await expect(page.getByRole("combobox", { name: "Organization" })).toHaveText(organization);
+	await expect(page.getByRole("combobox", { name: "Organization" })).toContainText(organization);
 }
 
 test("a member asks, an admin decides, in a shared team", async ({ browser }) => {
@@ -22,13 +22,13 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 
 	// The owner creates a team (the console switches into it) and adds the member.
 	await signIn(ownerPage, owner);
-	await expect(ownerPage.getByRole("combobox", { name: "Organization" })).toHaveText("Personal");
-	await ownerPage.getByRole("link", { name: "Team" }).click();
+	await expect(ownerPage.getByRole("combobox", { name: "Organization" })).toContainText("Personal");
+	await ownerPage.getByRole("link", { name: "Team", exact: true }).click();
 	await expect(ownerPage.getByText(/This is your personal workspace/)).toBeVisible();
 	await ownerPage.getByLabel("Team name").fill(team);
 	await ownerPage.getByRole("button", { name: "Create team" }).click();
 	await expect(ownerPage.getByRole("heading", { name: team })).toBeVisible();
-	await expect(ownerPage.getByRole("combobox", { name: "Organization" })).toHaveText(team);
+	await expect(ownerPage.getByRole("combobox", { name: "Organization" })).toContainText(team);
 	await ownerPage.getByLabel("Email").fill(admin);
 	await ownerPage.getByRole("combobox", { name: "Role", exact: true }).click();
 	await ownerPage.getByRole("option", { name: "Admin" }).click();
@@ -60,14 +60,14 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 	await expect(memberPage.getByRole("button", { name: "Approve" })).toHaveCount(0);
 
 	// A member sees the team but cannot change it.
-	await memberPage.getByRole("link", { name: "Team" }).click();
+	await memberPage.getByRole("link", { name: "Team", exact: true }).click();
 	await expect(
 		memberPage.getByText("Only admins and owners add people or change roles."),
 	).toBeVisible();
 	await expect(memberPage.getByRole("button", { name: "Add member" })).toHaveCount(0);
 
 	// The owner sees the member's request in the team and approves it.
-	await ownerPage.getByRole("link", { name: "Approvals" }).click();
+	await ownerPage.getByRole("link", { name: "Approvals", exact: true }).click();
 	await expect(ownerPage.getByText(/Requested by a member/)).toBeVisible();
 	await ownerPage.getByRole("button", { name: "Approve" }).click();
 	await expect(ownerPage.getByText("Approved. 1 document deleted.")).toBeVisible();
@@ -78,11 +78,11 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 
 	// The owner promotes the member; the member's own page reflects it on the next load.
 	await switchTo(ownerPage, team);
-	await ownerPage.getByRole("link", { name: "Team" }).click();
+	await ownerPage.getByRole("link", { name: "Team", exact: true }).click();
 	await ownerPage.getByRole("combobox", { name: `Role of ${member}` }).click();
 	await ownerPage.getByRole("option", { name: "Admin" }).click();
 	await expect(ownerPage.getByRole("combobox", { name: `Role of ${member}` })).toHaveText("Admin");
 	await memberPage.reload();
-	await expect(memberPage.getByRole("combobox", { name: "Organization" })).toHaveText(team);
+	await expect(memberPage.getByRole("combobox", { name: "Organization" })).toContainText(team);
 	await expect(memberPage.getByRole("button", { name: "Add member" })).toBeVisible();
 });

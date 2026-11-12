@@ -17,7 +17,7 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 
-	await page.getByRole("link", { name: "Chat" }).click();
+	await page.getByRole("link", { name: "Chat", exact: true }).click();
 	await expect(page.getByRole("heading", { name: "New chat" })).toBeVisible();
 	await expect(page.getByText("Ask about your documents")).toBeVisible();
 

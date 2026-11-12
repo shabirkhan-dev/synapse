@@ -105,6 +105,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   is not enough on its own under load). Submit buttons stay disabled until hydration. `NEXT_PUBLIC_API_URL` is inlined at
   build time (Docker build arg). Browser flows are covered by `tests/e2e` (CI job `e2e`).
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
+  The shell is a sidebar (syn-047): on phones its links are inside a drawer, so tests open it first.
+  Dark mode follows the OS only (no toggle); the sidebar keeps its open state in a `sidebar_state` cookie.
 - **e2e** (`tests/e2e`): needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears
   `auth_rate_limits` before each run. Locally a running console on `:3100` is reused, so stop it
   after changing console code. Only Chromium is tested. The upload step uses
