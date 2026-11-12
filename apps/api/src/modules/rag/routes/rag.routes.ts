@@ -201,17 +201,20 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	});
 
 	app.openapi(queryRoute, async (c) => {
-		const { query, topK, answer } = c.req.valid("json");
+		const { query, topK, answer, mode } = c.req.valid("json");
 		const ownerId = c.get("user").orgId;
 		if (!answer) {
 			return success(
 				c,
 				{
 					answer: null,
-					matches: await rag.retrieve(ownerId, query, topK, {
-						requestId: c.get("requestId"),
-						actorId: c.get("user").sub,
-					}),
+					matches: await rag.retrieve(
+						ownerId,
+						query,
+						topK,
+						{ requestId: c.get("requestId"), actorId: c.get("user").sub },
+						mode,
+					),
 					citations: [],
 					provenance: null,
 				},

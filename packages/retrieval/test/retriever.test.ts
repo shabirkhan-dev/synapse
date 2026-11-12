@@ -53,6 +53,44 @@ describe("retriever", () => {
 		expect(calls.keyword).toEqual([{ ownerId: "u1", query: "refund", limit: 6 }]);
 	});
 
+	test("keyword mode runs full-text search only and embeds nothing", async () => {
+		const { value, calls } = ports([m("a")], [m("k1", 0.3), m("k2", 0.1)]);
+		let embedded = 0;
+		const retriever = createRetriever(
+			{
+				...value,
+				embedQuery: async () => {
+					embedded += 1;
+					return [1, 0];
+				},
+			},
+			{ mode: "keyword", embeddingModel: "test:e" },
+		);
+		const matches = await retriever.retrieve({ ownerId: "u1", query: "SKU-1", topK: 5 });
+		expect(matches).toEqual([
+			{ ...m("k1", 0.3), ranks: { keyword: 1 } },
+			{ ...m("k2", 0.1), ranks: { keyword: 2 } },
+		]);
+		expect(calls.vector).toHaveLength(0);
+		expect(embedded).toBe(0);
+	});
+
+	test("a call can run another mode than the configured one", async () => {
+		const { value, calls } = ports([m("a", 0.9)], [m("k")]);
+		const retriever = createRetriever(value, { mode: "hybrid", embeddingModel: "test:e" });
+		const vector = await retriever.retrieve({ ownerId: "u1", query: "q", topK: 1, mode: "vector" });
+		expect(vector).toEqual([{ ...m("a", 0.9), ranks: { vector: 1 } }]);
+		expect(calls.keyword).toHaveLength(0);
+		const keyword = await retriever.retrieve({
+			ownerId: "u1",
+			query: "q",
+			topK: 1,
+			mode: "keyword",
+		});
+		expect(keyword[0]?.ranks).toEqual({ keyword: 1 });
+		expect(retriever.mode).toBe("hybrid");
+	});
+
 	test("hybrid mode surfaces keyword-only matches", async () => {
 		const { value } = ports([], [m("exact-term")]);
 		const retriever = createRetriever(value, { mode: "hybrid", embeddingModel: "test:e" });

@@ -30,12 +30,15 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
 
 | Export | What it does |
 | --- | --- |
-| `createRetriever(ports, { mode, embeddingModel, candidateMultiplier?, rrfK?, rerank? })` | `retrieve({ ownerId, query, topK })`; `reranker` = `provider:model` or `null` |
+| `createRetriever(ports, { mode, embeddingModel, candidateMultiplier?, rrfK?, rerank? })` | `retrieve({ ownerId, query, topK, mode? })` (`mode` runs another mode for one call, e.g. to compare); `reranker` = `provider:model` or `null` |
 | `RerankOptions` (`reranker`, `text(match)`, `candidates`, `onError?`) | Second stage: the best `candidates` first-stage matches go to a `Reranker` (`@synapse/core/contracts`) |
 | `RetrievalPorts` (`embedQuery`, `vectorSearch`, `keywordSearch`), `VectorSearchRequest`, `KeywordSearchRequest` | What the caller implements (the API repository) |
 | `reciprocalRankFusion(lists, key, k = 60)` | Merge ranked lists by id |
 
 - **`vector` mode:** one vector search; `score` = cosine similarity.
+- **`keyword` mode:** full-text search only (nothing is embedded); `score` = the keyword rank score.
+  Not a deployment default (`RAG_SEARCH_MODE` is `vector` | `hybrid`); the console's retrieval
+  inspector uses it per request (syn-048).
 - **`hybrid` mode (API default):** vector + keyword in parallel, each with `topK × 4` candidates,
   fused with RRF; `score` = RRF score (e.g. `2/61` for rank 1 in both lists).
 - Every match carries `ranks: { vector?, keyword?, rerank? }`.

@@ -25,7 +25,8 @@ export type RetrievalPorts<TMatch extends SearchMatch> = {
 	keywordSearch(request: KeywordSearchRequest): Promise<TMatch[]>;
 };
 
-export type RetrievalMode = "vector" | "hybrid";
+/** `hybrid` fuses vector + keyword (RRF); `vector` keeps cosine; `keyword` is full-text only. */
+export type RetrievalMode = "vector" | "hybrid" | "keyword";
 
 /** Second stage: the best `candidates` first-stage matches are reordered by a reranking model. */
 export type RerankOptions<TMatch extends SearchMatch> = {
@@ -62,15 +63,25 @@ export function createRetriever<TMatch extends SearchMatch>(
 		rerank,
 	}: RetrieverOptions<TMatch>,
 ) {
-	/** First stage: `vector` keeps cosine scores; `hybrid` fuses vector + keyword with RRF. */
+	/**
+	 * First stage: `vector` keeps cosine scores; `keyword` keeps full-text scores and embeds
+	 * nothing; `hybrid` fuses vector + keyword with RRF.
+	 */
 	async function firstStage(
 		ownerId: string,
 		query: string,
 		count: number,
 		topK: number,
+		run: RetrievalMode,
 	): Promise<RetrievedMatch<TMatch>[]> {
+		if (run === "keyword") {
+			const matches = await ports.keywordSearch({ ownerId, query, limit: count });
+			return matches.map((match, index) =>
+				Object.assign({}, match, { ranks: { keyword: index + 1 } }),
+			);
+		}
 		const embedding = await ports.embedQuery(query);
-		if (mode === "vector") {
+		if (run === "vector") {
 			const matches = await ports.vectorSearch({
 				ownerId,
 				embedding,
@@ -114,13 +125,16 @@ export function createRetriever<TMatch extends SearchMatch>(
 			ownerId,
 			query,
 			topK,
+			mode: run = mode,
 		}: {
 			ownerId: string;
 			query: string;
 			topK: number;
+			/** Run this mode for one call instead of the configured one (e.g. to compare modes). */
+			mode?: RetrievalMode;
 		}): Promise<RetrievedMatch<TMatch>[]> {
 			const count = rerank ? Math.max(topK, rerank.candidates) : topK;
-			const candidates = await firstStage(ownerId, query, count, topK);
+			const candidates = await firstStage(ownerId, query, count, topK, run);
 			if (!rerank || candidates.length === 0) return candidates.slice(0, topK);
 			try {
 				const ranked = await rerank.reranker.rerank({

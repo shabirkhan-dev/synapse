@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi";
 
 import {
 	RAG_DEFAULT_CHUNK_PAGE,
+	RAG_MESSAGES,
 	RAG_DEFAULT_LIST_LIMIT,
 	RAG_MAX_CHUNK_PAGE,
 } from "../constants/rag.constants";
@@ -72,6 +73,15 @@ export const ragQueryBodySchema = z
 		topK: z.number().int().min(1).max(50).optional(),
 		/** false = retrieval only (no LLM call). */
 		answer: z.boolean().default(true),
+		/**
+		 * Retrieval only: run this search mode instead of the configured one (to compare them).
+		 * `keyword` is full-text alone. Answers always use the configured pipeline.
+		 */
+		mode: z.enum(["hybrid", "vector", "keyword"]).optional(),
+	})
+	.refine((body) => body.mode === undefined || body.answer === false, {
+		message: RAG_MESSAGES.MODE_NEEDS_RETRIEVAL_ONLY,
+		path: ["mode"],
 	})
 	.openapi("RagQueryBody");
 

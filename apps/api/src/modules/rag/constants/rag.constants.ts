@@ -9,6 +9,7 @@ export const RAG_MESSAGES = {
 	DOCUMENT_ALREADY_INGESTED: "Document already ingested",
 	DOCUMENTS_FETCHED: "Documents retrieved",
 	DOCUMENT_FETCHED: "Document retrieved",
+	MODE_NEEDS_RETRIEVAL_ONLY: "mode only applies to retrieval: set answer to false",
 	DOCUMENT_DELETED: "Document deleted",
 	QUERY_ANSWERED: "Query answered",
 	MATCHES_FOUND: "Matching passages retrieved",

@@ -249,6 +249,49 @@ describe("rag", () => {
 		);
 	});
 
+	test("retrieval can run one mode per request to compare them; answers cannot", async () => {
+		const { app } = buildTestApp();
+		const headers = await authHeaders();
+		await app.request("/api/v1/rag/documents", {
+			method: "POST",
+			headers,
+			body: JSON.stringify(refundDoc),
+		});
+		const search = async (mode?: string) =>
+			(
+				await (
+					await app.request("/api/v1/rag/query", {
+						method: "POST",
+						headers,
+						body: JSON.stringify({ query: "Biscuit printer", answer: false, topK: 3, mode }),
+					})
+				).json()
+			).data.matches as { ranks: Record<string, number> }[];
+
+		const keyword = await search("keyword");
+		expect(keyword.length).toBeGreaterThan(0);
+		expect(keyword.every((match) => Object.keys(match.ranks).join() === "keyword")).toBe(true);
+		const vector = await search("vector");
+		expect(vector.every((match) => Object.keys(match.ranks).join() === "vector")).toBe(true);
+		const hybrid = await search("hybrid");
+		expect(hybrid.some((match) => match.ranks.vector && match.ranks.keyword)).toBe(true);
+		// Without a mode, the configured one (hybrid by default) runs.
+		expect(await search()).toEqual(hybrid);
+
+		const withAnswer = await app.request("/api/v1/rag/query", {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ query: "refund", answer: true, mode: "keyword" }),
+		});
+		expect(withAnswer.status).toBe(422);
+		const unknownMode = await app.request("/api/v1/rag/query", {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ query: "refund", answer: false, mode: "fuzzy" }),
+		});
+		expect(unknownMode.status).toBe(422);
+	});
+
 	test("delete removes a document and 404s for unknown ids", async () => {
 		const { app, repository } = buildTestApp();
 		const headers = await authHeaders();

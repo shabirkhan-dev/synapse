@@ -1,13 +1,13 @@
 # Frontend architecture
 
 > **Status:** Live. `apps/console` has `lib/api`, `lib/query`, TanStack Query, `@synapse/ui` and
-> eight features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
+> nine features: `auth` (sign-in/up, verify, reset, session gate, current user — syn-018, syn-037),
 > `documents` (list + add — syn-018; a document's page with its chunks, versions and delete —
 > syn-046), `playground` (ask, cited answer, passages, provenance,
 > feedback — syn-038), `oversight` (approvals queue, approve/reject, the purge request on Documents
 > — syn-040), `activity` (the audit trail — syn-040) and `organizations` (header switcher, team
 > page: create a team, members, roles — syn-043) and `chat` (streaming answers with tool calls,
-> stored conversations — syn-044) and `account` (email verification, signed-in devices — syn-045).
+> stored conversations — syn-044), `retrieval` (one query through each search mode — syn-048) and `account` (email verification, signed-in devices — syn-045).
 
 Agent rules: `.agents/rules/frontend-architecture.md`, `.agents/rules/configuration.md`.
 Playbook: `.agents/skills/frontend-feature-development/`.

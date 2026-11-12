@@ -209,19 +209,21 @@ export class RagService {
 		ownerId: string,
 		query: string,
 		topK = this.options.defaultTopK,
+		mode?: RetrievalMode,
 	): Promise<RagMatch[]> {
-		return this.retriever.retrieve({ ownerId, query, topK });
+		return this.retriever.retrieve({ ownerId, query, topK, ...(mode ? { mode } : {}) });
 	}
 
-	/** A user's search (`answer: false`): input policy first, then retrieval. */
+	/** A user's search (`answer: false`): input policy first, then retrieval (any mode). */
 	async retrieve(
 		ownerId: string,
 		query: string,
 		topK?: number,
 		context: RequestContext = NO_REQUEST,
+		mode?: RetrievalMode,
 	): Promise<RagMatch[]> {
 		await this.options.guardrails.checkInput(ownerId, query, "rag.query", context);
-		return this.search(ownerId, query, topK);
+		return this.search(ownerId, query, topK, mode);
 	}
 
 	async answer(
