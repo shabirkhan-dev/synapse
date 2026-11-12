@@ -49,8 +49,8 @@ describe("cookie sessions (ADR-0007)", () => {
 		expect(JSON.stringify(body)).not.toContain(cookie.value);
 	});
 
-	test("refresh reads the cookie, rotates it, and the old cookie is then reuse that revokes the session", async () => {
-		const { app } = buildTestApp();
+	test("refresh reads the cookie and rotates it; within the grace window the old cookie renews only the access token; after it, reuse revokes the session", async () => {
+		const { app, authRepository } = buildTestApp();
 		const { cookie: first } = await cookieSignUp(app);
 
 		const refreshed = await post(
@@ -66,7 +66,21 @@ describe("cookie sessions (ADR-0007)", () => {
 		expect(body.data.accessToken).toBeString();
 		expect(body.data).not.toHaveProperty("refreshToken");
 
-		// Replaying the first cookie: reuse → the whole session is revoked and the cookie cleared.
+		// Another tab still sending the first cookie a moment later: access token only, cookie untouched.
+		const racing = await post(
+			app,
+			"/refresh",
+			{},
+			{ ...json, cookie: `synapse_refresh=${first.value}` },
+		);
+		expect(racing.status).toBe(200);
+		expect(racing.headers.get("set-cookie")).toBeNull();
+		expect((await racing.json()).data.accessToken).toBeString();
+
+		// Replaying the first cookie later: reuse → the whole session is revoked and the cookie cleared.
+		for (const session of authRepository.sessions) {
+			if (session.rotatedAt) session.rotatedAt = new Date(Date.now() - 11_000);
+		}
 		const replay = await post(
 			app,
 			"/refresh",

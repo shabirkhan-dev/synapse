@@ -30,14 +30,17 @@ export type AuthSession = {
 	organizationId: string | null;
 	/** Which hash the presented refresh token matched: `previous` means it was already used. */
 	matched: "current" | "previous";
+	/** When the current token replaced the previous one (`null` before the first refresh). */
+	rotatedAt: Date | null;
 };
 
 export type AuthTokens = {
 	tokenType: "Bearer";
 	accessToken: string;
 	accessTokenExpiresAt: string;
-	refreshToken: string;
-	refreshTokenExpiresAt: string;
+	/** Absent when a refresh only renewed the access token (the grace window). */
+	refreshToken?: string;
+	refreshTokenExpiresAt?: string;
 };
 
 export type SignedIn = { user: User; tokens: AuthTokens };

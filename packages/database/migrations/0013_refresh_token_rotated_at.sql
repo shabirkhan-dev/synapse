@@ -1,0 +1,1 @@
+ALTER TABLE "auth_sessions" ADD COLUMN IF NOT EXISTS "refresh_token_rotated_at" timestamp with time zone;

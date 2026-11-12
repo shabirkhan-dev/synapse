@@ -47,8 +47,9 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
 - **Sign-up / sign-in** create a session row and return a 15-minute access token plus a refresh
   token (session lives 30 days; `AUTH_ACCESS_TOKEN_TTL_SECONDS`, `AUTH_SESSION_TTL_DAYS`).
 - **Refresh** rotates the refresh token (compare-and-swap on the stored hash, so a race has one
-  winner) and keeps the session's expiry. Presenting the *previous* token again revokes the session:
-  someone copied it.
+  winner) and keeps the session's expiry. Presenting the *previous* token again revokes the session
+  (someone copied it) — except within `AUTH_REFRESH_REUSE_GRACE_SECONDS` (10 s) of its rotation,
+  when it gets an access token only (two tabs, a retried request, the race's loser; ADR-0007).
 - **Sign-out** revokes the session; its refresh token stops working at once.
 - **Browsers (the console)** take the refresh token as an httpOnly cookie instead of in the body
   (`session: "cookie"`, ADR-0007) and keep the access token in memory; the API route layer moves

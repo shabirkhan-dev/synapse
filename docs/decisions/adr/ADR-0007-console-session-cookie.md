@@ -29,6 +29,17 @@ The API sets the cookie itself; the browser keeps talking to the API directly.
   with a cookie refresh; tabs serialize refreshes with the Web Locks API so two tabs never present
   the same refresh token (which the API would treat as reuse and revoke the session).
 
+## Amendment (2026-11-12): reuse grace window
+
+CI showed the Web Lock is not enough under load: two tabs occasionally sent the same refresh
+cookie, and reuse detection revoked the session. The API now answers the token it *just* replaced
+— within `AUTH_REFRESH_REUSE_GRACE_SECONDS` (default 10, `0` = strict) of the rotation — with an
+**access token only**: no new refresh token and no `Set-Cookie`, so the browser keeps whichever
+cookie is newest and no session forks. The same applies when two requests race on one token (the
+compare-and-swap loser). Outside the window the old token still revokes the session. Inside it, a
+thief holding the just-replaced token gets one 15-minute access token, not a refresh token. The
+console's Web Lock stays: it keeps most refreshes single.
+
 ## Consequences
 
 - Page scripts never see the refresh token after sign-in, and it is not stored in web storage. A

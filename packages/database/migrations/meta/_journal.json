@@ -92,6 +92,13 @@
       "when": 1794185834715,
       "tag": "0012_personal_organizations_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794455380671,
+      "tag": "0013_refresh_token_rotated_at",
+      "breakpoints": true
     }
   ]
 }

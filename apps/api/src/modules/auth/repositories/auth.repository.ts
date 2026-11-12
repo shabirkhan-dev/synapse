@@ -92,6 +92,7 @@ export class DrizzleAuthRepository implements AuthRepository {
 			revokedAt: row.revokedAt,
 			organizationId: row.organizationId,
 			matched: row.refreshTokenHash === hash ? "current" : "previous",
+			rotatedAt: row.refreshTokenRotatedAt,
 		};
 	}
 
@@ -109,6 +110,7 @@ export class DrizzleAuthRepository implements AuthRepository {
 			.set({
 				refreshTokenHash: nextHash,
 				previousRefreshTokenHash: currentHash,
+				refreshTokenRotatedAt: sql`now()`,
 				updatedAt: sql`now()`,
 			})
 			.where(

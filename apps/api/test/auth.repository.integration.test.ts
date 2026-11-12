@@ -61,9 +61,10 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 		const winner = (await repository.findSessionByRefreshTokenHash("hash-2a"))
 			? "hash-2a"
 			: "hash-2b";
-		expect(await repository.findSessionByRefreshTokenHash("hash-1")).toMatchObject({
-			matched: "previous",
-		});
+		const replaced = await repository.findSessionByRefreshTokenHash("hash-1");
+		expect(replaced).toMatchObject({ matched: "previous" });
+		// The rotation time drives the reuse grace window.
+		expect(Date.now() - (replaced?.rotatedAt?.getTime() ?? 0)).toBeLessThan(60_000);
 
 		// Only the owner can revoke; a revoked session cannot rotate.
 		await repository.revokeSession({ sessionId: id, userId: crypto.randomUUID() });

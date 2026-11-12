@@ -296,6 +296,7 @@ export class InMemoryAuthRepository implements AuthRepository {
 			id: crypto.randomUUID(),
 			revokedAt: null,
 			previousRefreshTokenHash: null,
+			rotatedAt: null,
 			organizationId: null as string | null,
 		};
 		this.sessions.push(session);
@@ -314,6 +315,7 @@ export class InMemoryAuthRepository implements AuthRepository {
 			revokedAt: session.revokedAt,
 			organizationId: session.organizationId,
 			matched: session.refreshTokenHash === hash ? "current" : "previous",
+			rotatedAt: session.rotatedAt ?? null,
 		};
 	}
 
@@ -332,6 +334,7 @@ export class InMemoryAuthRepository implements AuthRepository {
 		if (!session) return false;
 		session.previousRefreshTokenHash = currentHash;
 		session.refreshTokenHash = nextHash;
+		session.rotatedAt = new Date();
 		return true;
 	}
 

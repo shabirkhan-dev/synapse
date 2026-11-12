@@ -30,6 +30,7 @@ import {
 } from "../constants/auth.constants";
 import type {
 	AuthRepository,
+	AuthSession,
 	AuthTokenPurpose,
 	AuthTokens,
 	RateLimiter,
@@ -138,20 +139,18 @@ export class AuthService {
 		return { user, tokens };
 	}
 
+	/**
+	 * Swap a refresh token for new tokens (rotation). Presenting the token that was just replaced
+	 * within `refreshReuseGraceSeconds` of its rotation (two tabs, a retried request) gets an access
+	 * token only — no new refresh token, so nothing forks; later it means the token was copied, and
+	 * the session is revoked.
+	 */
 	async refresh(refreshToken: string, now = new Date()): Promise<AuthTokens> {
 		const currentHash = hashSecretToken(refreshToken);
 		const session = await this.repository.findSessionByRefreshTokenHash(currentHash);
-		if (session?.matched === "previous") {
-			await this.repository.revokeSession({ sessionId: session.id, userId: session.userId });
-		}
-		if (
-			!session ||
-			session.matched === "previous" ||
-			session.revokedAt ||
-			session.expiresAt <= now
-		) {
-			throw invalidRefreshToken();
-		}
+		if (!session || session.revokedAt || session.expiresAt <= now) throw invalidRefreshToken();
+		if (session.matched === "previous") return this.replayed(session, now);
+
 		const nextToken = createSecretToken();
 		const rotated = await this.repository.rotateRefreshToken({
 			sessionId: session.id,
@@ -159,14 +158,40 @@ export class AuthService {
 			nextHash: hashSecretToken(nextToken),
 		});
 		if (!rotated) {
+			// A concurrent refresh with the same token won the rotation: this one is now a replay.
+			const after = await this.repository.findSessionByRefreshTokenHash(currentHash);
+			if (!after || after.revokedAt || after.matched !== "previous") throw invalidRefreshToken();
+			return this.replayed(after, now);
+		}
+		const organizationId = await this.activeOrganization(session);
+		return this.tokens(session.userId, session.id, nextToken, session.expiresAt, organizationId);
+	}
+
+	/** The replaced token came back: an access token inside the grace window, revocation after it. */
+	private async replayed(session: AuthSession, now: Date): Promise<AuthTokens> {
+		const graceMs = this.config.refreshReuseGraceSeconds * 1000;
+		const withinGrace =
+			session.rotatedAt !== null && now.getTime() - session.rotatedAt.getTime() <= graceMs;
+		if (!withinGrace) {
+			await this.repository.revokeSession({ sessionId: session.id, userId: session.userId });
 			throw invalidRefreshToken();
 		}
-		// Back to the personal organization if the user has left the session's one.
-		const organizationId =
-			session.organizationId && (await this.roleOf(session.organizationId, session.userId))
-				? session.organizationId
-				: session.userId;
-		return this.tokens(session.userId, session.id, nextToken, session.expiresAt, organizationId);
+		const organizationId = await this.activeOrganization(session);
+		const access = await this.accessTokens.issue(
+			claims(session.userId, session.id, organizationId),
+		);
+		return {
+			tokenType: TOKEN_TYPE,
+			accessToken: access.token,
+			accessTokenExpiresAt: access.expiresAt.toISOString(),
+		};
+	}
+
+	/** Back to the personal organization if the user has left the session's one. */
+	private async activeOrganization(session: AuthSession): Promise<string> {
+		return session.organizationId && (await this.roleOf(session.organizationId, session.userId))
+			? session.organizationId
+			: session.userId;
 	}
 
 	/**

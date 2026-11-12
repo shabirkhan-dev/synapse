@@ -68,6 +68,11 @@ export const envSchema = z
 		AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
 		/** Refresh-token (session) lifetime from sign-in; refreshing rotates the token, not the expiry. */
 		AUTH_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+		/**
+		 * How long the refresh token just replaced is still answered (with an access token only) instead
+		 * of revoking the session: two tabs refreshing at once. 0 = strict reuse detection.
+		 */
+		AUTH_REFRESH_REUSE_GRACE_SECONDS: z.coerce.number().int().min(0).max(60).default(10),
 		/** Console URL that verification and password-reset links point to. */
 		APP_URL: z.url().default("http://localhost:3000"),
 		/** Read the client IP from `x-forwarded-for` (only behind a proxy you control). */

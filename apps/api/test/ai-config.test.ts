@@ -91,4 +91,14 @@ describe("ai config", () => {
 			/CORS_ORIGIN/,
 		);
 	});
+
+	test("the refresh reuse grace window defaults to 10 s and can be turned off", () => {
+		expect(loadConfiguration({}).auth.refreshReuseGraceSeconds).toBe(10);
+		expect(
+			loadConfiguration({ AUTH_REFRESH_REUSE_GRACE_SECONDS: "0" }).auth.refreshReuseGraceSeconds,
+		).toBe(0);
+		expect(() => loadConfiguration({ AUTH_REFRESH_REUSE_GRACE_SECONDS: "600" })).toThrow(
+			/AUTH_REFRESH_REUSE_GRACE_SECONDS/,
+		);
+	});
 });

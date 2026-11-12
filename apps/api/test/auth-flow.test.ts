@@ -84,8 +84,8 @@ describe("auth flow", () => {
 		}
 	});
 
-	test("refresh rotates the token; replaying the old one revokes the session", async () => {
-		const { app } = buildTestApp();
+	test("refresh rotates the token; replaying the old one after the grace window revokes the session", async () => {
+		const { app, authRepository } = buildTestApp();
 		const { tokens } = await signUp(app);
 
 		const first = await post(app, "/refresh", { refreshToken: tokens.refreshToken });
@@ -94,12 +94,37 @@ describe("auth flow", () => {
 		expect(rotated.refreshToken).not.toBe(tokens.refreshToken);
 		expect(rotated.refreshTokenExpiresAt).toBe(tokens.refreshTokenExpiresAt);
 
-		// Someone replays the old token: it fails, and the stolen session dies for everyone.
+		// Right after the rotation (another tab, a retry): an access token, but no new refresh token.
+		const racing = await post(app, "/refresh", { refreshToken: tokens.refreshToken });
+		expect(racing.status).toBe(200);
+		const renewed = (await racing.json()).data;
+		expect(renewed.accessToken).toBeString();
+		expect(renewed).not.toHaveProperty("refreshToken");
+
+		// Later, someone replays the old token: it fails, and the stolen session dies for everyone.
+		for (const session of authRepository.sessions) {
+			if (session.rotatedAt) session.rotatedAt = new Date(Date.now() - 11_000);
+		}
 		const replay = await post(app, "/refresh", { refreshToken: tokens.refreshToken });
 		expect(replay.status).toBe(401);
 		expect((await replay.json()).error.code).toBe("AUTH_REFRESH_TOKEN_INVALID");
 		const afterReplay = await post(app, "/refresh", { refreshToken: rotated.refreshToken });
 		expect(afterReplay.status).toBe(401);
+	});
+
+	test("two refreshes with the same token at once both succeed, and only one rotates", async () => {
+		const { app } = buildTestApp();
+		const { tokens } = await signUp(app);
+		const [a, b] = await Promise.all([
+			post(app, "/refresh", { refreshToken: tokens.refreshToken }),
+			post(app, "/refresh", { refreshToken: tokens.refreshToken }),
+		]);
+		expect([a.status, b.status]).toEqual([200, 200]);
+		const bodies = [(await a.json()).data, (await b.json()).data];
+		const withRefresh = bodies.filter((body) => body.refreshToken);
+		expect(withRefresh).toHaveLength(1);
+		const next = await post(app, "/refresh", { refreshToken: withRefresh[0].refreshToken });
+		expect(next.status).toBe(200);
 	});
 
 	test("refresh rejects unknown and expired tokens", async () => {
