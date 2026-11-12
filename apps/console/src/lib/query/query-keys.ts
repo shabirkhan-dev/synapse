@@ -4,6 +4,10 @@ export const queryKeys = {
 		all: ["documents"] as const,
 	},
 	currentUser: ["current-user"] as const,
+	conversations: {
+		all: ["conversations"] as const,
+		detail: (id: string) => ["conversations", id] as const,
+	},
 	organizations: {
 		all: ["organizations"] as const,
 		members: (organizationId: string) => ["organizations", organizationId, "members"] as const,

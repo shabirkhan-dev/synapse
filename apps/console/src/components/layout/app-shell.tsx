@@ -1,5 +1,6 @@
 import { Button } from "@synapse/ui/components/button";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 export type AppShellProps = {
@@ -15,6 +16,7 @@ export type AppShellProps = {
 /** Header with the product name, navigation and sign-out; the page below. */
 const NAV = [
 	{ href: "/documents", label: "Documents" },
+	{ href: "/chat", label: "Chat" },
 	{ href: "/playground", label: "Playground" },
 	{ href: "/approvals", label: "Approvals" },
 	{ href: "/activity", label: "Activity" },
@@ -22,10 +24,11 @@ const NAV = [
 ] as const;
 
 export function AppShell({ children, email, switcher, onSignOut, signingOut }: AppShellProps) {
+	const pathname = usePathname();
 	return (
 		<div className="flex min-h-dvh flex-col">
 			<header className="border-b">
-				{/* On phones the nav wraps to its own row so sign-out stays reachable. */}
+				{/* On phones the nav takes its own row and wraps, so no link hides past the edge. */}
 				<div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:h-12 sm:py-0">
 					<Link href="/documents" className="text-sm font-semibold">
 						Synapse
@@ -33,10 +36,15 @@ export function AppShell({ children, email, switcher, onSignOut, signingOut }: A
 					{switcher}
 					<nav
 						aria-label="Main"
-						className="order-last flex w-full gap-4 overflow-x-auto pb-1 text-xs text-muted-foreground sm:order-none sm:w-auto sm:pb-0"
+						className="order-last flex w-full flex-wrap gap-x-4 gap-y-1 pb-1 text-xs text-muted-foreground sm:order-none sm:w-auto sm:pb-0"
 					>
 						{NAV.map((item) => (
-							<Link key={item.href} href={item.href} className="hover:text-foreground">
+							<Link
+								key={item.href}
+								href={item.href}
+								aria-current={pathname === item.href ? "page" : undefined}
+								className="hover:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+							>
 								{item.label}
 							</Link>
 						))}

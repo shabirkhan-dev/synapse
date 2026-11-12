@@ -21,6 +21,13 @@ export const endpoints = {
 	rag: {
 		query: "/rag/query",
 	},
+	chat: {
+		send: "/chat",
+	},
+	memory: {
+		conversations: "/memory/conversations",
+		conversation: (id: string) => `/memory/conversations/${encodeURIComponent(id)}`,
+	},
 	oversight: {
 		feedback: "/oversight/feedback",
 		approvals: "/oversight/approvals",

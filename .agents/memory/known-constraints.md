@@ -86,9 +86,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
-- **Console** (syn-018, syn-037, syn-038, syn-040): auth pages, documents (list + add, delete-all
-  request), the playground (non-streaming `/rag/query`; no chat UI, no answer history across
-  reloads), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
+- **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044): auth pages, documents (list +
+  add, delete-all request), the playground (non-streaming `/rag/query`, no history), chat (streaming
+  `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; no
+  rename, no Markdown rendering, a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
   are added by existing email only). The active organization is per session, so every tab of a
   browser shares it: a tab that did not switch keeps acting in the old organization until its access
   token is refreshed (≤ 15 min), then follows the session, and its labels update on the next load. A

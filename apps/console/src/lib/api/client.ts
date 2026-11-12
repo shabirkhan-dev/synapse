@@ -37,6 +37,24 @@ export async function api<TSchema extends z.ZodType>(
 }
 
 /**
+ * A streaming call (server-sent events): same auth, refresh and error mapping as `api`, but the
+ * successful `Response` is returned unread so the caller can consume its body as it arrives.
+ */
+export async function apiStream(
+	path: string,
+	options: Omit<RequestOptions<z.ZodType>, "schema" | "auth">,
+): Promise<Response> {
+	let response = await send(path, options, true);
+	if (response.status === 401 && (await refreshSession())) {
+		response = await send(path, options, true);
+	}
+	if (!response.ok || !response.body) {
+		throw fromErrorEnvelope(response.status, await response.json().catch(() => null));
+	}
+	return response;
+}
+
+/**
  * On page load the tab has no access token: try the cookie once. Afterwards the status is
  * `signed-in` or `signed-out`.
  */

@@ -19,8 +19,8 @@ build, test and an `api` job with a pgvector service (integration test + boot sm
 ## Browser e2e (`tests/e2e`)
 
 `bun run test:e2e` starts three servers on their own ports (so it never collides with
-`bun run dev`): a fake OpenAI-compatible model provider (`:5601`, deterministic embeddings and one
-cited answer), the API from source (`:8100`, development mode, so emails are written to its log),
+`bun run dev`): a fake OpenAI-compatible model provider (`:5601`, deterministic embeddings, one
+cited answer, and for streaming chat a `searchDocuments` call followed by a chunked answer), the API from source (`:8100`, development mode, so emails are written to its log),
 and the console built for that API (`:3100`). Before the API starts, `support/prepare-database.ts`
 migrates `E2E_DATABASE_URL` (a throwaway Postgres with pgvector) and clears `auth_rate_limits`
 (every test signs up from 127.0.0.1). The API runs with `TRUST_PROXY=true` so API-side sign-ups
@@ -35,7 +35,8 @@ limit; browser requests carry none. Tests read emailed links from `.output/api.l
 | `workspace.spec.ts` | no-documents answer → add a document → Ctrl+Enter → cited answer, `[1]` jumps to its source, provenance, rating saved |
 | `oversight.spec.ts` | delete-all needs approval (dialog closes, request survives a reload) → approve → documents gone → activity shows request and decision; reject keeps the documents |
 | `teams.spec.ts` | two browsers: owner creates a team and adds an admin (the role picker then resets to Member) and a member; the member switches in, adds a document, asks to delete all and sees "waiting", cannot manage the team; the owner approves; personal workspace untouched; promoting the member shows on their next load |
-| `layout.spec.ts` | at 390 px every workspace page (documents, playground, approvals, activity, team) keeps Sign out on screen with no horizontal scroll |
+| `chat.spec.ts` | Enter sends; Stop shows while streaming; the answer streams after a "Searched your documents for …" row with its sources; the conversation gets an address, survives a reload, is listed, reopens after "New chat", and is deleted after a confirmation |
+| `layout.spec.ts` | at 320 px (WCAG reflow) every workspace page has no sideways scroll, every main-nav link and Sign out fully on screen, and the current page marked `aria-current` |
 
 Debug a failure: `bun run test:e2e -- --trace on -g "<test name>"`, then open
 `tests/e2e/.output/results`. Locally a running console on `:3100` is reused (stop it after
