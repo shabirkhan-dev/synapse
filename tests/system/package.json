@@ -1,0 +1,21 @@
+{
+	"name": "system-tests",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"security": "bun test ./security",
+		"chaos": "bun test ./chaos",
+		"load": "bun load/run.ts",
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@synapse/security": "workspace:*",
+		"@synapse/typescript-config": "workspace:*",
+		"@types/bun": "^1.4.4",
+		"postgres": "^4.1.0",
+		"typescript": "^7.0.2"
+	}
+}

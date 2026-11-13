@@ -99,5 +99,8 @@ packages/native/bin/
 # Playwright e2e output (tests/e2e)
 tests/e2e/.output/
 
+# System suites output (tests/system)
+tests/system/.output/
+
 # Production backups written by deploy/compose.yml
 deploy/backups/

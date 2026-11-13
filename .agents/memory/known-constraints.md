@@ -116,8 +116,17 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
   The shell is a sidebar (syn-047): on phones its links are inside a drawer, so tests open it first.
   Dark mode follows the OS only (no toggle); the sidebar keeps its open state in a `sidebar_state` cookie.
-- **e2e** (`tests/e2e`): needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears
+- **e2e** (`tests/e2e`): wait for a page by its heading role, not `getByText`: Next's route
+  announcer repeats the page title (strict-mode clash). Needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears
   `auth_rate_limits` before each run. Locally a running console on `:3100` is reused, so stop it
   after changing console code. Only Chromium is tested. The upload step uses
   `actions/upload-artifact@v4` (newest release not checked from the agent sandbox).
 - Integration tests need Postgres with pgvector; they are skipped unless `API_TEST_DATABASE_URL` is set.
+- **System suites** (`tests/system`, syn-051): security and chaos run in CI (`system` job); load is
+  manual (`bun run test:load`, fake model, so it measures API + Postgres only). They need a
+  throwaway `SYSTEM_DATABASE_URL`, use ports 8200/5602/5499 and start the API from source per test
+  file. The chaos suite cuts Postgres with a TCP proxy (connections refused, not black-holed: a
+  hanging database is not covered). Every request body is capped at 2 MiB (auth 4 KiB).
+- **Every `pg` pool needs an `error` listener** (`pool.on("error", …)`): an idle connection that
+  drops otherwise crashes the process. The checkpointer adapter takes `onError` (syn-051); pg-boss
+  has its own (`boss.on("error")`).

@@ -22,11 +22,13 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/providers` (OpenAI, Anthropic, Google, Cohere, OpenAI-compatible models),
   `packages/native` (Rust binding loader; o200k_base token counting from `crates/text-processing`
   via `crates/bindings`, TS fallback).
+- **Tests (live):** `tests/e2e` (Playwright, console + API), `tests/system` (API security, chaos,
+  load against the API from source, a fake model and a cuttable Postgres proxy).
 - **Deploy (live):** `deploy/compose.yml` on one host — Caddy (HTTPS) → console + api, worker,
   Postgres, daily `pg_dump` backups; runbooks in `docs/runbooks/`.
 - **Planned:** more adapters
   (vector-store, cache, storage);
-  more `crates/*` (only with a benchmark win); load/chaos/security suites in `tests/`; CD.
+  more `crates/*` (only with a benchmark win); CD.
 - `apps/api/src/modules/rag` composes ingestion → knowledge → retrieval → generation; Phase 1 of the
   roadmap (core RAG path) is complete.
 - One owner per capability; domain packages never import vendor SDKs.

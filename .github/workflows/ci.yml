@@ -218,6 +218,56 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
+  # The API from source against Postgres and the fake model (tests/system): tenant isolation,
+  # tokens, limits and headers (security); Postgres cut, slow and failing model (chaos).
+  system:
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg18-trixie
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: system
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d system"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SYSTEM_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/system
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Cache Bun
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/package.json') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Security tests
+        run: bun run test:security
+
+      - name: Chaos tests
+        run: bun run test:chaos
+
+      - name: Show the API log
+        if: failure()
+        run: tail -n 150 tests/system/.output/api.log || true
+
   api:
     needs: [lint, typecheck]
     runs-on: ubuntu-latest

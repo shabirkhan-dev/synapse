@@ -1,7 +1,8 @@
 # Testing
 
 > **Status:** Live (unit and integration tests in every package and app, console component tests,
-> browser e2e in `tests/e2e`, retrieval evaluation) · Planned (load, chaos and security suites).
+> browser e2e in `tests/e2e`, security, chaos and load suites in `tests/system`, retrieval
+> evaluation).
 
 | Kind | Where | Run |
 | --- | --- | --- |
@@ -10,7 +11,9 @@
 | Bash scripts | `scripts/bash/tests/` | `bun run test:scripts` |
 | Console unit/component | `apps/console/test/` (Bun + happy-dom + Testing Library, `fetch` mocked) | `bun --cwd=apps/console test` |
 | Browser e2e (console + API) | `tests/e2e/specs/` (Playwright 1.63, Chromium) | `E2E_DATABASE_URL=… bun run test:e2e` (CI: `e2e` job) |
-| Load / chaos / security | `tests/` | Planned |
+| Security (API) | `tests/system/security/` | `SYSTEM_DATABASE_URL=… bun run test:security` (CI: `system` job) |
+| Chaos (API) | `tests/system/chaos/` | `SYSTEM_DATABASE_URL=… bun run test:chaos` (CI: `system` job) |
+| Load (API) | `tests/system/load/run.ts` | `SYSTEM_DATABASE_URL=… bun run test:load` (manual) |
 | Retrieval quality | `packages/evaluation` + `apps/api/src/evaluate.ts` | `DATABASE_URL=… bun run eval:retrieval` (CI: `api` job) |
 
 `bun run preflight` = lint + typecheck + test. CI (`.github/workflows/ci.yml`) runs lint, typecheck,
@@ -45,3 +48,35 @@ limit; browser requests carry none. Tests read emailed links from `.output/api.l
 Debug a failure: `bun run test:e2e -- --trace on -g "<test name>"`, then open
 `tests/e2e/.output/results`. Locally a running console on `:3100` is reused (stop it after
 changing console code); in CI every server starts fresh and failures upload `.output/`.
+
+## System suites (`tests/system`)
+
+Security, chaos and load against the API from source, with no browser. Each test file starts its
+own stack (`support/stack.ts`, under a second): the e2e fake model (`:5602`), a TCP proxy in front
+of Postgres (`:5499`, `support/database-proxy.ts`) and the API (`:8200`, development mode, a known
+`JWT_SECRET` so tests can sign tokens). `SYSTEM_DATABASE_URL` is a throwaway Postgres with pgvector;
+it is migrated and its `auth_rate_limits` cleared first. The API log is `tests/system/.output/api.log`.
+Faults: `stack.database.cut()` / `restore()` drops and refuses Postgres connections;
+`stack.modelFault({ delayMs?, status?, only? })` makes the fake model slow or failing (`{}` heals).
+
+| File | Covers |
+| --- | --- |
+| `security/tenancy.test.ts` | another tenant cannot read, list, search (all three modes) or delete a document; another user cannot read or delete a conversation or see facts; a non-member cannot list, join or switch into an organization; a correctly signed token naming someone else's organization → `401 AUTH_NOT_A_MEMBER` |
+| `security/tokens.test.ts` | every protected route in `/api/openapi.json` → 401 without a token; tampered, `alg: none`, wrong-secret, expired and garbage tokens → `401 AUTH_ACCESS_TOKEN_INVALID`; a replaced refresh token reused after the grace window revokes the session (the new token too); a signed-out session cannot refresh |
+| `security/limits.test.ts` | every `POST` route → `413 PAYLOAD_TOO_LARGE` over 2 MiB (found: only auth and document upload had a limit); malformed JSON → 4xx envelope, no stack; the 11th sign-in for one email → `429 AUTH_RATE_LIMITED`; `nosniff`, `SAMEORIGIN`, HSTS, no `x-powered-by`; CORS answers the console origin only |
+| `chaos/database.test.ts` | Postgres cut: liveness 200, readiness `503 DATABASE_UNAVAILABLE` and requests fail in < 5 s with the envelope (no driver text); restored: ready again in < 10 s, sign-in works (found: the API process crashed — the checkpointer's `pg` pool had no `error` listener) |
+| `chaos/model.test.ts` | slow model → `504 RELIABILITY_TIMEOUT` before the model would answer; failing model → `503 RELIABILITY_CIRCUIT_OPEN`, closed again after the reset; keyword search still answers; a failed ingest leaves no document; a failing streamed chat ends with an error part |
+
+**Load** (`load/run.ts`): five accounts with three documents each, then `LOAD_CONCURRENCY` (20)
+virtual users for `LOAD_DURATION_SECONDS` (30) mixing list documents, hybrid search, cited answers
+and streaming chat (3:3:3:1). Fails (exit 1) on more than 1% errors or a p95 over its limit
+(250 / 500 / 1000 / 2000 ms); writes `.output/load.json`. The fake model answers at once (chat
+streams 4 chunks 150 ms apart), so this measures the API and Postgres, not a vendor. Not in CI
+(shared runners make latency noisy). Baseline on the agent sandbox (2026-11-13, 20 users, 20 s):
+
+| Scenario | Requests/s | p50 | p95 | p99 | Errors |
+| --- | --- | --- | --- | --- | --- |
+| list documents | 75 | 4 ms | 21 ms | 65 ms | 0 |
+| hybrid search | 78 | 9 ms | 26 ms | 82 ms | 0 |
+| answer with citations | 77 | 16 ms | 46 ms | 137 ms | 0 |
+| streaming chat | 27 | 623 ms | 648 ms | 697 ms | 0 |
