@@ -29,11 +29,15 @@ COPY packages/reliability/package.json ./packages/reliability/
 COPY packages/security/package.json ./packages/security/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
-RUN bun install --frozen-lockfile --filter api --ignore-scripts
+# Behind a TLS-inspecting proxy, pass its CA as the optional `build_ca` secret (deploy/README.md).
+RUN --mount=type=secret,id=build_ca \
+	if [ -s /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
+	bun install --frozen-lockfile --filter api --ignore-scripts
 
 FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+# Every node_modules the install made (root, the app's and each package's: Bun links
+# workspace dependencies per package), then the sources on top.
+COPY --from=deps /app ./
 COPY package.json bun.lock ./
 COPY packages/adapters ./packages/adapters
 COPY packages/audit ./packages/audit
@@ -66,8 +70,8 @@ ENV NODE_ENV=production
 ENV PORT=8000
 ENV RUN_MIGRATIONS=true
 
-RUN addgroup -S synapse && adduser -S synapse -G synapse \
-	&& apk add --no-cache wget
+# BusyBox (in the base image) already provides the `wget` the health check uses.
+RUN addgroup -S synapse && adduser -S synapse -G synapse
 
 COPY --from=build --chown=synapse:synapse /app/apps/api/dist ./dist
 COPY --chmod=755 apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

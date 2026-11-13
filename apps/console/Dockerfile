@@ -12,7 +12,10 @@ COPY apps/console/package.json ./apps/console/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/ui/package.json ./packages/ui/
 # Only this app's dependency graph (and its workspace packages) is installed.
-RUN bun install --frozen-lockfile --filter console --ignore-scripts
+# Behind a TLS-inspecting proxy, pass its CA as the optional `build_ca` secret (deploy/README.md).
+RUN --mount=type=secret,id=build_ca \
+	if [ -s /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
+	bun install --frozen-lockfile --filter console --ignore-scripts
 
 FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -20,7 +23,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-COPY --from=deps /app/node_modules ./node_modules
+# Every node_modules the install made (root, the app's and each package's: Bun links
+# workspace dependencies per package), then the sources on top.
+COPY --from=deps /app ./
 COPY package.json bun.lock turbo.json ./
 COPY apps/console ./apps/console
 COPY packages/typescript-config ./packages/typescript-config
@@ -37,8 +42,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-RUN addgroup -S synapse && adduser -S synapse -G synapse \
-	&& apk add --no-cache wget
+# BusyBox (in the base image) already provides the `wget` the health check uses.
+RUN addgroup -S synapse && adduser -S synapse -G synapse
 
 COPY --from=build --chown=synapse:synapse /app/apps/console/.next/standalone ./
 COPY --from=build --chown=synapse:synapse /app/apps/console/.next/static ./apps/console/.next/static

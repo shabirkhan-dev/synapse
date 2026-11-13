@@ -18,11 +18,15 @@ COPY packages/providers/package.json ./packages/providers/
 COPY packages/reliability/package.json ./packages/reliability/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 # Only this app's dependency graph (and its workspace packages) is installed.
-RUN bun install --frozen-lockfile --filter worker --ignore-scripts
+# Behind a TLS-inspecting proxy, pass its CA as the optional `build_ca` secret (deploy/README.md).
+RUN --mount=type=secret,id=build_ca \
+	if [ -s /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
+	bun install --frozen-lockfile --filter worker --ignore-scripts
 
 FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
+# Every node_modules the install made (root, the app's and each package's: Bun links
+# workspace dependencies per package), then the sources on top.
+COPY --from=deps /app ./
 COPY package.json bun.lock ./
 COPY packages/adapters ./packages/adapters
 COPY packages/core ./packages/core
