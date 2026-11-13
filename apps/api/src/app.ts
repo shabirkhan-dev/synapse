@@ -9,6 +9,7 @@ import { ERROR_CODES } from "@/shared/constants/error-codes";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { RESPONSE_MESSAGES } from "@/shared/constants/response-messages";
 import { createErrorHandler, notFoundHandler } from "@/shared/errors/error-handler";
+import { requestBodyLimit } from "@/shared/middleware/body-limit";
 import { requestId } from "@/shared/middleware/request-id";
 import { createRequestTracing } from "@/shared/middleware/request-tracing";
 import { failure } from "@/shared/responses/error-response";
@@ -54,6 +55,7 @@ export function createApp({ logger, ...dependencies }: AppDependencies) {
 			maxAge: 600,
 		}),
 	);
+	app.use("*", requestBodyLimit);
 
 	registerRoutes(app, dependencies);
 

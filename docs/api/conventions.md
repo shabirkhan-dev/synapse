@@ -30,5 +30,7 @@
   (both safe to retry later).
 - **Request id:** `x-request-id` is reused if it matches `^[A-Za-z0-9._:-]{1,128}$`, otherwise
   `req_<uuid>` is minted; it is echoed in the response header and body and logged.
+- **Body size:** every request body is capped at 2 MiB (`requestBodyLimit`, the largest document
+  upload); auth routes allow 4 KiB. Over the limit → `413 PAYLOAD_TOO_LARGE`.
 - **CORS:** allow-list from `CORS_ORIGIN` (comma-separated).
 - **Streaming:** `/chat` returns the AI SDK UI message stream over SSE.
