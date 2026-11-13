@@ -21,6 +21,10 @@ export const queryKeys = {
 		all: ["usage"] as const,
 		range: (days: number) => ["usage", { days }] as const,
 	},
+	agents: {
+		overview: ["agents", "overview"] as const,
+		runs: ["agents", "runs"] as const,
+	},
 	evaluations: {
 		questions: ["evaluations", "questions"] as const,
 		runs: ["evaluations", "runs"] as const,

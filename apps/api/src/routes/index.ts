@@ -3,6 +3,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Configuration } from "@/config";
 import type { AuditLog } from "@synapse/audit";
 
+import { AgentsService, createAgentRoutes } from "@/modules/agents";
 import { createAuditRoutes, UsageService } from "@/modules/audit";
 import { type AuthService, createAuthMiddleware, createAuthRoutes } from "@/modules/auth";
 import { createMemoryRoutes, type MemoryService } from "@/modules/memory";
@@ -62,6 +63,8 @@ export function registerRoutes(
 	app.use(`${basePath}/chat`, authenticate);
 	app.use(`${basePath}/chat/*`, authenticate);
 	app.use(`${basePath}/evaluations/*`, authenticate);
+	app.use(`${basePath}/agents`, authenticate);
+	app.use(`${basePath}/agents/*`, authenticate);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
@@ -75,4 +78,5 @@ export function registerRoutes(
 	app.route(`${basePath}/organizations`, createOrganizationRoutes(organizations));
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
 	app.route(`${basePath}/evaluations`, createEvaluationRoutes(evaluations));
+	app.route(`${basePath}/agents`, createAgentRoutes(new AgentsService(config, rag, audit)));
 }

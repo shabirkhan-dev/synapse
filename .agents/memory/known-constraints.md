@@ -25,6 +25,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   every question × three modes, each a real search (two embedding calls per question), k ≤ 20,
   chunks fetched = min(50, 4k). Only retrieval is scored (no answer quality). Runs record the
   embedding model and chunker, so scores across a model change are not comparable.
+- **Agents page** (syn-055) is read-only: models, prompts, tools and limits come from env and code
+  (`CHAT_TOOLS` in the chat module is the one source of tool descriptions). Runs are audit events
+  (latest 25 of each kind, merged); chat runs show tools, not the message text.
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);

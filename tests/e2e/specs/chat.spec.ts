@@ -64,4 +64,11 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	const chatRow = page.getByRole("row").filter({ hasText: /^Chat/ });
 	await expect(chatRow).toContainText(/chat-assistant@\d/);
 	await expect(chatRow).toContainText("fake:openai/gpt-4o-mini");
+
+	// Agents lists the same reply as a run of the chat assistant, with the tool it called.
+	await page.getByRole("link", { name: "Agents", exact: true }).click();
+	await expect(page.getByRole("heading", { name: "Chat assistant" })).toBeVisible();
+	const run = page.getByRole("row").filter({ hasText: "Used searchDocuments" });
+	await expect(run).toContainText("You");
+	await expect(run).toContainText(/chat-assistant@\d/);
 });

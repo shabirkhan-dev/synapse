@@ -42,6 +42,10 @@ export const endpoints = {
 		events: "/audit/events",
 		usage: (days: number) => `/audit/usage?days=${days}`,
 	},
+	agents: {
+		overview: "/agents",
+		runs: "/agents/runs",
+	},
 	evaluations: {
 		questions: "/evaluations/questions",
 		question: (id: string) => `/evaluations/questions/${encodeURIComponent(id)}`,

@@ -5,12 +5,12 @@ type: feature
 from: pm
 to: web
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: []
-branch: none
+branch: main
 worktree: none
 scope: [apps/api/src/modules, apps/console/src/features, tests/e2e, docs]
 allowed_shared: []
@@ -44,4 +44,18 @@ scoped like usage: members see their own). Console page with both.
 
 ## Resolution
 
-_Open._
+Landed (`feat(agents): …`):
+
+- API module `agents`: `GET /agents` (models as provider/model only, prompt versions, chat tools
+  with descriptions, limits, guardrails, approval actions) and `GET /agents/runs` (latest chat and
+  cited answers from audit, members see their own). Chat tool descriptions moved to `CHAT_TOOLS`
+  so the tools and this page share them.
+- Console `/agents` (sidebar: Workspace → Agents): Chat assistant, Cited answers and Shared cards
+  (label/value lists that stack in pairs on phones), tool badges (Allowed / Blocked by guardrails),
+  recent runs table (when, agent, who, question, what it did, prompt, tokens).
+
+Validation: API 3 (no credential in the overview, runs merged newest first with tools/citations,
+member scoping, 401) + OpenAPI paths; console 1; e2e chat spec now checks the run on Agents, layout
+10 links with `/agents` at 320 px; screenshots light and 320 px.
+
+Not covered: editing prompts or tools, per-run traces (Langfuse holds those).

@@ -6,6 +6,8 @@ import type { MemoryService } from "@/modules/memory";
 import type { RagService } from "@/modules/rag";
 import type { RequestContext } from "@/shared/types/app-types";
 
+import { CHAT_TOOLS } from "../constants/chat.constants";
+
 /** Tools are built per request so RAG search is always scoped to the caller. */
 export function createChatTools({
 	rag,
@@ -30,8 +32,7 @@ export function createChatTools({
 }) {
 	return {
 		searchDocuments: tool({
-			description:
-				"Search the user's ingested documents (vector search). Use it before answering questions about their documents.",
+			description: CHAT_TOOLS.searchDocuments.description,
 			inputSchema: z.object({
 				query: z.string().min(1).describe("What to look for, phrased as a search query"),
 				topK: z.number().int().min(1).max(20).optional().describe("How many passages to return"),
@@ -55,8 +56,7 @@ export function createChatTools({
 			},
 		}),
 		rememberFact: tool({
-			description:
-				"Save a short fact about the user for future conversations. Use only when the user explicitly asks you to remember something.",
+			description: CHAT_TOOLS.rememberFact.description,
 			inputSchema: z.object({
 				fact: z
 					.string()
@@ -70,8 +70,7 @@ export function createChatTools({
 			},
 		}),
 		currentTime: tool({
-			description:
-				"Get the current date and time, optionally in an IANA time zone such as Asia/Karachi.",
+			description: CHAT_TOOLS.currentTime.description,
 			inputSchema: z.object({
 				timeZone: z.string().optional().describe("IANA time zone; defaults to UTC"),
 			}),

@@ -9,6 +9,7 @@ import {
 	CheckmarkCircle02Icon,
 	Files01Icon,
 	Logout01Icon,
+	Robot01Icon,
 	TestTube01Icon,
 	UserGroupIcon,
 } from "@hugeicons/core-free-icons";
@@ -56,6 +57,7 @@ const NAV: ReadonlyArray<{ label: string; items: ReadonlyArray<NavItem> }> = [
 			{ href: "/playground", label: "Playground", icon: TestTube01Icon },
 			{ href: "/retrieval", label: "Retrieval", icon: AiSearchIcon },
 			{ href: "/evaluations", label: "Evaluations", icon: ChartEvaluationIcon },
+			{ href: "/agents", label: "Agents", icon: Robot01Icon },
 		],
 	},
 	{
