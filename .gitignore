@@ -98,3 +98,6 @@ packages/native/bin/
 
 # Playwright e2e output (tests/e2e)
 tests/e2e/.output/
+
+# Production backups written by deploy/compose.yml
+deploy/backups/

@@ -36,7 +36,7 @@
     "ci:typecheck": "bun run typecheck",
     "ci:build": "bun run build",
     "ci:test": "bun run test:coverage",
-    "scripts:lint": "shellcheck scripts/bash/*.sh scripts/bash/tests/*.sh scripts/git-hooks/*.sh scripts/architecture/*.sh",
+    "scripts:lint": "shellcheck scripts/bash/*.sh scripts/bash/tests/*.sh scripts/git-hooks/*.sh scripts/architecture/*.sh deploy/backup/*.sh",
     "scripts:format": "shfmt -i 4 -w scripts/bash/*.sh scripts/bash/tests/*.sh scripts/git-hooks/*.sh scripts/architecture/*.sh || true",
     "env:pull": "bash scripts/bash/env-sync.sh pull",
     "env:push": "bash scripts/bash/env-sync.sh push",

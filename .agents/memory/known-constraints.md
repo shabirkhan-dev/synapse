@@ -60,8 +60,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **One global tracer provider per process:** tests that call `startTracing` must `shutdown()` after.
 - **Worker:** pg-boss creates and migrates its own `pgboss` schema on start; the api still applies
   our migrations (the worker never does). Re-embedding runs on worker start only (no API trigger
-  yet); the worker has logs but no tracing yet. Docker images were not built in the agent sandbox
-  (no DNS inside build containers); the bundles build and boot.
+  yet); the worker has logs but no tracing yet. Docker images build and run (syn-041); in the agent
+  sandbox, pull base images from `mirror.gcr.io` (Docker Hub rate-limits) and build with
+  `docker buildx bake` on the host network with the proxy CA as `build_ca` (`deploy/README.md`).
 - **The API's RAG answer graph has no checkpointer** (in-request); approval-gated actions do (the
   API calls `checkpointer.setup()` on start: `langgraph` schema). Admins/owners decide approvals (members request);
   approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
@@ -89,7 +90,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   not committed and the Docker images do not build it, so containers use the chars/4 fallback (the
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
-- **CD deploy steps are placeholders** (`.github/workflows/cd.yml`).
+- **Production is one host** (`deploy/compose.yml`, syn-041): Caddy TLS, daily `pg_dump` kept 14 days
+  on the same disk (off-site copy is the operator's job). Restores go into an empty database only:
+  pg-boss partitioned tables break `pg_restore --clean`. Let's Encrypt issuance is untested.
+  **CD deploy steps are placeholders** (`.github/workflows/cd.yml`, syn-052).
 - **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044, syn-045, syn-046, syn-047, syn-048, syn-049, syn-050): auth pages, documents (list +
   add, delete-all request; a document page `/documents/[id]` with chunks, version notes and
   immediate delete — syn-046; out-of-date counts are per page, not per document), the playground (non-streaming `/rag/query`, no history), usage (`/usage`, syn-049/050: RAG and chat

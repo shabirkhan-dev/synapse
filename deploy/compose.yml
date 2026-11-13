@@ -1,0 +1,187 @@
+# Production stack on one host: Caddy (TLS) -> console + API, worker, Postgres with pgvector and a
+# scheduled pg_dump. From the repo root:
+#   cp deploy/.env.example deploy/.env   # fill it in (deploy/README.md)
+#   docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
+# Only Caddy publishes ports; everything else talks on the internal network.
+
+name: synapse-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-database-url: &database-url postgresql://${POSTGRES_USER:-synapse}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-synapse}
+
+x-build: &build
+  context: ..
+  # `host` lets builds reach a proxy on the host's loopback (agent sandboxes); `default` elsewhere.
+  network: ${BUILD_NETWORK:-default}
+  secrets: [build_ca]
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    environment:
+      CONSOLE_HOST: ${CONSOLE_HOST:?Set CONSOLE_HOST, e.g. console.example.com}
+      API_HOST: ${API_HOST:?Set API_HOST, e.g. api.example.com}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL for certificate notices}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      console:
+        condition: service_healthy
+    logging: *logging
+
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-synapse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-synapse}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-synapse} -d ${POSTGRES_DB:-synapse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *logging
+
+  api:
+    build:
+      <<: *build
+      dockerfile: apps/api/Dockerfile
+    image: ${IMAGE_PREFIX:-synapse}/api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      SERVICE_NAME: synapse-api
+      DATABASE_URL: *database-url
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      # Migrations run on start under an advisory lock, so a second replica waits instead of racing.
+      RUN_MIGRATIONS: "true"
+      TRUST_PROXY: "true"
+      APP_URL: https://${CONSOLE_HOST}
+      CORS_ORIGIN: https://${CONSOLE_HOST}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (32+ random characters)}
+      RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY (production sends real emails)}
+      EMAIL_FROM: ${EMAIL_FROM:-Synapse <synapse@rabtx.dev>}
+      AI_CHAT_PROVIDER: ${AI_CHAT_PROVIDER:-openai-compatible}
+      AI_EMBEDDING_PROVIDER: ${AI_EMBEDDING_PROVIDER:-openai-compatible}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_PROVIDER_NAME: ${AI_PROVIDER_NAME:-openrouter}
+      AI_API_KEY: ${AI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai/gpt-4o-mini}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      AI_RERANK_PROVIDER: ${AI_RERANK_PROVIDER:-}
+      AI_MODEL_PRICES: ${AI_MODEL_PRICES:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+      LOG_FORMAT: json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Readiness checks the database too, so Caddy only routes to an API that can answer.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/v1/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *logging
+
+  worker:
+    build:
+      <<: *build
+      dockerfile: apps/worker/Dockerfile
+    image: ${IMAGE_PREFIX:-synapse}/worker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: synapse-worker
+      DATABASE_URL: *database-url
+      AI_EMBEDDING_PROVIDER: ${AI_EMBEDDING_PROVIDER:-openai-compatible}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_PROVIDER_NAME: ${AI_PROVIDER_NAME:-openrouter}
+      AI_API_KEY: ${AI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      LOG_FORMAT: json
+    depends_on:
+      # The API applies migrations before it reports healthy.
+      api:
+        condition: service_healthy
+    logging: *logging
+
+  console:
+    build:
+      <<: *build
+      dockerfile: apps/console/Dockerfile
+      args:
+        # Inlined into the browser bundle at build time: the URL browsers use.
+        NEXT_PUBLIC_API_URL: https://${API_HOST}/api/v1
+    image: ${IMAGE_PREFIX:-synapse}/console:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: "1"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *logging
+
+  backup:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    restart: unless-stopped
+    entrypoint: ["/backup/backup.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-synapse}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-synapse}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./backup:/backup:ro
+      # A host directory, so backups can be copied off the machine (docs/runbooks/database-backup.md).
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *logging
+
+secrets:
+  build_ca:
+    # Empty unless the build runs behind a TLS-inspecting proxy.
+    file: ${BUILD_CA_FILE:-/dev/null}
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

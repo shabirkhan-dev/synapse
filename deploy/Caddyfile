@@ -1,0 +1,32 @@
+# TLS and routing for one site (ADR-0007): the console and the API on sibling hosts of one domain,
+# so the API's SameSite=Strict refresh cookie reaches it. Certificates are automatic (Let's Encrypt;
+# `*.localhost` hosts get Caddy's local CA, which is how the stack is tried on one machine).
+{
+	email {$ACME_EMAIL}
+}
+
+(headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$CONSOLE_HOST} {
+	import headers
+	encode zstd gzip
+	reverse_proxy console:3000
+}
+
+{$API_HOST} {
+	import headers
+	# No `encode`: chat replies are server-sent events and must not be buffered for compression.
+	# Caddy appends the client address to X-Forwarded-For; the API trusts it (TRUST_PROXY=true).
+	reverse_proxy api:8000
+}
