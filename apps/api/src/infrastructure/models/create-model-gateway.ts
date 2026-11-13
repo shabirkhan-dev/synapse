@@ -17,13 +17,18 @@ import {
 } from "@synapse/reliability";
 
 import type { Configuration } from "@/config";
+import type { CircuitStatus } from "@/infrastructure/reliability/circuit-status";
 
 /**
  * The model gateway every module uses: one span per logical call (instrumentation outside), and
  * inside it each attempt with a timeout, retries, a circuit breaker and the optional fallback
  * model. Streaming chat (`chatModel`) is passed through unwrapped.
  */
-export function createModelGateway(config: Configuration, logger: Logger): AiSdkModelGateway {
+export function createModelGateway(
+	config: Configuration,
+	logger: Logger,
+	circuits?: CircuitStatus,
+): AiSdkModelGateway {
 	const { ai } = config;
 	const fallbackChat = ai.fallbackChat
 		? createVendorModelGateway({ chat: ai.fallbackChat, embedding: ai.embedding }).chat
@@ -31,7 +36,7 @@ export function createModelGateway(config: Configuration, logger: Logger): AiSdk
 	const reliable = withModelReliability(createVendorModelGateway(ai), {
 		...config.reliability,
 		...(fallbackChat ? { fallbackChat } : {}),
-		onEvent: reportReliabilityEvent(logger),
+		onEvent: reportReliabilityEvent(logger, circuits),
 	});
 	return instrumentModelGateway(reliable, {
 		logger,
@@ -43,7 +48,11 @@ export function createModelGateway(config: Configuration, logger: Logger): AiSdk
  * The configured reranker, or none. One attempt within `AI_RERANK_TIMEOUT_MS` behind its own
  * circuit breaker: retrieval falls back to the fused order, so retrying would only add latency.
  */
-export function createReranker(config: Configuration, logger: Logger): Reranker | undefined {
+export function createReranker(
+	config: Configuration,
+	logger: Logger,
+	circuits?: CircuitStatus,
+): Reranker | undefined {
 	const { rerank } = config.ai;
 	if (!rerank) return undefined;
 	const vendor = createVendorReranker(rerank.spec);
@@ -52,7 +61,7 @@ export function createReranker(config: Configuration, logger: Logger): Reranker 
 		timeoutMs: rerank.timeoutMs,
 		retry: { ...config.reliability.retry, attempts: 1 },
 		breaker: config.reliability.breaker,
-		onEvent: reportReliabilityEvent(logger),
+		onEvent: reportReliabilityEvent(logger, circuits),
 	});
 	return instrumentReranker(
 		{
@@ -68,10 +77,11 @@ export function createReranker(config: Configuration, logger: Logger): Reranker 
 }
 
 /** Retries, circuit changes and fallbacks become a warning log and an event on the active span. */
-export function reportReliabilityEvent(logger: Logger) {
+export function reportReliabilityEvent(logger: Logger, circuits?: CircuitStatus) {
 	return (event: ReliabilityEvent) => {
 		const { type, name } = event;
 		if (type === "circuit") {
+			circuits?.record(name, event.to);
 			logger.warn(`circuit ${event.to}`, { dependency: name, from: event.from });
 			addSpanEvent(`reliability.circuit.${event.to}`, { "reliability.dependency": name });
 			return;

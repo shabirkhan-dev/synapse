@@ -13,6 +13,7 @@ import { createEvaluationRoutes, type EvaluationsService } from "@/modules/evalu
 import { createHealthRoutes } from "@/modules/health";
 import { createOversightRoutes, type OversightService } from "@/modules/oversight";
 import { createRagRoutes, type RagService } from "@/modules/rag";
+import { createSystemRoutes, type SystemService } from "@/modules/system";
 import type { AppBindings } from "@/shared/types/app-types";
 
 export type RouteDependencies = {
@@ -25,6 +26,7 @@ export type RouteDependencies = {
 	organizations: OrganizationsService;
 	chat: ChatService;
 	evaluations: EvaluationsService;
+	system: SystemService;
 	pingDatabase: () => Promise<void>;
 };
 
@@ -41,6 +43,7 @@ export function registerRoutes(
 		organizations,
 		chat,
 		evaluations,
+		system,
 		pingDatabase,
 	}: RouteDependencies,
 ) {
@@ -65,6 +68,7 @@ export function registerRoutes(
 	app.use(`${basePath}/evaluations/*`, authenticate);
 	app.use(`${basePath}/agents`, authenticate);
 	app.use(`${basePath}/agents/*`, authenticate);
+	app.use(`${basePath}/system/*`, authenticate);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
@@ -79,4 +83,5 @@ export function registerRoutes(
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
 	app.route(`${basePath}/evaluations`, createEvaluationRoutes(evaluations));
 	app.route(`${basePath}/agents`, createAgentRoutes(new AgentsService(config, rag, audit)));
+	app.route(`${basePath}/system`, createSystemRoutes(system));
 }

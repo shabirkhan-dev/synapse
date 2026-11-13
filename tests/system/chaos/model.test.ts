@@ -63,6 +63,12 @@ describe("the model provider misbehaves", () => {
 			if (reply.status === 503) expect(reply.body.error?.code).toBe("RELIABILITY_CIRCUIT_OPEN");
 		}
 		expect(statuses).toContain(503);
+		// The System page reads the same breaker state (a query is embedded first, so that circuit opens).
+		const system = await call<{ circuits: { name: string; state: string }[] }>("/system/status", {
+			token: ada.accessToken,
+		});
+		const embeddings = system.body.data.circuits.find((circuit) => circuit.name === "embeddings");
+		expect(embeddings?.state).toBe("open");
 
 		await stack.modelFault({});
 		expect((await ask()).status).toBe(503);

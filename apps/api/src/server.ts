@@ -13,9 +13,11 @@ import { DrizzleAuditRepository } from "./modules/audit";
 import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { createModelGateway, createReranker } from "./infrastructure/models/create-model-gateway";
+import { createCircuitStatus } from "./infrastructure/reliability/circuit-status";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { DrizzleEvaluationRepository, EvaluationsService } from "./modules/evaluations";
+import { DrizzleSystemRepository, SystemService } from "./modules/system";
 import { GuardrailsService } from "./modules/guardrails";
 import { DrizzleOrganizationRepository, OrganizationsService } from "./modules/organizations";
 import {
@@ -65,6 +67,14 @@ const audit = createAuditLog({
 	redact: redactPiiDeep,
 });
 const guardrails = new GuardrailsService(config.guardrails, audit);
+// Circuit breakers this deployment has, as the System page reports them.
+const circuits = createCircuitStatus([
+	"chat",
+	"embeddings",
+	...(config.ai.fallbackChat ? ["chat-fallback"] : []),
+	...(config.ai.rerank ? ["rerank"] : []),
+	...(config.email.resendApiKey ? ["email"] : []),
+]);
 const authRepository = new DrizzleAuthRepository(database.db);
 const organizations = new OrganizationsService({
 	store: new DrizzleOrganizationRepository(database.db),
@@ -74,17 +84,17 @@ const organizations = new OrganizationsService({
 const auth = new AuthService({
 	repository: authRepository,
 	rateLimiter: new DrizzleRateLimiter(database.db),
-	email: createEmailSender(config.email, config.reliability, logger),
+	email: createEmailSender(config.email, config.reliability, logger, circuits),
 	logger,
 	config: config.auth,
 	audit,
 	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 });
-const gateway = createModelGateway(config, logger);
+const gateway = createModelGateway(config, logger, circuits);
 // Rust BPE tokenizer when its binding is built for this platform, else the ~4 chars/token estimate.
 const tokens = createTokenCounter();
 logger.info("token counting", { tokenizer: tokens.tokenizer, native: tokens.native });
-const reranker = createReranker(config, logger);
+const reranker = createReranker(config, logger, circuits);
 const rag = new RagService(repository, gateway, {
 	chunk: config.rag.chunk,
 	defaultTopK: config.rag.topK,
@@ -153,6 +163,12 @@ const app = createApp({
 	organizations,
 	chat,
 	evaluations: new EvaluationsService(new DrizzleEvaluationRepository(database.db), rag, audit),
+	system: new SystemService({
+		repository: new DrizzleSystemRepository(database.db),
+		circuits,
+		config,
+		rag,
+	}),
 	pingDatabase: () => repository.ping(),
 });
 

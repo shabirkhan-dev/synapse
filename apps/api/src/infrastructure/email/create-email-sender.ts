@@ -5,6 +5,7 @@ import { createCallPolicy } from "@synapse/reliability";
 
 import type { EmailConfig, ReliabilityConfig } from "@/config";
 import { reportReliabilityEvent } from "@/infrastructure/models/create-model-gateway";
+import type { CircuitStatus } from "@/infrastructure/reliability/circuit-status";
 
 /**
  * Resend when a key is configured. Without one (development only: production config requires the
@@ -15,6 +16,7 @@ export function createEmailSender(
 	config: EmailConfig,
 	reliability: ReliabilityConfig,
 	logger: Logger,
+	circuits?: CircuitStatus,
 ): EmailSender {
 	if (config.resendApiKey) {
 		const resend = createResendEmailSender({ apiKey: config.resendApiKey, from: config.from });
@@ -22,7 +24,7 @@ export function createEmailSender(
 			name: "email",
 			retry: reliability.retry,
 			breaker: reliability.breaker,
-			onEvent: reportReliabilityEvent(logger),
+			onEvent: reportReliabilityEvent(logger, circuits),
 		});
 		return { send: (message) => policy.run(() => resend.send(message)) };
 	}

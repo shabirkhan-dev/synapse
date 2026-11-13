@@ -28,6 +28,11 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Agents page** (syn-055) is read-only: models, prompts, tools and limits come from env and code
   (`CHAT_TOOLS` in the chat module is the one source of tool descriptions). Runs are audit events
   (latest 25 of each kind, merged); chat runs show tools, not the message text.
+- **System page** (syn-056, `GET /system/status`, admins and owners): circuit states come from the
+  policies' circuit events (`CircuitStatus` in `infrastructure/reliability`), so they are this API
+  process's only, and an "open" circuit only turns half-open on its next call. Job counts read
+  `pgboss.job` directly (`null` until the worker first starts); checkpoints and chunk counts come
+  from our tables. Members see a note, not the data; the sidebar shows System to everyone.
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);

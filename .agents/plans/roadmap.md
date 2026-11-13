@@ -73,10 +73,10 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | Console: ingestion — upload files (text, Markdown, PDF) | ✅ | syn-053 |
 | Console: evaluations — your own question sets, scored per search mode | ✅ | syn-054 |
 | Console: agents — the assistant's model, prompt, tools and guardrails, and its recent runs | ✅ | syn-055 |
-| Console: system status — dependencies, circuit breakers, jobs, index health, traces | ⏭️ | syn-056 |
+| Console: system status — dependencies, circuit breakers, jobs, index health, traces | ✅ | syn-056 |
 | `tests/` — Playwright e2e for console + API in CI | ✅ | syn-039 |
 | `tests/` — load, chaos, security suites | ✅ | syn-051 |
 | `deploy/` — production compose, Caddy TLS, backups, restore, runbooks | ✅ | syn-041 |
-| Real CD deploy (registry images, deploy to the host on tag) | ⬜ | syn-052 |
+| Real CD deploy (registry images, deploy to the host on tag) — needs the host, registry and SSH key | ⏭️ | syn-052 |
 
 Cards are raised for "—" rows when they become the next two or three steps.

@@ -52,6 +52,7 @@ describe("openapi", () => {
 			"/api/v1/rag/documents/upload",
 			"/api/v1/rag/documents/{id}",
 			"/api/v1/rag/query",
+			"/api/v1/system/status",
 		]);
 		expect(doc.components.securitySchemes.bearerAuth).toMatchObject({
 			type: "http",

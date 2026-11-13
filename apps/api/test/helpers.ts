@@ -45,6 +45,7 @@ import {
 	type User,
 	type UserCredentials,
 } from "@/modules/auth";
+import { createCircuitStatus } from "@/infrastructure/reliability/circuit-status";
 import { ChatService } from "@/modules/chat";
 import {
 	type EvalQuestion,
@@ -67,6 +68,7 @@ import {
 	type NewMessage,
 } from "@/modules/memory";
 import { OversightService } from "@/modules/oversight";
+import { type SystemRepository, SystemService } from "@/modules/system";
 import {
 	type NewRagChunk,
 	type NewRagDocument,
@@ -485,6 +487,30 @@ export class InMemoryAuthRepository implements AuthRepository {
 	async updatePasswordHash({ userId, passwordHash }: { userId: string; passwordHash: string }) {
 		const user = this.users.find((u) => u.id === userId);
 		if (user) user.passwordHash = passwordHash;
+	}
+}
+
+/** Status fixtures for the System page; tests set the fields they need. */
+export class InMemorySystemRepository implements SystemRepository {
+	reachable = true;
+	jobs: Awaited<ReturnType<SystemRepository["jobCounts"]>> = null;
+	checkpointRows: Awaited<ReturnType<SystemRepository["checkpoints"]>> = [];
+	chunks = new Map<string, Awaited<ReturnType<SystemRepository["chunkModels"]>>>();
+
+	async ping(): Promise<void> {
+		if (!this.reachable) throw new Error("database unreachable");
+	}
+
+	async jobCounts() {
+		return this.jobs;
+	}
+
+	async checkpoints() {
+		return this.checkpointRows;
+	}
+
+	async chunkModels(ownerId: string) {
+		return this.chunks.get(ownerId) ?? [];
 	}
 }
 
@@ -1017,6 +1043,8 @@ export function buildTestApp({
 	const auditEvents = new InMemoryAuditStore();
 	const audit = createAuditLog({ store: auditEvents, redact: redactPiiDeep });
 	const evaluationStore = new InMemoryEvaluationRepository();
+	const systemRepository = new InMemorySystemRepository();
+	const circuits = createCircuitStatus(["chat", "embeddings"]);
 	const guardrails = new GuardrailsService({ ...testConfig.guardrails, blockedTerms }, audit);
 	const rag = new RagService(repository, gateway, {
 		chunk: testConfig.rag.chunk,
@@ -1091,11 +1119,14 @@ export function buildTestApp({
 		organizations,
 		chat,
 		evaluations: new EvaluationsService(evaluationStore, rag, audit),
+		system: new SystemService({ repository: systemRepository, circuits, config: testConfig, rag }),
 		pingDatabase,
 	});
 	return {
 		app,
 		evaluationStore,
+		systemRepository,
+		circuits,
 		rag,
 		repository,
 		authRepository,

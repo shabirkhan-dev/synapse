@@ -5,6 +5,7 @@
 | Signal | Where | How |
 | --- | --- | --- |
 | Health | `GET /api/v1/health`, `/health/ready` | Docker healthchecks use them; point an external uptime check at `https://api.<domain>/api/v1/health/ready` and `https://console.<domain>` |
+| System page | console → System (admins and owners), or `GET /api/v1/system/status` | database latency, circuit breakers (per API process), pg-boss jobs by state (alert on `failed`), re-embed checkpoints, chunks on an old embedding model, trace destination |
 | Services | `docker compose -f deploy/compose.yml --env-file deploy/.env ps` | `api`, `console`, `postgres` healthy; `worker`, `backup`, `caddy` running |
 | Backups | `… logs backup` | one `backup: wrote …` per interval; alert on `backup: FAILED` or no new file in `BACKUP_DIR` |
 | Edge | `… logs caddy` | JSON access logs and certificate renewals |

@@ -42,6 +42,9 @@ export const endpoints = {
 		events: "/audit/events",
 		usage: (days: number) => `/audit/usage?days=${days}`,
 	},
+	system: {
+		status: "/system/status",
+	},
 	agents: {
 		overview: "/agents",
 		runs: "/agents/runs",

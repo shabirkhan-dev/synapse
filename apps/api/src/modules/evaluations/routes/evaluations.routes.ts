@@ -98,13 +98,15 @@ const getRunRoute = createRoute({
 	responses: { 200: json(evalRunSchema, "Run"), ...notFound, ...errorResponses },
 });
 
+/** Who acts, for which organization, in which request. */
+const scope = (c: Context<AppBindings>) => ({
+	ownerId: c.get("user").orgId,
+	actorId: c.get("user").sub,
+	context: { requestId: c.get("requestId"), actorId: c.get("user").sub },
+});
+
 export function createEvaluationRoutes(evaluations: EvaluationsService) {
 	const app = new OpenAPIHono<AppBindings>();
-	const scope = (c: Context<AppBindings>) => ({
-		ownerId: c.get("user").orgId,
-		actorId: c.get("user").sub,
-		context: { requestId: c.get("requestId"), actorId: c.get("user").sub },
-	});
 
 	app.openapi(listQuestionsRoute, async (c) => {
 		const questions = await evaluations.listQuestions(c.get("user").orgId);
