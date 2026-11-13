@@ -20,6 +20,11 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   worker, no timeout: a pathological PDF can hold the event loop); no OCR, so scanned PDFs are
   refused (`RAG_FILE_HAS_NO_TEXT`); PDF layout (columns, tables) is flattened to text order.
   The original file is not stored, only its text. The console checks type and size before sending.
+- **Evaluations** (syn-054): one question set per organization (≤ 50 questions, each pointing at 1–10
+  documents by id; a deleted document just stops being found). A run is inline in the request:
+  every question × three modes, each a real search (two embedding calls per question), k ≤ 20,
+  chunks fetched = min(50, 4k). Only retrieval is scored (no answer quality). Runs record the
+  embedding model and chunker, so scores across a model change are not comparable.
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);

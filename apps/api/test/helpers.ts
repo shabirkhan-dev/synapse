@@ -46,6 +46,14 @@ import {
 	type UserCredentials,
 } from "@/modules/auth";
 import { ChatService } from "@/modules/chat";
+import {
+	type EvalQuestion,
+	type EvalRun,
+	type EvalRunSummary,
+	type EvaluationRepository,
+	EvaluationsService,
+	type NewEvalRun,
+} from "@/modules/evaluations";
 import { GuardrailsService } from "@/modules/guardrails";
 import {
 	type Organization,
@@ -477,6 +485,70 @@ export class InMemoryAuthRepository implements AuthRepository {
 	async updatePasswordHash({ userId, passwordHash }: { userId: string; passwordHash: string }) {
 		const user = this.users.find((u) => u.id === userId);
 		if (user) user.passwordHash = passwordHash;
+	}
+}
+
+export class InMemoryEvaluationRepository implements EvaluationRepository {
+	readonly questions: Array<EvalQuestion & { ownerId: string }> = [];
+	readonly runs: Array<EvalRun & { ownerId: string }> = [];
+
+	async listQuestions(ownerId: string): Promise<EvalQuestion[]> {
+		return this.questions.filter((item) => item.ownerId === ownerId);
+	}
+
+	async countQuestions(ownerId: string): Promise<number> {
+		return (await this.listQuestions(ownerId)).length;
+	}
+
+	async addQuestion(input: {
+		ownerId: string;
+		createdBy: string;
+		question: string;
+		expectedDocumentIds: string[];
+	}): Promise<EvalQuestion> {
+		const question = {
+			id: crypto.randomUUID(),
+			ownerId: input.ownerId,
+			question: input.question,
+			expectedDocumentIds: input.expectedDocumentIds,
+			createdAt: new Date().toISOString(),
+		};
+		this.questions.push(question);
+		return question;
+	}
+
+	async removeQuestion(ownerId: string, id: string): Promise<boolean> {
+		const index = this.questions.findIndex((item) => item.id === id && item.ownerId === ownerId);
+		if (index === -1) return false;
+		this.questions.splice(index, 1);
+		return true;
+	}
+
+	async saveRun(run: NewEvalRun): Promise<EvalRun> {
+		const stored = {
+			id: crypto.randomUUID(),
+			ownerId: run.ownerId,
+			k: run.k,
+			questionCount: run.questionCount,
+			embeddingModel: run.embeddingModel,
+			chunkerVersion: run.chunkerVersion,
+			modes: run.results.modes,
+			cases: run.results.cases,
+			createdAt: new Date().toISOString(),
+		};
+		this.runs.unshift(stored);
+		return stored;
+	}
+
+	async listRuns(ownerId: string, limit: number): Promise<EvalRunSummary[]> {
+		return this.runs
+			.filter((run) => run.ownerId === ownerId)
+			.slice(0, limit)
+			.map(({ cases: _cases, ownerId: _owner, ...summary }) => summary);
+	}
+
+	async findRun(ownerId: string, id: string): Promise<EvalRun | null> {
+		return this.runs.find((run) => run.id === id && run.ownerId === ownerId) ?? null;
 	}
 }
 
@@ -944,6 +1016,7 @@ export function buildTestApp({
 	);
 	const auditEvents = new InMemoryAuditStore();
 	const audit = createAuditLog({ store: auditEvents, redact: redactPiiDeep });
+	const evaluationStore = new InMemoryEvaluationRepository();
 	const guardrails = new GuardrailsService({ ...testConfig.guardrails, blockedTerms }, audit);
 	const rag = new RagService(repository, gateway, {
 		chunk: testConfig.rag.chunk,
@@ -1017,10 +1090,12 @@ export function buildTestApp({
 		memory,
 		organizations,
 		chat,
+		evaluations: new EvaluationsService(evaluationStore, rag, audit),
 		pingDatabase,
 	});
 	return {
 		app,
+		evaluationStore,
 		rag,
 		repository,
 		authRepository,

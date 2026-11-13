@@ -71,8 +71,9 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | Record streaming chat answers with provenance (rule 6 gap found in syn-049) | ✅ | syn-050 |
 | Fix first CI e2e run (refresh reuse grace, pre-hydration clicks) | ✅ | syn-042 |
 | Console: ingestion — upload files (text, Markdown, PDF) | ✅ | syn-053 |
-| Console: evaluations — your own question sets, scored per search mode | ⏭️ | syn-054 |
-| Console features: agents, observability | ⬜ | — |
+| Console: evaluations — your own question sets, scored per search mode | ✅ | syn-054 |
+| Console: agents — the assistant's model, prompt, tools and guardrails, and its recent runs | ⏭️ | syn-055 |
+| Console: system status — dependencies, circuit breakers, jobs, index health, traces | ⬜ | syn-056 |
 | `tests/` — Playwright e2e for console + API in CI | ✅ | syn-039 |
 | `tests/` — load, chaos, security suites | ✅ | syn-051 |
 | `deploy/` — production compose, Caddy TLS, backups, restore, runbooks | ✅ | syn-041 |

@@ -15,6 +15,7 @@ import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { createModelGateway, createReranker } from "./infrastructure/models/create-model-gateway";
 import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
 import { ChatService } from "./modules/chat";
+import { DrizzleEvaluationRepository, EvaluationsService } from "./modules/evaluations";
 import { GuardrailsService } from "./modules/guardrails";
 import { DrizzleOrganizationRepository, OrganizationsService } from "./modules/organizations";
 import {
@@ -151,6 +152,7 @@ const app = createApp({
 	memory,
 	organizations,
 	chat,
+	evaluations: new EvaluationsService(new DrizzleEvaluationRepository(database.db), rag, audit),
 	pingDatabase: () => repository.ping(),
 });
 

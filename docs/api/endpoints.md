@@ -40,6 +40,10 @@
 | DELETE | `/api/v1/memory/facts/{id}` | Bearer | Forget one fact |
 | DELETE | `/api/v1/memory` | Bearer | Delete all your conversations and facts → `{ conversations, facts }` |
 | GET | `/api/v1/audit/usage` | Bearer | Answered queries over the last `days` UTC days (`?days=30`, 1–90): `scope` (`organization` for admins/owners, `you` for members), `totals` (`answers`, `inputTokens`, `outputTokens`, `costUsd` estimated from `AI_MODEL_PRICES` or `null`, `unpricedAnswers`), `daily[]` (every day, zeros included), `models[]` (by `source` `rag` | `chat`, chat model, prompt version, embedding model, with `costUsd` or `null`). From `rag.query.answered` and `chat.message.answered` provenance |
+| GET / POST | `/api/v1/evaluations/questions` | Bearer | The active organization's evaluation questions (oldest first) / add one: `question` (≤ 1000), `expectedDocumentIds` (1–10 of the organization's documents, else `422 EVAL_UNKNOWN_DOCUMENTS`; duplicates dropped). At most 50 per organization (`409 EVAL_TOO_MANY_QUESTIONS`) |
+| DELETE | `/api/v1/evaluations/questions/{id}` | Bearer | Delete a question; past runs keep their copy (`404 EVAL_QUESTION_NOT_FOUND`) |
+| POST | `/api/v1/evaluations/runs` | Bearer | Run every question through `hybrid`, `vector` and `keyword` search (`k` 1–20, default 5) with `@synapse/evaluation`; returns and stores the run: `modes.<mode>: { recallAtK, mrr }`, `cases[]` with each question's 1-based rank of its first expected document per mode (`null` when not retrieved), `embeddingModel`, `chunkerVersion`. Audited as `evaluation.run.completed`. `422 EVAL_NO_QUESTIONS` without questions. Runs inline (no job) |
+| GET | `/api/v1/evaluations/runs` / `/{id}` | Bearer | Recent runs, newest first (20, without `cases`) / one run with its `cases` (`404 EVAL_RUN_NOT_FOUND`) |
 | GET | `/api/v1/audit/events` | Bearer | Your event history, newest first (`limit` ≤ 200, optional `action`): answers with provenance, ingests, deletes, auth and approval events; personal data in `data` is redacted |
 | GET | `/api/docs` | — | Scalar API reference |
 | GET | `/api/openapi.json` | — | OpenAPI 3.1 document |

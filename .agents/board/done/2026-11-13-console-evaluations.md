@@ -5,12 +5,12 @@ type: feature
 from: pm
 to: web
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: []
-branch: none
+branch: main
 worktree: none
 scope: [apps/api/src/modules, apps/console/src/features, packages/evaluation, tests/e2e, docs]
 allowed_shared: [packages/database]
@@ -46,4 +46,20 @@ with the real embedding model.
 
 ## Resolution
 
-_Open._
+Landed (`feat(evaluations): …`):
+
+- Migration `0015_evaluations` (`eval_questions`, `eval_runs`, idempotent); `EVALUATION_RUN_COMPLETED`
+  audit action.
+- API module `evaluations` (routes → service → repository): questions CRUD (documents must belong
+  to the active organization; ≤ 50), runs through hybrid/vector/keyword with `evaluateRetrieval`,
+  stored with ranks per question, embedding model and chunker; `RagService.hasDocument`.
+- Console `/evaluations` (sidebar: Workspace → Evaluations): add a question by ticking the
+  documents that answer it (`Checkbox` added to `@synapse/ui` with the shadcn CLI), questions table
+  with delete, Top 1/3/5/10, "Run evaluation", scores per mode ("Found in top k", MRR), rank per
+  question (muted beyond k), all runs with their scores and embedding model.
+
+Validation: API 8 (unknown and cross-tenant documents, run scores and audit, tenancy, k and size
+bounds) + 2 Postgres integration (uuid[] and jsonb round trip, scoping, order); console 2; e2e
+`evaluations.spec.ts` + layout (9 links, `/evaluations` at 320 px); screenshots light and 320 px.
+
+Not covered: answer-quality evals, several question sets, runs as background jobs.

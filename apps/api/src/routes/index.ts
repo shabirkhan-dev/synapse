@@ -8,6 +8,7 @@ import { type AuthService, createAuthMiddleware, createAuthRoutes } from "@/modu
 import { createMemoryRoutes, type MemoryService } from "@/modules/memory";
 import { createOrganizationRoutes, type OrganizationsService } from "@/modules/organizations";
 import { type ChatService, createChatRoutes } from "@/modules/chat";
+import { createEvaluationRoutes, type EvaluationsService } from "@/modules/evaluations";
 import { createHealthRoutes } from "@/modules/health";
 import { createOversightRoutes, type OversightService } from "@/modules/oversight";
 import { createRagRoutes, type RagService } from "@/modules/rag";
@@ -22,6 +23,7 @@ export type RouteDependencies = {
 	memory: MemoryService;
 	organizations: OrganizationsService;
 	chat: ChatService;
+	evaluations: EvaluationsService;
 	pingDatabase: () => Promise<void>;
 };
 
@@ -37,6 +39,7 @@ export function registerRoutes(
 		memory,
 		organizations,
 		chat,
+		evaluations,
 		pingDatabase,
 	}: RouteDependencies,
 ) {
@@ -58,6 +61,7 @@ export function registerRoutes(
 	app.use(`${basePath}/memory/*`, authenticate);
 	app.use(`${basePath}/chat`, authenticate);
 	app.use(`${basePath}/chat/*`, authenticate);
+	app.use(`${basePath}/evaluations/*`, authenticate);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
@@ -70,4 +74,5 @@ export function registerRoutes(
 	app.route(`${basePath}/memory`, createMemoryRoutes(memory));
 	app.route(`${basePath}/organizations`, createOrganizationRoutes(organizations));
 	app.route(`${basePath}/chat`, createChatRoutes(chat));
+	app.route(`${basePath}/evaluations`, createEvaluationRoutes(evaluations));
 }

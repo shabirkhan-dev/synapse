@@ -7,6 +7,7 @@ const PAGES = [
 	"/documents",
 	"/playground",
 	"/retrieval",
+	"/evaluations",
 	"/chat",
 	"/approvals",
 	"/activity",
@@ -41,7 +42,7 @@ test("at 320px every workspace page reflows and the drawer reaches every link an
 		const nav = page.getByRole("navigation", { name: "Main" });
 		// oxlint-disable-next-line no-await-in-loop
 		const links = await nav.getByRole("link").all();
-		expect(links.length).toBe(8);
+		expect(links.length).toBe(9);
 		// oxlint-disable-next-line no-await-in-loop
 		await Promise.all(links.map((link) => expect(link).toBeInViewport({ ratio: 1 })));
 		// oxlint-disable-next-line no-await-in-loop

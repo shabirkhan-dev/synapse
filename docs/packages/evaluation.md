@@ -2,8 +2,9 @@
 
 Measure quality: datasets and scorers for retrieval, generation, agents and safety, plus regression runs.
 
-> **Status:** Live (retrieval datasets, recall@k / MRR, baselines, CI regression) · Planned (generation,
-> agent and safety evals; real-model runs).
+> **Status:** Live (retrieval datasets, recall@k / MRR, baselines, CI regression; workspace runs on
+> the real index through the API's `evaluations` module and the console's Evaluations page) ·
+> Planned (generation, agent and safety evals).
 
 ## Internal modules
 

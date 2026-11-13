@@ -352,6 +352,10 @@ export class RagService {
 		return { deleted };
 	}
 
+	async hasDocument(ownerId: string, documentId: string): Promise<boolean> {
+		return (await this.repository.findDocument(ownerId, documentId)) !== null;
+	}
+
 	/** A document and one page of its chunks; 404 unless it belongs to the owner. */
 	async getDocument(
 		ownerId: string,

@@ -5,6 +5,7 @@ export const AUDIT_ACTIONS = {
 	RAG_DOCUMENT_INGESTED: "rag.document.ingested",
 	RAG_DOCUMENT_DELETED: "rag.document.deleted",
 	RAG_DOCUMENTS_PURGED: "rag.documents.purged",
+	EVALUATION_RUN_COMPLETED: "evaluation.run.completed",
 	AUTH_SIGNED_UP: "auth.user.signed_up",
 	AUTH_SIGNED_IN: "auth.user.signed_in",
 	AUTH_SIGNED_OUT: "auth.session.signed_out",
