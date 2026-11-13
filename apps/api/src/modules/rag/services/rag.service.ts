@@ -1,10 +1,13 @@
 import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
-import type { ModelGateway, Reranker } from "@synapse/core/contracts";
+import type { ModelGateway, PdfTextExtractor, Reranker } from "@synapse/core/contracts";
 import type { AnswerProvenance } from "@synapse/core/types";
 import { isSynapseError } from "@synapse/core/errors";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import {
 	createIngestionPipeline,
+	extractFileText,
+	type FileExtraction,
+	type UploadedFile,
 	type IngestableDocument,
 	type IngestionPipeline,
 } from "@synapse/ingestion";
@@ -29,7 +32,13 @@ import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
 
-import { RAG_DEFAULT_LIST_LIMIT, RAG_ERROR_CODES, RAG_MESSAGES } from "../constants/rag.constants";
+import {
+	RAG_DEFAULT_LIST_LIMIT,
+	RAG_ERROR_CODES,
+	RAG_MAX_DOCUMENT_CHARS,
+	RAG_MAX_TITLE_CHARS,
+	RAG_MESSAGES,
+} from "../constants/rag.constants";
 import type { RagDocument, RagDocumentDetail, RagMatch, RagRepository } from "../types/rag.types";
 
 export type RagServiceOptions = {
@@ -43,6 +52,8 @@ export type RagServiceOptions = {
 	audit: AuditLog;
 	/** Input policy, passage sanitizing (prompt injection) and answer checks. */
 	guardrails: GuardrailsService;
+	/** Reads uploaded PDFs (`@synapse/adapters/pdf`). */
+	pdf: PdfTextExtractor;
 	/** Second-stage ranking of the best `candidates`; a failure falls back to the fused order. */
 	rerank?: { reranker: Reranker; candidates: number; onError: (error: unknown) => void };
 };
@@ -180,6 +191,38 @@ export class RagService {
 			});
 		}
 		return { document, created: result.status === "created" };
+	}
+
+	/** Text from an uploaded .txt, .md or .pdf, then the same path as `ingest` (dedup included). */
+	async ingestFile(
+		ownerId: string,
+		upload: { file: UploadedFile; title?: string | undefined },
+		context: RequestContext = NO_REQUEST,
+	): Promise<IngestOutcome> {
+		const extracted = await extractFileText(upload.file, { pdf: this.options.pdf });
+		if (extracted.status !== "extracted") throw fileRejectedError(extracted.status);
+		if (extracted.content.length > RAG_MAX_DOCUMENT_CHARS) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+				code: RAG_ERROR_CODES.FILE_TOO_LONG,
+				message: RAG_MESSAGES.FILE_TOO_LONG(RAG_MAX_DOCUMENT_CHARS),
+			});
+		}
+		const title = (upload.title ?? extracted.title) || upload.file.name;
+		return this.ingest(
+			ownerId,
+			{
+				title: title.slice(0, RAG_MAX_TITLE_CHARS),
+				content: extracted.content,
+				source: upload.file.name,
+				metadata: {
+					fileName: upload.file.name,
+					mediaType: extracted.mediaType,
+					...(extracted.pages === null ? {} : { pages: extracted.pages }),
+				},
+			},
+			context,
+		);
 	}
 
 	private async index(document: IngestableDocument): Promise<RagDocument> {
@@ -380,6 +423,21 @@ function emptyDocumentError(): AppError {
 		statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
 		code: RAG_ERROR_CODES.EMPTY_DOCUMENT,
 		message: RAG_MESSAGES.EMPTY_DOCUMENT,
+	});
+}
+
+function fileRejectedError(status: Exclude<FileExtraction["status"], "extracted">): AppError {
+	if (status === "unsupported") {
+		return new AppError({
+			statusCode: HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE,
+			code: RAG_ERROR_CODES.UNSUPPORTED_FILE,
+			message: RAG_MESSAGES.UNSUPPORTED_FILE,
+		});
+	}
+	return new AppError({
+		statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		code: status === "no-text" ? RAG_ERROR_CODES.FILE_HAS_NO_TEXT : RAG_ERROR_CODES.FILE_UNREADABLE,
+		message: status === "no-text" ? RAG_MESSAGES.FILE_HAS_NO_TEXT : RAG_MESSAGES.FILE_UNREADABLE,
 	});
 }
 

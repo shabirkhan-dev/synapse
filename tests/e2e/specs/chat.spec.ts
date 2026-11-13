@@ -12,7 +12,7 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	const email = uniqueEmail("chat");
 	await signUpViaApi(email);
 	await signIn(page, email);
-	await page.getByLabel("Title").fill("Refund policy");
+	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
 	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();

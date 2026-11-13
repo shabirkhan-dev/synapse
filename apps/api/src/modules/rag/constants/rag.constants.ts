@@ -2,6 +2,10 @@ export const RAG_ERROR_CODES = {
 	EMPTY_DOCUMENT: "RAG_EMPTY_DOCUMENT",
 	DOCUMENT_NOT_FOUND: "RAG_DOCUMENT_NOT_FOUND",
 	EMBEDDING_DIMENSION_MISMATCH: "RAG_EMBEDDING_DIMENSION_MISMATCH",
+	UNSUPPORTED_FILE: "RAG_UNSUPPORTED_FILE",
+	FILE_HAS_NO_TEXT: "RAG_FILE_HAS_NO_TEXT",
+	FILE_UNREADABLE: "RAG_FILE_UNREADABLE",
+	FILE_TOO_LONG: "RAG_FILE_TOO_LONG",
 } as const;
 
 export const RAG_MESSAGES = {
@@ -15,7 +19,12 @@ export const RAG_MESSAGES = {
 	MATCHES_FOUND: "Matching passages retrieved",
 	EMPTY_DOCUMENT: "Document content is empty",
 	DOCUMENT_NOT_FOUND: "Document not found",
-	DOCUMENT_TOO_LARGE: "Document body must be 2 MB or smaller",
+	UNSUPPORTED_FILE: "Upload a .txt, .md or .pdf file",
+	FILE_HAS_NO_TEXT:
+		"This file has no text to search. A scanned PDF needs text recognition (OCR) first",
+	FILE_UNREADABLE: "This PDF could not be read. It may be damaged or password-protected",
+	FILE_TOO_LONG: (max: number) =>
+		`This file has more than ${max.toLocaleString("en-US")} characters of text; split it up`,
 	NO_DOCUMENTS_TO_ANSWER_FROM: "I could not find any ingested documents to answer from.",
 	PURGE_REQUESTED: "Deleting all documents needs approval; approve it in /oversight/approvals",
 	PURGE_SUMMARY: (count: number, max: number) =>
@@ -24,8 +33,11 @@ export const RAG_MESSAGES = {
 			: `Delete all ${count > max ? `${max}+` : count} of your documents and their chunks`,
 } as const;
 
-/** Ingest body limit. */
-export const RAG_MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
+/** Most text one document may hold (pasted or extracted from a file). */
+export const RAG_MAX_DOCUMENT_CHARS = 500_000;
+
+/** Longest stored title. */
+export const RAG_MAX_TITLE_CHARS = 300;
 
 export const RAG_DEFAULT_LIST_LIMIT = 50;
 

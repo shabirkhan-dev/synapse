@@ -9,7 +9,12 @@ import {
 	documentListSchema,
 	documentSchema,
 } from "../schemas/document.schema";
-import type { DocumentDetail, DocumentSummary, IngestDocumentInput } from "../types/document.types";
+import type {
+	DocumentDetail,
+	DocumentSummary,
+	IngestDocumentInput,
+	UploadDocumentInput,
+} from "../types/document.types";
 
 export const documentsService = {
 	/** Newest first (the API's default limit). */
@@ -19,6 +24,14 @@ export const documentsService = {
 	/** Chunks, embeds and stores it; the same content again returns the existing document. */
 	ingest: (input: IngestDocumentInput): Promise<DocumentSummary> =>
 		api(endpoints.documents.ingest, { method: "POST", body: input, schema: documentSchema }),
+
+	/** A .txt, .md or .pdf: the API extracts the text, then stores it like `ingest`. */
+	upload: ({ file, title }: UploadDocumentInput): Promise<DocumentSummary> => {
+		const form = new FormData();
+		form.append("file", file);
+		if (title) form.append("title", title);
+		return api(endpoints.documents.upload, { method: "POST", body: form, schema: documentSchema });
+	},
 
 	/** The document with one page of its chunks, in order. */
 	detail: (id: string, offset: number): Promise<DocumentDetail> =>

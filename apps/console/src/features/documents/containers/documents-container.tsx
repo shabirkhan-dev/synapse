@@ -9,18 +9,22 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@synapse/ui/components/card";
+import { Separator } from "@synapse/ui/components/separator";
 
 import { PurgeRequestContainer } from "@/features/oversight";
 
 import { DocumentsTable } from "../components/documents-table";
 import { IngestDocumentForm } from "../components/ingest-document-form";
+import { UploadDocumentForm } from "../components/upload-document-form";
 import { useIngestDocumentMutation } from "../hooks/mutations/use-ingest-document-mutation";
+import { useUploadDocumentMutation } from "../hooks/mutations/use-upload-document-mutation";
 import { useDocumentsQuery } from "../hooks/queries/use-documents-query";
 
 /** Documents page: the add form and the list, with loading, error and empty states. */
 export function DocumentsContainer() {
 	const documents = useDocumentsQuery();
 	const ingest = useIngestDocumentMutation();
+	const upload = useUploadDocumentMutation();
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -33,9 +37,22 @@ export function DocumentsContainer() {
 			<Card>
 				<CardHeader>
 					<CardTitle>Add a document</CardTitle>
-					<CardDescription>Paste plain text; the same text twice is stored once.</CardDescription>
+					<CardDescription>
+						Upload a file or paste text; the same text twice is stored once.
+					</CardDescription>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="flex flex-col gap-6">
+					<UploadDocumentForm
+						pending={upload.isPending}
+						error={upload.error ? upload.error.message : null}
+						onSubmit={(input) => upload.mutateAsync(input)}
+						onFileChange={upload.reset}
+					/>
+					<div className="flex items-center gap-3 text-xs text-muted-foreground">
+						<Separator className="flex-1" />
+						<span>or paste text</span>
+						<Separator className="flex-1" />
+					</div>
 					<IngestDocumentForm
 						pending={ingest.isPending}
 						error={ingest.error ? ingest.error.message : null}

@@ -69,6 +69,8 @@ async function send(
 	useAuth: boolean,
 ): Promise<Response> {
 	const token = useAuth ? getAccessToken() : null;
+	// A file upload goes as-is: the browser sets the multipart content type and boundary.
+	const isForm = body instanceof FormData;
 	try {
 		return await fetch(`${apiConfig.baseUrl}${path}`, {
 			method,
@@ -76,10 +78,10 @@ async function send(
 			headers: {
 				...headers,
 				accept: "application/json",
-				...(body === undefined ? {} : { "content-type": "application/json" }),
+				...(body === undefined || isForm ? {} : { "content-type": "application/json" }),
 				...(token ? { authorization: `Bearer ${token}` } : {}),
 			},
-			...(body === undefined ? {} : { body: JSON.stringify(body) }),
+			...(body === undefined ? {} : { body: isForm ? body : JSON.stringify(body) }),
 			...(signal ? { signal } : {}),
 		});
 	} catch (cause) {

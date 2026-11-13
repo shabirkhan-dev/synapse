@@ -5,6 +5,12 @@ export const DOCUMENT_LIMITS = {
 	SOURCE_MAX: 2048,
 } as const;
 
+/** Files `POST /rag/documents/upload` reads, and the API's 2 MiB request cap. */
+export const UPLOAD_LIMITS = {
+	EXTENSIONS: [".txt", ".text", ".md", ".markdown", ".pdf"],
+	MAX_BYTES: 2 * 1024 * 1024,
+} as const;
+
 /** Chunks shown per page on a document's page. */
 export const CHUNK_PAGE_SIZE = 50;
 

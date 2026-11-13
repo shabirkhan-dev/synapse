@@ -45,7 +45,7 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 	await signIn(memberPage, member);
 	await switchTo(memberPage, team);
 	await expect(memberPage.getByText("No documents yet")).toBeVisible();
-	await memberPage.getByLabel("Title").fill("Team handbook");
+	await memberPage.getByLabel("Title", { exact: true }).fill("Team handbook");
 	await memberPage.getByLabel("Text").fill("Escalate refunds over 500 euros to a lead.");
 	await memberPage.getByRole("button", { name: "Add document" }).click();
 	await expect(memberPage.getByRole("cell", { name: "Team handbook" })).toBeVisible();

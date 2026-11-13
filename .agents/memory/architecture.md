@@ -6,10 +6,10 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `apps/`, capabilities in `packages/`, Rust in `crates/` (napi-rs, in-process).
 - **Today (live):** `apps/api` (Hono, RAG + streaming tool chat on Postgres/pgvector),
   `apps/worker` (pg-boss jobs: re-embedding with checkpoints, daily pruning),
-  `apps/console` (Next.js 16 on `@synapse/ui` + TanStack Query: sign-in/up, verify email, password reset, documents list/add/detail with chunks/delete, playground, retrieval inspector, usage, streaming chat with stored conversations, approvals, activity, team switcher and members, account with devices), `packages/ui` (shadcn on Base UI, HugeIcons, Tailwind v4),
+  `apps/console` (Next.js 16 on `@synapse/ui` + TanStack Query: sign-in/up, verify email, password reset, documents list/add/upload (txt, md, pdf)/detail with chunks/delete, playground, retrieval inspector, usage, streaming chat with stored conversations, approvals, activity, team switcher and members, account with devices), `packages/ui` (shadcn on Base UI, HugeIcons, Tailwind v4),
   `packages/typescript-config`, `packages/core` (errors, config, types, model-gateway contract),
   `packages/database` (Drizzle client, schema, migrations), `packages/adapters` (model gateway),
-  `packages/ingestion` (normalize, content-hash dedup, pipeline), `packages/knowledge` (chunking,
+  `packages/ingestion` (normalize, content-hash dedup, pipeline, file text extraction), `packages/knowledge` (chunking,
   embedding preparation, chunk versions), `packages/retrieval` (vector, keyword, hybrid RRF; per-call mode), `packages/generation` (prompts, context,
   citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost), `packages/evaluation` (retrieval evals,
   baselines), `packages/security` (authentication, roles/permissions, PII redaction),

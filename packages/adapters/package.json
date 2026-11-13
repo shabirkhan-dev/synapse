@@ -9,7 +9,8 @@
 		"./model-gateway": "./src/model-gateway/index.ts",
 		"./email": "./src/email/index.ts",
 		"./queue": "./src/queue/index.ts",
-		"./checkpointer": "./src/checkpointer/index.ts"
+		"./checkpointer": "./src/checkpointer/index.ts",
+		"./pdf": "./src/pdf/index.ts"
 	},
 	"scripts": {
 		"lint": "oxlint",
@@ -26,7 +27,8 @@
 		"@synapse/providers": "workspace:*",
 		"ai": "^7.0.164",
 		"pg": "8.23.1",
-		"pg-boss": "12.38.0"
+		"pg-boss": "12.38.0",
+		"unpdf": "1.9.1"
 	},
 	"devDependencies": {
 		"@ai-sdk/provider": "^4.0.36",

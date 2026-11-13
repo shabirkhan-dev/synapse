@@ -12,3 +12,10 @@ export {
 	type IngestionPorts,
 	type IngestResult,
 } from "./pipelines/ingest-document";
+export {
+	extractFileText,
+	type FileExtraction,
+	type FileMediaType,
+	FILE_MEDIA_TYPES,
+	type UploadedFile,
+} from "./extraction/extract-file-text";

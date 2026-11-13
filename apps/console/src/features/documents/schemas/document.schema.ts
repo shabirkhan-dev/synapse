@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DOCUMENT_LIMITS } from "../constants/documents.constants";
+import { DOCUMENT_LIMITS, UPLOAD_LIMITS } from "../constants/documents.constants";
 
 /** A document as `GET /rag/documents` returns it (only the fields the console shows). */
 export const documentSchema = z.object({
@@ -45,4 +45,22 @@ export const ingestDocumentFormSchema = z.object({
 		.max(DOCUMENT_LIMITS.SOURCE_MAX, `At most ${DOCUMENT_LIMITS.SOURCE_MAX} characters`)
 		.optional()
 		.transform((value) => value || undefined),
+});
+
+const hasUploadExtension = (file: File) =>
+	UPLOAD_LIMITS.EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension));
+
+/** The upload form: checked here first so a wrong type or size never leaves the browser. */
+export const uploadDocumentFormSchema = z.object({
+	file: z
+		.instanceof(File, { message: "Choose a file to upload" })
+		.refine((file) => file.name !== "", "Choose a file to upload")
+		.refine(hasUploadExtension, "Upload a .txt, .md or .pdf file")
+		.refine((file) => file.size > 0, "This file is empty")
+		.refine((file) => file.size <= UPLOAD_LIMITS.MAX_BYTES, "Files must be 2 MB or smaller"),
+	title: z
+		.string()
+		.trim()
+		.max(DOCUMENT_LIMITS.TITLE_MAX, `At most ${DOCUMENT_LIMITS.TITLE_MAX} characters`)
+		.transform((title) => title || undefined),
 });

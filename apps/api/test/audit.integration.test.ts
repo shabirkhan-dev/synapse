@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { MockLanguageModelV4 } from "ai/test";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
+import { createPdfTextExtractor } from "@synapse/adapters/pdf";
 import { createAuditLog } from "@synapse/audit";
 import {
 	auditEvents,
@@ -66,6 +67,7 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 				maxContextTokens: 3000,
 				audit,
 				guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, audit),
+				pdf: createPdfTextExtractor(),
 			},
 		);
 		await rag.ingest(owner, { title: "Refunds", content: "Refunds are accepted within 30 days." });

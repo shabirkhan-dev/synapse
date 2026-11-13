@@ -14,6 +14,12 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   production requires the key). Old auth rows are pruned daily by the worker. The console has sign-in, sign-up, verify-email,
   forgot and reset password (syn-037), and an account page (syn-045: resend verification, devices,
   sign out one or all others; an unverified user sees a notice on every page). Tests may still mint tokens (`signAccessToken`).
+- **File upload** (syn-053, `POST /rag/documents/upload`): `.txt`, `.md`, `.pdf` only, one file, ≤ 2 MiB
+  (the app-wide cap; the route has no tighter limit) and ≤ 500,000 characters. The type comes from
+  the name and must match the bytes. PDFs are parsed in the API process (pdf.js via `unpdf`, no
+  worker, no timeout: a pathological PDF can hold the event loop); no OCR, so scanned PDFs are
+  refused (`RAG_FILE_HAS_NO_TEXT`); PDF layout (columns, tables) is flattened to text order.
+  The original file is not stored, only its text. The console checks type and size before sending.
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
@@ -116,7 +122,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
   The shell is a sidebar (syn-047): on phones its links are inside a drawer, so tests open it first.
   Dark mode follows the OS only (no toggle); the sidebar keeps its open state in a `sidebar_state` cookie.
-- **e2e** (`tests/e2e`): wait for a page by its heading role, not `getByText`: Next's route
+- **e2e** (`tests/e2e`): Playwright's `getByLabel` matches substrings, so use `{ exact: true }`
+  for "Title" (the upload form has "Title (optional)"). Wait for a page by its heading role, not `getByText`: Next's route
   announcer repeats the page title (strict-mode clash). Needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears
   `auth_rate_limits` before each run. Locally a running console on `:3100` is reused, so stop it
   after changing console code. Only Chromium is tested. The upload step uses

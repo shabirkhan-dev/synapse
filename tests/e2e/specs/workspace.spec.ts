@@ -16,14 +16,14 @@ test("add a document, ask about it, follow the citation, rate the answer", async
 	).toBeVisible();
 	await page.getByRole("link", { name: "Add a document" }).click();
 
-	await page.getByLabel("Title").fill("Refund policy");
+	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
 	await page.getByLabel("Source (optional)").fill("https://example.com/refunds");
 	await page
 		.getByLabel("Text")
 		.fill("Refunds are accepted within 30 days of purchase. Items must be unused.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
-	await expect(page.getByLabel("Title")).toHaveValue("");
+	await expect(page.getByLabel("Title", { exact: true })).toHaveValue("");
 
 	await page.getByRole("link", { name: "Playground", exact: true }).click();
 	await page.getByLabel("Question").fill("How long do refunds take?");

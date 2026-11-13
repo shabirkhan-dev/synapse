@@ -1,19 +1,17 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { bodyLimit } from "hono/body-limit";
 
-import { ERROR_CODES } from "@/shared/constants/error-codes";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
-import { AppError } from "@/shared/errors/app-error";
 import { errorResponses } from "@/shared/responses/error-response";
 import { apiErrorSchema, successEnvelope } from "@/shared/responses/response.types";
 import { success } from "@/shared/responses/success-response";
 import type { AppBindings } from "@/shared/types/app-types";
 
-import { RAG_MAX_DOCUMENT_BYTES, RAG_MESSAGES } from "../constants/rag.constants";
+import { RAG_MESSAGES } from "../constants/rag.constants";
 import {
 	documentChunksQuerySchema,
 	documentIdParamsSchema,
 	ingestDocumentBodySchema,
+	uploadDocumentBodySchema,
 	listDocumentsQuerySchema,
 	ragDocumentDetailSchema,
 	ragDocumentSchema,
@@ -36,18 +34,6 @@ const ingestRoute = createRoute({
 	tags: ["RAG"],
 	summary: "Ingest a document: chunk, embed and store it",
 	security,
-	middleware: [
-		bodyLimit({
-			maxSize: RAG_MAX_DOCUMENT_BYTES,
-			onError: () => {
-				throw new AppError({
-					statusCode: HTTP_STATUS.PAYLOAD_TOO_LARGE,
-					code: ERROR_CODES.PAYLOAD_TOO_LARGE,
-					message: RAG_MESSAGES.DOCUMENT_TOO_LARGE,
-				});
-			},
-		}),
-	] as const,
 	request: {
 		body: { required: true, content: { "application/json": { schema: ingestDocumentBodySchema } } },
 	},
@@ -59,6 +45,35 @@ const ingestRoute = createRoute({
 		200: {
 			description: "Same content already ingested by this user; the existing document is returned",
 			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
+		...errorResponses,
+	},
+});
+
+const uploadRoute = createRoute({
+	method: "post",
+	path: "/documents/upload",
+	tags: ["RAG"],
+	summary: "Ingest a .txt, .md or .pdf file: extract its text, then chunk, embed and store it",
+	security,
+	request: {
+		body: {
+			required: true,
+			content: { "multipart/form-data": { schema: uploadDocumentBodySchema } },
+		},
+	},
+	responses: {
+		201: {
+			description: "Document stored; `source` is the file name, `metadata` its type and pages",
+			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
+		200: {
+			description: "Same text already ingested by this owner; the existing document is returned",
+			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
+		415: {
+			description: "Not a .txt, .md or .pdf, or the content does not match the name",
+			content: { "application/json": { schema: apiErrorSchema } },
 		},
 		...errorResponses,
 	},
@@ -167,6 +182,19 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 			requestId: c.get("requestId"),
 			actorId: c.get("user").sub,
 		});
+		if (!created) {
+			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
+		}
+		return success(c, document, RAG_MESSAGES.DOCUMENT_INGESTED, HTTP_STATUS.CREATED);
+	});
+
+	app.openapi(uploadRoute, async (c) => {
+		const { file, title } = c.req.valid("form");
+		const { document, created } = await rag.ingestFile(
+			c.get("user").orgId,
+			{ file: { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) }, title },
+			{ requestId: c.get("requestId"), actorId: c.get("user").sub },
+		);
 		if (!created) {
 			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
 		}

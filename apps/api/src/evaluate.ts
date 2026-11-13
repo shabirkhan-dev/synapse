@@ -2,12 +2,13 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { createAuditLog } from "@synapse/audit";
 import {
 	createHashingEmbeddingGateway,
 	createReranker,
 	createTermOverlapReranker,
 } from "@synapse/adapters/model-gateway";
+import { createPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createAuditLog } from "@synapse/audit";
 import type { Reranker } from "@synapse/core/contracts";
 import { createDatabase } from "@synapse/database";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
@@ -63,6 +64,7 @@ const ragWith = (reranker?: Reranker) =>
 			maxContextTokens: 3000,
 			audit: evaluationAudit,
 			guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, evaluationAudit),
+			pdf: createPdfTextExtractor(),
 			...(reranker
 				? {
 						rerank: {

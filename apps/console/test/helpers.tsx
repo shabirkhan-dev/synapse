@@ -23,7 +23,13 @@ export function mockFetch(handler: (call: Call) => Response | Promise<Response>)
 			url: String(input),
 			method: init?.method ?? "GET",
 			headers: new Headers(init?.headers),
-			body: init?.body ? JSON.parse(String(init.body)) : undefined,
+			// A file upload stays a FormData; everything else the client sends is JSON.
+			body:
+				init?.body instanceof FormData
+					? init.body
+					: init?.body
+						? JSON.parse(String(init.body))
+						: undefined,
 			credentials: init?.credentials,
 		};
 		calls.push(call);

@@ -83,4 +83,85 @@ describe("DocumentsContainer (mocked API)", () => {
 		await screen.findByText("Document too large");
 		expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("Huge");
 	});
+
+	test("uploading a file sends it as multipart and refreshes the list", async () => {
+		signedIn();
+		const stored: ReturnType<typeof doc>[] = [];
+		const calls = mockFetch((call) => {
+			if (call.method === "POST") {
+				const form = call.body as FormData;
+				const created = doc("d2", String(form.get("title")));
+				stored.unshift(created);
+				return ok(created, 201);
+			}
+			return ok(stored);
+		});
+		renderWithQuery(<DocumentsContainer />);
+		await screen.findByText(/No documents yet/);
+
+		const file = new File(["# Refunds\n\nWithin 30 days."], "refunds.md", {
+			type: "text/markdown",
+		});
+		fireEvent.change(screen.getByLabelText(/Choose a file/), { target: { files: [file] } });
+		expect(screen.getByText("refunds.md")).toBeDefined();
+		fireEvent.change(screen.getByLabelText("Title (optional)"), {
+			target: { value: "Refund policy" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Upload file" }));
+
+		await screen.findByRole("cell", { name: "Refund policy" });
+		const post = calls.find((call) => call.method === "POST");
+		if (!post) throw new Error("no upload was sent");
+		expect(post.url).toEndWith("/rag/documents/upload");
+		// The browser sets the multipart boundary, so the client must not set a content type.
+		expect(post.headers.get("content-type")).toBeNull();
+		expect(((post.body as FormData).get("file") as File).name).toBe("refunds.md");
+		expect(screen.getByText("Choose a file or drop it here")).toBeDefined();
+	});
+
+	test("a wrong type or a file over 2 MB is refused before anything is sent", async () => {
+		signedIn();
+		const calls = mockFetch(() => ok([]));
+		renderWithQuery(<DocumentsContainer />);
+		await screen.findByText(/No documents yet/);
+		const picker = screen.getByLabelText(/Choose a file/);
+
+		fireEvent.change(picker, { target: { files: [new File(["x"], "slides.pptx")] } });
+		fireEvent.click(screen.getByRole("button", { name: "Upload file" }));
+		await screen.findByText("Upload a .txt, .md or .pdf file");
+		expect(picker.getAttribute("aria-invalid")).toBe("true");
+
+		const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], "big.pdf");
+		fireEvent.change(screen.getByLabelText(/slides\.pptx|Choose a file/), {
+			target: { files: [big] },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Upload file" }));
+		await screen.findByText("Files must be 2 MB or smaller");
+		expect(calls.filter((call) => call.method === "POST")).toHaveLength(0);
+	});
+
+	test("the API's reason is shown and the file stays chosen", async () => {
+		signedIn();
+		mockFetch((call) =>
+			call.method === "POST"
+				? failure(422, "RAG_FILE_HAS_NO_TEXT", "This file has no text to search.")
+				: ok([]),
+		);
+		renderWithQuery(<DocumentsContainer />);
+		await screen.findByText(/No documents yet/);
+		const scan = new File(["%PDF-1.4"], "scan.pdf", { type: "application/pdf" });
+		fireEvent.change(screen.getByLabelText(/Choose a file/), { target: { files: [scan] } });
+		fireEvent.click(screen.getByRole("button", { name: "Upload file" }));
+		await screen.findByText("This file has no text to search.");
+		expect(screen.getByText("scan.pdf")).toBeDefined();
+
+		// Choosing another file clears the old reason.
+		const notes = new File(["notes"], "notes.txt", { type: "text/plain" });
+		fireEvent.change(screen.getByLabelText(/scan\.pdf/), { target: { files: [notes] } });
+		expect(screen.getByText("notes.txt")).toBeDefined();
+		// A boolean, not the node: printing a DOM node on every retry is very slow under Bun.
+		await waitFor(() =>
+			expect(screen.queryByText("This file has no text to search.") === null).toBe(true),
+		);
+	});
 });

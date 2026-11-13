@@ -5,15 +5,17 @@ import {
 	RAG_MESSAGES,
 	RAG_DEFAULT_LIST_LIMIT,
 	RAG_MAX_CHUNK_PAGE,
+	RAG_MAX_DOCUMENT_CHARS,
+	RAG_MAX_TITLE_CHARS,
 } from "../constants/rag.constants";
 
 export const ingestDocumentBodySchema = z
 	.object({
-		title: z.string().trim().min(1).max(300).openapi({ example: "Refund policy" }),
+		title: z.string().trim().min(1).max(RAG_MAX_TITLE_CHARS).openapi({ example: "Refund policy" }),
 		content: z
 			.string()
 			.min(1)
-			.max(500_000)
+			.max(RAG_MAX_DOCUMENT_CHARS)
 			.openapi({ example: "Customers can request a refund within 30 days of purchase..." }),
 		source: z
 			.string()
@@ -24,6 +26,21 @@ export const ingestDocumentBodySchema = z
 		metadata: z.record(z.string(), z.unknown()).optional(),
 	})
 	.openapi("IngestDocumentBody");
+
+export const uploadDocumentBodySchema = z
+	.object({
+		file: z
+			.instanceof(File)
+			.openapi({ type: "string", format: "binary", description: "A .txt, .md or .pdf file" }),
+		title: z
+			.string()
+			.trim()
+			.min(1)
+			.max(RAG_MAX_TITLE_CHARS)
+			.optional()
+			.openapi({ description: "Defaults to the file name without its extension" }),
+	})
+	.openapi("UploadDocumentBody");
 
 export const ragDocumentSchema = z
 	.object({

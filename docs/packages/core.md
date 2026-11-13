@@ -2,7 +2,7 @@
 
 Shared types, contracts (interfaces), errors, events, config and utilities that every other package builds on.
 
-> **Status:** Live (errors, config, types, contracts: model gateway, reranker, email sender, job queue) · Placeholder (events, utils).
+> **Status:** Live (errors, config, types, contracts: model gateway, reranker, email sender, job queue, PDF text) · Placeholder (events, utils).
 
 ## Internal modules
 
@@ -33,6 +33,7 @@ nothing in the workspace (only Zod and the standard library)
 | `AnswerProvenance` | `@synapse/core/types` | `chatModel`, `promptVersion`, `embeddingModel`, `chunkerVersion`, `usage` behind an answer |
 | `ModelGateway`, `ChatGateway`, `EmbeddingGateway`, `ModelInfo`, `TextGenerationRequest/Result`, `TokenUsage`, `CallOptions` | `@synapse/core/contracts` | How domain code calls models; implemented in `@synapse/adapters` |
 | `Reranker`, `RerankRequest`, `RerankedDocument` | `@synapse/core/contracts` | Second-stage ranking (`{ index, score }` best first); implemented in `@synapse/adapters/model-gateway` |
+| `PdfTextExtractor`, `PDF_ERROR_CODES` | `@synapse/core/contracts` | `extract(bytes)` → `{ pages }`; throws `PDF_UNREADABLE`. Implemented in `@synapse/adapters/pdf` |
 | `JobQueue`, `QueueJob`, `QueueOptions`, `JobHandler` | `@synapse/core/contracts` | Background jobs; implemented in `@synapse/adapters/queue` (pg-boss) |
 | `EmailSender`, `EmailMessage` | `@synapse/core/contracts` | How code sends email; implemented in `@synapse/adapters/email` (Resend) |
 

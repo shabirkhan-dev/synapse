@@ -3,6 +3,7 @@ import { convertArrayToReadableStream, MockEmbeddingModelV4, MockLanguageModelV4
 import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
+import { createPdfTextExtractor } from "@synapse/adapters/pdf";
 import {
 	type AuditStore,
 	createAuditLog,
@@ -951,6 +952,7 @@ export function buildTestApp({
 		maxContextTokens: testConfig.rag.maxContextTokens,
 		audit,
 		guardrails,
+		pdf: createPdfTextExtractor(),
 		...(reranker
 			? {
 					rerank: {

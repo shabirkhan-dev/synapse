@@ -46,6 +46,7 @@ export const endpoints = {
 		list: "/rag/documents",
 		ingest: "/rag/documents",
 		purge: "/rag/documents/purge",
+		upload: "/rag/documents/upload",
 		detail: (id: string) => `/rag/documents/${encodeURIComponent(id)}`,
 	},
 } as const;

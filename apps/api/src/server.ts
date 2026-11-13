@@ -1,4 +1,5 @@
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
+import { createPdfTextExtractor } from "@synapse/adapters/pdf";
 import { createAuditLog } from "@synapse/audit";
 import { createDatabase } from "@synapse/database";
 import { embeddingVersion } from "@synapse/knowledge";
@@ -91,6 +92,7 @@ const rag = new RagService(repository, gateway, {
 	countTokens: tokens.count,
 	audit,
 	guardrails,
+	pdf: createPdfTextExtractor(),
 	...(reranker
 		? {
 				rerank: {

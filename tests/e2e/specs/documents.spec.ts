@@ -9,7 +9,7 @@ test("a document opens from the list with its chunks, and deleting it asks first
 	const email = uniqueEmail("doc");
 	await signUpViaApi(email);
 	await signIn(page, email);
-	await page.getByLabel("Title").fill("Shipping policy");
+	await page.getByLabel("Title", { exact: true }).fill("Shipping policy");
 	await page.getByLabel("Source (optional)").fill("https://example.com/shipping");
 	await page.getByLabel("Text").fill("Orders ship within two business days.");
 	await page.getByRole("button", { name: "Add document" }).click();
@@ -38,4 +38,37 @@ test("a document opens from the list with its chunks, and deleting it asks first
 
 	await page.goto(address);
 	await expect(page.getByText("This document does not exist")).toBeVisible();
+});
+
+test("a Markdown file is uploaded under its name and its text is searchable", async ({ page }) => {
+	const email = uniqueEmail("upload");
+	await signUpViaApi(email);
+	await signIn(page, email);
+
+	const picker = page.getByLabel(/Choose a file/);
+	await picker.setInputFiles({
+		name: "slides.pptx",
+		mimeType: "application/vnd.ms-powerpoint",
+		buffer: Buffer.from("PK"),
+	});
+	await page.getByRole("button", { name: "Upload file" }).click();
+	await expect(page.getByText("Upload a .txt, .md or .pdf file")).toBeVisible();
+
+	await page.getByLabel(/slides\.pptx/).setInputFiles({
+		name: "Returns guide.md",
+		mimeType: "text/markdown",
+		buffer: Buffer.from("# Returns\n\nItems can be returned within **14 days**."),
+	});
+	await expect(page.getByText("Returns guide.md")).toBeVisible();
+	await page.getByRole("button", { name: "Upload file" }).click();
+
+	const row = page.getByRole("row", { name: /Returns guide/ });
+	await expect(row.getByRole("cell", { name: "Returns guide.md" })).toBeVisible();
+	await expect(page.getByText("Choose a file or drop it here")).toBeVisible();
+
+	await page.getByRole("link", { name: "Returns guide" }).click();
+	await expect(page.getByRole("heading", { level: 1, name: "Returns guide" })).toBeVisible();
+	await expect(
+		page.getByRole("list", { name: "Chunks" }).getByText(/returned within \*\*14 days\*\*/),
+	).toBeVisible();
 });
