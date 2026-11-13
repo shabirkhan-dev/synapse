@@ -126,7 +126,10 @@ const chat = new ChatService({
 });
 
 // Paused approval runs live in Postgres, so a decision can resume them after a restart.
-const checkpointer = createPostgresCheckpointer({ connectionString: config.database.url });
+const checkpointer = createPostgresCheckpointer({
+	connectionString: config.database.url,
+	onError: (error) => logger.error("checkpoint database connection lost", { error }),
+});
 await checkpointer.setup();
 const oversight = new OversightService(
 	new DrizzleApprovalRepository(database.db),

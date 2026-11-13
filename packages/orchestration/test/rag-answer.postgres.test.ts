@@ -21,6 +21,10 @@ describe.skipIf(!url)("rag answer graph with Postgres checkpoints", () => {
 		const checkpointer = createPostgresCheckpointer({
 			connectionString: url ?? "",
 			schema: "langgraph_test",
+			// A dropped connection should fail the test, as it would without a listener.
+			onError: (error) => {
+				throw error;
+			},
 		});
 		checkpointers.push(checkpointer);
 		await checkpointer.setup();
@@ -75,6 +79,10 @@ describe.skipIf(!url)("rag answer graph with Postgres checkpoints", () => {
 			const checkpointer = createPostgresCheckpointer({
 				connectionString: url ?? "",
 				schema: "langgraph_test",
+				// A dropped connection should fail the test, as it would without a listener.
+				onError: (error) => {
+					throw error;
+				},
 			});
 			checkpointers.push(checkpointer);
 			await checkpointer.setup();

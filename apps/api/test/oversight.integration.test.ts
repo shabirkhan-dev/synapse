@@ -42,6 +42,10 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 		const checkpointer = createPostgresCheckpointer({
 			connectionString: url ?? "",
 			schema: "langgraph_test",
+			// A dropped connection should fail the test, as it would without a listener.
+			onError: (error) => {
+				throw error;
+			},
 		});
 		closers.push(checkpointer.close);
 		await checkpointer.setup();
