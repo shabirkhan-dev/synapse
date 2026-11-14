@@ -1,4 +1,5 @@
 import {
+	bigint,
 	index,
 	jsonb,
 	pgTable,
@@ -36,11 +37,15 @@ export const chatMessages = pgTable(
 		ownerId: text("owner_id").notNull(),
 		role: text("role").notNull(),
 		message: jsonb("message").$type<Record<string, unknown>>().notNull(),
+		/** Insertion order: messages stored in one insert share `created_at`, not their ordinal. */
+		ordinal: bigint("ordinal", { mode: "number" }).generatedAlwaysAsIdentity(),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => [
 		primaryKey({ name: "chat_messages_pk", columns: [table.conversationId, table.id] }),
 		index("chat_messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+		// The latest messages of a conversation (each chat turn replays only those).
+		index("chat_messages_conversation_ordinal_idx").on(table.conversationId, table.ordinal),
 	],
 );
 

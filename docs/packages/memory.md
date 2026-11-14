@@ -38,9 +38,11 @@ Storage is the caller's (API `memory` module: tables `chat_conversations`, `chat
 ## How the API uses it
 
 - **Chat** (`POST /chat`): send `{ message }` to start a stored conversation (its id comes back in
-  `x-conversation-id`) and `{ conversationId, message }` to continue it. The server loads the
-  history (`CHAT_HISTORY_MAX_TOKENS` 6000, `CHAT_HISTORY_MAX_MESSAGES` 50) and saves the reply when
-  the stream ends. `{ messages }` stays stateless (nothing stored).
+  `x-conversation-id`) and `{ conversationId, message }` to continue it. The server reads only the
+  latest `CHAT_HISTORY_MAX_MESSAGES` (50) messages from Postgres, cuts them to
+  `CHAT_HISTORY_MAX_TOKENS` (6000), and saves the reply when the stream ends. Messages are ordered by
+  `chat_messages.ordinal` (insertion order, indexed per conversation), so messages saved in one insert
+  keep their order. `{ messages }` stays stateless (nothing stored).
 - **Recall:** the facts nearest to the latest user message are added to the system prompt as data.
 - **Remember:** the `rememberFact` chat tool (used when the user asks), or `POST /memory/facts`.
 - **Endpoints:** `GET /memory/conversations`, `GET|DELETE /memory/conversations/{id}`,

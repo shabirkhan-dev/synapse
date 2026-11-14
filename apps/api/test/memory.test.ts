@@ -6,6 +6,7 @@ import {
 	authHeaders,
 	buildTestApp,
 	streamResult,
+	testConfig,
 	textStreamParts,
 	toolCallStreamParts,
 } from "./helpers";
@@ -45,7 +46,7 @@ describe("stored conversations", () => {
 		const chatModel = new MockLanguageModelV4({
 			doStream: [streamResult(textStreamParts("Hi Ada!")), streamResult(textStreamParts("Ada."))],
 		});
-		const { app } = buildTestApp({ chatModel });
+		const { app, conversations } = buildTestApp({ chatModel });
 
 		const first = await chat(app, { message: userMessage("My name is Ada") });
 		expect(first.status).toBe(200);
@@ -57,6 +58,9 @@ describe("stored conversations", () => {
 		expect(secondPrompt).toContain("My name is Ada");
 		expect(secondPrompt).toContain("Hi Ada!");
 		expect(secondPrompt).toContain("What is my name?");
+		// The turn asks the store for the latest messages it can use, not the whole conversation.
+		const { maxMessages } = testConfig.rag.chatHistory;
+		expect(conversations.messageReads).toEqual([{ latest: maxMessages }, { latest: maxMessages }]);
 
 		const stored = await call(app, "GET", `/memory/conversations/${conversationId}`);
 		expect(stored.body.data).toMatchObject({ title: "My name is Ada" });

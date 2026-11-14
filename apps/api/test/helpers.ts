@@ -777,8 +777,14 @@ export class InMemoryConversationStore implements ConversationStore {
 			.slice(0, limit);
 	}
 
-	async messages(ownerId: string, conversationId: string) {
-		return this.stored.filter((m) => m.ownerId === ownerId && m.conversationId === conversationId);
+	readonly messageReads: Array<{ latest?: number }> = [];
+
+	async messages(ownerId: string, conversationId: string, options: { latest?: number } = {}) {
+		this.messageReads.push(options);
+		const all = this.stored.filter(
+			(m) => m.ownerId === ownerId && m.conversationId === conversationId,
+		);
+		return options.latest === undefined ? all : all.slice(-options.latest);
 	}
 
 	async append(ownerId: string, conversationId: string, messages: NewMessage[]) {

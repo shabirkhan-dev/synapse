@@ -89,7 +89,7 @@ Deployment is parked (syn-052). Gaps found in what is built, most severe first.
 | Rate limits on model-calling endpoints (chat, answers, uploads, evaluation runs) | ✅ | syn-058 |
 | Streaming chat: timeout, circuit breaker | ✅ | syn-059 |
 | PDF parsing off the main thread with a deadline | ✅ | syn-060 |
-| Chat history loads only what a turn can use | ⏭️ | syn-061 |
+| Chat history loads only what a turn can use | ✅ | syn-061 |
 | Later: approvals expire, secrets checked in streamed chat, `Retry-After` honoured | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

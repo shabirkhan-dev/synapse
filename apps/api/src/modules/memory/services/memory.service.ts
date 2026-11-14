@@ -55,7 +55,10 @@ export class MemoryService {
 			? await this.conversation(ownerId, conversationId)
 			: await this.options.conversations.create(ownerId, titleOf(message));
 		await this.options.conversations.append(ownerId, conversation.id, [message]);
-		const stored = await this.options.conversations.messages(ownerId, conversation.id);
+		// Only what the budget can keep: long conversations no longer load in full on every turn.
+		const stored = await this.options.conversations.messages(ownerId, conversation.id, {
+			latest: this.options.history.maxMessages,
+		});
 		return {
 			conversationId: conversation.id,
 			history: selectHistory(stored, this.options.history).map((entry) => entry.message),

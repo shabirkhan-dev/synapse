@@ -34,6 +34,7 @@ describe.skipIf(!url)("memory (postgres)", () => {
 	const database = createDatabase({ url: url ?? "", poolMax: 2 });
 	const owner = `it-memory-${crypto.randomUUID()}`;
 	const other = `it-memory-${crypto.randomUUID()}`;
+	const ordering = `it-memory-${crypto.randomUUID()}`;
 
 	/** A fresh service over the same database, like the API after a restart. */
 	const startService = () => {
@@ -59,7 +60,7 @@ describe.skipIf(!url)("memory (postgres)", () => {
 	});
 
 	afterAll(async () => {
-		const ids = [owner, other];
+		const ids = [owner, other, ordering];
 		await database.db.execute(sql`delete from chat_conversations where owner_id in ${ids}`);
 		await database.db.execute(sql`delete from memory_facts where owner_id in ${ids}`);
 		await database.db.execute(sql`delete from audit_events where owner_id in ${ids}`);
@@ -95,6 +96,46 @@ describe.skipIf(!url)("memory (postgres)", () => {
 			code: "MEMORY_CONVERSATION_NOT_FOUND",
 		});
 		expect((await after.listConversations(owner)).map((c) => c.title)).toEqual(["My name is Ada"]);
+	});
+
+	test("messages keep insertion order, and a turn reads only the latest it can use", async () => {
+		const repository = new DrizzleConversationRepository(database.db);
+		const conversation = await repository.create(ordering, "Ordering");
+		// One insert: the rows share created_at, so only the ordinal keeps their order.
+		await repository.append(
+			ordering,
+			conversation.id,
+			["z1", "a2", "m3", "b4"].map((id) => userMessage(id, id)),
+		);
+		await repository.append(ordering, conversation.id, [userMessage("c5", "c5")]);
+
+		const all = await repository.messages(ordering, conversation.id);
+		expect(all.map((m) => m.id)).toEqual(["z1", "a2", "m3", "b4", "c5"]);
+		const latest = await repository.messages(ordering, conversation.id, { latest: 2 });
+		expect(latest.map((m) => m.id)).toEqual(["b4", "c5"]);
+		expect(await repository.messages(other, conversation.id, { latest: 2 })).toEqual([]);
+
+		const audit = createAuditLog({
+			store: new DrizzleAuditRepository(database.db),
+			redact: (d) => d,
+		});
+		const service = new MemoryService({
+			conversations: repository,
+			facts: createLongTermMemory({
+				store: new DrizzleFactRepository(database.db),
+				embedding,
+				embeddingModel: "test:bow",
+			}),
+			audit,
+			history: { maxTokens: 6000, maxMessages: 3 },
+			guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, audit),
+		});
+		const turn = await service.continueConversation(
+			ordering,
+			conversation.id,
+			userMessage("d6", "d6"),
+		);
+		expect(turn.history.map((m) => m.id)).toEqual(["b4", "c5", "d6"]);
 	});
 
 	test("facts are recalled by similarity per owner, deduplicated, and forgotten", async () => {

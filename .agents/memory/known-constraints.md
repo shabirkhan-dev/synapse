@@ -93,7 +93,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
   LangGraph keeps the AsyncLocalStorage trace context, so LLM spans stay children of the request.
 - **Memory:** stored chat saves the reply in `onFinish` after streaming (a failed save is logged, the
-  user already has the reply). Long histories are cut to the budget, not summarized. Facts use the
+  user already has the reply). A turn reads only the latest `CHAT_HISTORY_MAX_MESSAGES` (syn-061, ordered by
+  `chat_messages.ordinal`), then cuts them to the token budget; nothing is summarized. Facts use the
   current embedding model only (the worker does not re-embed facts yet) and have no vector index.
   A model-called `rememberFact` writes without approval (owner's own memory); facts with instructions are refused.
 - **Guardrails are pattern-based:** paraphrased injections can slip through (prompts v2 are the second

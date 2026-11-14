@@ -14,9 +14,11 @@ export interface ConversationStore {
 	create(ownerId: string, title: string): Promise<Conversation>;
 	find(ownerId: string, id: string): Promise<Conversation | null>;
 	list(ownerId: string, limit: number): Promise<Conversation[]>;
+	/** Oldest first; with `latest`, only the last that many (still oldest first). */
 	messages(
 		ownerId: string,
 		conversationId: string,
+		options?: { latest?: number },
 	): Promise<Array<StoredMessage<Record<string, unknown>>>>;
 	append(ownerId: string, conversationId: string, messages: NewMessage[]): Promise<void>;
 	remove(ownerId: string, id: string): Promise<boolean>;

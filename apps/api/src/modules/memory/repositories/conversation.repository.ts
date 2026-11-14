@@ -40,14 +40,17 @@ export class DrizzleConversationRepository implements ConversationStore {
 	async messages(
 		ownerId: string,
 		conversationId: string,
+		{ latest }: { latest?: number } = {},
 	): Promise<Array<StoredMessage<Record<string, unknown>>>> {
-		const rows = await this.db
+		const query = this.db
 			.select()
 			.from(chatMessages)
 			.where(
 				and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.ownerId, ownerId)),
 			)
-			.orderBy(asc(chatMessages.createdAt));
+			// Insertion order: messages stored in one insert share `created_at`.
+			.orderBy(latest === undefined ? asc(chatMessages.ordinal) : desc(chatMessages.ordinal));
+		const rows = latest === undefined ? await query : (await query.limit(latest)).toReversed();
 		return rows.map(toStoredMessage);
 	}
 

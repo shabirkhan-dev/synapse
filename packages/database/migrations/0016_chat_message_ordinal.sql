@@ -1,0 +1,2 @@
+ALTER TABLE "chat_messages" ADD COLUMN IF NOT EXISTS "ordinal" bigint NOT NULL GENERATED ALWAYS AS IDENTITY (sequence name "chat_messages_ordinal_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "chat_messages_conversation_ordinal_idx" ON "chat_messages" USING btree ("conversation_id","ordinal");
