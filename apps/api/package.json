@@ -6,7 +6,7 @@
 	"license": "MIT OR Apache-2.0",
 	"scripts": {
 		"dev": "bun --env-file=../../.env --watch src/server.ts",
-		"build": "bun build src/server.ts src/migrate.ts --target=bun --outdir=dist --root=src && rm -rf dist/migrations && cp -r ../../packages/database/migrations dist/migrations && bun ../../packages/native/scripts/copy-binding.ts dist/bin",
+		"build": "bun build src/server.ts src/migrate.ts src/pdf.worker.ts --target=bun --outdir=dist --root=src && rm -rf dist/migrations && cp -r ../../packages/database/migrations dist/migrations && bun ../../packages/native/scripts/copy-binding.ts dist/bin",
 		"start": "bun dist/server.js",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",

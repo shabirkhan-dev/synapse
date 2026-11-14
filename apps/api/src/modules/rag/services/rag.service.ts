@@ -438,11 +438,13 @@ function fileRejectedError(status: Exclude<FileExtraction["status"], "extracted"
 			message: RAG_MESSAGES.UNSUPPORTED_FILE,
 		});
 	}
-	return new AppError({
-		statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-		code: status === "no-text" ? RAG_ERROR_CODES.FILE_HAS_NO_TEXT : RAG_ERROR_CODES.FILE_UNREADABLE,
-		message: status === "no-text" ? RAG_MESSAGES.FILE_HAS_NO_TEXT : RAG_MESSAGES.FILE_UNREADABLE,
-	});
+	const reason = {
+		"no-text": [RAG_ERROR_CODES.FILE_HAS_NO_TEXT, RAG_MESSAGES.FILE_HAS_NO_TEXT],
+		unreadable: [RAG_ERROR_CODES.FILE_UNREADABLE, RAG_MESSAGES.FILE_UNREADABLE],
+		"timed-out": [RAG_ERROR_CODES.FILE_TIMED_OUT, RAG_MESSAGES.FILE_TIMED_OUT],
+	} as const;
+	const [code, message] = reason[status];
+	return new AppError({ statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY, code, message });
 }
 
 /** Who and how much to retrieve for one answer run. */

@@ -3,6 +3,8 @@ import type { Env } from "./env";
 export type RagConfig = {
 	chunk: { size: number; overlap: number };
 	topK: number;
+	/** Deadline for reading one uploaded PDF (in a worker thread). */
+	pdfTimeoutMs: number;
 	searchMode: Env["RAG_SEARCH_MODE"];
 	maxContextTokens: number;
 	/** First-stage matches sent to the reranker, when one is configured. */
@@ -17,6 +19,7 @@ export function createRagConfig(env: Env): RagConfig {
 	return {
 		chunk: { size: env.RAG_CHUNK_SIZE, overlap: env.RAG_CHUNK_OVERLAP },
 		topK: env.RAG_TOP_K,
+		pdfTimeoutMs: env.RAG_PDF_TIMEOUT_MS,
 		searchMode: env.RAG_SEARCH_MODE,
 		maxContextTokens: env.RAG_MAX_CONTEXT_TOKENS,
 		rerankCandidates: env.RAG_RERANK_CANDIDATES,

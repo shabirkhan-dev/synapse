@@ -10,7 +10,12 @@ import {
 	type StoredAuditEvent,
 	type UsageGroup,
 } from "@synapse/audit";
-import type { EmailMessage, EmailSender, Reranker } from "@synapse/core/contracts";
+import type {
+	EmailMessage,
+	EmailSender,
+	PdfTextExtractor,
+	Reranker,
+} from "@synapse/core/contracts";
 import type {
 	AnswerFeedback,
 	ApprovalRequest,
@@ -1015,7 +1020,10 @@ export function buildTestApp({
 	fallbackChatModel,
 	reranker,
 	limits = testConfig.limits,
+	pdf = createPdfTextExtractor(),
 }: {
+	/** Reads uploaded PDFs; in-process by default (the server uses a worker thread). */
+	pdf?: PdfTextExtractor;
 	reranker?: Reranker;
 	/** Per-user budgets on model-calling routes; defaults to the configured ones. */
 	limits?: typeof testConfig.limits;
@@ -1065,7 +1073,7 @@ export function buildTestApp({
 		maxContextTokens: testConfig.rag.maxContextTokens,
 		audit,
 		guardrails,
-		pdf: createPdfTextExtractor(),
+		pdf,
 		...(reranker
 			? {
 					rerank: {

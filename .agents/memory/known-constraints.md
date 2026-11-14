@@ -21,8 +21,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   The system suites raise them; `security/usage-limit.test.ts` sets its own.
 - **File upload** (syn-053, `POST /rag/documents/upload`): `.txt`, `.md`, `.pdf` only, one file, ≤ 2 MiB
   (the app-wide cap; the route has no tighter limit) and ≤ 500,000 characters. The type comes from
-  the name and must match the bytes. PDFs are parsed in the API process (pdf.js via `unpdf`, no
-  worker, no timeout: a pathological PDF can hold the event loop); no OCR, so scanned PDFs are
+  the name and must match the bytes. PDFs are parsed in a worker thread per file (syn-060:
+  `apps/api/src/pdf.worker.ts`, its own build entry), terminated at `RAG_PDF_TIMEOUT_MS` (15 s,
+  `422 RAG_FILE_TIMED_OUT`); each upload pays a worker start (~0.1–0.3 s); no OCR, so scanned PDFs are
   refused (`RAG_FILE_HAS_NO_TEXT`); PDF layout (columns, tables) is flattened to text order.
   The original file is not stored, only its text. The console checks type and size before sending.
 - **Evaluations** (syn-054): one question set per organization (≤ 50 questions, each pointing at 1–10

@@ -87,6 +87,10 @@ describe("extractFileText", () => {
 		expect(
 			await extractFileText({ name: "broken.pdf", bytes: pdfBytes }, { pdf: fakePdf(unreadable) }),
 		).toEqual({ status: "unreadable" });
+		const slow = new SynapseError(PDF_ERROR_CODES.TIMEOUT, "too slow");
+		expect(
+			await extractFileText({ name: "huge.pdf", bytes: pdfBytes }, { pdf: fakePdf(slow) }),
+		).toEqual({ status: "timed-out" });
 		const bug = new Error("out of memory");
 		await expect(
 			extractFileText({ name: "big.pdf", bytes: pdfBytes }, { pdf: fakePdf(bug) }),

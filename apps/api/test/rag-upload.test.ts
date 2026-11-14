@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
+import { PDF_ERROR_CODES } from "@synapse/core/contracts";
+import { SynapseError } from "@synapse/core/errors";
+
 import { authHeaders, buildTestApp } from "./helpers";
 
 const fixture = (name: string) => Bun.file(new URL(`./fixtures/${name}`, import.meta.url));
@@ -120,6 +123,22 @@ describe("POST /rag/documents/upload", () => {
 		const damaged = await upload(app, { name: "damaged.pdf", body: "%PDF-1.7 truncated" });
 		expect(damaged.status).toBe(422);
 		expect(((await damaged.json()) as DocumentBody).error?.code).toBe("RAG_FILE_UNREADABLE");
+	});
+
+	test("a PDF that takes too long to read is refused with its own reason", async () => {
+		const { app } = buildTestApp({
+			pdf: {
+				extract: async () => {
+					throw new SynapseError(PDF_ERROR_CODES.TIMEOUT, "too slow");
+				},
+			},
+		});
+		const response = await upload(app, {
+			name: "huge.pdf",
+			body: await fixture("refund-policy.pdf").arrayBuffer(),
+		});
+		expect(response.status).toBe(422);
+		expect(((await response.json()) as DocumentBody).error?.code).toBe("RAG_FILE_TIMED_OUT");
 	});
 
 	test("needs a file, a small one, and a signed-in user", async () => {

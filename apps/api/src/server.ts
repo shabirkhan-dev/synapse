@@ -1,5 +1,5 @@
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
-import { createPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createWorkerPdfTextExtractor } from "@synapse/adapters/pdf";
 import { createAuditLog } from "@synapse/audit";
 import { createDatabase } from "@synapse/database";
 import { embeddingVersion } from "@synapse/knowledge";
@@ -105,7 +105,15 @@ const rag = new RagService(repository, gateway, {
 	countTokens: tokens.count,
 	audit,
 	guardrails,
-	pdf: createPdfTextExtractor(),
+	// Each upload is parsed in its own thread (`pdf.worker.ts`, a separate build entry), stopped at
+	// the deadline. The URL is built here, in the entry file, so it resolves both from src/ and dist/.
+	pdf: createWorkerPdfTextExtractor({
+		workerUrl: new URL(
+			`./pdf.worker.${import.meta.url.endsWith(".ts") ? "ts" : "js"}`,
+			import.meta.url,
+		),
+		timeoutMs: config.rag.pdfTimeoutMs,
+	}),
 	...(reranker
 		? {
 				rerank: {

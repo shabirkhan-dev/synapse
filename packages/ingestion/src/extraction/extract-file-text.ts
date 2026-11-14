@@ -29,7 +29,9 @@ export type FileExtraction =
 	/** Readable but without text, e.g. a scanned PDF or an empty file. */
 	| { status: "no-text" }
 	/** A PDF that is malformed or encrypted. */
-	| { status: "unreadable" };
+	| { status: "unreadable" }
+	/** A PDF that took longer than the reader allows (very large or pathological). */
+	| { status: "timed-out" };
 
 const PDF_SIGNATURE = new TextEncoder().encode("%PDF-");
 
@@ -75,6 +77,9 @@ export async function extractFileText(
 		} catch (error) {
 			if (isSynapseError(error) && error.code === PDF_ERROR_CODES.UNREADABLE) {
 				return { status: "unreadable" };
+			}
+			if (isSynapseError(error) && error.code === PDF_ERROR_CODES.TIMEOUT) {
+				return { status: "timed-out" };
 			}
 			throw error;
 		}

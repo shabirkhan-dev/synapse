@@ -5,6 +5,7 @@ export const RAG_ERROR_CODES = {
 	UNSUPPORTED_FILE: "RAG_UNSUPPORTED_FILE",
 	FILE_HAS_NO_TEXT: "RAG_FILE_HAS_NO_TEXT",
 	FILE_UNREADABLE: "RAG_FILE_UNREADABLE",
+	FILE_TIMED_OUT: "RAG_FILE_TIMED_OUT",
 	FILE_TOO_LONG: "RAG_FILE_TOO_LONG",
 } as const;
 
@@ -23,6 +24,7 @@ export const RAG_MESSAGES = {
 	FILE_HAS_NO_TEXT:
 		"This file has no text to search. A scanned PDF needs text recognition (OCR) first",
 	FILE_UNREADABLE: "This PDF could not be read. It may be damaged or password-protected",
+	FILE_TIMED_OUT: "This PDF took too long to read. Try a smaller file, or export it again as PDF",
 	FILE_TOO_LONG: (max: number) =>
 		`This file has more than ${max.toLocaleString("en-US")} characters of text; split it up`,
 	NO_DOCUMENTS_TO_ANSWER_FROM: "I could not find any ingested documents to answer from.",
