@@ -130,6 +130,10 @@ export const envSchema = z
 		/** Stored conversation history sent to the model: rough token budget and message cap. */
 		CHAT_HISTORY_MAX_TOKENS: z.coerce.number().int().min(500).max(100_000).default(6000),
 		CHAT_HISTORY_MAX_MESSAGES: z.coerce.number().int().min(2).max(500).default(50),
+		/** Per-user budgets for calls that reach a model (fixed windows in Postgres, every instance). */
+		RATE_LIMIT_QUESTIONS_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(20),
+		RATE_LIMIT_INGESTS_PER_HOUR: z.coerce.number().int().min(1).max(100_000).default(200),
+		RATE_LIMIT_EVALUATION_RUNS_PER_HOUR: z.coerce.number().int().min(1).max(1000).default(10),
 		/** Longest user input (query, chat message, fact) accepted before any model call. */
 		GUARDRAILS_MAX_INPUT_CHARS: z.coerce.number().int().min(100).max(100_000).default(4000),
 		/** Comma-separated terms that block a request (case-insensitive, whole words). */

@@ -38,6 +38,10 @@ const BASE_ENV: Record<string, string> = {
 	LANGFUSE_SECRET_KEY: "",
 	OTEL_EXPORTER_OTLP_ENDPOINT: "",
 	AI_RERANK_PROVIDER: "",
+	// Suites send many requests per account; security/usage-limit.test.ts sets its own budget.
+	RATE_LIMIT_QUESTIONS_PER_MINUTE: "10000",
+	RATE_LIMIT_INGESTS_PER_HOUR: "100000",
+	RATE_LIMIT_EVALUATION_RUNS_PER_HOUR: "1000",
 };
 
 async function waitFor(url: string, process: Bun.Subprocess, logPath: string): Promise<void> {

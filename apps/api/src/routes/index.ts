@@ -14,6 +14,7 @@ import { createHealthRoutes } from "@/modules/health";
 import { createOversightRoutes, type OversightService } from "@/modules/oversight";
 import { createRagRoutes, type RagService } from "@/modules/rag";
 import { createSystemRoutes, type SystemService } from "@/modules/system";
+import { createUsageLimit, type UsageLimiter } from "@/shared/middleware/usage-limit";
 import type { AppBindings } from "@/shared/types/app-types";
 
 export type RouteDependencies = {
@@ -27,6 +28,8 @@ export type RouteDependencies = {
 	chat: ChatService;
 	evaluations: EvaluationsService;
 	system: SystemService;
+	/** Per-user budgets on model-calling routes (`config.limits`). */
+	rateLimiter: UsageLimiter;
 	pingDatabase: () => Promise<void>;
 };
 
@@ -44,6 +47,7 @@ export function registerRoutes(
 		chat,
 		evaluations,
 		system,
+		rateLimiter,
 		pingDatabase,
 	}: RouteDependencies,
 ) {
@@ -69,6 +73,24 @@ export function registerRoutes(
 	app.use(`${basePath}/agents`, authenticate);
 	app.use(`${basePath}/agents/*`, authenticate);
 	app.use(`${basePath}/system/*`, authenticate);
+
+	// After authentication: budgets are per user, and stop a request before any model call.
+	const { questions, ingests, evaluationRuns } = config.limits;
+	app.on(
+		"POST",
+		[`${basePath}/chat`, `${basePath}/rag/query`],
+		createUsageLimit(rateLimiter, "questions", questions),
+	);
+	app.on(
+		"POST",
+		[`${basePath}/rag/documents`, `${basePath}/rag/documents/upload`],
+		createUsageLimit(rateLimiter, "ingests", ingests),
+	);
+	app.on(
+		"POST",
+		`${basePath}/evaluations/runs`,
+		createUsageLimit(rateLimiter, "evaluation-runs", evaluationRuns),
+	);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));

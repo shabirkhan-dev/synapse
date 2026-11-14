@@ -15,6 +15,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   production requires the key). Old auth rows are pruned daily by the worker. The console has sign-in, sign-up, verify-email,
   forgot and reset password (syn-037), and an account page (syn-045: resend verification, devices,
   sign out one or all others; an unverified user sees a notice on every page). Tests may still mint tokens (`signAccessToken`).
+- **Per-user budgets** (syn-058) on model-calling routes (questions 20/min, ingests 200/h, evaluation
+  runs 10/h, env `RATE_LIMIT_*`) share the auth limiter's `auth_rate_limits` table (keys
+  `usage:<kind>:<userId>`). They are per user, not per organization, and count requests, not tokens.
+  The system suites raise them; `security/usage-limit.test.ts` sets its own.
 - **File upload** (syn-053, `POST /rag/documents/upload`): `.txt`, `.md`, `.pdf` only, one file, ≤ 2 MiB
   (the app-wide cap; the route has no tighter limit) and ≤ 500,000 characters. The type comes from
   the name and must match the bytes. PDFs are parsed in the API process (pdf.js via `unpdf`, no

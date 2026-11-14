@@ -5,6 +5,7 @@ import { createDatabaseConfig, type DatabaseConfig } from "./database.config";
 import { createEmailConfig, type EmailConfig } from "./email.config";
 import { type Env, parseEnv } from "./env";
 import { createGuardrailsConfig, type GuardrailsConfig } from "./guardrails.config";
+import { createLimitsConfig, type LimitsConfig } from "./limits.config";
 import { createObservabilityConfig, type ObservabilityConfig } from "./observability.config";
 import { createRagConfig, type RagConfig } from "./rag.config";
 import { createReliabilityConfig, type ReliabilityConfig } from "./reliability.config";
@@ -30,6 +31,7 @@ export type Configuration = {
 	ai: AiConfig;
 	rag: RagConfig;
 	guardrails: GuardrailsConfig;
+	limits: LimitsConfig;
 	observability: ObservabilityConfig;
 	reliability: ReliabilityConfig;
 };
@@ -44,6 +46,7 @@ export function createConfiguration(env: Env): Configuration {
 		ai: createAiConfig(env),
 		rag: createRagConfig(env),
 		guardrails: createGuardrailsConfig(env),
+		limits: createLimitsConfig(env),
 		observability: createObservabilityConfig(env),
 		reliability: createReliabilityConfig(env),
 	};

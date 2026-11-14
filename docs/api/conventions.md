@@ -32,5 +32,11 @@
   `req_<uuid>` is minted; it is echoed in the response header and body and logged.
 - **Body size:** every request body is capped at 2 MiB (`requestBodyLimit`, the largest document
   upload); auth routes allow 4 KiB. Over the limit → `413 PAYLOAD_TOO_LARGE`.
+- **Rate limits:** auth routes have their own (`docs/packages/security.md`). Routes that call a
+  model have per-user budgets (Postgres fixed windows, shared by every instance): questions
+  (`POST /chat`, `POST /rag/query`) `RATE_LIMIT_QUESTIONS_PER_MINUTE` (20), ingests
+  (`POST /rag/documents`, `/upload`) `RATE_LIMIT_INGESTS_PER_HOUR` (200), evaluation runs
+  `RATE_LIMIT_EVALUATION_RUNS_PER_HOUR` (10). Over budget → `429 RATE_LIMITED` with `Retry-After`
+  and `details: [{ retryAfterSeconds }]`, before any model call.
 - **CORS:** allow-list from `CORS_ORIGIN` (comma-separated).
 - **Streaming:** `/chat` returns the AI SDK UI message stream over SSE.

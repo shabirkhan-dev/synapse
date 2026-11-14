@@ -1014,8 +1014,11 @@ export function buildTestApp({
 	reliability = testReliability,
 	fallbackChatModel,
 	reranker,
+	limits = testConfig.limits,
 }: {
 	reranker?: Reranker;
+	/** Per-user budgets on model-calling routes; defaults to the configured ones. */
+	limits?: typeof testConfig.limits;
 	chatModel?: MockLanguageModelV4;
 	reliability?: typeof testReliability;
 	fallbackChatModel?: MockLanguageModelV4;
@@ -1117,8 +1120,9 @@ export function buildTestApp({
 	const feedback = new InMemoryFeedbackStore();
 	const oversight = new OversightService(approvals, feedback, new MemorySaver(), audit);
 	registerRagActions(oversight, rag);
+	const usageLimiter = new InMemoryRateLimiter();
 	const app = createApp({
-		config: testConfig,
+		config: { ...testConfig, limits },
 		logger,
 		auth,
 		rag,
@@ -1129,6 +1133,7 @@ export function buildTestApp({
 		chat,
 		evaluations: new EvaluationsService(evaluationStore, rag, audit),
 		system: new SystemService({ repository: systemRepository, circuits, config: testConfig, rag }),
+		rateLimiter: usageLimiter,
 		pingDatabase,
 	});
 	return {
