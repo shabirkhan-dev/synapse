@@ -7,3 +7,8 @@ export { createModelGateway, type ModelGatewayOptions } from "./create-model-gat
 export { createAiSdkReranker, createReranker } from "./ai-sdk-reranker";
 export { createHashingEmbeddingGateway } from "./hashing-embedding";
 export { createTermOverlapReranker } from "./term-overlap-reranker";
+export {
+	type StreamReliabilityOptions,
+	type StreamStartPolicy,
+	withStreamReliability,
+} from "./reliable-stream-model";

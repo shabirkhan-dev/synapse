@@ -263,6 +263,33 @@ const settings = (clock: ReturnType<typeof fakeClock>) => ({
 });
 
 describe("withModelReliability", () => {
+	test("wrapChatModel gets the raw streaming model and the chat policy, shared with answers", async () => {
+		let wrappedWith: { name: string; state: string } | undefined;
+		const reliable = withModelReliability(
+			Object.assign(
+				gateway(async () => {
+					throw httpError(503);
+				}),
+				{ chatModel: "raw-model" },
+			),
+			{
+				...settings(fakeClock()),
+				wrapChatModel: (model, policy) => {
+					wrappedWith = policy;
+					return `wrapped(${model})`;
+				},
+			},
+		);
+		expect(reliable.chatModel).toBe("wrapped(raw-model)");
+		expect(wrappedWith?.name).toBe("chat");
+		// Failing answers open the same breaker the stream wrapper holds.
+		for (let attempt = 0; attempt < 2; attempt++) {
+			// oxlint-disable-next-line no-await-in-loop -- failures accumulate in order
+			await reliable.chat.generateText({ prompt: "hi" }).catch(() => {});
+		}
+		expect(wrappedWith?.state).toBe("open");
+	});
+
 	test("falls back when the primary is down, and the result names the fallback model", async () => {
 		const events: string[] = [];
 		const reliable = withModelReliability(

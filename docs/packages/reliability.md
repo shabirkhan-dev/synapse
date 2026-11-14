@@ -64,6 +64,11 @@ instrumentModelGateway(                        // one span per logical call
 ## Limits
 
 - Breaker state is per process (each api replica learns on its own).
-- Streaming chat (`/chat`, `chatModel`) uses the AI SDK's own retries (2); no timeout, breaker or
-  fallback yet: it needs a streaming contract.
+- Streaming chat (`/chat`, `chatModel`): `withModelReliability({ wrapChatModel })` hands the raw
+  model and the `chat` policy to the API, which wraps it with `withStreamReliability` from `@synapse/adapters/model-gateway`:
+  starting a stream gets the per-attempt timeout, retries and the same `chat` breaker as answers;
+  then `AI_CHAT_STREAM_IDLE_TIMEOUT_MS` (30 s) between parts ends a stalled reply with
+  `RELIABILITY_TIMEOUT`. `streamText` makes no retries of its own. No fallback model for streams
+  (the answer's provenance would name the wrong model), and failures after a stream started do not
+  count toward the breaker (syn-059).
 - `Retry-After` headers are not read; backoff is fixed by config.

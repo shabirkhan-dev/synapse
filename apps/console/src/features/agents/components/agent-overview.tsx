@@ -48,11 +48,6 @@ export function AgentOverview({ overview }: { overview: AgentsOverview }) {
 					<Facts
 						rows={[
 							["Model", model(models.chat), true],
-							[
-								"Fallback model",
-								model(models.fallbackChat) ?? "None",
-								models.fallbackChat !== null,
-							],
 							["Prompt", chat.promptVersion, true],
 							["Tool steps per reply", `Up to ${chat.maxSteps}`],
 							[
@@ -95,6 +90,11 @@ export function AgentOverview({ overview }: { overview: AgentsOverview }) {
 							rows={[
 								["Model", model(models.chat), true],
 								["Prompts", answers.promptVersions.join(" → "), true],
+								[
+									"Fallback model",
+									model(models.fallbackChat) ?? "None",
+									models.fallbackChat !== null,
+								],
 								["Search", `${answers.searchMode}, top ${answers.topK}`],
 								["Reranker", model(models.reranker) ?? "Off", models.reranker !== null],
 								["Context", `Up to ${count.format(answers.maxContextTokens)} tokens of passages`],

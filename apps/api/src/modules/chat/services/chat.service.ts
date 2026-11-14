@@ -90,6 +90,8 @@ export class ChatService {
 		);
 		const result = streamText({
 			model: chatModel,
+			// The gateway's chat policy retries starting the stream; a second layer would multiply it.
+			maxRetries: 0,
 			system: [CHAT_ASSISTANT_PROMPT.system, recalled].filter(Boolean).join("\n\n"),
 			messages: await convertToModelMessages(validated, { tools }),
 			tools,

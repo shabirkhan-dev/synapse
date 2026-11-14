@@ -2,8 +2,10 @@ import {
 	type AiSdkModelGateway,
 	createReranker as createVendorReranker,
 	createModelGateway as createVendorModelGateway,
+	withStreamReliability,
 } from "@synapse/adapters/model-gateway";
 import type { Reranker } from "@synapse/core/contracts";
+import { SynapseError } from "@synapse/core/errors";
 import {
 	addSpanEvent,
 	instrumentModelGateway,
@@ -12,6 +14,7 @@ import {
 } from "@synapse/observability";
 import {
 	createCallPolicy,
+	RELIABILITY_ERROR_CODES,
 	type ReliabilityEvent,
 	withModelReliability,
 } from "@synapse/reliability";
@@ -22,7 +25,7 @@ import type { CircuitStatus } from "@/infrastructure/reliability/circuit-status"
 /**
  * The model gateway every module uses: one span per logical call (instrumentation outside), and
  * inside it each attempt with a timeout, retries, a circuit breaker and the optional fallback
- * model. Streaming chat (`chatModel`) is passed through unwrapped.
+ * model. Streaming chat (`chatModel`) shares the chat policy and gets an idle deadline.
  */
 export function createModelGateway(
 	config: Configuration,
@@ -33,8 +36,22 @@ export function createModelGateway(
 	const fallbackChat = ai.fallbackChat
 		? createVendorModelGateway({ chat: ai.fallbackChat, embedding: ai.embedding }).chat
 		: undefined;
+	const { chatStreamIdleTimeoutMs, ...reliability } = config.reliability;
 	const reliable = withModelReliability(createVendorModelGateway(ai), {
-		...config.reliability,
+		...reliability,
+		wrapChatModel: (model, chatPolicy) =>
+			withStreamReliability(model, {
+				policy: chatPolicy,
+				idleTimeoutMs: chatStreamIdleTimeoutMs,
+				idleError: (ms) =>
+					new SynapseError(
+						RELIABILITY_ERROR_CODES.TIMEOUT,
+						`chat stream sent nothing for ${ms} ms`,
+						{
+							retryable: true,
+						},
+					),
+			}),
 		...(fallbackChat ? { fallbackChat } : {}),
 		onEvent: reportReliabilityEvent(logger, circuits),
 	});

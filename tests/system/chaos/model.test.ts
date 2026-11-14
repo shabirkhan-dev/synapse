@@ -119,4 +119,23 @@ describe("the model provider misbehaves", () => {
 		expect(performance.now() - started).toBeLessThan(20_000);
 		expect(text).toContain('"type":"error"');
 	}, 30_000);
+
+	test("a slow streaming chat ends at the chat deadline instead of waiting", async () => {
+		await heal();
+		// Embeddings answer at once; the chat model answers only after 5 s (the deadline is 1 s).
+		await stack.modelFault({ delayMs: 5_000, only: "chat" });
+		const started = performance.now();
+		const response = await fetch(`${SYSTEM.apiUrl}/chat`, {
+			method: "POST",
+			headers: { "content-type": "application/json", authorization: `Bearer ${ada.accessToken}` },
+			body: JSON.stringify({
+				message: { id: "m2", role: "user", parts: [{ type: "text", text: "refunds?" }] },
+			}),
+		});
+		const text = await response.text();
+		expect(text).toContain('"type":"error"');
+		// Two 1 s attempts plus backoff, well short of the model's 5 s.
+		expect(performance.now() - started).toBeLessThan(4_500);
+		await stack.modelFault({});
+	}, 30_000);
 });

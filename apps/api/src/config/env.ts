@@ -104,6 +104,8 @@ export const envSchema = z
 		/** Per-attempt deadlines for model calls (streaming chat is not covered). */
 		AI_CHAT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(60_000),
 		AI_EMBEDDING_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(30_000),
+		/** A streaming chat reply that sends nothing for this long is ended with an error. */
+		AI_CHAT_STREAM_IDLE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(30_000),
 		/** Total attempts per model or email call, for retryable errors only (timeouts, 429, 5xx). */
 		AI_RETRY_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
 		/** Consecutive failures that open a circuit, and how long it stays open. */
