@@ -84,7 +84,7 @@ describe("refresh tokens", () => {
 		expect((await refresh(rotated)).status).toBe(401);
 	});
 
-	test("a signed-out session cannot be refreshed", async () => {
+	test("a signed-out session cannot be refreshed, and its access token stops at once", async () => {
 		const account = await signUp("signout");
 		const out = await call("/auth/sign-out", {
 			method: "POST",
@@ -93,5 +93,8 @@ describe("refresh tokens", () => {
 		});
 		expect(out.status).toBeLessThan(300);
 		expect((await refresh(account.refreshToken)).status).toBe(401);
+		const me = await call("/auth/me", { token: account.accessToken });
+		expect(me.status).toBe(401);
+		expect(me.body.error?.code).toBe("AUTH_SESSION_ENDED");
 	});
 });

@@ -83,6 +83,8 @@ export interface AuthRepository {
 	}): Promise<{ id: string }>;
 	/** Sessions not revoked and not expired, most recently active first (at most 50). */
 	listActiveSessions(userId: string): Promise<ActiveSession[]>;
+	/** Whether the user's session exists and is neither revoked nor expired (checked per request). */
+	isSessionActive(input: { sessionId: string; userId: string }): Promise<boolean>;
 	/** The session whose current or previous refresh-token hash equals `hash`. */
 	findSessionByRefreshTokenHash(hash: string): Promise<AuthSession | null>;
 	/**

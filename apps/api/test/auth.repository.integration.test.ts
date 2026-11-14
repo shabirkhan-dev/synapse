@@ -53,8 +53,13 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 		const listed = await repository.listActiveSessions(userId);
 		expect(listed.map((s) => s.id).toSorted()).toEqual([laptop.id, phone.id, cli.id].toSorted());
 		expect(listed.find((s) => s.id === phone.id)?.userAgent).toContain("iPhone");
+		expect(await repository.isSessionActive({ sessionId: cli.id, userId })).toBe(true);
+		expect(
+			await repository.isSessionActive({ sessionId: cli.id, userId: crypto.randomUUID() }),
+		).toBe(false);
 		expect(await repository.revokeSession({ sessionId: cli.id, userId })).toBe(true);
 		expect(await repository.revokeSession({ sessionId: cli.id, userId })).toBe(false);
+		expect(await repository.isSessionActive({ sessionId: cli.id, userId })).toBe(false);
 		expect(await repository.revokeOtherSessions({ userId, keepSessionId: laptop.id })).toBe(1);
 		expect((await repository.listActiveSessions(userId)).map((s) => s.id)).toEqual([laptop.id]);
 	});

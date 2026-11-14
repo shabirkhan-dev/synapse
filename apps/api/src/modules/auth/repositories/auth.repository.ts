@@ -73,6 +73,28 @@ export class DrizzleAuthRepository implements AuthRepository {
 		return row;
 	}
 
+	async isSessionActive({
+		sessionId,
+		userId,
+	}: {
+		sessionId: string;
+		userId: string;
+	}): Promise<boolean> {
+		const [row] = await this.db
+			.select({ id: authSessions.id })
+			.from(authSessions)
+			.where(
+				and(
+					eq(authSessions.id, sessionId),
+					eq(authSessions.userId, userId),
+					isNull(authSessions.revokedAt),
+					gt(authSessions.expiresAt, sql`now()`),
+				),
+			)
+			.limit(1);
+		return row !== undefined;
+	}
+
 	async listActiveSessions(userId: string): Promise<ActiveSession[]> {
 		const rows = await this.db
 			.select({

@@ -104,4 +104,33 @@ describe("auth sessions", () => {
 			401,
 		);
 	});
+
+	test("a signed-out or revoked session's access token stops working at once", async () => {
+		const { app } = buildTestApp();
+		const laptop = await signIn(app, "/sign-up", FIREFOX);
+		const phone = await signIn(app, "/sign-in", IPHONE);
+		const tablet = await signIn(app, "/sign-in", IPHONE);
+
+		// Signing out ends this session's access token too, not only its refresh token.
+		const out = await app.request(`${base}/sign-out`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				authorization: `Bearer ${tablet.accessToken}`,
+			},
+			body: JSON.stringify({ refreshToken: tablet.refreshToken }),
+		});
+		expect(out.status).toBe(200);
+		const afterSignOut = await call(app, "GET", "/me", tablet.accessToken);
+		expect(afterSignOut.status).toBe(401);
+		expect((await afterSignOut.json()).error.code).toBe("AUTH_SESSION_ENDED");
+
+		// "Sign out everywhere else" ends the phone at once; the laptop keeps working.
+		expect((await call(app, "GET", "/me", phone.accessToken)).status).toBe(200);
+		expect((await call(app, "POST", "/sessions/revoke-others", laptop.accessToken)).status).toBe(
+			200,
+		);
+		expect((await call(app, "GET", "/me", phone.accessToken)).status).toBe(401);
+		expect((await call(app, "GET", "/me", laptop.accessToken)).status).toBe(200);
+	});
 });

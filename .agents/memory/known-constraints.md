@@ -3,7 +3,8 @@
 Things that are true today and easy to trip over. Remove an entry when it stops being true.
 
 - **Auth is in-house** (ADR-0005): `/auth/sign-up|sign-in|refresh|sign-out|me`. Access tokens are
-  checked by signature only, so they outlive sign-out by up to `AUTH_ACCESS_TOKEN_TTL_SECONDS` (15 min).
+  checked against their session on every request (syn-057): sign-out and revocation end them at
+  once (`401 AUTH_SESSION_ENDED`). In-memory test stores treat minted, unknown sessions as active.
   Rate limits, email verification and password reset exist (syn-026); sessions can be listed and
   revoked (syn-045, `User-Agent` stored per session, no IP); **no MFA**.
   **Tenancy (ADR-0006):** shared data (documents, approvals, their audit) uses `owner_id` = the

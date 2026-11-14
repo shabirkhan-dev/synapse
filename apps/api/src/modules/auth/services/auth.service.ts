@@ -364,8 +364,15 @@ export class AuthService {
 			throw error;
 		}
 		const orgId = verified.org ?? verified.sub;
-		// Checked on every request, so a removed member loses access immediately.
-		const role = await this.roleOf(orgId, verified.sub);
+		// Both checked on every request: a signed-out or revoked session and a removed member lose
+		// access at once, not when the access token expires.
+		const [active, role] = await Promise.all([
+			this.repository.isSessionActive({ sessionId: verified.sid, userId: verified.sub }),
+			this.roleOf(orgId, verified.sub),
+		]);
+		if (!active) {
+			throw unauthorized(AUTH_ERROR_CODES.SESSION_ENDED, AUTH_MESSAGES.SESSION_ENDED);
+		}
 		if (!role) {
 			throw unauthorized(AUTH_ERROR_CODES.NOT_A_MEMBER, AUTH_MESSAGES.NOT_A_MEMBER);
 		}

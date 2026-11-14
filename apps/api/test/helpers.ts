@@ -399,6 +399,15 @@ export class InMemoryAuthRepository implements AuthRepository {
 	private active = (session: StoredSession) =>
 		!session.revokedAt && session.expiresAt.getTime() > Date.now();
 
+	/**
+	 * Tests often mint access tokens for sessions this store never saw (`authHeaders`); those count
+	 * as active. A session it does hold must still be active, so revocation is tested for real.
+	 */
+	async isSessionActive({ sessionId, userId }: { sessionId: string; userId: string }) {
+		const session = this.sessions.find((item) => item.id === sessionId);
+		return session === undefined || (session.userId === userId && this.active(session));
+	}
+
 	async listActiveSessions(userId: string) {
 		return this.sessions
 			.filter((session) => session.userId === userId && this.active(session))

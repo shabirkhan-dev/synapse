@@ -58,8 +58,10 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
 - **Browsers (the console)** take the refresh token as an httpOnly cookie instead of in the body
   (`session: "cookie"`, ADR-0007) and keep the access token in memory; the API route layer moves
   the token into the cookie, the service is unchanged.
-- **Access tokens are checked by signature and expiry only**, not against the session, so after
-  sign-out an access token keeps working until it expires (at most 15 minutes).
+- **Access tokens are checked against their session on every request** (signature, expiry, then
+  the `sid` must be neither revoked nor expired, alongside the role lookup): sign-out, "sign out"
+  on another device and "sign out everywhere else" end the access token at once with
+  `401 AUTH_SESSION_ENDED` (syn-057; before, it lived until expiry, up to 15 minutes).
 - Emails are trimmed and lowercased; sign-in returns one message for unknown emails and wrong
   passwords. Only hashes are stored (password: Argon2id; refresh and link tokens: SHA-256).
 - **Rate limits** (fixed windows in Postgres, one upsert per hit, so every instance shares them):

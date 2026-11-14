@@ -1,6 +1,7 @@
 export const AUTH_ERROR_CODES = {
 	ACCESS_TOKEN_MISSING: "AUTH_ACCESS_TOKEN_MISSING",
 	ACCESS_TOKEN_INVALID: "AUTH_ACCESS_TOKEN_INVALID",
+	SESSION_ENDED: "AUTH_SESSION_ENDED",
 	EMAIL_TAKEN: "AUTH_EMAIL_TAKEN",
 	INVALID_CREDENTIALS: "AUTH_INVALID_CREDENTIALS",
 	REFRESH_TOKEN_INVALID: "AUTH_REFRESH_TOKEN_INVALID",
@@ -15,6 +16,7 @@ export const AUTH_ERROR_CODES = {
 export const AUTH_MESSAGES = {
 	ACCESS_TOKEN_MISSING: "Missing bearer access token",
 	ACCESS_TOKEN_INVALID: "Invalid or expired access token",
+	SESSION_ENDED: "This session was signed out; sign in again",
 	EMAIL_TAKEN: "An account with this email already exists",
 	// Same message for an unknown email and a wrong password, so it does not reveal accounts.
 	INVALID_CREDENTIALS: "Email or password is incorrect",
