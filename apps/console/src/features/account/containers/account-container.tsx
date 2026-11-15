@@ -11,6 +11,7 @@ import {
 } from "@synapse/ui/components/card";
 
 import { useCurrentUserQuery } from "@/features/auth";
+import { PageHeader } from "@/components/shared/page-header";
 
 import { EmailStatus } from "../components/email-status";
 import { SessionsList } from "../components/sessions-list";
@@ -33,10 +34,7 @@ export function AccountContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">Account</h1>
-				<p className="text-xs text-muted-foreground">Your email and where you are signed in.</p>
-			</div>
+			<PageHeader title="Account">Your email and where you are signed in.</PageHeader>
 
 			<Card>
 				<CardHeader>

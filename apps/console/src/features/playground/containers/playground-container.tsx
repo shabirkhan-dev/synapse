@@ -10,6 +10,8 @@ import {
 } from "@synapse/ui/components/card";
 import Link from "next/link";
 
+import { PageHeader } from "@/components/shared/page-header";
+
 import { AnswerPanel } from "../components/answer-panel";
 import { FeedbackButtons } from "../components/feedback-buttons";
 import { MatchesList } from "../components/matches-list";
@@ -30,12 +32,9 @@ export function PlaygroundContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">Playground</h1>
-				<p className="text-xs text-muted-foreground">
-					Ask a question; the answer is written from your documents and cites them.
-				</p>
-			</div>
+			<PageHeader title="Playground">
+				Ask a question; the answer is written from your documents and cites them.
+			</PageHeader>
 			<Card>
 				<CardContent>
 					<QuestionForm

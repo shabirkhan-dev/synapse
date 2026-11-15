@@ -99,8 +99,12 @@ export function ChatContainer() {
 				</div>
 			</div>
 
-			<section aria-labelledby="chat-title" className="flex min-w-0 flex-col gap-4">
-				<h1 id="chat-title" className="text-lg font-semibold text-balance">
+			{/* Tall enough that the composer docks at the bottom of the screen in a short chat. */}
+			<section
+				aria-labelledby="chat-title"
+				className="flex min-h-[calc(100dvh-11rem)] min-w-0 flex-col gap-4"
+			>
+				<h1 id="chat-title" className="text-xl font-semibold tracking-tight text-balance">
 					{title}
 				</h1>
 				{remove.isError ? (

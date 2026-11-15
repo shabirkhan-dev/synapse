@@ -38,7 +38,7 @@ export function ChatThreadContainer({
 	}, [messages]);
 
 	return (
-		<div className="flex min-h-full flex-col gap-6">
+		<div className="flex flex-1 flex-col gap-6">
 			{messages.length === 0 ? (
 				<ChatEmptyState onPick={send} />
 			) : (

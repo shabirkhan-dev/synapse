@@ -74,7 +74,7 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 
 	// The owner's personal workspace was never touched; switching back shows it.
 	await switchTo(ownerPage, "Personal");
-	await expect(ownerPage.getByText("Nothing is waiting for a decision.")).toBeVisible();
+	await expect(ownerPage.getByText("Nothing is waiting for a decision")).toBeVisible();
 
 	// The owner promotes the member; the member's own page reflects it on the next load.
 	await switchTo(ownerPage, team);

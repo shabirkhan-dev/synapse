@@ -128,6 +128,14 @@ the API still checks every request. Keep the two in step when roles change.
 Forms submit with `components/shared/submit-button.tsx`: disabled in the server HTML and until
 hydration, since a click before React attaches the handler would do nothing.
 
+Every workspace page starts with `components/shared/page-header.tsx` (`title`, a one-line
+description as children, optional `badge` and `actions`); lists with nothing in them use
+`components/shared/empty-state.tsx` (an icon, a title and what to do next, on `@synapse/ui`'s
+`Empty`). `components/shared/brand-mark.tsx` is the product mark (sidebar, signed-out pages, chat
+replies). Colour comes only from the theme tokens in `packages/ui/src/styles/globals.css`: one indigo
+accent (`--primary`, also `--ring`, `--sidebar-primary` and the current page in the sidebar) on
+neutral surfaces, with light and dark values measured for contrast (noted next to each token).
+
 Untrusted text from the model or documents is rendered as React text only (never HTML); `[n]`
 markers become in-page links, and sources become links only for `http(s)` URLs.
 

@@ -35,7 +35,7 @@ export function UsageTiles({ totals }: { totals: Usage["totals"] }) {
 	return (
 		<dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
 			{tiles.map((tile) => (
-				<div key={tile.label} className="flex flex-col gap-1 rounded-xl border p-4">
+				<div key={tile.label} className="flex flex-col gap-1 rounded-xl border bg-card p-4">
 					<dt className="text-xs text-muted-foreground">{tile.label}</dt>
 					<dd className="text-2xl font-semibold tracking-tight tabular-nums">{tile.value}</dd>
 					{tile.note ? (

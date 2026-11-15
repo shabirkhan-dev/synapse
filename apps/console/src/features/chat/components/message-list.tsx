@@ -1,3 +1,5 @@
+import { AiNetworkIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { isTextUIPart, isToolUIPart } from "ai";
 
 import type { ChatMessage, ChatPart } from "../types/chat.types";
@@ -31,7 +33,7 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 					</li>
 				) : (
 					<li key={message.id} className="flex max-w-2xl flex-col gap-2">
-						<p className="text-xs font-medium text-muted-foreground">Synapse</p>
+						<AssistantLabel />
 						{message.parts.map((part, index) =>
 							isTextUIPart(part) ? (
 								<p
@@ -50,11 +52,26 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 			)}
 			{waiting ? (
 				<li className="flex flex-col gap-2">
-					<p className="text-xs font-medium text-muted-foreground">Synapse</p>
+					<AssistantLabel />
 					<p className="text-sm text-muted-foreground">Thinking…</p>
 				</li>
 			) : null}
 		</ol>
+	);
+}
+
+/** "Synapse" with the product mark, above each reply. */
+function AssistantLabel() {
+	return (
+		<p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+			<span
+				aria-hidden="true"
+				className="flex size-5 items-center justify-center rounded-md bg-primary text-primary-foreground"
+			>
+				<HugeiconsIcon icon={AiNetworkIcon} size={12} strokeWidth={2} />
+			</span>
+			Synapse
+		</p>
 	);
 }
 

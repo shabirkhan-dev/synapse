@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/aler
 import { Button } from "@synapse/ui/components/button";
 
 import { ApiError } from "@/lib/api/api-error";
+import { PageHeader } from "@/components/shared/page-header";
 
 import { SystemStatusView } from "../components/system-status-view";
 import { useSystemStatusQuery } from "../hooks/queries/use-system-status-query";
@@ -15,13 +16,10 @@ export function SystemContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">System</h1>
-				<p className="text-xs text-muted-foreground">
-					The database, model and email providers, background jobs, the index and tracing. Refreshes
-					every 30 seconds.
-				</p>
-			</div>
+			<PageHeader title="System">
+				The database, model and email providers, background jobs, the index and tracing. Refreshes
+				every 30 seconds.
+			</PageHeader>
 			{status.isPending ? (
 				<p role="status" className="text-xs text-muted-foreground">
 					Checking…

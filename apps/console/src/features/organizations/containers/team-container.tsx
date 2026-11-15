@@ -11,6 +11,7 @@ import {
 	CardTitle,
 } from "@synapse/ui/components/card";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { useCurrentUserQuery } from "@/features/auth";
 import { can, ORGANIZATION_ROLES, type OrganizationRole } from "@/lib/permissions";
 
@@ -76,10 +77,10 @@ export function TeamContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="flex flex-wrap items-center gap-2">
-				<h1 className="text-lg font-semibold">{active.name}</h1>
-				<Badge variant="outline">{ROLE_LABELS[role]}</Badge>
-			</div>
+			<PageHeader
+				title={active.name}
+				badge={<Badge variant="outline">{ROLE_LABELS[role]}</Badge>}
+			/>
 
 			{active.kind === "personal" ? (
 				<p className="text-sm text-muted-foreground">

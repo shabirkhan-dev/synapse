@@ -19,9 +19,9 @@ export type AuthCardProps = {
 /** The frame every signed-out page shares. */
 export function AuthCard({ title, description, children, footer }: AuthCardProps) {
 	return (
-		<Card className="w-full max-w-sm">
+		<Card className="w-full max-w-sm shadow-lg shadow-primary/5">
 			<CardHeader>
-				<CardTitle render={<h1>{title}</h1>} />
+				<CardTitle className="text-lg tracking-tight" render={<h1>{title}</h1>} />
 				<CardDescription>{description}</CardDescription>
 			</CardHeader>
 			<CardContent>{children}</CardContent>

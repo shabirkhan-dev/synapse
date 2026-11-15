@@ -93,6 +93,6 @@ Deployment is parked (syn-052). Gaps found in what is built, most severe first.
 | Undecided approvals expire (`APPROVAL_TTL_HOURS`) | ✅ | syn-062 |
 | Secrets removed from streamed chat replies | ✅ | syn-063 |
 | Model retries wait for the vendor's `Retry-After` | ✅ | syn-064 |
-| Console UI/UX pass: clean, modern, consistent across pages | ⏭️ | syn-065 |
+| Console UI/UX pass: clean, modern, consistent across pages | ✅ | syn-065 |
 
 Cards are raised for "—" rows when they become the next two or three steps.

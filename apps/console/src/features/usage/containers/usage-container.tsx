@@ -12,6 +12,8 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
+import { PageHeader } from "@/components/shared/page-header";
+
 import { DailyChart } from "../components/daily-chart";
 import { ModelsTable } from "../components/models-table";
 import { RangePicker } from "../components/range-picker";
@@ -27,17 +29,11 @@ export function UsageContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<div>
-					<h1 className="text-lg font-semibold">Usage</h1>
-					<p className="text-xs text-muted-foreground">
-						{data?.scope === "you"
-							? "Your answers only; admins and owners see the whole organization's."
-							: "Every answer in this organization, by day and by the models behind it. Days are UTC."}
-					</p>
-				</div>
-				<RangePicker days={days} onChange={setDays} />
-			</div>
+			<PageHeader title="Usage" actions={<RangePicker days={days} onChange={setDays} />}>
+				{data?.scope === "you"
+					? "Your answers only; admins and owners see the whole organization's."
+					: "Every answer in this organization, by day and by the models behind it. Days are UTC."}
+			</PageHeader>
 
 			{usage.isPending ? (
 				<p role="status" className="text-xs text-muted-foreground">

@@ -12,6 +12,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { useDocumentsQuery } from "@/features/documents";
+import { PageHeader } from "@/components/shared/page-header";
 
 import { AddQuestionForm } from "../components/add-question-form";
 import { QuestionsTable } from "../components/questions-table";
@@ -46,13 +47,10 @@ export function EvaluationsContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">Evaluations</h1>
-				<p className="text-xs text-muted-foreground">
-					Write the questions people ask and the documents that answer them, then see how often each
-					search mode finds those documents.
-				</p>
-			</div>
+			<PageHeader title="Evaluations">
+				Write the questions people ask and the documents that answer them, then see how often each
+				search mode finds those documents.
+			</PageHeader>
 
 			<Card>
 				<CardHeader>

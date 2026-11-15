@@ -31,7 +31,7 @@ test("deleting all documents waits for approval; approving runs it; activity rec
 	await expect(page.getByText("Delete all documents", { exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "Approve" }).click();
 	await expect(page.getByText("Approved. 1 document deleted.")).toBeVisible();
-	await expect(page.getByText("Nothing is waiting for a decision.")).toBeVisible();
+	await expect(page.getByText("Nothing is waiting for a decision")).toBeVisible();
 
 	await page.getByRole("link", { name: "Documents", exact: true }).click();
 	await expect(page.getByText("No documents yet")).toBeVisible();

@@ -35,6 +35,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { BrandMark } from "@/components/shared/brand-mark";
+
 export type AppShellProps = {
 	children: ReactNode;
 	/** The signed-in user's email, once known. */
@@ -92,13 +94,14 @@ export function AppShell({
 		(item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
 	);
 	const title = current?.label ?? (pathname.startsWith("/account") ? "Account" : "Synapse");
+	const section = current ? NAV.find((group) => group.items.includes(current))?.label : undefined;
 
 	return (
 		<SidebarProvider>
 			<Sidebar variant="inset">
 				<SidebarHeader className="gap-3">
-					<Link href="/documents" className="px-2 pt-1 text-sm font-semibold">
-						Synapse
+					<Link href="/documents" className="w-fit rounded-md px-1 pt-1">
+						<BrandMark />
 					</Link>
 					{switcher}
 				</SidebarHeader>
@@ -138,7 +141,17 @@ export function AppShell({
 			<SidebarInset className="min-w-0">
 				<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
 					<SidebarTrigger aria-label="Show or hide the sidebar" className="-ms-1" />
-					<p className="truncate text-sm font-medium">{title}</p>
+					<p className="flex min-w-0 items-center gap-1.5 text-sm">
+						{section ? (
+							<>
+								<span className="text-muted-foreground">{section}</span>
+								<span aria-hidden="true" className="text-muted-foreground">
+									/
+								</span>
+							</>
+						) : null}
+						<span className="truncate font-medium">{title}</span>
+					</p>
 				</header>
 				{notice ? <div className="border-b bg-muted px-4 py-2 md:px-6">{notice}</div> : null}
 				<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-6">{children}</main>

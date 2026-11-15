@@ -5,6 +5,7 @@ import { Button } from "@synapse/ui/components/button";
 import { Card, CardContent } from "@synapse/ui/components/card";
 
 import { useCurrentUserQuery } from "@/features/auth";
+import { PageHeader } from "@/components/shared/page-header";
 
 import { ActivityTable } from "../components/activity-table";
 import { ACTIVITY_LIMIT } from "../constants/activity.constants";
@@ -17,13 +18,10 @@ export function ActivityContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">Activity</h1>
-				<p className="text-xs text-muted-foreground">
-					The last {ACTIVITY_LIMIT} recorded events. Every answer, change and decision is kept;
-					personal data is redacted.
-				</p>
-			</div>
+			<PageHeader title="Activity">
+				The last {ACTIVITY_LIMIT} recorded events. Every answer, change and decision is kept;
+				personal data is redacted.
+			</PageHeader>
 			<Card>
 				<CardContent>
 					{activity.isPending ? (

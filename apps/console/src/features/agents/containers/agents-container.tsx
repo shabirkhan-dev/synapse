@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 
 import { useCurrentUserQuery } from "@/features/auth";
+import { PageHeader } from "@/components/shared/page-header";
 
 import { AgentOverview } from "../components/agent-overview";
 import { AgentRunsTable } from "../components/agent-runs-table";
@@ -26,13 +27,10 @@ export function AgentsContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">Agents</h1>
-				<p className="text-xs text-muted-foreground">
-					The assistants behind Chat and the Playground: their models, prompts, tools and limits,
-					and what they did recently. Settings come from the deployment's configuration.
-				</p>
-			</div>
+			<PageHeader title="Agents">
+				The assistants behind Chat and the Playground: their models, prompts, tools and limits, and
+				what they did recently. Settings come from the deployment's configuration.
+			</PageHeader>
 
 			{overview.isPending ? (
 				<p role="status" className="text-xs text-muted-foreground">

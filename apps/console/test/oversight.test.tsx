@@ -105,7 +105,7 @@ describe("ApprovalsContainer (mocked API)", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Approve" }));
 
 		await screen.findByText("Approved. 3 documents deleted.");
-		await screen.findByText("Nothing is waiting for a decision.");
+		await screen.findByText("Nothing is waiting for a decision");
 		const approveCall = calls.find((call) => call.url.endsWith("/oversight/approvals/a1/approve"));
 		expect(approveCall?.method).toBe("POST");
 	});
@@ -134,7 +134,7 @@ describe("ApprovalsContainer (mocked API)", () => {
 		signedIn();
 		mockFetch((call) => (call.url.endsWith("/auth/me") ? ok(me) : ok([])));
 		renderWithQuery(<ApprovalsContainer />);
-		await screen.findByText("Nothing is waiting for a decision.");
+		await screen.findByText("Nothing is waiting for a decision");
 	});
 });
 

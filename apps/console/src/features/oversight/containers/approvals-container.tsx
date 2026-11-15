@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
 import { Card, CardContent } from "@synapse/ui/components/card";
@@ -7,6 +8,8 @@ import { Card, CardContent } from "@synapse/ui/components/card";
 import { useCurrentUserQuery } from "@/features/auth";
 import { ApiError } from "@/lib/api/api-error";
 import { can } from "@/lib/permissions";
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 
 import { ApprovalsList } from "../components/approvals-list";
 import { OVERSIGHT_FORBIDDEN } from "../constants/oversight.constants";
@@ -40,12 +43,9 @@ export function ApprovalsContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-lg font-semibold">Approvals</h1>
-				<p className="text-xs text-muted-foreground">
-					Risky actions wait here until an admin or owner approves them.
-				</p>
-			</div>
+			<PageHeader title="Approvals">
+				Risky actions wait here until an admin or owner approves them.
+			</PageHeader>
 			{decision && !approve.isPending && !reject.isPending ? (
 				<Alert role="status">
 					<AlertDescription>{describe(decision)}</AlertDescription>
@@ -78,7 +78,9 @@ export function ApprovalsContainer() {
 							</AlertDescription>
 						</Alert>
 					) : approvals.data.length === 0 ? (
-						<p className="text-xs text-muted-foreground">Nothing is waiting for a decision.</p>
+						<EmptyState icon={CheckmarkCircle02Icon} title="Nothing is waiting for a decision">
+							Requests to delete all documents show up here until an admin or owner decides.
+						</EmptyState>
 					) : (
 						<ApprovalsList
 							approvals={approvals.data}
