@@ -1,6 +1,7 @@
 export const OVERSIGHT_API_ERROR_CODES = {
 	APPROVAL_NOT_FOUND: "OVERSIGHT_APPROVAL_NOT_FOUND",
 	APPROVAL_ALREADY_DECIDED: "OVERSIGHT_APPROVAL_ALREADY_DECIDED",
+	APPROVAL_EXPIRED: "OVERSIGHT_APPROVAL_EXPIRED",
 	FORBIDDEN: "OVERSIGHT_FORBIDDEN",
 } as const;
 
@@ -10,6 +11,7 @@ export const OVERSIGHT_MESSAGES = {
 	REJECTED: "Rejected; nothing ran",
 	APPROVAL_NOT_FOUND: "Approval request not found",
 	APPROVAL_ALREADY_DECIDED: "This request was already decided the other way",
+	APPROVAL_EXPIRED: "This request expired before anyone decided it; ask again",
 	FEEDBACK_RECORDED: "Feedback recorded",
 	FORBIDDEN: "Only an admin or owner of this organization can decide approval requests",
 } as const;

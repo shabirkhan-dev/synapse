@@ -138,6 +138,8 @@ export const envSchema = z
 		RATE_LIMIT_QUESTIONS_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(20),
 		RATE_LIMIT_INGESTS_PER_HOUR: z.coerce.number().int().min(1).max(100_000).default(200),
 		RATE_LIMIT_EVALUATION_RUNS_PER_HOUR: z.coerce.number().int().min(1).max(1000).default(10),
+		/** Hours an approval request waits for a decision before it expires (1 hour to 30 days). */
+		APPROVAL_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(72),
 		/** Longest user input (query, chat message, fact) accepted before any model call. */
 		GUARDRAILS_MAX_INPUT_CHARS: z.coerce.number().int().min(100).max(100_000).default(4000),
 		/** Comma-separated terms that block a request (case-insensitive, whole words). */

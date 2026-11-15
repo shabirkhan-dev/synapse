@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 
 import { answerFeedback, approvalRequests, type Database } from "@synapse/database";
 import type {
@@ -12,6 +12,11 @@ import type {
 
 import { toAnswerFeedback, toApprovalRequest } from "../mappers/oversight.mapper";
 
+const unexpired = or(
+	isNull(approvalRequests.expiresAt),
+	gt(approvalRequests.expiresAt, sql`now()`),
+);
+
 export class DrizzleApprovalRepository implements ApprovalStore {
 	constructor(private readonly db: Database) {}
 
@@ -20,10 +25,12 @@ export class DrizzleApprovalRepository implements ApprovalStore {
 		ownerId: string;
 		action: string;
 		summary: string;
+		requestedBy: string;
+		expiresAt: string;
 	}): Promise<void> {
 		await this.db
 			.insert(approvalRequests)
-			.values(input)
+			.values({ ...input, expiresAt: new Date(input.expiresAt) })
 			.onConflictDoNothing({ target: approvalRequests.id });
 	}
 
@@ -48,6 +55,7 @@ export class DrizzleApprovalRepository implements ApprovalStore {
 				and(
 					eq(approvalRequests.ownerId, ownerId),
 					eq(approvalRequests.status, "pending"),
+					unexpired,
 					requestedBy ? eq(approvalRequests.requestedBy, requestedBy) : undefined,
 				),
 			)
@@ -77,6 +85,7 @@ export class DrizzleApprovalRepository implements ApprovalStore {
 					eq(approvalRequests.id, id),
 					eq(approvalRequests.ownerId, ownerId),
 					eq(approvalRequests.status, "pending"),
+					unexpired,
 				),
 			)
 			.returning();

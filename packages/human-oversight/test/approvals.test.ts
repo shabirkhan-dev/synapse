@@ -2,8 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import { type ApprovalRequest, type ApprovalStore, createApprovals, createFeedback } from "../src";
 
-function memoryStore(): ApprovalStore {
+function memoryStore(now = () => new Date()): ApprovalStore {
 	const rows: ApprovalRequest[] = [];
+	const open = (row: ApprovalRequest) =>
+		row.status === "pending" &&
+		(row.expiresAt === null || Date.parse(row.expiresAt) > now().getTime());
 	return {
 		async create(input) {
 			if (rows.some((row) => row.id === input.id)) return;
@@ -22,13 +25,11 @@ function memoryStore(): ApprovalStore {
 		async listPending(ownerId, _limit, requestedBy) {
 			return rows.filter(
 				(row) =>
-					row.ownerId === ownerId &&
-					row.status === "pending" &&
-					(!requestedBy || row.requestedBy === requestedBy),
+					row.ownerId === ownerId && open(row) && (!requestedBy || row.requestedBy === requestedBy),
 			);
 		},
 		async decide({ id, ownerId, approved, decidedBy, reason }) {
-			const row = rows.find((r) => r.id === id && r.ownerId === ownerId && r.status === "pending");
+			const row = rows.find((r) => r.id === id && r.ownerId === ownerId && open(r));
 			if (!row) return null;
 			Object.assign(row, {
 				status: approved ? "approved" : "rejected",
@@ -41,6 +42,8 @@ function memoryStore(): ApprovalStore {
 	};
 }
 
+const HOUR = 3_600_000;
+
 const request = {
 	id: "a1",
 	ownerId: "u1",
@@ -51,7 +54,7 @@ const request = {
 
 describe("approvals", () => {
 	test("a request waits in the owner's queue until decided", async () => {
-		const approvals = createApprovals(memoryStore());
+		const approvals = createApprovals(memoryStore(), { ttlMs: HOUR });
 		await approvals.request(request);
 		await approvals.request(request);
 		expect(await approvals.pending("u1")).toHaveLength(1);
@@ -64,7 +67,7 @@ describe("approvals", () => {
 	});
 
 	test("repeating the same decision is safe; changing it is refused", async () => {
-		const approvals = createApprovals(memoryStore());
+		const approvals = createApprovals(memoryStore(), { ttlMs: HOUR });
 		await approvals.request(request);
 		await approvals.decide("a1", "u1", { approved: false, decidedBy: "u1", reason: "not now" });
 		expect(await approvals.decide("a1", "u1", { approved: false, decidedBy: "u1" })).toMatchObject({
@@ -78,8 +81,34 @@ describe("approvals", () => {
 		});
 	});
 
+	test("an undecided request expires: it leaves the queue and can no longer be decided", async () => {
+		let clock = new Date("2026-11-15T10:00:00Z");
+		const approvals = createApprovals(
+			memoryStore(() => clock),
+			{ ttlMs: 0, now: () => clock },
+		);
+		await approvals.request(request);
+		clock = new Date(clock.getTime() + 1);
+		expect(await approvals.get("a1", "u1")).toMatchObject({
+			status: "expired",
+			expiresAt: "2026-11-15T10:00:00.000Z",
+		});
+		expect(await approvals.pending("u1")).toEqual([]);
+		await expect(
+			approvals.decide("a1", "u1", { approved: true, decidedBy: "u1" }),
+		).rejects.toMatchObject({ code: "OVERSIGHT_APPROVAL_EXPIRED" });
+	});
+
+	test("a request is pending until its expiry", async () => {
+		const approvals = createApprovals(memoryStore(), { ttlMs: HOUR });
+		await approvals.request(request);
+		const [pending] = await approvals.pending("u1");
+		expect(pending?.status).toBe("pending");
+		expect(Date.parse(pending?.expiresAt ?? "") - Date.now()).toBeGreaterThan(HOUR - 60_000);
+	});
+
 	test("another owner cannot see or decide a request", async () => {
-		const approvals = createApprovals(memoryStore());
+		const approvals = createApprovals(memoryStore(), { ttlMs: HOUR });
 		await approvals.request(request);
 		await expect(
 			approvals.decide("a1", "u2", { approved: true, decidedBy: "u2" }),

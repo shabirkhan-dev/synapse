@@ -30,6 +30,7 @@ const approval = (id: string, requestedBy: string | null) => ({
 	decidedBy: null,
 	decidedAt: null,
 	createdAt: "2026-11-12T10:00:00Z",
+	expiresAt: "2026-11-15T10:00:00Z",
 });
 
 describe("ApprovalsList", () => {
@@ -49,6 +50,10 @@ describe("ApprovalsList", () => {
 		expect(screen.getAllByText("Delete all documents")).toHaveLength(2);
 		expect(screen.getByText(/Requested by you/)).toBeDefined();
 		expect(screen.getByText(/Requested by a member/)).toBeDefined();
+		expect(
+			document.querySelectorAll('time[datetime="2026-11-15T10:00:00Z"]'),
+			"each request says when it expires",
+		).toHaveLength(2);
 
 		fireEvent.click(screen.getAllByRole("button", { name: "Approve" })[0] as HTMLElement);
 		expect(onApprove).toHaveBeenCalledWith("a1");

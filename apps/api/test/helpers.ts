@@ -592,6 +592,9 @@ export class InMemoryEvaluationRepository implements EvaluationRepository {
 	}
 }
 
+const isOpen = (row: ApprovalRequest) =>
+	row.status === "pending" && (row.expiresAt === null || Date.parse(row.expiresAt) > Date.now());
+
 export class InMemoryApprovalStore implements ApprovalStore {
 	rows: ApprovalRequest[] = [];
 
@@ -601,6 +604,7 @@ export class InMemoryApprovalStore implements ApprovalStore {
 		action: string;
 		summary: string;
 		requestedBy: string;
+		expiresAt: string;
 	}) {
 		if (this.rows.some((row) => row.id === input.id)) return;
 		this.rows.push({
@@ -620,9 +624,7 @@ export class InMemoryApprovalStore implements ApprovalStore {
 	async listPending(ownerId: string, _limit: number, requestedBy?: string) {
 		return this.rows.filter(
 			(row) =>
-				row.ownerId === ownerId &&
-				row.status === "pending" &&
-				(!requestedBy || row.requestedBy === requestedBy),
+				row.ownerId === ownerId && isOpen(row) && (!requestedBy || row.requestedBy === requestedBy),
 		);
 	}
 
@@ -633,9 +635,7 @@ export class InMemoryApprovalStore implements ApprovalStore {
 		decidedBy,
 		reason,
 	}: { id: string; ownerId: string } & Decision) {
-		const row = this.rows.find(
-			(r) => r.id === id && r.ownerId === ownerId && r.status === "pending",
-		);
+		const row = this.rows.find((r) => r.id === id && r.ownerId === ownerId && isOpen(r));
 		if (!row) return null;
 		Object.assign(row, {
 			status: approved ? "approved" : "rejected",
@@ -1132,7 +1132,13 @@ export function buildTestApp({
 	});
 	const approvals = new InMemoryApprovalStore();
 	const feedback = new InMemoryFeedbackStore();
-	const oversight = new OversightService(approvals, feedback, new MemorySaver(), audit);
+	const oversight = new OversightService(
+		approvals,
+		feedback,
+		new MemorySaver(),
+		audit,
+		testConfig.oversight,
+	);
 	registerRagActions(oversight, rag);
 	const usageLimiter = new InMemoryRateLimiter();
 	const app = createApp({

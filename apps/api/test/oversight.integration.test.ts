@@ -54,6 +54,7 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 			new DrizzleFeedbackRepository(database.db),
 			checkpointer.saver,
 			createAuditLog({ store: new DrizzleAuditRepository(database.db), redact: redactPiiDeep }),
+			{ approvalTtlMs: 3_600_000 },
 		);
 		oversight.registerAction<{ ownerId: string; requestedBy: string }, { by: string }>(
 			OVERSIGHT_ACTIONS.PURGE_DOCUMENTS,
@@ -95,6 +96,28 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 		});
 		expect(executed).toEqual(["after"]);
 		expect(await after.pending(user)).toEqual([]);
+	}, 30_000);
+
+	test("a request nobody decided in time expires: out of the queue, refused, nothing runs", async () => {
+		const executed: string[] = [];
+		const user = { sub: owner, sid: "s1", orgId: owner, role: "owner" as const };
+		const service = await startProcess(executed, "expiry");
+		const approval = await service.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
+			ownerId: owner,
+			requestedBy: owner,
+		});
+		const waited = Date.parse(approval.expiresAt ?? "") - Date.parse(approval.createdAt);
+		expect(Math.round(waited / 60_000)).toBe(60);
+
+		await database.db.execute(
+			sql`update approval_requests set expires_at = now() - interval '1 second' where id = ${approval.id}`,
+		);
+		expect((await service.pending(user)).map((a) => a.id)).not.toContain(approval.id);
+		await expect(service.decide(approval.id, user, { approved: true })).rejects.toMatchObject({
+			code: "OVERSIGHT_APPROVAL_EXPIRED",
+			statusCode: 409,
+		});
+		expect(executed).toEqual([]);
 	}, 30_000);
 
 	test("feedback is one row per user and request", async () => {

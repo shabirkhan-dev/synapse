@@ -5,11 +5,12 @@ export const approvalSchema = z.object({
 	action: z.string(),
 	summary: z.string(),
 	requestedBy: z.string().nullable(),
-	status: z.enum(["pending", "approved", "rejected"]),
+	status: z.enum(["pending", "approved", "rejected", "expired"]),
 	reason: z.string().nullable(),
 	decidedBy: z.string().nullable(),
 	decidedAt: z.string().nullable(),
 	createdAt: z.string(),
+	expiresAt: z.string().nullable(),
 });
 
 export const approvalListSchema = z.array(approvalSchema);

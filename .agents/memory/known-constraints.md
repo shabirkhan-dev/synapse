@@ -90,7 +90,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `docker buildx bake` on the host network with the proxy CA as `build_ca` (`deploy/README.md`).
 - **The API's RAG answer graph has no checkpointer** (in-request); approval-gated actions do (the
   API calls `checkpointer.setup()` on start: `langgraph` schema). Admins/owners decide approvals (members request);
-  approvals never expire yet. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
+  undecided approvals expire after `APPROVAL_TTL_HOURS` (72, syn-062; `409 OVERSIGHT_APPROVAL_EXPIRED`),
+  but their paused graph checkpoints are not pruned. Feedback joins answers by `x-request-id` (`audit_events.request_id`). A RAG answer without citations costs a second chat call.
   LangGraph keeps the AsyncLocalStorage trace context, so LLM spans stay children of the request.
 - **Memory:** stored chat saves the reply in `onFinish` after streaming (a failed save is logged, the
   user already has the reply). A turn reads only the latest `CHAT_HISTORY_MAX_MESSAGES` (syn-061, ordered by

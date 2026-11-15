@@ -7,6 +7,7 @@ import { type Env, parseEnv } from "./env";
 import { createGuardrailsConfig, type GuardrailsConfig } from "./guardrails.config";
 import { createLimitsConfig, type LimitsConfig } from "./limits.config";
 import { createObservabilityConfig, type ObservabilityConfig } from "./observability.config";
+import { createOversightConfig, type OversightConfig } from "./oversight.config";
 import { createRagConfig, type RagConfig } from "./rag.config";
 import { createReliabilityConfig, type ReliabilityConfig } from "./reliability.config";
 
@@ -19,6 +20,7 @@ export type {
 	Env,
 	GuardrailsConfig,
 	ObservabilityConfig,
+	OversightConfig,
 	RagConfig,
 	ReliabilityConfig,
 };
@@ -33,6 +35,7 @@ export type Configuration = {
 	guardrails: GuardrailsConfig;
 	limits: LimitsConfig;
 	observability: ObservabilityConfig;
+	oversight: OversightConfig;
 	reliability: ReliabilityConfig;
 };
 
@@ -48,6 +51,7 @@ export function createConfiguration(env: Env): Configuration {
 		guardrails: createGuardrailsConfig(env),
 		limits: createLimitsConfig(env),
 		observability: createObservabilityConfig(env),
+		oversight: createOversightConfig(env),
 		reliability: createReliabilityConfig(env),
 	};
 }

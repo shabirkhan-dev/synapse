@@ -2,7 +2,8 @@ import { SynapseError } from "@synapse/core/errors";
 
 import { OVERSIGHT_ERROR_CODES } from "../oversight-error-codes";
 
-export type ApprovalStatus = "pending" | "approved" | "rejected";
+/** `expired`: still undecided after `expiresAt`, so it can no longer be decided. */
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type ApprovalRequest = {
 	/** Also the id of the paused run (graph thread) waiting for this decision. */
@@ -19,6 +20,8 @@ export type ApprovalRequest = {
 	decidedBy: string | null;
 	decidedAt: string | null;
 	createdAt: string;
+	/** After this an undecided request expires; `null` on requests from before expiry. */
+	expiresAt: string | null;
 };
 
 export type Decision = { approved: boolean; decidedBy: string; reason?: string };
@@ -31,20 +34,33 @@ export interface ApprovalStore {
 		action: string;
 		summary: string;
 		requestedBy: string;
+		expiresAt: string;
 	}): Promise<void>;
+	/** The stored request; an undecided one keeps `pending` (expiry is applied by `createApprovals`). */
 	find(input: { id: string; ownerId: string }): Promise<ApprovalRequest | null>;
-	/** Pending requests of the owner (tenant); only `requestedBy`'s when given. */
+	/** Pending, unexpired requests of the owner (tenant), newest first; only `requestedBy`'s when given. */
 	listPending(ownerId: string, limit: number, requestedBy?: string): Promise<ApprovalRequest[]>;
-	/** Set the decision only while pending; returns the updated request, or `null` if not pending. */
+	/** Set the decision only while pending and unexpired; else return `null`. */
 	decide(input: { id: string; ownerId: string } & Decision): Promise<ApprovalRequest | null>;
 }
 
 /**
  * Approval requests and the review queue. A decision is final: it is written once, while the
  * request is pending. Repeating the same decision returns the stored request, so a client (or a
- * failed resume) can retry safely; a different decision fails.
+ * failed resume) can retry safely; a different decision fails. A request nobody decides within
+ * `ttlMs` expires: it leaves the queue and can no longer be decided (ask again).
  */
-export function createApprovals(store: ApprovalStore) {
+export function createApprovals(
+	store: ApprovalStore,
+	{ ttlMs, now = () => new Date() }: { ttlMs: number; now?: () => Date },
+) {
+	const withExpiry = (request: ApprovalRequest): ApprovalRequest =>
+		request.status === "pending" &&
+		request.expiresAt !== null &&
+		Date.parse(request.expiresAt) <= now().getTime()
+			? { ...request, status: "expired" }
+			: request;
+
 	async function get(id: string, ownerId: string): Promise<ApprovalRequest> {
 		const request = await store.find({ id, ownerId });
 		if (!request) {
@@ -53,7 +69,7 @@ export function createApprovals(store: ApprovalStore) {
 				"Approval request not found",
 			);
 		}
-		return request;
+		return withExpiry(request);
 	}
 
 	return {
@@ -63,7 +79,7 @@ export function createApprovals(store: ApprovalStore) {
 			action: string;
 			summary: string;
 			requestedBy: string;
-		}) => store.create(input),
+		}) => store.create({ ...input, expiresAt: new Date(now().getTime() + ttlMs).toISOString() }),
 		get,
 		pending: (
 			ownerId: string,
@@ -76,6 +92,12 @@ export function createApprovals(store: ApprovalStore) {
 				return decided;
 			}
 			const existing = await get(id, ownerId);
+			if (existing.status === "expired") {
+				throw new SynapseError(
+					OVERSIGHT_ERROR_CODES.APPROVAL_EXPIRED,
+					`Approval request expired at ${existing.expiresAt}`,
+				);
+			}
 			const wanted: ApprovalStatus = decision.approved ? "approved" : "rejected";
 			if (existing.status !== wanted) {
 				throw new SynapseError(

@@ -159,6 +159,7 @@ const oversight = new OversightService(
 	new DrizzleFeedbackRepository(database.db),
 	checkpointer.saver,
 	audit,
+	config.oversight,
 );
 registerRagActions(oversight, rag);
 

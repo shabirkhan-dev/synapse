@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-14. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-15. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -90,6 +90,9 @@ Deployment is parked (syn-052). Gaps found in what is built, most severe first.
 | Streaming chat: timeout, circuit breaker | ✅ | syn-059 |
 | PDF parsing off the main thread with a deadline | ✅ | syn-060 |
 | Chat history loads only what a turn can use | ✅ | syn-061 |
-| Later: approvals expire, secrets checked in streamed chat, `Retry-After` honoured | ⬜ | — |
+| Undecided approvals expire (`APPROVAL_TTL_HOURS`) | ✅ | syn-062 |
+| Secrets removed from streamed chat replies | ⏭️ | syn-063 |
+| Model retries wait for the vendor's `Retry-After` | ⬜ | syn-064 |
+| Console UI/UX pass: clean, modern, consistent across pages | ⬜ | syn-065 |
 
 Cards are raised for "—" rows when they become the next two or three steps.

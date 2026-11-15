@@ -18,7 +18,7 @@ import {
 } from "@synapse/orchestration";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
-import { AppError } from "@/shared/errors/app-error";
+import { AppError, type AppErrorOptions } from "@/shared/errors/app-error";
 import type { AuthUser, RequestContext } from "@/shared/types/app-types";
 
 import {
@@ -58,8 +58,9 @@ export class OversightService {
 		feedbackStore: FeedbackStore,
 		private readonly checkpointer: BaseCheckpointSaver,
 		private readonly audit: AuditLog,
+		{ approvalTtlMs }: { approvalTtlMs: number },
 	) {
-		this.approvals = createApprovals(approvalStore);
+		this.approvals = createApprovals(approvalStore, { ttlMs: approvalTtlMs });
 		this.feedback = createFeedback(feedbackStore);
 	}
 
@@ -177,22 +178,28 @@ export class OversightService {
 	}
 }
 
+const OVERSIGHT_ERRORS: Record<string, Omit<AppErrorOptions, "cause">> = {
+	[OVERSIGHT_ERROR_CODES.APPROVAL_NOT_FOUND]: {
+		statusCode: HTTP_STATUS.NOT_FOUND,
+		code: OVERSIGHT_API_ERROR_CODES.APPROVAL_NOT_FOUND,
+		message: OVERSIGHT_MESSAGES.APPROVAL_NOT_FOUND,
+	},
+	[OVERSIGHT_ERROR_CODES.APPROVAL_ALREADY_DECIDED]: {
+		statusCode: HTTP_STATUS.CONFLICT,
+		code: OVERSIGHT_API_ERROR_CODES.APPROVAL_ALREADY_DECIDED,
+		message: OVERSIGHT_MESSAGES.APPROVAL_ALREADY_DECIDED,
+	},
+	[OVERSIGHT_ERROR_CODES.APPROVAL_EXPIRED]: {
+		statusCode: HTTP_STATUS.CONFLICT,
+		code: OVERSIGHT_API_ERROR_CODES.APPROVAL_EXPIRED,
+		message: OVERSIGHT_MESSAGES.APPROVAL_EXPIRED,
+	},
+};
+
 function toAppError(error: unknown): never {
-	if (isSynapseError(error) && error.code === OVERSIGHT_ERROR_CODES.APPROVAL_NOT_FOUND) {
-		throw new AppError({
-			statusCode: HTTP_STATUS.NOT_FOUND,
-			code: OVERSIGHT_API_ERROR_CODES.APPROVAL_NOT_FOUND,
-			message: OVERSIGHT_MESSAGES.APPROVAL_NOT_FOUND,
-			cause: error,
-		});
-	}
-	if (isSynapseError(error) && error.code === OVERSIGHT_ERROR_CODES.APPROVAL_ALREADY_DECIDED) {
-		throw new AppError({
-			statusCode: HTTP_STATUS.CONFLICT,
-			code: OVERSIGHT_API_ERROR_CODES.APPROVAL_ALREADY_DECIDED,
-			message: OVERSIGHT_MESSAGES.APPROVAL_ALREADY_DECIDED,
-			cause: error,
-		});
+	const mapped = isSynapseError(error) ? OVERSIGHT_ERRORS[error.code] : undefined;
+	if (mapped) {
+		throw new AppError({ ...mapped, cause: error });
 	}
 	throw error;
 }

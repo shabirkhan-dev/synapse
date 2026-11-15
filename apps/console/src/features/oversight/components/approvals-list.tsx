@@ -85,6 +85,15 @@ function ApprovalItem({
 					<time dateTime={approval.createdAt}>
 						{dateFormat.format(new Date(approval.createdAt))}
 					</time>
+					{approval.expiresAt ? (
+						<>
+							{" "}
+							· Expires{" "}
+							<time dateTime={approval.expiresAt}>
+								{dateFormat.format(new Date(approval.expiresAt))}
+							</time>
+						</>
+					) : null}
 				</span>
 			</div>
 			<p className="text-sm">{approval.summary}</p>

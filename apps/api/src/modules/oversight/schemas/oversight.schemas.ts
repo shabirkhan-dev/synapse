@@ -24,11 +24,13 @@ export const approvalRequestSchema = z
 		action: z.string(),
 		summary: z.string(),
 		requestedBy: z.string().nullable(),
-		status: z.enum(["pending", "approved", "rejected"]),
+		status: z.enum(["pending", "approved", "rejected", "expired"]),
 		reason: z.string().nullable(),
 		decidedBy: z.string().nullable(),
 		decidedAt: z.string().nullable(),
 		createdAt: z.string(),
+		/** An undecided request expires then (`null` on requests from before expiry). */
+		expiresAt: z.string().nullable(),
 	})
 	.openapi("ApprovalRequest");
 

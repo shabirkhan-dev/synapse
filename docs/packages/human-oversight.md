@@ -29,7 +29,7 @@ Keep humans in the loop: approvals, review queues, decisions, escalation and fee
 
 | Export | What it does |
 | --- | --- |
-| `createApprovals(store)` → `{ request, get, pending, decide }`, `ApprovalStore`, `ApprovalRequest`, `Decision` | Requests are `pending` until one decision (`approved` / `rejected`) is written; repeating the same decision returns the stored request, a different one throws `OVERSIGHT_APPROVAL_ALREADY_DECIDED`; unknown or another owner's → `OVERSIGHT_APPROVAL_NOT_FOUND` |
+| `createApprovals(store, { ttlMs, now? })` → `{ request, get, pending, decide }`, `ApprovalStore`, `ApprovalRequest`, `Decision` | Requests are `pending` until one decision (`approved` / `rejected`) is written, or until `expiresAt` (`ttlMs` after the request): then they read as `expired`, leave the queue and deciding throws `OVERSIGHT_APPROVAL_EXPIRED`; repeating the same decision returns the stored request, a different one throws `OVERSIGHT_APPROVAL_ALREADY_DECIDED`; unknown or another owner's → `OVERSIGHT_APPROVAL_NOT_FOUND` |
 | `createFeedback(store)` → `{ record }`, `FeedbackStore`, `AnswerFeedback` | Thumbs `up` / `down` (+ optional comment) per owner and answered request id; rating again replaces it |
 | `OVERSIGHT_ERROR_CODES` | Error codes thrown by the package |
 

@@ -105,6 +105,21 @@ describe("approval-gated purge", () => {
 		expect((await call(app, "GET", "/rag/documents")).body.data).toHaveLength(1);
 	});
 
+	test("a request nobody decided in time expires: it leaves the queue and cannot be approved", async () => {
+		const { app, approvals } = buildTestApp();
+		await ingest(app, "user-1", "Refunds");
+		const { body } = await call(app, "POST", "/rag/documents/purge");
+		expect(Date.parse(body.data.expiresAt)).toBeGreaterThan(Date.now());
+		const stored = approvals.rows.find((row) => row.id === body.data.id);
+		if (stored) stored.expiresAt = new Date(Date.now() - 1000).toISOString();
+
+		expect((await call(app, "GET", "/oversight/approvals")).body.data).toEqual([]);
+		const late = await call(app, "POST", `/oversight/approvals/${body.data.id}/approve`);
+		expect(late.status).toBe(409);
+		expect(late.body.error.code).toBe("OVERSIGHT_APPROVAL_EXPIRED");
+		expect((await call(app, "GET", "/rag/documents")).body.data).toHaveLength(1);
+	});
+
 	test("requires a token and a valid id", async () => {
 		const { app } = buildTestApp();
 		expect((await app.request(`${base}/oversight/approvals`)).status).toBe(401);

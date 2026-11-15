@@ -11,11 +11,13 @@ export const approvalRequests = pgTable(
 		summary: text("summary").notNull(),
 		/** User who asked (the organization's admins decide). `null` on rows from before roles. */
 		requestedBy: text("requested_by"),
-		/** `pending`, `approved` or `rejected`; a decision is written once. */
+		/** `pending`, `approved` or `rejected`; a decision is written once (expiry is not stored). */
 		status: text("status").notNull().default("pending"),
 		reason: text("reason"),
 		decidedBy: text("decided_by"),
 		decidedAt: timestamp("decided_at", { withTimezone: true }),
+		/** An undecided request expires then; `null` never expires (none after migration 0017). */
+		expiresAt: timestamp("expires_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	},

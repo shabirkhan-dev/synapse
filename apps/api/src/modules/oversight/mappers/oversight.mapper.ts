@@ -18,6 +18,7 @@ export function toApprovalRequest(row: ApprovalRequestRow): ApprovalRequest {
 		decidedBy: row.decidedBy,
 		decidedAt: row.decidedAt?.toISOString() ?? null,
 		createdAt: row.createdAt.toISOString(),
+		expiresAt: row.expiresAt?.toISOString() ?? null,
 	};
 }
 
