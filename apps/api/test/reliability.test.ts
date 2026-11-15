@@ -24,21 +24,22 @@ async function call(app: App, method: string, path: string, body?: unknown) {
 	return { status: response.status, body: await response.json() };
 }
 
-const providerError = (statusCode: number) =>
+const providerError = (statusCode: number, responseHeaders?: Record<string, string>) =>
 	new APICallError({
 		message: `provider ${statusCode}`,
 		url: "https://models.test/v1/chat/completions",
 		requestBodyValues: {},
 		statusCode,
+		...(responseHeaders ? { responseHeaders } : {}),
 	});
 
 /** A chat model that fails with `statusCode` for the first `failures` calls, then answers. */
-function flakyChat(failures: number, statusCode = 503) {
+function flakyChat(failures: number, statusCode = 503, responseHeaders?: Record<string, string>) {
 	let calls = 0;
 	const model = new MockLanguageModelV4({
 		doGenerate: async () => {
 			calls += 1;
-			if (calls <= failures) throw providerError(statusCode);
+			if (calls <= failures) throw providerError(statusCode, responseHeaders);
 			return textGenerateResult("Within 30 days [1].");
 		},
 	});
@@ -58,6 +59,32 @@ describe("model reliability", () => {
 		expect(answer.status).toBe(200);
 		expect(answer.body.data.answer).toBe("Within 30 days [1].");
 		expect(chat.calls()).toBe(3);
+	});
+
+	test("a rate-limited provider is retried after the wait it asked for (Retry-After)", async () => {
+		const chat = flakyChat(1, 429, { "retry-after-ms": "120" });
+		const { app } = buildTestApp({ chatModel: chat.model });
+		await call(app, "POST", "/rag/documents", refundDoc);
+		const started = performance.now();
+		const answer = await ask(app);
+		expect(answer.status).toBe(200);
+		expect(chat.calls()).toBe(2);
+		// The test backoff is 0 ms, so the wait is the provider's.
+		expect(performance.now() - started).toBeGreaterThanOrEqual(110);
+	});
+
+	test("a Retry-After longer than the cap fails at once; the fallback model answers", async () => {
+		const chat = flakyChat(Number.POSITIVE_INFINITY, 429, { "retry-after": "120" });
+		const fallback = new MockLanguageModelV4({
+			doGenerate: textGenerateResult("Within 30 days [1]."),
+		});
+		const { app } = buildTestApp({ chatModel: chat.model, fallbackChatModel: fallback });
+		await call(app, "POST", "/rag/documents", refundDoc);
+		const started = performance.now();
+		const answer = await ask(app);
+		expect(answer.status).toBe(200);
+		expect(chat.calls()).toBe(1);
+		expect(performance.now() - started).toBeLessThan(2_000);
 	});
 
 	test("a bad request is not retried", async () => {

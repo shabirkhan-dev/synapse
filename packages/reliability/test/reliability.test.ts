@@ -9,12 +9,17 @@ import {
 	isRetryableError,
 	type ReliabilityEvent,
 	retry,
+	retryAfterMs,
 	withModelReliability,
 	withTimeout,
 } from "../src";
 
 const httpError = (statusCode: number) =>
 	Object.assign(new Error(`http ${statusCode}`), { statusCode });
+/** As the AI SDK's `APICallError` carries them. */
+const withHeaders = (responseHeaders: Record<string, string>) => ({ responseHeaders });
+const rateLimited = (responseHeaders: Record<string, string>) =>
+	Object.assign(httpError(429), withHeaders(responseHeaders));
 const never = () => new Promise<never>(() => {});
 const failing = async () => {
 	throw httpError(503);
@@ -121,6 +126,75 @@ describe("retry", () => {
 			}, options),
 		).rejects.toThrow("http 500");
 		expect(calls).toBe(3);
+	});
+
+	test("a 429 waits as long as the server's Retry-After asks, not the backoff", async () => {
+		const clock = fakeClock();
+		const events: Array<{ delayMs: number; retryAfter: boolean }> = [];
+		let calls = 0;
+		const result = await retry(
+			async () => {
+				calls += 1;
+				if (calls === 1) throw rateLimited({ "Retry-After": "2" });
+				if (calls === 2) throw rateLimited({ "retry-after-ms": "750" });
+				if (calls === 3) throw httpError(503);
+				return "ok";
+			},
+			{
+				attempts: 4,
+				baseDelayMs: 100,
+				maxDelayMs: 150,
+				maxRetryAfterMs: 5_000,
+				sleep: clock.sleep,
+				random: clock.random,
+				onRetry: ({ delayMs, retryAfter }) => events.push({ delayMs, retryAfter }),
+			},
+		);
+		expect(result).toBe("ok");
+		expect(clock.sleeps).toEqual([2_000, 750, 150]);
+		expect(events.map((e) => e.retryAfter)).toEqual([true, true, false]);
+	});
+
+	test("a Retry-After longer than we would wait fails at once instead of holding the request", async () => {
+		const clock = fakeClock();
+		let calls = 0;
+		await expect(
+			retry(
+				async () => {
+					calls += 1;
+					throw rateLimited({ "retry-after": "60" });
+				},
+				{
+					attempts: 3,
+					baseDelayMs: 10,
+					maxDelayMs: 10,
+					maxRetryAfterMs: 5_000,
+					sleep: clock.sleep,
+				},
+			),
+		).rejects.toThrow("http 429");
+		expect(calls).toBe(1);
+		expect(clock.sleeps).toEqual([]);
+	});
+});
+
+describe("retryAfterMs", () => {
+	test("reads ms, seconds and HTTP dates, from the error or its cause; ignores junk", () => {
+		const now = Date.parse("2026-11-15T10:00:00Z");
+		expect(retryAfterMs(withHeaders({ "retry-after-ms": "1500" }), now)).toBe(1_500);
+		expect(retryAfterMs(withHeaders({ "retry-after": "3" }), now)).toBe(3_000);
+		expect(retryAfterMs(withHeaders({ "retry-after": "Sun, 15 Nov 2026 10:00:05 GMT" }), now)).toBe(
+			5_000,
+		);
+		expect(retryAfterMs(withHeaders({ "retry-after": "Sun, 15 Nov 2026 09:00:00 GMT" }), now)).toBe(
+			0,
+		);
+		expect(retryAfterMs({ headers: new Headers({ "Retry-After": "1" }) }, now)).toBe(1_000);
+		expect(retryAfterMs({ cause: withHeaders({ "retry-after": "2" }) }, now)).toBe(2_000);
+		expect(retryAfterMs(withHeaders({ "retry-after": "soon" }), now)).toBeUndefined();
+		expect(retryAfterMs(withHeaders({ "retry-after": "-1" }), now)).toBeUndefined();
+		expect(retryAfterMs(httpError(429), now)).toBeUndefined();
+		expect(retryAfterMs(undefined, now)).toBeUndefined();
 	});
 });
 

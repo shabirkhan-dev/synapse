@@ -13,7 +13,10 @@ Make external calls dependable: timeouts, retries with backoff, circuit breakers
 ## Owns
 
 - Per-attempt timeouts
-- Retry with exponential backoff and full jitter, retryable errors only
+- Retry with exponential backoff and full jitter, retryable errors only; a server's wait hint
+  (`retry-after-ms`, or `retry-after` in seconds or as an HTTP date, read from the AI SDK error's
+  `responseHeaders`) replaces the backoff, and a hint longer than `maxRetryAfterMs` (API: 10 s)
+  fails the call at once (so a configured fallback model answers instead)
 - Circuit breakers (closed → open → half-open)
 - Fallbacks (a second chat model)
 
@@ -71,4 +74,5 @@ instrumentModelGateway(                        // one span per logical call
   `RELIABILITY_TIMEOUT`. `streamText` makes no retries of its own. No fallback model for streams
   (the answer's provenance would name the wrong model), and failures after a stream started do not
   count toward the breaker (syn-059).
-- `Retry-After` headers are not read; backoff is fixed by config.
+- `Retry-After` is honoured up to 10 s (a constant in `apps/api/src/config/reliability.config.ts`);
+  the wait does not count toward the per-attempt timeout.

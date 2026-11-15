@@ -105,7 +105,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Reliability** (syn-033): circuit breakers are per process (replicas do not share state); streaming
   chat (syn-059) shares the `chat` policy to start a stream (timeout, retries, breaker) and has an
   idle deadline between parts, but no fallback model, and mid-stream failures do not count toward
-  the breaker; `Retry-After` is ignored. A request that exhausts retries on a 5xx returns `500` (only an open
+  the breaker; a vendor's `Retry-After` replaces the backoff (syn-064), and one over 10 s fails at once. A request that exhausts retries on a 5xx returns `500` (only an open
   circuit is `503` and a timeout `504`).
 - **Providers** (syn-034): one key per vendor per deployment (no per-organization keys). OpenAI
   chat uses the Responses API (point `AI_BASE_URL`-style proxies at `openai-compatible` instead).

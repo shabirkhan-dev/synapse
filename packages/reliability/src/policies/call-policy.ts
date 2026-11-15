@@ -11,7 +11,14 @@ import { retry } from "../retry/retry";
 import { withTimeout } from "../timeouts/with-timeout";
 
 export type ReliabilityEvent =
-	| { type: "retry"; name: string; attempt: number; delayMs: number; error: unknown }
+	| {
+			type: "retry";
+			name: string;
+			attempt: number;
+			delayMs: number;
+			error: unknown;
+			retryAfter: boolean;
+	  }
 	| { type: "circuit"; name: string; from: CircuitState; to: CircuitState }
 	| { type: "fallback"; name: string; error: unknown };
 
@@ -20,7 +27,7 @@ export type CallPolicyOptions = {
 	name: string;
 	/** Per attempt; omit for no deadline. */
 	timeoutMs?: number;
-	retry: { attempts: number; baseDelayMs: number; maxDelayMs: number };
+	retry: { attempts: number; baseDelayMs: number; maxDelayMs: number; maxRetryAfterMs?: number };
 	breaker: { failureThreshold: number; resetAfterMs: number };
 	onEvent?: (event: ReliabilityEvent) => void;
 	/** Injected for tests. */

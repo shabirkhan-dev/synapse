@@ -16,5 +16,6 @@ export {
 	type ReliabilityEvent,
 } from "./policies/call-policy";
 export { isRetryableError } from "./retry/is-retryable";
+export { retryAfterMs } from "./retry/retry-after";
 export { retry, type RetryOptions } from "./retry/retry";
 export { type TimeoutOptions, withTimeout } from "./timeouts/with-timeout";
