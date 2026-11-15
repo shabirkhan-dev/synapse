@@ -25,6 +25,7 @@ import type { RequestContext } from "@/shared/types/app-types";
 import { CHAT_ERROR_CODES } from "../constants/chat.constants";
 import type { ChatBody } from "../schemas/chat.schemas";
 import { createChatTools } from "../tools/chat.tools";
+import { redactSecretsInStream } from "./redact-stream";
 
 export type ChatServiceOptions = {
 	rag: RagService;
@@ -97,6 +98,17 @@ export class ChatService {
 			tools,
 			toolChoice: "auto",
 			stopWhen: isStepCount(maxSteps),
+			// Leaked keys and tokens never reach the client or the stored reply (as on the RAG path).
+			experimental_transform: redactSecretsInStream({
+				createRedactor: () => guardrails.streamRedactor(),
+				onRedacted: () => {
+					guardrails
+						.recordRedaction(ownerId, "chat.message", context)
+						.catch((error: unknown) =>
+							this.options.logger.error("chat redaction not audited", { error }),
+						);
+				},
+			}),
 			...(abortSignal ? { abortSignal } : {}),
 			// Every answer is traceable (architecture rule 6), a stopped one too: its finished steps.
 			onEnd: ({ steps, totalUsage, finishReason }) =>

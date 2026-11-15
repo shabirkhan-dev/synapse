@@ -31,7 +31,7 @@ Keep inputs, retrieval, tools and outputs within policy.
 | `sanitizeUntrustedText(text)`, `sanitizePassages(passages)`, `REMOVED_INSTRUCTION` | Replace instruction-like phrases with `[instruction removed]` (keeps the surrounding facts): "ignore/disregard … instructions/rules", "you are now …", "from now on, you …", "new instructions:", "system prompt:", "reveal your system prompt", chat-template markers (`<\|im_start\|>`), `### System` headings, `assistant:` lines. Returns what matched |
 | `createInputPolicy({ maxChars, blockedTerms })` → `check(text)` | Too long, or contains a blocked term (whole words, any case) |
 | `createToolPolicy(allowed)` → `{ allows, filter }` | Drops unlisted tools before the model sees them |
-| `createOutputGuard({ redactSecrets })` → `check(text)` | Removes leaked secrets from model output (`redactSecrets` from `@synapse/security`) |
+| `createOutputGuard({ redactSecrets })` → `check(text)`, `streamRedactor()` | Removes leaked secrets from model output (`redactSecrets` from `@synapse/security`); `streamRedactor()` does it delta by delta, holding back the trailing word (and a trailing `Bearer`) until it is complete, so a key split across deltas is still caught |
 
 Pattern matching is a first line of defense, not a guarantee: prompts also say that passages, tool
 results and facts are data (`rag-answer@2`, `rag-answer-cited@2`, `chat-assistant@2`).
@@ -44,6 +44,8 @@ results and facts are data (`rag-answer@2`, `rag-answer-cited@2`, `chat-assistan
 | Retrieved passages, `searchDocuments` results | sanitize | passage cleaned, audited (`guardrails.passages.flagged`); returned `matches` show the cleaned text |
 | Facts (`rememberFact`, `POST /memory/facts`) | input policy + instruction check | `422`, audited (memory poisoning) |
 | `/rag/query` answers | secrets removed | audited (`guardrails.output.redacted`) |
+| Streamed chat replies (text and reasoning) | secrets removed per delta before the client or the stored conversation sees them | audited once per reply (`guardrails.output.redacted`, `surface: "chat.message"`) |
 | Chat tools | allowlist `searchDocuments`, `rememberFact`, `currentTime` | others dropped |
 
-Streaming chat text is not checked for secrets (it is already on the wire); RAG answers are.
+Streamed text arrives a word late (each word is sent once the whitespace after it arrives). Tool
+results streamed to the client (search matches) are the user's own documents and are not redacted.

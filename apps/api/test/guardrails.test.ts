@@ -156,4 +156,47 @@ describe("memory poisoning and output", () => {
 		expect(JSON.stringify(auditEvents.events)).not.toContain(leaked);
 		expect(auditEvents.events.map((e) => e.action)).toContain("guardrails.output.redacted");
 	});
+
+	test("a secret in a streamed chat reply is removed, even split across deltas", async () => {
+		const leaked = ["sk-", "q".repeat(30)].join("");
+		const deltas = ["Your key is ", leaked.slice(0, 7), leaked.slice(7), " — keep it safe."];
+		const id = "text-1";
+		const chatModel = new MockLanguageModelV4({
+			doStream: streamResult([
+				{ type: "stream-start", warnings: [] },
+				{ type: "text-start", id },
+				...deltas.map((delta) => ({ type: "text-delta" as const, id, delta })),
+				{ type: "text-end", id },
+				{
+					type: "finish",
+					finishReason: { unified: "stop", raw: "stop" },
+					usage: {
+						inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+						outputTokens: { total: 1, text: 1, reasoning: 0 },
+					},
+				},
+			]),
+		});
+		const { app, auditEvents, conversations } = buildTestApp({ chatModel });
+		const response = await app.request(`${base}/chat`, {
+			method: "POST",
+			headers: await authHeaders(),
+			body: JSON.stringify({
+				message: { id: "m1", role: "user", parts: [{ type: "text", text: "what is my key?" }] },
+			}),
+		});
+		const streamed = await response.text();
+		expect(streamed).not.toContain(leaked);
+		expect(streamed).not.toContain(leaked.slice(7));
+		const text = [...streamed.matchAll(/"delta":"((?:[^"\\]|\\.)*)"/g)]
+			.map((match) => JSON.parse(`"${match[1]}"`))
+			.join("");
+		expect(text).toBe("Your key is [secret] — keep it safe.");
+
+		await Bun.sleep(10); // the reply is saved and the redaction audited after the stream
+		expect(JSON.stringify(conversations.stored)).not.toContain(leaked);
+		expect(JSON.stringify(conversations.stored)).toContain("Your key is [secret]");
+		const redaction = auditEvents.events.find((e) => e.action === "guardrails.output.redacted");
+		expect(redaction?.data).toEqual({ surface: "chat.message" });
+	});
 });

@@ -98,3 +98,45 @@ describe("tool policy and output guard", () => {
 		expect(guard.check("fine")).toEqual({ text: "fine", redacted: false });
 	});
 });
+
+describe("streamed output", () => {
+	// The same shapes as `redactSecrets` in `@synapse/security`.
+	const guard = createOutputGuard({
+		redactSecrets: (text) =>
+			text
+				.replace(/\bsk-[\w-]{16,}\b/g, "[secret]")
+				.replace(/\bBearer\s+[\w.~+/-]{16,}=*/gi, "Bearer [secret]"),
+	});
+	const stream = (deltas: string[]) => {
+		const redactor = guard.streamRedactor();
+		const sent = deltas.map((delta) => redactor.push(delta));
+		return { text: sent.join("") + redactor.flush(), sent, redacted: redactor.redacted };
+	};
+	const reply =
+		"Use sk-abcdefghijklmnopqrstuv for that, or send Bearer abcdefghijklmnopqrstuvwxyz now.";
+
+	test("a key split across deltas at any point is still replaced", () => {
+		for (let cut = 1; cut < reply.length; cut++) {
+			for (const deltas of [
+				[reply.slice(0, cut), reply.slice(cut)],
+				[...Array.from(reply.slice(0, cut)), reply.slice(cut)],
+			]) {
+				const { text, redacted } = stream(deltas);
+				expect(text).toBe("Use [secret] for that, or send Bearer [secret] now.");
+				expect(redacted).toBe(true);
+			}
+		}
+	});
+
+	test("text without secrets comes through unchanged, word by word", () => {
+		const { text, sent, redacted } = stream(["Refunds are ", "accepted within ", "30 days."]);
+		expect(text).toBe("Refunds are accepted within 30 days.");
+		expect(sent).toEqual(["Refunds are ", "accepted within ", "30 "]);
+		expect(redacted).toBe(false);
+	});
+
+	test("a very long word is not held forever", () => {
+		const { sent } = stream(["x".repeat(3000)]);
+		expect(sent[0]).toHaveLength(3000);
+	});
+});

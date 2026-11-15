@@ -7,6 +7,7 @@ import {
 	type OutputGuard,
 	sanitizePassages,
 	sanitizeUntrustedText,
+	type StreamRedactor,
 	type ToolPolicy,
 } from "@synapse/guardrails";
 import { redactSecrets } from "@synapse/security";
@@ -117,6 +118,16 @@ export class GuardrailsService {
 			await this.record(ownerId, AUDIT_ACTIONS.GUARDRAILS_OUTPUT_REDACTED, context, {});
 		}
 		return checked.text;
+	}
+
+	/** Replaces secrets in one streamed reply, delta by delta (`recordRedaction` when it did). */
+	streamRedactor(): StreamRedactor {
+		return this.output.streamRedactor();
+	}
+
+	/** Audit that secrets were removed from a streamed reply (the text itself is not stored). */
+	recordRedaction(ownerId: string, surface: GuardedSurface, context: RequestContext) {
+		return this.record(ownerId, AUDIT_ACTIONS.GUARDRAILS_OUTPUT_REDACTED, context, { surface });
 	}
 
 	/** Only allowed tools reach the model. */

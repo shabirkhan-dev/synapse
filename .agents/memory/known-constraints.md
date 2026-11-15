@@ -99,7 +99,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   current embedding model only (the worker does not re-embed facts yet) and have no vector index.
   A model-called `rememberFact` writes without approval (owner's own memory); facts with instructions are refused.
 - **Guardrails are pattern-based:** paraphrased injections can slip through (prompts v2 are the second
-  line). Streaming chat text is not checked for secrets; RAG answers are. Returned `matches` show
+  line). Secrets are removed from RAG answers and, since syn-063, from streamed chat text and
+  reasoning (per delta, one word late; tool results are not redacted). Returned `matches` show
   sanitized passage text. Blocked-term matching is whole-word, English-centric.
 - **Reliability** (syn-033): circuit breakers are per process (replicas do not share state); streaming
   chat (syn-059) shares the `chat` policy to start a stream (timeout, retries, breaker) and has an

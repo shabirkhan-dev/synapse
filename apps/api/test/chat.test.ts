@@ -25,6 +25,13 @@ async function readStream(response: Response): Promise<Array<Record<string, unkn
 		.map((line) => JSON.parse(line.slice("data: ".length)));
 }
 
+/** The reply text: every text delta, in order (a word is sent once the next one starts). */
+const streamedText = (events: Array<Record<string, unknown>>) =>
+	events
+		.filter((e) => e.type === "text-delta")
+		.map((e) => e.delta)
+		.join("");
+
 describe("chat", () => {
 	test("streams text in the AI SDK UI message protocol", async () => {
 		const chatModel = new MockLanguageModelV4({
@@ -40,7 +47,7 @@ describe("chat", () => {
 		expect(response.headers.get("content-type")).toContain("text/event-stream");
 		expect(response.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
 		const events = await readStream(response);
-		expect(events.find((e) => e.type === "text-delta")?.delta).toBe("Hello from the mock");
+		expect(streamedText(events)).toBe("Hello from the mock");
 		expect(events.at(-1)?.type).toBe("finish");
 		expect(JSON.stringify(chatModel.doStreamCalls[0]?.tools?.map((t) => t.name))).toBe(
 			JSON.stringify(["searchDocuments", "rememberFact", "currentTime"]),
@@ -74,9 +81,7 @@ describe("chat", () => {
 		const toolOutput = events.find((e) => e.type === "tool-output-available");
 		expect(toolOutput).toBeDefined();
 		expect(JSON.stringify(toolOutput?.output)).toContain("refund window of 30 days");
-		expect(events.find((e) => e.type === "text-delta")?.delta).toBe(
-			"Refunds are allowed for 30 days.",
-		);
+		expect(streamedText(events)).toBe("Refunds are allowed for 30 days.");
 		expect(chatModel.doStreamCalls).toHaveLength(2);
 		expect(JSON.stringify(chatModel.doStreamCalls[1]?.prompt)).toContain(
 			"refund window of 30 days",
@@ -237,7 +242,7 @@ describe("chat", () => {
 				body: JSON.stringify({ messages: [userMessage("hi")] }),
 			}),
 		);
-		expect(events.find((e) => e.type === "text-delta")?.delta).toBe("Still answered");
+		expect(streamedText(events)).toBe("Still answered");
 		expect(events.at(-1)?.type).toBe("finish");
 	});
 });

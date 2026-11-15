@@ -14,5 +14,6 @@ export {
 	createOutputGuard,
 	type OutputGuard,
 	type OutputGuardOptions,
+	type StreamRedactor,
 } from "./output/output-guard";
 export { createToolPolicy, type ToolPolicy } from "./tools/tool-policy";
