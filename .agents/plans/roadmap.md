@@ -107,6 +107,7 @@ contextual retrieval and Ragas.
 | Context-carrying chunks: heading path + title in embeddings and keyword index | ✅ | syn-068 |
 | Light / dark / system theme switch; refined surfaces (Calesto, HockeyStack as inspiration) | ✅ | syn-069 |
 | Scoped questions: ask about chosen documents | ⏭️ | syn-070 |
+| Risk: chaos "Postgres goes away" failed once in CI (API refused connections) | ⏭️ | syn-071 |
 | Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | — |
 | Several files at once; web pages by URL | ⬜ | — |
 | Follow-up suggestions, copy, regenerate; ⌘K palette | ⬜ | — |
