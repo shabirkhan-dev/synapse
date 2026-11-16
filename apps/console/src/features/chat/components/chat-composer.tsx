@@ -46,7 +46,7 @@ export function ChatComposer({ streaming, draft, onSend, onStop }: ChatComposerP
 			<Label htmlFor="chat-message" className="sr-only">
 				Message
 			</Label>
-			<div className="flex items-end gap-2">
+			<div className="flex flex-col gap-1 rounded-2xl border bg-card p-2 shadow-sm transition-shadow focus-within:border-ring/50 focus-within:ring-1 focus-within:ring-ring/20">
 				<Textarea
 					key={draft}
 					id="chat-message"
@@ -54,31 +54,33 @@ export function ChatComposer({ streaming, draft, onSend, onStop }: ChatComposerP
 					defaultValue={draft}
 					rows={1}
 					autoComplete="off"
-					placeholder="How long do customers have to ask for a refund?"
+					placeholder="Ask about your documents…"
 					aria-invalid={error ? true : undefined}
 					aria-describedby={error ? "chat-message-error chat-message-hint" : "chat-message-hint"}
 					onKeyDown={handleKeyDown}
-					className="max-h-48 min-h-10 text-base md:text-sm"
+					className="max-h-48 min-h-11 resize-none border-0 bg-transparent px-2 text-base shadow-none focus-visible:ring-0 md:text-sm dark:bg-transparent"
 				/>
-				{streaming ? (
-					<Button key="stop" type="button" variant="outline" size="lg" onClick={onStop}>
-						Stop
-					</Button>
-				) : (
-					<Button key="send" type="submit" size="lg">
-						Send
-					</Button>
-				)}
+				<div className="flex items-center justify-between gap-3 ps-2">
+					<p id="chat-message-hint" className="text-xs text-pretty text-muted-foreground">
+						Enter to send, Shift+Enter for a new line. Searches the documents of the organization
+						you are in.
+					</p>
+					{streaming ? (
+						<Button key="stop" type="button" variant="outline" onClick={onStop}>
+							Stop
+						</Button>
+					) : (
+						<Button key="send" type="submit">
+							Send
+						</Button>
+					)}
+				</div>
 			</div>
 			{error ? (
 				<p id="chat-message-error" className="text-xs text-destructive">
 					{error}
 				</p>
 			) : null}
-			<p id="chat-message-hint" className="text-xs text-muted-foreground">
-				Enter to send, Shift+Enter for a new line. Answers search the documents of the organization
-				you are in.
-			</p>
 		</form>
 	);
 }

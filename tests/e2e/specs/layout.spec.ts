@@ -93,3 +93,29 @@ test("at 320px a table wider than the screen says so and can be scrolled with th
 	await page.keyboard.press("ArrowRight");
 	await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
 });
+
+test("the theme follows the system until you choose one; the choice survives a reload", async ({
+	page,
+}) => {
+	const email = uniqueEmail("theme");
+	await signUpViaApi(email);
+	await page.emulateMedia({ colorScheme: "dark" });
+	await signIn(page, email);
+	const html = page.locator("html");
+	await expect(html).toHaveClass(/\bdark\b/);
+
+	const theme = page.getByRole("radiogroup", { name: "Theme" });
+	await theme.getByRole("radio", { name: "Light" }).click();
+	await expect(html).toHaveClass(/\blight\b/);
+	await expect(theme.getByRole("radio", { name: "Light" })).toHaveAttribute("aria-checked", "true");
+
+	await page.reload();
+	await page.getByRole("heading", { level: 1, name: "Documents" }).waitFor();
+	await expect(html).toHaveClass(/\blight\b/);
+
+	await page
+		.getByRole("radiogroup", { name: "Theme" })
+		.getByRole("radio", { name: "System" })
+		.click();
+	await expect(html).toHaveClass(/\bdark\b/);
+});

@@ -2,8 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dark follows the system setting (one mechanism: no `.dark` class anywhere). */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Dark is the `.dark` class on <html>, set by the console's theme provider (light, dark or system). */
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../../../components/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
@@ -79,54 +79,55 @@
     --chart-4: oklch(0.556 0 0);
     --chart-5: oklch(0.371 0 0);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
+    /* The frame around the page panel. */
+    --sidebar: oklch(0.975 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.511 0.23 277);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    /* The current page: accent-tinted, 9.0:1 text. */
-    --sidebar-accent: oklch(0.962 0.016 272);
-    --sidebar-accent-foreground: oklch(0.398 0.195 277);
+    /* The current page: a neutral pill (15.9:1 text); its icon takes the accent (5.0:1). */
+    --sidebar-accent: oklch(0.94 0 0);
+    --sidebar-accent-foreground: oklch(0.145 0 0);
     --sidebar-border: oklch(0.922 0 0);
     /* Same as --ring: 6:1 focus indicators on the sidebar. */
     --sidebar-ring: oklch(0.511 0.23 277);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-        --background: oklch(0.145 0 0);
-        --foreground: oklch(0.985 0 0);
-        --card: oklch(0.205 0 0);
-        --card-foreground: oklch(0.985 0 0);
-        --popover: oklch(0.205 0 0);
-        --popover-foreground: oklch(0.985 0 0);
-        /* Lighter, less vivid accent: 6.4:1 with --primary-foreground, 5.8:1 on --card. */
-        --primary: oklch(0.673 0.174 277);
-        --primary-foreground: oklch(0.145 0 0);
-        --secondary: oklch(0.269 0 0);
-        --secondary-foreground: oklch(0.985 0 0);
-        --muted: oklch(0.269 0 0);
-        --muted-foreground: oklch(0.708 0 0);
-        --accent: oklch(0.269 0 0);
-        --accent-foreground: oklch(0.985 0 0);
-        --destructive: oklch(0.704 0.191 22.216);
-        --border: oklch(1 0 0 / 10%);
-        --input: oklch(1 0 0 / 15%);
-        --ring: oklch(0.673 0.174 277);
-        --chart-1: oklch(0.673 0.174 277);
-        --chart-2: oklch(0.7 0.106 184);
-        --chart-3: oklch(0.78 0.14 70);
-        --chart-4: oklch(0.556 0 0);
-        --chart-5: oklch(0.439 0 0);
-        --sidebar: oklch(0.205 0 0);
-        --sidebar-foreground: oklch(0.985 0 0);
-        --sidebar-primary: oklch(0.673 0.174 277);
-        --sidebar-primary-foreground: oklch(0.145 0 0);
-        /* The current page: 10.7:1 text. */
-        --sidebar-accent: oklch(0.257 0.09 281);
-        --sidebar-accent-foreground: oklch(0.87 0.063 274);
-        --sidebar-border: oklch(1 0 0 / 10%);
-        --sidebar-ring: oklch(0.673 0.174 277);
-  }
+/* Near-black frame, a lighter page panel, lighter cards: depth by surface, not by shadow. */
+.dark {
+    --background: oklch(0.165 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.195 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.21 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    /* Lighter, less vivid accent: 6.4:1 with --primary-foreground, 5.9:1 on --card. */
+    --primary: oklch(0.673 0.174 277);
+    --primary-foreground: oklch(0.145 0 0);
+    --secondary: oklch(0.235 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.235 0 0);
+    /* 6.7:1+ on every dark surface (frame, panel, card, muted). */
+    --muted-foreground: oklch(0.72 0 0);
+    --accent: oklch(0.25 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 9%);
+    --input: oklch(1 0 0 / 13%);
+    --ring: oklch(0.673 0.174 277);
+    --chart-1: oklch(0.673 0.174 277);
+    --chart-2: oklch(0.7 0.106 184);
+    --chart-3: oklch(0.78 0.14 70);
+    --chart-4: oklch(0.556 0 0);
+    --chart-5: oklch(0.439 0 0);
+    --sidebar: oklch(0.13 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.673 0.174 277);
+    --sidebar-primary-foreground: oklch(0.145 0 0);
+    /* The current page: a neutral pill (16:1 text); its icon takes the accent (5.4:1). */
+    --sidebar-accent: oklch(0.235 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 8%);
+    --sidebar-ring: oklch(0.673 0.174 277);
 }
 
 @layer base {
@@ -134,7 +135,10 @@
     @apply border-border outline-ring;
     }
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
+    }
+  .dark {
+    color-scheme: dark;
     }
   body {
     @apply bg-background text-foreground;

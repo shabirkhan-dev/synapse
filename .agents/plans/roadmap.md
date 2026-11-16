@@ -105,7 +105,7 @@ contextual retrieval and Ragas.
 | Readable answers: safe Markdown in chat and the Playground | ✅ | syn-066 |
 | One citation system: numbered citations in chat, passage preview, source cards | ✅ | syn-067 |
 | Context-carrying chunks: heading path + title in embeddings and keyword index | ✅ | syn-068 |
-| Light / dark / system theme switch; refined surfaces (Calesto, HockeyStack as inspiration) | 🔄 | syn-069 |
+| Light / dark / system theme switch; refined surfaces (Calesto, HockeyStack as inspiration) | ✅ | syn-069 |
 | Scoped questions: ask about chosen documents | ⏭️ | syn-070 |
 | Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | — |
 | Several files at once; web pages by URL | ⬜ | — |

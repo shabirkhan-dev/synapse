@@ -25,6 +25,7 @@ import {
 	SidebarHeader,
 	SidebarInset,
 	SidebarMenu,
+	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarProvider,
@@ -37,6 +38,8 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
 
+import { ThemeSwitcher } from "./theme-switcher";
+
 export type AppShellProps = {
 	children: ReactNode;
 	/** The signed-in user's email, once known. */
@@ -45,6 +48,8 @@ export type AppShellProps = {
 	switcher?: ReactNode;
 	/** A one-line notice above the page (e.g. verify your email). */
 	notice?: ReactNode;
+	/** Counts next to sidebar links, by href (e.g. pending approvals). */
+	navBadges?: Partial<Record<string, ReactNode>>;
 	onSignOut: () => void;
 	signingOut: boolean;
 };
@@ -86,6 +91,7 @@ export function AppShell({
 	email,
 	switcher,
 	notice,
+	navBadges,
 	onSignOut,
 	signingOut,
 }: AppShellProps) {
@@ -118,6 +124,7 @@ export function AppShell({
 												item={item}
 												active={item === current}
 												here={pathname === item.href}
+												badge={navBadges?.[item.href]}
 											/>
 										))}
 									</SidebarMenu>
@@ -130,12 +137,20 @@ export function AppShell({
 					<SidebarMenu>
 						<AccountLink email={email} active={pathname.startsWith("/account")} />
 						<SidebarMenuItem>
-							<SidebarMenuButton disabled={signingOut} onClick={onSignOut}>
-								<HugeiconsIcon icon={Logout01Icon} strokeWidth={1.5} aria-hidden="true" />
+							<SidebarMenuButton
+								className="h-9 gap-2.5 text-sm"
+								disabled={signingOut}
+								onClick={onSignOut}
+							>
+								<HugeiconsIcon icon={Logout01Icon} strokeWidth={1.75} aria-hidden="true" />
 								<span>{signingOut ? "Signing out…" : "Sign out"}</span>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					</SidebarMenu>
+					<div className="flex items-center justify-between gap-2 px-2 pt-1 text-xs text-muted-foreground">
+						<span>Theme</span>
+						<ThemeSwitcher />
+					</div>
 				</SidebarFooter>
 			</Sidebar>
 			<SidebarInset className="min-w-0">
@@ -165,8 +180,11 @@ function NavLink({
 	item,
 	active,
 	here,
+	badge,
 }: {
 	item: NavItem;
+	/** A count shown at the end of the row (rendered only when it renders something). */
+	badge?: ReactNode;
 	/** This section (also on its sub-pages, e.g. one document). */
 	active: boolean;
 	/** Exactly this page. */
@@ -177,6 +195,7 @@ function NavLink({
 		<SidebarMenuItem>
 			<SidebarMenuButton
 				isActive={active}
+				className="h-9 gap-2.5 text-sm data-active:[&_svg]:text-sidebar-primary"
 				render={
 					<Link
 						href={item.href}
@@ -185,9 +204,14 @@ function NavLink({
 					/>
 				}
 			>
-				<HugeiconsIcon icon={item.icon} strokeWidth={1.5} aria-hidden="true" />
+				<HugeiconsIcon icon={item.icon} strokeWidth={1.75} aria-hidden="true" />
 				<span className="truncate">{item.label}</span>
 			</SidebarMenuButton>
+			{badge ? (
+				<SidebarMenuBadge className="top-2! rounded-md bg-sidebar-accent text-[0.7rem] text-muted-foreground empty:hidden">
+					{badge}
+				</SidebarMenuBadge>
+			) : null}
 		</SidebarMenuItem>
 	);
 }
