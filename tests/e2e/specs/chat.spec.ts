@@ -4,7 +4,8 @@ import { signIn, signUpViaApi } from "../support/accounts";
 import { uniqueEmail } from "../support/env";
 
 const QUESTION = "How long do customers have to ask for a refund?";
-const ANSWER = "Refunds are accepted within 30 days of purchase.";
+/** The streamed answer's text; it ends with a citation of passage [1]. */
+const ANSWER = "Refunds are accepted within 30 days of purchase";
 
 test("chat streams an answer that searched the documents; the conversation is kept, reopened and deleted", async ({
 	page,
@@ -31,6 +32,12 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	await expect(messages.getByText(`Searched your documents for “${QUESTION}”`)).toBeVisible();
 	await messages.getByText("Show sources").click();
 	await expect(messages.getByRole("listitem").filter({ hasText: /^Refund policy$/ })).toBeVisible();
+	// The citation opens the passage it cites; the cited document is listed under the answer.
+	await expect(messages.getByRole("list", { name: "Sources" })).toContainText("Refund policy[1]");
+	await messages.getByRole("button", { name: "Source 1: Refund policy" }).click();
+	await expect(page.getByRole("dialog")).toContainText("Refunds are accepted within 30 days");
+	await page.keyboard.press("Escape");
+	await expect(page.getByRole("dialog")).toBeHidden();
 	await expect(page.getByRole("button", { name: "Send" })).toBeVisible();
 	await expect(page.getByLabel("Message", { exact: true })).toHaveValue("");
 

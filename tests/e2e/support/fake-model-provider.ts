@@ -4,13 +4,13 @@ import { createServer } from "node:http";
  * A stand-in OpenAI-compatible endpoint: fixed-size embeddings and one cited answer, so the suite
  * needs no model key and its answers are deterministic. Streaming chat (`stream: true`, the
  * console's chat page) first calls `searchDocuments` with the user's words, then streams
- * `STREAMED_ANSWER` in a few chunks. The chaos suite (`tests/system`) injects faults with
+ * `STREAMED_ANSWER` (citing passage [1]) in a few chunks. The chaos suite (`tests/system`) injects faults with
  * `POST /__fault { delayMs?, status?, only? }`: model calls (or `only` chat or embeddings) then
  * wait, and fail with `status`.
  */
 const port = Number(process.argv[2] ?? 5601);
 const DIMENSIONS = 1536;
-const STREAMED_ANSWER = ["Refunds ", "are accepted ", "within 30 days ", "of purchase."];
+const STREAMED_ANSWER = ["Refunds ", "are accepted ", "within 30 days ", "of purchase [1]."];
 
 type Fault = { delayMs?: number; status?: number; only?: "chat" | "embeddings" };
 let fault: Fault = {};

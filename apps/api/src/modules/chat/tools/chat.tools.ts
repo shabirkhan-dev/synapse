@@ -30,6 +30,8 @@ export function createChatTools({
 	context?: RequestContext;
 	now?: () => Date;
 }) {
+	// Citation numbers run across every search in one reply, so `[n]` names one passage.
+	let nextCitation = 1;
 	return {
 		searchDocuments: tool({
 			description: CHAT_TOOLS.searchDocuments.description,
@@ -47,6 +49,7 @@ export function createChatTools({
 					context,
 				);
 				return matches.map((match) => ({
+					citation: nextCitation++,
 					documentId: match.documentId,
 					title: match.documentTitle,
 					source: match.source,

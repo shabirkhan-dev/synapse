@@ -140,7 +140,10 @@ Untrusted text from the model or documents is never rendered as HTML. Answers (P
 go through `components/shared/markdown.tsx`: `react-markdown` + `remark-gfm` render emphasis, lists,
 code and tables as React elements, raw HTML in the text is shown as text, and links are followed
 only for `http(s)` URLs (new tab, `noopener noreferrer`). Known `[n]` markers become in-page
-citation links; sources become links only for `http(s)` URLs.
+citation links; sources become links only for `http(s)` URLs. Chat replies resolve `[n]` against
+their own `searchDocuments` results (`features/chat/utils/citations.ts`, checked with Zod): each
+becomes a `CitationPopover` (`components/shared/citation-popover.tsx`, the passage with its
+document and source) and the cited documents are listed once each as source cards.
 
 ## Feature service
 

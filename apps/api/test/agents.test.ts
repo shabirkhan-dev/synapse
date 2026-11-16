@@ -11,7 +11,7 @@ const versions = { embeddingModel: "mock:embed", chunkerVersion: "text-v1" };
 function provenance(inputTokens: number) {
 	return {
 		chatModel: "mock:chat",
-		promptVersion: "chat-assistant@2",
+		promptVersion: "chat-assistant@3",
 		...versions,
 		usage: { inputTokens, outputTokens: 7 },
 	};

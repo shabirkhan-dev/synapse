@@ -19,7 +19,7 @@ const overview = {
 		reranker: null,
 	},
 	chat: {
-		promptVersion: "chat-assistant@2",
+		promptVersion: "chat-assistant@3",
 		maxSteps: 5,
 		history: { maxTokens: 4000, maxMessages: 20 },
 		tools: [
@@ -45,7 +45,7 @@ const run = (overrides: Record<string, unknown>) => ({
 	createdAt: "2026-11-13T09:00:00Z",
 	question: null,
 	chatModel: "openai-compatible:openai/gpt-4o-mini",
-	promptVersion: "chat-assistant@2",
+	promptVersion: "chat-assistant@3",
 	tools: [],
 	citations: null,
 	steps: 1,

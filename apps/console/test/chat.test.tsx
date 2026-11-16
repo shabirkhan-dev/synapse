@@ -39,6 +39,15 @@ const searched = (state: "output-available" | "output-error"): ChatMessage =>
 		],
 	}) as unknown as ChatMessage;
 
+const passage = (citation: number, title: string, content: string) => ({
+	citation,
+	documentId: `d-${title}`,
+	title,
+	source: "https://help.example.com/shipping",
+	score: 0.03,
+	content,
+});
+
 /** The API's chat response: an AI SDK UI message stream over server-sent events. */
 function sse(chunks: object[], headers: Record<string, string> = {}): Response {
 	const body = [...chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`), "data: [DONE]\n\n"];
@@ -80,6 +89,39 @@ describe("MessageList", () => {
 		expect(screen.getAllByText("Refund policy")).toHaveLength(1);
 		expect(screen.getByText("Within 30 days.")).toBeDefined();
 		expect(screen.queryByText("Thinking…")).toBeNull();
+	});
+
+	test("a cited reply: [n] opens the passage it cites, and its sources are listed once each", async () => {
+		const reply = {
+			id: "a2",
+			role: "assistant",
+			parts: [
+				{
+					type: "tool-searchDocuments",
+					toolCallId: "call-2",
+					state: "output-available",
+					input: { query: "express shipping" },
+					output: [
+						passage(1, "Shipping", "Express shipping costs $19."),
+						passage(2, "Shipping", "Orders before 1 pm ship the same day."),
+						passage(3, "Warranty", "Zippers are replaced free."),
+					],
+				},
+				{ type: "text", text: "Express costs **$19** [1] and ships the same day [2]. [9]" },
+			],
+		} as unknown as ChatMessage;
+		render(<MessageList messages={[reply]} streaming={false} />);
+
+		expect(screen.getByText("$19").tagName).toBe("STRONG");
+		expect(screen.getByText("[9]", { exact: false })).toBeDefined();
+		const sources = screen.getByRole("list", { name: "Sources" });
+		// Two cited passages from one document make one card; the uncited document has none.
+		expect(sources.textContent).toContain("Shipping[1][2]");
+		expect(sources.textContent).not.toContain("Warranty");
+
+		fireEvent.click(screen.getByRole("button", { name: "Source 1: Shipping" }));
+		await waitFor(() => expect(screen.getByText("Express shipping costs $19.")).toBeDefined());
+		expect(screen.getByRole("link", { name: "https://help.example.com/shipping" })).toBeDefined();
 	});
 
 	test("says a failed search failed, in words and not only color", () => {

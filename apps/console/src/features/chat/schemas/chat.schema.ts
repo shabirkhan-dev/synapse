@@ -28,3 +28,14 @@ export const messageFormSchema = z.object({
 		.min(1, "Type a message to send.")
 		.max(8000, "Use at most 8000 characters"),
 });
+
+/** `searchDocuments` output, read from the stream to resolve `[n]` (older replies have no number). */
+export const searchResultsSchema = z.array(
+	z.looseObject({
+		citation: z.number().int().positive().optional(),
+		documentId: z.string(),
+		title: z.string(),
+		source: z.string().nullable(),
+		content: z.string(),
+	}),
+);

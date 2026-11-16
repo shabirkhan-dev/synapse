@@ -2,9 +2,12 @@ import { AiNetworkIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { isTextUIPart, isToolUIPart } from "ai";
 
+import { CitationPopover } from "@/components/shared/citation-popover";
 import { Markdown } from "@/components/shared/markdown";
 
 import type { ChatMessage, ChatPart } from "../types/chat.types";
+import { citedIn, passagesOf } from "../utils/citations";
+import { SourceCards } from "./source-cards";
 import { ToolCall } from "./tool-call";
 
 export type MessageListProps = {
@@ -34,17 +37,7 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 						</div>
 					</li>
 				) : (
-					<li key={message.id} className="flex max-w-2xl flex-col gap-2">
-						<AssistantLabel />
-						{message.parts.map((part, index) =>
-							isTextUIPart(part) ? (
-								// oxlint-disable-next-line react/no-array-index-key -- text parts carry no id
-								<Markdown key={index} text={part.text} />
-							) : isToolUIPart(part) ? (
-								<ToolCall key={part.toolCallId} part={part} />
-							) : null,
-						)}
-					</li>
+					<AssistantMessage key={message.id} message={message} />
 				),
 			)}
 			{waiting ? (
@@ -54,6 +47,39 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 				</li>
 			) : null}
 		</ol>
+	);
+}
+
+/** A reply: its text with `[n]` opening the cited passage, its tool calls, and the cited sources. */
+function AssistantMessage({ message }: { message: ChatMessage }) {
+	const passages = passagesOf(message);
+	const known = new Set(passages.keys());
+	const cited = citedIn(message, passages).flatMap((citation) => {
+		const passage = passages.get(citation);
+		return passage ? [passage] : [];
+	});
+	const renderCitation = (citation: number) => {
+		const passage = passages.get(citation);
+		return passage ? <CitationPopover passage={passage} /> : `[${citation}]`;
+	};
+	return (
+		<li className="flex max-w-2xl flex-col gap-2">
+			<AssistantLabel />
+			{message.parts.map((part, index) =>
+				isTextUIPart(part) ? (
+					<Markdown
+						// oxlint-disable-next-line react/no-array-index-key -- text parts carry no id
+						key={index}
+						text={part.text}
+						citations={known}
+						renderCitation={renderCitation}
+					/>
+				) : isToolUIPart(part) ? (
+					<ToolCall key={part.toolCallId} part={part} />
+				) : null,
+			)}
+			{cited.length > 0 ? <SourceCards passages={cited} /> : null}
+		</li>
 	);
 }
 

@@ -34,7 +34,7 @@ Keep inputs, retrieval, tools and outputs within policy.
 | `createOutputGuard({ redactSecrets })` → `check(text)`, `streamRedactor()` | Removes leaked secrets from model output (`redactSecrets` from `@synapse/security`); `streamRedactor()` does it delta by delta, holding back the trailing word (and a trailing `Bearer`) until it is complete, so a key split across deltas is still caught |
 
 Pattern matching is a first line of defense, not a guarantee: prompts also say that passages, tool
-results and facts are data (`rag-answer@2`, `rag-answer-cited@2`, `chat-assistant@2`).
+results and facts are data (`rag-answer@2`, `rag-answer-cited@2`, `chat-assistant@2` and later).
 
 ## How the API uses it
 

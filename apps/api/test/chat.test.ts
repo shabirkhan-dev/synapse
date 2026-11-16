@@ -119,6 +119,30 @@ describe("chat", () => {
 		expect((await response.json()).error.code).toBe("CHAT_INVALID_MESSAGES");
 	});
 
+	test("search results carry citation numbers that keep counting across searches in one reply", async () => {
+		const { app, rag, memory, guardrails } = buildTestApp();
+		const headers = await authHeaders();
+		await Promise.all(
+			["Refunds", "Shipping"].map((title) =>
+				app.request("/api/v1/rag/documents", {
+					method: "POST",
+					headers,
+					body: JSON.stringify({ title, content: `${title} policy text for the citation test.` }),
+				}),
+			),
+		);
+		const tools = createChatTools({ rag, memory, guardrails, ownerId: "user-1", topK: 2 });
+		const options = { toolCallId: "t", messages: [], context: {} };
+		const first = (await tools.searchDocuments.execute?.({ query: "policy" }, options)) as {
+			citation: number;
+		}[];
+		const second = (await tools.searchDocuments.execute?.({ query: "policy" }, options)) as {
+			citation: number;
+		}[];
+		expect(first.map((match) => match.citation)).toEqual([1, 2]);
+		expect(second.map((match) => match.citation)).toEqual([3, 4]);
+	});
+
 	test("currentTime falls back to UTC for unknown zones", async () => {
 		const { rag, memory, guardrails } = buildTestApp();
 		const tools = createChatTools({
