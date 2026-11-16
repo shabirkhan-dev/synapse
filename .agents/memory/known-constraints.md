@@ -129,7 +129,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   answers by source, UTC days, cost only for models in `AI_MODEL_PRICES`), a retrieval inspector (`/retrieval`,
   syn-048: three `answer: false` requests, one per mode; reranking still applies when configured), chat (streaming
   `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; no
-  rename, no Markdown rendering, a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
+  rename; answers render Markdown safely since syn-066, raw HTML shown as text; a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
   are added by existing email only). The active organization is per session, so every tab of a
   browser shares it: a tab that did not switch keeps acting in the old organization until its access
   token is refreshed (≤ 15 min), then follows the session, and its labels update on the next load. A

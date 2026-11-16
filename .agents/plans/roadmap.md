@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-15. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-16. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -94,5 +94,20 @@ Deployment is parked (syn-052). Gaps found in what is built, most severe first.
 | Secrets removed from streamed chat replies | ✅ | syn-063 |
 | Model retries wait for the vendor's `Retry-After` | ✅ | syn-064 |
 | Console UI/UX pass: clean, modern, consistent across pages | ✅ | syn-065 |
+
+## Phase 5 — The best RAG experience (review 2026-11-16, `phase-5-rag-quality.md`)
+
+Deployment stays parked. Ranked by value from a review of RAGFlow, Onyx, Perplexity, Glean,
+contextual retrieval and Ragas.
+
+| Step | Status | Card |
+| --- | --- | --- |
+| Readable answers: safe Markdown in chat and the Playground | ✅ | syn-066 |
+| One citation system: numbered citations in chat, passage preview, source cards | 🔄 | syn-067 |
+| Context-carrying chunks: heading path + title in embeddings and keyword index | ⏭️ | syn-068 |
+| Scoped questions: ask about chosen documents | ⬜ | — |
+| Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | — |
+| Several files at once; web pages by URL | ⬜ | — |
+| Follow-up suggestions, copy, regenerate; ⌘K palette | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

@@ -136,8 +136,11 @@ replies). Colour comes only from the theme tokens in `packages/ui/src/styles/glo
 accent (`--primary`, also `--ring`, `--sidebar-primary` and the current page in the sidebar) on
 neutral surfaces, with light and dark values measured for contrast (noted next to each token).
 
-Untrusted text from the model or documents is rendered as React text only (never HTML); `[n]`
-markers become in-page links, and sources become links only for `http(s)` URLs.
+Untrusted text from the model or documents is never rendered as HTML. Answers (Playground and chat)
+go through `components/shared/markdown.tsx`: `react-markdown` + `remark-gfm` render emphasis, lists,
+code and tables as React elements, raw HTML in the text is shown as text, and links are followed
+only for `http(s)` URLs (new tab, `noopener noreferrer`). Known `[n]` markers become in-page
+citation links; sources become links only for `http(s)` URLs.
 
 ## Feature service
 

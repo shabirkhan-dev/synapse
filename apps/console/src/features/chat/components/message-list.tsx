@@ -2,6 +2,8 @@ import { AiNetworkIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { isTextUIPart, isToolUIPart } from "ai";
 
+import { Markdown } from "@/components/shared/markdown";
+
 import type { ChatMessage, ChatPart } from "../types/chat.types";
 import { ToolCall } from "./tool-call";
 
@@ -36,13 +38,8 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 						<AssistantLabel />
 						{message.parts.map((part, index) =>
 							isTextUIPart(part) ? (
-								<p
-									// oxlint-disable-next-line react/no-array-index-key -- text parts carry no id
-									key={index}
-									className="text-sm leading-relaxed text-pretty break-words whitespace-pre-wrap"
-								>
-									{part.text}
-								</p>
+								// oxlint-disable-next-line react/no-array-index-key -- text parts carry no id
+								<Markdown key={index} text={part.text} />
 							) : isToolUIPart(part) ? (
 								<ToolCall key={part.toolCallId} part={part} />
 							) : null,
