@@ -1,5 +1,6 @@
 import type { EmbeddingGateway } from "@synapse/core/contracts";
 
+import { chunkEmbeddingText } from "../chunking/document-chunker";
 import { assertEmbeddingDimensions } from "../embeddings/embedding-errors";
 import { embeddingVersion } from "../versioning/versions";
 
@@ -10,7 +11,8 @@ export type ReembedCheckpoint = {
 	reembedded: number;
 };
 
-export type StaleChunk = { id: string; content: string };
+/** `context` is the chunk's `Title › headings` line (null on chunks from before text-v2). */
+export type StaleChunk = { id: string; content: string; context: string | null };
 
 export type ReembedPorts = {
 	/** Chunks not embedded with `embeddingModel` (or with no model recorded), ordered by id. */
@@ -62,7 +64,9 @@ export function createReembedder({ embedding, ports, dimensions, batchSize }: Re
 					return { embeddingModel, reembedded: checkpoint.reembedded };
 				}
 				// oxlint-disable-next-line no-await-in-loop
-				const vectors = await embedding.embedMany(batch.map((chunk) => chunk.content));
+				const vectors = await embedding.embedMany(
+					batch.map((chunk) => chunkEmbeddingText(chunk.context, chunk.content)),
+				);
 				for (const vector of vectors) {
 					assertEmbeddingDimensions(vector, dimensions);
 				}

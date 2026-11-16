@@ -37,6 +37,8 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
 
 - **`vector` mode:** one vector search; `score` = cosine similarity.
 - **`keyword` mode:** full-text search only (nothing is embedded); `score` = the keyword rank score.
+  The index reads a chunk's context line with its content (`chunkSearchText` in `@synapse/database`,
+  index `rag_chunks_search_idx`), so a passage is found by its document title or section heading.
   Not a deployment default (`RAG_SEARCH_MODE` is `vector` | `hybrid`); the console's retrieval
   inspector uses it per request (syn-048).
 - **`hybrid` mode (API default):** vector + keyword in parallel, each with `topK × 4` candidates,

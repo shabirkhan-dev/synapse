@@ -1,6 +1,7 @@
 import { and, asc, cosineDistance, desc, eq, isNull, or, sql } from "drizzle-orm";
 
 import {
+	chunkSearchText,
 	type Database,
 	ragChunks,
 	ragDocuments,
@@ -53,6 +54,7 @@ export class DrizzleRagRepository implements RagRepository {
 						ownerId: document.ownerId,
 						chunkIndex: chunk.chunkIndex,
 						content: chunk.content,
+						context: chunk.context ?? null,
 						embedding: chunk.embedding,
 						chunkerVersion: chunk.chunkerVersion ?? null,
 						embeddingModel: chunk.embeddingModel ?? null,
@@ -107,6 +109,7 @@ export class DrizzleRagRepository implements RagRepository {
 				id: ragChunks.id,
 				chunkIndex: ragChunks.chunkIndex,
 				content: ragChunks.content,
+				context: ragChunks.context,
 				chunkerVersion: ragChunks.chunkerVersion,
 				embeddingModel: ragChunks.embeddingModel,
 			})
@@ -170,7 +173,7 @@ export class DrizzleRagRepository implements RagRepository {
 	}
 
 	async keywordSearch({ ownerId, query, limit }: KeywordSearchRequest): Promise<RagMatch[]> {
-		const vector = searchVector(ragChunks.content);
+		const vector = searchVector(chunkSearchText(ragChunks));
 		const tsQuery = searchQuery(query);
 		const rank = sql<number>`ts_rank_cd(${vector}, ${tsQuery})`;
 		const rows = await this.db
@@ -204,6 +207,7 @@ const matchColumns = {
 	source: ragDocuments.source,
 	chunkIndex: ragChunks.chunkIndex,
 	content: ragChunks.content,
+	context: ragChunks.context,
 };
 
 /** Numeric SQL expressions come back as strings from postgres-js. */

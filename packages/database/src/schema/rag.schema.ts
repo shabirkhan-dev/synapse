@@ -21,8 +21,16 @@ export const TEXT_SEARCH_CONFIG = "simple";
  * `to_tsvector('<config>', column)` — the exact expression the GIN index is built on. Queries must
  * use this helper (with the literal config, not a bind parameter) or Postgres will not use the index.
  */
-export function searchVector(column: AnyColumn): SQL {
+export function searchVector(column: AnyColumn | SQL): SQL {
 	return sql`to_tsvector(${sql.raw(`'${TEXT_SEARCH_CONFIG}'`)}, ${column})`;
+}
+
+/**
+ * What keyword search reads for a chunk: its context line (`Title › headings`, null before
+ * text-v2) and its content. The GIN index is built on `searchVector` of exactly this expression.
+ */
+export function chunkSearchText(chunk: { context: AnyColumn; content: AnyColumn }): SQL {
+	return sql`coalesce(${chunk.context}, '') || ' ' || ${chunk.content}`;
 }
 
 /**
@@ -121,8 +129,10 @@ export const ragChunks = pgTable(
 		ownerId: text("owner_id").notNull(),
 		chunkIndex: integer("chunk_index").notNull(),
 		content: text("content").notNull(),
+		/** `Document title › headings` (text-v2); embedded and keyword-indexed with the content. */
+		context: text("context"),
 		embedding: vector("embedding", { dimensions: EMBEDDING_DIMENSIONS }).notNull(),
-		/** Chunker that produced this chunk (`@synapse/knowledge`, e.g. `text-v1;size=1000;overlap=150`). */
+		/** Chunker that produced this chunk (`@synapse/knowledge`, e.g. `text-v2;size=1000;overlap=150`). */
 		chunkerVersion: text("chunker_version"),
 		/** Embedding model that produced the vector (e.g. `openrouter:openai/text-embedding-3-small`). */
 		embeddingModel: text("embedding_model"),
@@ -132,7 +142,7 @@ export const ragChunks = pgTable(
 		uniqueIndex("rag_chunks_document_chunk_unique").on(table.documentId, table.chunkIndex),
 		index("rag_chunks_owner_id_idx").on(table.ownerId),
 		index("rag_chunks_embedding_hnsw_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
-		index("rag_chunks_content_search_idx").using("gin", searchVector(table.content)),
+		index("rag_chunks_search_idx").using("gin", searchVector(chunkSearchText(table))),
 	],
 );
 

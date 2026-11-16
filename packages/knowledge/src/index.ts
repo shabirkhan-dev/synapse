@@ -1,3 +1,10 @@
+export {
+	chunkContext,
+	chunkDocument,
+	chunkEmbeddingText,
+	type DocumentChunk,
+	splitSections,
+} from "./chunking/document-chunker";
 export { type ChunkOptions, chunkText } from "./chunking/text-chunker";
 export { assertEmbeddingDimensions, KNOWLEDGE_ERROR_CODES } from "./embeddings/embedding-errors";
 export {

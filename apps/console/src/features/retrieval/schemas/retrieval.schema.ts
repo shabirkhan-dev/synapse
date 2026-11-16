@@ -7,6 +7,8 @@ export const matchSchema = z.object({
 	documentId: z.string(),
 	documentTitle: z.string(),
 	chunkIndex: z.number().int(),
+	/** `Title › headings` the chunk sits under; null for chunks indexed before text-v2. */
+	context: z.string().nullable().optional(),
 	content: z.string(),
 	score: z.number(),
 	ranks: z

@@ -52,6 +52,8 @@ export function createChatTools({
 					citation: nextCitation++,
 					documentId: match.documentId,
 					title: match.documentTitle,
+					/** `Title › headings` the passage sits under (null before chunker text-v2). */
+					context: match.context,
 					source: match.source,
 					score: Number(match.score.toFixed(4)),
 					content: match.content,

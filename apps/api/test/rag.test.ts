@@ -47,7 +47,7 @@ describe("rag", () => {
 		expect(repository.chunks).toHaveLength(data.chunkCount);
 		expect(repository.chunks.every((chunk) => chunk.embedding.length === 1536)).toBe(true);
 		expect(repository.chunks[0]).toMatchObject({
-			chunkerVersion: "text-v1;size=200;overlap=20",
+			chunkerVersion: "text-v2;size=200;overlap=20",
 			embeddingModel: "mock:mock-embedding",
 		});
 		expect(embeddingModel.doEmbedCalls).toHaveLength(1);
@@ -103,7 +103,7 @@ describe("rag", () => {
 			chatModel: "mock:mock-chat",
 			promptVersion: "rag-answer@2",
 			embeddingModel: "mock:mock-embedding",
-			chunkerVersion: "text-v1;size=200;overlap=20",
+			chunkerVersion: "text-v2;size=200;overlap=20",
 			usage: { inputTokens: 10, outputTokens: 5 },
 		});
 

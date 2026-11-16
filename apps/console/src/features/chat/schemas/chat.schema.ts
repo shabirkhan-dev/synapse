@@ -37,5 +37,6 @@ export const searchResultsSchema = z.array(
 		title: z.string(),
 		source: z.string().nullable(),
 		content: z.string(),
+		context: z.string().nullable().optional(),
 	}),
 );

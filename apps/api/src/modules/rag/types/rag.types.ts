@@ -12,6 +12,8 @@ export type NewRagDocument = {
 export type NewRagChunk = {
 	chunkIndex: number;
 	content: string;
+	/** `Document title › headings` (chunker text-v2); embedded and keyword-indexed with the content. */
+	context?: string | null;
 	embedding: number[];
 	/** Chunker and embedding model that produced this chunk (`@synapse/knowledge`). */
 	chunkerVersion?: string | null;
@@ -33,6 +35,8 @@ export type RagChunk = {
 	id: string;
 	chunkIndex: number;
 	content: string;
+	/** `Title › headings`; `null` on chunks from before text-v2. */
+	context: string | null;
 	chunkerVersion: string | null;
 	embeddingModel: string | null;
 };
@@ -52,6 +56,8 @@ export type RagMatch = {
 	source: string | null;
 	chunkIndex: number;
 	content: string;
+	/** `Title › headings` the chunk sits under; `null` on chunks from before text-v2. */
+	context: string | null;
 	/** Relevance, higher is better: cosine similarity (vector) or RRF score (hybrid). */
 	score: number;
 	/** 1-based rank in the vector and keyword lists that found this chunk. */

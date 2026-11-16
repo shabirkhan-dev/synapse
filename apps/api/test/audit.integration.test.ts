@@ -84,7 +84,7 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 				chatModel: "mock:mock-chat",
 				promptVersion: "rag-answer@2",
 				embeddingModel: "mock:mock-embedding",
-				chunkerVersion: "text-v1;size=200;overlap=20",
+				chunkerVersion: "text-v2;size=200;overlap=20",
 			},
 		});
 		expect((await audit.list(owner, { limit: 10 })).map((e) => e.action)).toContain(

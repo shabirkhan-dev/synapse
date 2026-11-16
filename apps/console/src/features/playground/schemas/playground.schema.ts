@@ -21,6 +21,8 @@ const matchSchema = z.object({
 	documentTitle: z.string(),
 	source: z.string().nullable(),
 	chunkIndex: z.number().int(),
+	/** `Title › headings` the chunk sits under; null for chunks indexed before text-v2. */
+	context: z.string().nullable().optional(),
 	content: z.string(),
 	score: z.number(),
 	ranks: z

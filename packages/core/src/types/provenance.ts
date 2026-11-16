@@ -8,7 +8,7 @@ export interface AnswerProvenance {
 	promptVersion: string;
 	/** `provider:model` of the embedding model the passages were retrieved with. */
 	embeddingModel: string;
-	/** Chunker that produced the passages, e.g. `text-v1;size=1000;overlap=150`. */
+	/** Chunker that produced the passages, e.g. `text-v2;size=1000;overlap=150`. */
 	chunkerVersion: string;
 	/** `provider:model` of the reranker that ordered the passages; absent when none ran. */
 	reranker?: string;

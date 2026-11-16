@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import {
+	chunkSearchText,
 	createDatabase,
 	ragChunks,
 	runMigrations,
@@ -170,11 +171,42 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 
 		await database.db.execute(sql`set enable_seqscan = off`);
 		const plan = await database.db.execute(
-			sql`explain select id from rag_chunks where ${searchVector(ragChunks.content)} @@ ${searchQuery("sku -cats")}`,
+			sql`explain select id from rag_chunks where ${searchVector(chunkSearchText(ragChunks))} @@ ${searchQuery("sku -cats")}`,
 		);
 		await database.db.execute(sql`reset enable_seqscan`);
-		expect(JSON.stringify([...plan])).toContain("rag_chunks_content_search_idx");
+		expect(JSON.stringify([...plan])).toContain("rag_chunks_search_idx");
 		await repository.deleteDocument(owner, document.id);
+	});
+
+	test("a chunk is found by words that are only in its context (title › headings), and returns it", async () => {
+		const contextOwner = `it-${crypto.randomUUID()}`;
+		const document = await repository.createDocument(
+			{ ownerId: contextOwner, title: "Lumen warranty" },
+			[
+				{
+					chunkIndex: 0,
+					content: "Zippers and buckles are replaced free for the life of the product.",
+					context: "Lumen warranty › Hardware",
+					embedding: fakeEmbedding("zippers"),
+					embeddingModel: MODEL,
+				},
+			],
+		);
+		const matches = await repository.keywordSearch({
+			ownerId: contextOwner,
+			query: "warranty hardware",
+			limit: 5,
+		});
+		expect(matches).toHaveLength(1);
+		expect(matches[0]).toMatchObject({ context: "Lumen warranty › Hardware" });
+		const [chunk] = await repository.listChunks({
+			ownerId: contextOwner,
+			documentId: document.id,
+			offset: 0,
+			limit: 5,
+		});
+		expect(chunk?.context).toBe("Lumen warranty › Hardware");
+		await repository.deleteDocument(contextOwner, document.id);
 	});
 
 	test("keyword search matches any term, ranks fuller matches first and honours exclusions", async () => {

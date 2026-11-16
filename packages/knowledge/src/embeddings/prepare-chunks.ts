@@ -1,12 +1,15 @@
 import type { EmbeddingGateway } from "@synapse/core/contracts";
 
-import { type ChunkOptions, chunkText } from "../chunking/text-chunker";
+import { chunkContext, chunkDocument, chunkEmbeddingText } from "../chunking/document-chunker";
+import type { ChunkOptions } from "../chunking/text-chunker";
 import { chunkerVersion, embeddingVersion } from "../versioning/versions";
 import { assertEmbeddingDimensions } from "./embedding-errors";
 
 export type PreparedChunk = {
 	chunkIndex: number;
 	content: string;
+	/** Document title and heading path (`Title › Section`); embedded and keyword-indexed with the content. */
+	context: string;
 	embedding: number[];
 };
 
@@ -35,12 +38,17 @@ export function createChunkPreparer({ embedding, chunking, dimensions }: ChunkPr
 		...versions,
 
 		/** `null` when the content produces no chunks. */
-		async prepare(content: string): Promise<PreparedChunks | null> {
-			const pieces = chunkText(content, chunking);
+		async prepare(content: string, { title }: { title: string }): Promise<PreparedChunks | null> {
+			const pieces = chunkDocument(content, chunking).map((piece) => ({
+				content: piece.content,
+				context: chunkContext(title, piece.headings),
+			}));
 			if (pieces.length === 0) {
 				return null;
 			}
-			const vectors = await embedding.embedMany(pieces);
+			const vectors = await embedding.embedMany(
+				pieces.map((piece) => chunkEmbeddingText(piece.context, piece.content)),
+			);
 			for (const vector of vectors) {
 				assertEmbeddingDimensions(vector, dimensions);
 			}
@@ -48,7 +56,8 @@ export function createChunkPreparer({ embedding, chunking, dimensions }: ChunkPr
 				...versions,
 				chunks: pieces.map((piece, chunkIndex) => ({
 					chunkIndex,
-					content: piece,
+					content: piece.content,
+					context: piece.context,
 					embedding: vectors[chunkIndex] ?? [],
 				})),
 			};

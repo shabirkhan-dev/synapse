@@ -16,6 +16,8 @@ export const documentListSchema = z.array(documentSchema);
 export const chunkSchema = z.object({
 	id: z.string(),
 	chunkIndex: z.number().int(),
+	/** `Title › headings` the chunk sits under; null for chunks indexed before text-v2. */
+	context: z.string().nullable().optional(),
 	content: z.string(),
 	chunkerVersion: z.string().nullable(),
 	embeddingModel: z.string().nullable(),

@@ -14,7 +14,7 @@ function memoryPorts(rows: Row[]) {
 				.filter((row) => row.model !== embeddingModel && (!afterChunkId || row.id > afterChunkId))
 				.toSorted((a, b) => a.id.localeCompare(b.id))
 				.slice(0, limit)
-				.map(({ id, content }) => ({ id, content }));
+				.map(({ id, content }) => ({ id, content, context: id === "c1" ? "Doc › Intro" : null }));
 		},
 		async saveEmbeddings({ embeddingModel, vectors }) {
 			for (const { id, embedding } of vectors) {

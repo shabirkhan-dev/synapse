@@ -30,7 +30,7 @@ const chunking = { size: 40, overlap: 0 };
 
 describe("versions", () => {
 	test("are stable strings derived from settings and model", () => {
-		expect(chunkerVersion({ size: 1000, overlap: 150 })).toBe("text-v1;size=1000;overlap=150");
+		expect(chunkerVersion({ size: 1000, overlap: 150 })).toBe("text-v2;size=1000;overlap=150");
 		expect(embeddingVersion({ provider: "openrouter", model: "x/y" })).toBe("openrouter:x/y");
 	});
 });
@@ -41,13 +41,20 @@ describe("chunk preparer", () => {
 		const preparer = createChunkPreparer({ embedding, chunking, dimensions: 3 });
 		const prepared = await preparer.prepare(
 			"First paragraph is here.\n\nSecond paragraph is here.",
+			{ title: "Doc" },
 		);
 		expect(prepared?.chunks.map((c) => c.content)).toEqual([
 			"First paragraph is here.",
 			"Second paragraph is here.",
 		]);
-		expect(prepared?.chunks[1]).toMatchObject({ chunkIndex: 1, embedding: [25, 25, 25] });
-		expect(prepared?.chunkerVersion).toBe("text-v1;size=40;overlap=0");
+		// The embedded text is "Doc\n\n" + the chunk (the fake embeds its length).
+		expect(prepared?.chunks[1]).toMatchObject({
+			chunkIndex: 1,
+			context: "Doc",
+			embedding: [30, 30, 30],
+		});
+		expect(embedding.calls[0]?.[1]).toBe("Doc\n\nSecond paragraph is here.");
+		expect(prepared?.chunkerVersion).toBe("text-v2;size=40;overlap=0");
 		expect(prepared?.embeddingModel).toBe("test:embed-1");
 		expect(embedding.calls).toHaveLength(1);
 	});
@@ -55,13 +62,15 @@ describe("chunk preparer", () => {
 	test("returns null for content without chunks", async () => {
 		const embedding = fakeEmbedding(3);
 		const preparer = createChunkPreparer({ embedding, chunking, dimensions: 3 });
-		expect(await preparer.prepare("   ")).toBeNull();
+		expect(await preparer.prepare("   ", { title: "Doc" })).toBeNull();
 		expect(embedding.calls).toHaveLength(0);
 	});
 
 	test("rejects vectors with the wrong dimensions", async () => {
 		const preparer = createChunkPreparer({ embedding: fakeEmbedding(2), chunking, dimensions: 3 });
-		const error = await preparer.prepare("hello").catch((caught: unknown) => caught);
+		const error = await preparer
+			.prepare("hello", { title: "Doc" })
+			.catch((caught: unknown) => caught);
 		expect(isSynapseError(error) && error.code).toBe(
 			KNOWLEDGE_ERROR_CODES.EMBEDDING_DIMENSION_MISMATCH,
 		);

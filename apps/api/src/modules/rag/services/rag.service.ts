@@ -226,7 +226,9 @@ export class RagService {
 	}
 
 	private async index(document: IngestableDocument): Promise<RagDocument> {
-		const prepared = await this.knowledge.prepare(document.content).catch(toAppError);
+		const prepared = await this.knowledge
+			.prepare(document.content, { title: document.title })
+			.catch(toAppError);
 		if (!prepared) {
 			throw emptyDocumentError();
 		}

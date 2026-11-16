@@ -37,6 +37,9 @@ export function ChunkList({ chunks, current }: ChunkListProps) {
 							<span className="text-xs font-medium text-muted-foreground tabular-nums">
 								Chunk {chunk.chunkIndex + 1}
 							</span>
+							{chunk.context ? (
+								<span className="text-xs text-muted-foreground">· {chunk.context}</span>
+							) : null}
 							{issues.length > 0 ? (
 								<Badge variant="secondary">
 									<HugeiconsIcon icon={Alert02Icon} strokeWidth={2} aria-hidden="true" />

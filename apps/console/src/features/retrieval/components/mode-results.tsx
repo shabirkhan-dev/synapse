@@ -67,7 +67,7 @@ export function ModeResults({ results }: { results: ModeResult[] }) {
 														href={`/documents/${encodeURIComponent(match.documentId)}`}
 														className="min-w-0 truncate font-medium underline-offset-2 hover:underline"
 													>
-														{match.documentTitle}
+														{match.context || match.documentTitle}
 													</Link>
 													<span className="shrink-0 text-xs text-muted-foreground">
 														chunk {match.chunkIndex + 1}

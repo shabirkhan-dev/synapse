@@ -232,6 +232,7 @@ export class InMemoryRagRepository implements RagRepository {
 				id: c.id,
 				chunkIndex: c.chunkIndex,
 				content: c.content,
+				context: c.context ?? null,
 				chunkerVersion: c.chunkerVersion ?? null,
 				embeddingModel: c.embeddingModel ?? null,
 			}));
@@ -281,7 +282,8 @@ export class InMemoryRagRepository implements RagRepository {
 		return this.chunks
 			.filter((chunk) => chunk.ownerId === ownerId)
 			.map((chunk) => {
-				const text = chunk.content.toLowerCase();
+				// Like the Postgres index: the context line is searched with the content.
+				const text = `${chunk.context ?? ""} ${chunk.content}`.toLowerCase();
 				return this.toMatch(chunk, words.filter((word) => text.includes(word)).length);
 			})
 			.filter((match) => match.score > 0)
@@ -301,6 +303,7 @@ export class InMemoryRagRepository implements RagRepository {
 			source: document?.source ?? null,
 			chunkIndex: chunk.chunkIndex,
 			content: chunk.content,
+			context: chunk.context ?? null,
 			score,
 		};
 	}

@@ -63,6 +63,8 @@ export const ragMatchSchema = z
 		source: z.string().nullable(),
 		chunkIndex: z.number().int(),
 		content: z.string(),
+		/** `Title › headings` the chunk sits under; `null` for chunks indexed before text-v2. */
+		context: z.string().nullable(),
 		/**
 		 * Higher is better: cosine similarity in `vector` mode, RRF score in `hybrid` mode, the
 		 * reranker's relevance when `ranks.rerank` is set. Never compare scores across these.
@@ -118,7 +120,7 @@ export const answerProvenanceSchema = z
 		chatModel: z.string().openapi({ example: "openrouter:openai/gpt-4o-mini" }),
 		promptVersion: z.string().openapi({ example: "rag-answer@2" }),
 		embeddingModel: z.string().openapi({ example: "openrouter:openai/text-embedding-3-small" }),
-		chunkerVersion: z.string().openapi({ example: "text-v1;size=1000;overlap=150" }),
+		chunkerVersion: z.string().openapi({ example: "text-v2;size=1000;overlap=150" }),
 		reranker: z.string().optional().openapi({ example: "cohere:rerank-v3.5" }),
 		usage: z.object({
 			inputTokens: z.number().int().optional(),
@@ -156,6 +158,8 @@ export const ragChunkSchema = z
 		id: z.uuid(),
 		chunkIndex: z.number().int(),
 		content: z.string(),
+		/** `Title › headings`; `null` for chunks indexed before text-v2. */
+		context: z.string().nullable(),
 		/** `null` for chunks stored before versions were recorded. */
 		chunkerVersion: z.string().nullable(),
 		embeddingModel: z.string().nullable(),

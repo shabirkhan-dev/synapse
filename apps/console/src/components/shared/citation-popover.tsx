@@ -6,6 +6,8 @@ export type CitedPassage = {
 	title: string;
 	source: string | null;
 	content: string;
+	/** `Title › headings` the passage sits under, when known. */
+	context?: string | null;
 };
 
 const isWebLink = (href: string | null): href is string =>
@@ -24,7 +26,7 @@ export function CitationPopover({ passage }: { passage: CitedPassage }) {
 			<PopoverContent className="w-80 gap-2" side="top">
 				<p className="flex items-baseline gap-2">
 					<span className="font-semibold text-primary tabular-nums">[{passage.citation}]</span>
-					<span className="font-medium text-foreground">{passage.title}</span>
+					<span className="font-medium text-foreground">{passage.context || passage.title}</span>
 				</p>
 				{passage.source ? (
 					isWebLink(passage.source) ? (

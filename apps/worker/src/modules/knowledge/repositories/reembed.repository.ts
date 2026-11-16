@@ -22,7 +22,7 @@ export class DrizzleReembedRepository {
 		ownerId?: string;
 	}): Promise<StaleChunk[]> {
 		return this.db
-			.select({ id: ragChunks.id, content: ragChunks.content })
+			.select({ id: ragChunks.id, content: ragChunks.content, context: ragChunks.context })
 			.from(ragChunks)
 			.where(
 				and(

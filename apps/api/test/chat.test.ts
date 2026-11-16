@@ -186,7 +186,7 @@ describe("chat", () => {
 				chatModel: "mock:mock-chat",
 				promptVersion: expect.stringMatching(/^chat-assistant@\d+$/),
 				embeddingModel: "mock:mock-embedding",
-				chunkerVersion: expect.stringContaining("text-v1"),
+				chunkerVersion: expect.stringContaining("text-v2"),
 				usage: { inputTokens: 10, outputTokens: 5 },
 			},
 		});

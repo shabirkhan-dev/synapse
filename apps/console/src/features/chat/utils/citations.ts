@@ -23,6 +23,7 @@ export function passagesOf(
 				title: result.title,
 				source: result.source,
 				content: result.content,
+				context: result.context ?? null,
 			});
 		}
 	}

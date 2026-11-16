@@ -43,6 +43,12 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
   use `import.meta.url`.
+- **Chunker text-v2** (syn-068): chunks keep to Markdown sections and store `rag_chunks.context`
+  (`Title › headings`), which is embedded and keyword-indexed with the content. Chunks from before
+  are text-v1 (no context) and show "Out of date" on the document page; nothing re-chunks them
+  automatically (the worker only re-embeds), so re-adding the document is the way to upgrade it.
+  The seed retrieval eval showed no change (0.944 recall@3 and MRR): its documents are short and
+  have no headings.
 - **Chunk versions:** every new chunk stores `chunker_version` and `embedding_model`; rows from before
   migration `0002_chunk_versions` have nulls. Vector search only compares chunks with the current
   `embedding_model` (or null), so changing the embedding model hides old vectors until re-embedded

@@ -14,7 +14,7 @@ export function MatchesList({ matches }: { matches: RagMatch[] }) {
 				<li key={match.chunkId} className="flex flex-col gap-1 rounded-md border p-3">
 					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
 						<span className="tabular-nums text-muted-foreground">#{position + 1}</span>
-						<span className="font-medium">{match.documentTitle}</span>
+						<span className="font-medium">{match.context || match.documentTitle}</span>
 						<span className="text-muted-foreground">chunk {match.chunkIndex + 1}</span>
 						<SourceLink source={match.source} />
 						<span className="ml-auto flex gap-2 text-muted-foreground tabular-nums">
