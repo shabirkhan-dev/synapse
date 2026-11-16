@@ -106,6 +106,7 @@ contextual retrieval and Ragas.
 | One citation system: numbered citations in chat, passage preview, source cards | ✅ | syn-067 |
 | Context-carrying chunks: heading path + title in embeddings and keyword index | ✅ | syn-068 |
 | Light / dark / system theme switch; refined surfaces (Calesto, HockeyStack as inspiration) | ✅ | syn-069 |
+| Closer to the Calesto reference: account menu, page pill, chat cards, floating composer | ✅ | syn-072 |
 | Scoped questions: ask about chosen documents | ⏭️ | syn-070 |
 | Risk: chaos "Postgres goes away" failed once in CI (API refused connections) | ⏭️ | syn-071 |
 | Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | — |

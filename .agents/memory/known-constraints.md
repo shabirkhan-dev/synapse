@@ -151,7 +151,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   build time (Docker build arg). Browser flows are covered by `tests/e2e` (CI job `e2e`).
   `next start` warns with `output: standalone` — run `.next/standalone/apps/console/server.js`.
   The shell is a sidebar (syn-047): on phones its links are inside a drawer, so tests open it first.
-  Theme (syn-069): light, dark or system from the sidebar footer, stored by `next-themes` in
+  Theme (syn-069): light, dark or system from the account menu (syn-072: the avatar row at the foot of
+  the sidebar; Sign out lives there too, so tests open "Account menu" first), stored by `next-themes` in
   `localStorage` (`theme`), applied as a class on `<html>`; the sidebar keeps its open state in a `sidebar_state` cookie.
   Pages use `PageHeader` / `EmptyState` / `BrandMark` from `components/shared` (syn-065); the accent is
   indigo `--primary`, re-measure contrast (comments in `globals.css`) when changing a token.

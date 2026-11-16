@@ -9,7 +9,6 @@ import {
 	CheckmarkCircle02Icon,
 	DashboardSpeed01Icon,
 	Files01Icon,
-	Logout01Icon,
 	Robot01Icon,
 	TestTube01Icon,
 	UserGroupIcon,
@@ -38,7 +37,7 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
 
-import { ThemeSwitcher } from "./theme-switcher";
+import { AccountMenu } from "./account-menu";
 
 export type AppShellProps = {
 	children: ReactNode;
@@ -81,6 +80,7 @@ const NAV: ReadonlyArray<{ label: string; items: ReadonlyArray<NavItem> }> = [
 ];
 
 const ALL = NAV.flatMap((group) => group.items);
+const MAIN_GROUP = "Workspace";
 
 /**
  * The app frame: a sidebar (organization, navigation, you) and the page in an inset panel. On
@@ -115,7 +115,14 @@ export function AppShell({
 					<nav aria-label="Main">
 						{NAV.map((group) => (
 							<SidebarGroup key={group.label}>
-								<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+								{/* The main group needs no heading (its links say what they are). */}
+								{group.label === MAIN_GROUP ? (
+									<h2 className="sr-only">{group.label}</h2>
+								) : (
+									<SidebarGroupLabel className="text-[0.8rem] font-normal">
+										{group.label}
+									</SidebarGroupLabel>
+								)}
 								<SidebarGroupContent>
 									<SidebarMenu>
 										{group.items.map((item) => (
@@ -134,41 +141,39 @@ export function AppShell({
 					</nav>
 				</SidebarContent>
 				<SidebarFooter>
-					<SidebarMenu>
-						<AccountLink email={email} active={pathname.startsWith("/account")} />
-						<SidebarMenuItem>
-							<SidebarMenuButton
-								className="h-9 gap-2.5 text-sm"
-								disabled={signingOut}
-								onClick={onSignOut}
-							>
-								<HugeiconsIcon icon={Logout01Icon} strokeWidth={1.75} aria-hidden="true" />
-								<span>{signingOut ? "Signing out…" : "Sign out"}</span>
-							</SidebarMenuButton>
-						</SidebarMenuItem>
-					</SidebarMenu>
-					<div className="flex items-center justify-between gap-2 px-2 pt-1 text-xs text-muted-foreground">
-						<span>Theme</span>
-						<ThemeSwitcher />
-					</div>
+					<AccountFooter
+						email={email}
+						signingOut={signingOut}
+						onSignOut={onSignOut}
+						active={pathname.startsWith("/account")}
+					/>
 				</SidebarFooter>
 			</Sidebar>
-			<SidebarInset className="min-w-0">
-				<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+			{/* A soft accent glow in the corner of the dark panel; the light panel stays plain. */}
+			<SidebarInset className="min-w-0 dark:bg-[radial-gradient(ellipse_70%_55%_at_100%_100%,color-mix(in_oklab,var(--primary)_10%,transparent),transparent)]">
+				<header className="flex h-14 shrink-0 items-center gap-3 px-4">
 					<SidebarTrigger aria-label="Show or hide the sidebar" className="-ms-1" />
-					<p className="flex min-w-0 items-center gap-1.5 text-sm">
-						{section ? (
-							<>
-								<span className="text-muted-foreground">{section}</span>
-								<span aria-hidden="true" className="text-muted-foreground">
-									/
-								</span>
-							</>
+					<p className="flex min-w-0 items-center gap-2 text-sm">
+						{section && section !== MAIN_GROUP ? (
+							<span className="hidden text-muted-foreground sm:inline">{section}</span>
 						) : null}
-						<span className="truncate font-medium">{title}</span>
+						<span className="inline-flex min-w-0 items-center gap-2 rounded-full border bg-card px-3 py-1.5 font-medium shadow-xs">
+							{current ? (
+								<HugeiconsIcon
+									icon={current.icon}
+									size={15}
+									strokeWidth={1.75}
+									className="shrink-0 text-primary"
+									aria-hidden="true"
+								/>
+							) : null}
+							<span className="truncate">{title}</span>
+						</span>
 					</p>
 				</header>
-				{notice ? <div className="border-b bg-muted px-4 py-2 md:px-6">{notice}</div> : null}
+				{notice ? (
+					<div className="mx-4 rounded-xl border bg-muted/60 px-4 py-2.5 md:mx-6">{notice}</div>
+				) : null}
 				<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-6">{children}</main>
 			</SidebarInset>
 		</SidebarProvider>
@@ -195,7 +200,7 @@ function NavLink({
 		<SidebarMenuItem>
 			<SidebarMenuButton
 				isActive={active}
-				className="h-9 gap-2.5 text-sm data-active:[&_svg]:text-sidebar-primary"
+				className="h-10 gap-3 rounded-lg px-2.5 text-[0.95rem] [&_svg]:size-[18px]! [&_svg]:text-muted-foreground data-active:[&_svg]:text-sidebar-primary"
 				render={
 					<Link
 						href={item.href}
@@ -208,7 +213,7 @@ function NavLink({
 				<span className="truncate">{item.label}</span>
 			</SidebarMenuButton>
 			{badge ? (
-				<SidebarMenuBadge className="top-2! rounded-md bg-sidebar-accent text-[0.7rem] text-muted-foreground empty:hidden">
+				<SidebarMenuBadge className="top-2.5! rounded-md bg-sidebar-accent text-[0.7rem] text-muted-foreground empty:hidden">
 					{badge}
 				</SidebarMenuBadge>
 			) : null}
@@ -216,37 +221,26 @@ function NavLink({
 	);
 }
 
-/** You: your initial, "Account" and your email; opens the account page. */
-function AccountLink({ email, active }: { email: string | null; active: boolean }) {
+/** You, at the foot of the sidebar; following a link there also closes the phone drawer. */
+function AccountFooter({
+	email,
+	signingOut,
+	onSignOut,
+	active,
+}: {
+	email: string | null;
+	signingOut: boolean;
+	onSignOut: () => void;
+	active: boolean;
+}) {
 	const { setOpenMobile } = useSidebar();
 	return (
-		<SidebarMenuItem>
-			<SidebarMenuButton
-				size="lg"
-				isActive={active}
-				render={
-					<Link
-						href="/account"
-						aria-current={active ? "page" : undefined}
-						onClick={() => setOpenMobile(false)}
-					/>
-				}
-			>
-				<span
-					aria-hidden="true"
-					className="flex size-7 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground uppercase"
-				>
-					{email?.slice(0, 1) ?? "?"}
-				</span>
-				<span className="flex min-w-0 flex-col">
-					<span className="font-medium">Account</span>
-					{email ? (
-						<span className="truncate text-xs text-sidebar-foreground/80" title={email}>
-							{email}
-						</span>
-					) : null}
-				</span>
-			</SidebarMenuButton>
-		</SidebarMenuItem>
+		<AccountMenu
+			email={email}
+			signingOut={signingOut}
+			onSignOut={onSignOut}
+			onNavigate={() => setOpenMobile(false)}
+			active={active}
+		/>
 	);
 }

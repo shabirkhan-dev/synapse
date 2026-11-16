@@ -58,7 +58,10 @@ export function ChatThreadContainer({
 			<p role="status" className="sr-only">
 				{streaming ? "Synapse is answering…" : ""}
 			</p>
-			<div ref={end} className="sticky bottom-0 mt-auto bg-background pt-2 pb-4">
+			<div
+				ref={end}
+				className="sticky bottom-0 mt-auto bg-linear-to-t from-background from-60% to-transparent pt-6 pb-4"
+			>
 				<ChatComposer
 					streaming={streaming}
 					draft={status.kind === "failed" ? status.draft : ""}

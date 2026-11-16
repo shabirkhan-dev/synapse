@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowUp02Icon, StopIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@synapse/ui/components/button";
 import { Label } from "@synapse/ui/components/label";
 import { Textarea } from "@synapse/ui/components/textarea";
@@ -46,7 +48,7 @@ export function ChatComposer({ streaming, draft, onSend, onStop }: ChatComposerP
 			<Label htmlFor="chat-message" className="sr-only">
 				Message
 			</Label>
-			<div className="flex flex-col gap-1 rounded-2xl border bg-card p-2 shadow-sm transition-shadow focus-within:border-ring/50 focus-within:ring-1 focus-within:ring-ring/20">
+			<div className="flex flex-col gap-1 rounded-3xl border bg-card p-2.5 shadow-lg shadow-black/5 transition-shadow focus-within:border-ring/50 focus-within:ring-1 focus-within:ring-ring/20">
 				<Textarea
 					key={draft}
 					id="chat-message"
@@ -66,12 +68,28 @@ export function ChatComposer({ streaming, draft, onSend, onStop }: ChatComposerP
 						you are in.
 					</p>
 					{streaming ? (
-						<Button key="stop" type="button" variant="outline" onClick={onStop}>
-							Stop
+						<Button
+							key="stop"
+							type="button"
+							variant="outline"
+							size="icon"
+							aria-label="Stop"
+							title="Stop"
+							className="size-9 shrink-0 rounded-full"
+							onClick={onStop}
+						>
+							<HugeiconsIcon icon={StopIcon} size={16} strokeWidth={2} aria-hidden="true" />
 						</Button>
 					) : (
-						<Button key="send" type="submit">
-							Send
+						<Button
+							key="send"
+							type="submit"
+							size="icon"
+							aria-label="Send"
+							title="Send"
+							className="size-9 shrink-0 rounded-full"
+						>
+							<HugeiconsIcon icon={ArrowUp02Icon} size={18} strokeWidth={2} aria-hidden="true" />
 						</Button>
 					)}
 				</div>

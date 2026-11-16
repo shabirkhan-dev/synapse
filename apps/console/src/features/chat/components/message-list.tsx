@@ -31,7 +31,7 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 			{shown.map((message) =>
 				message.role === "user" ? (
 					<li key={message.id} className="flex justify-end">
-						<div className="max-w-[min(85%,42rem)] rounded-xl bg-muted px-3 py-2 text-sm leading-relaxed">
+						<div className="max-w-[min(85%,42rem)] rounded-2xl border bg-card px-4 py-3 text-[0.95rem] leading-relaxed shadow-xs">
 							<span className="sr-only">You: </span>
 							<p className="break-words whitespace-pre-wrap">{textOf(message)}</p>
 						</div>
@@ -71,6 +71,7 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
 						// oxlint-disable-next-line react/no-array-index-key -- text parts carry no id
 						key={index}
 						text={part.text}
+						className="text-[0.95rem] leading-7"
 						citations={known}
 						renderCitation={renderCitation}
 					/>

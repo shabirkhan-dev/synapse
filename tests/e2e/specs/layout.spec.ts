@@ -48,7 +48,7 @@ test("at 320px every workspace page reflows and the drawer reaches every link an
 		// oxlint-disable-next-line no-await-in-loop
 		await Promise.all(links.map((link) => expect(link).toBeInViewport({ ratio: 1 })));
 		// oxlint-disable-next-line no-await-in-loop
-		await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeInViewport();
+		await expect(page.getByRole("button", { name: "Account menu" })).toBeInViewport();
 		// oxlint-disable-next-line no-await-in-loop
 		await expect(page.locator(`a[aria-current=page][href="${path}"]`)).toBeVisible();
 		// oxlint-disable-next-line no-await-in-loop
@@ -104,18 +104,23 @@ test("the theme follows the system until you choose one; the choice survives a r
 	const html = page.locator("html");
 	await expect(html).toHaveClass(/\bdark\b/);
 
-	const theme = page.getByRole("radiogroup", { name: "Theme" });
-	await theme.getByRole("radio", { name: "Light" }).click();
+	const chooseTheme = async (name: string) => {
+		await page.getByRole("button", { name: "Account menu" }).click();
+		await page.getByRole("menuitemradio", { name }).click();
+	};
+	await chooseTheme("Light");
 	await expect(html).toHaveClass(/\blight\b/);
-	await expect(theme.getByRole("radio", { name: "Light" })).toHaveAttribute("aria-checked", "true");
 
 	await page.reload();
 	await page.getByRole("heading", { level: 1, name: "Documents" }).waitFor();
 	await expect(html).toHaveClass(/\blight\b/);
+	await page.getByRole("button", { name: "Account menu" }).click();
+	await expect(page.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
+		"aria-checked",
+		"true",
+	);
+	await page.keyboard.press("Escape");
 
-	await page
-		.getByRole("radiogroup", { name: "Theme" })
-		.getByRole("radio", { name: "System" })
-		.click();
+	await chooseTheme("System");
 	await expect(html).toHaveClass(/\bdark\b/);
 });

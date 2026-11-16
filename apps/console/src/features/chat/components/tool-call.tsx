@@ -1,4 +1,10 @@
-import { Alert02Icon, Brain02Icon, Clock01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import {
+	Alert02Icon,
+	ArrowRight01Icon,
+	Brain02Icon,
+	Clock01Icon,
+	Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { getToolName, isToolUIPart } from "ai";
 
@@ -30,32 +36,41 @@ export function ToolCall({ part }: { part: ChatPart }) {
 		? (tool.output as { remembered?: unknown } | undefined)?.remembered
 		: null;
 
-	return (
-		<div
-			className={`flex flex-col gap-1 text-xs ${failed ? "text-destructive" : "text-muted-foreground"}`}
-		>
-			<p className="flex items-center gap-1.5">
-				<HugeiconsIcon icon={icon} size={14} strokeWidth={1.5} aria-hidden="true" />
-				<span>
-					{label}
-					{typeof query === "string" ? <> for “{query}”</> : null}
-					{typeof remembered === "string" ? <>: “{remembered}”</> : null}
-					{passages ? <> · {passageCount(passages.length)}</> : null}
-				</span>
-			</p>
-			{passages && passages.length > 0 ? (
-				<details className="ms-5">
-					<summary className="cursor-pointer select-none hover:text-foreground">
-						Show sources
-					</summary>
-					<ul className="mt-1 flex list-disc flex-col gap-0.5 ps-4">
-						{uniqueTitles(passages).map((title) => (
-							<li key={title}>{title}</li>
-						))}
-					</ul>
-				</details>
-			) : null}
-		</div>
+	const summary = (
+		<>
+			<HugeiconsIcon icon={icon} size={15} strokeWidth={1.75} aria-hidden="true" />
+			<span>
+				{label}
+				{typeof query === "string" ? <> for “{query}”</> : null}
+				{typeof remembered === "string" ? <>: “{remembered}”</> : null}
+				{passages ? <> · {passageCount(passages.length)}</> : null}
+			</span>
+		</>
+	);
+	const tone = failed ? "text-destructive" : "text-muted-foreground";
+
+	// A search with passages opens to list them, like a collapsed step; other tool rows are plain.
+	return passages && passages.length > 0 ? (
+		<details className={`group text-[0.85rem] ${tone}`}>
+			<summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-md py-0.5 select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+				{summary}
+				<HugeiconsIcon
+					icon={ArrowRight01Icon}
+					size={14}
+					strokeWidth={2}
+					className="transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+					aria-hidden="true"
+				/>
+				<span className="sr-only">Show sources</span>
+			</summary>
+			<ul className="mt-1.5 ms-6 flex list-disc flex-col gap-0.5 ps-4">
+				{uniqueTitles(passages).map((title) => (
+					<li key={title}>{title}</li>
+				))}
+			</ul>
+		</details>
+	) : (
+		<p className={`flex items-center gap-2 text-[0.85rem] ${tone}`}>{summary}</p>
 	);
 }
 

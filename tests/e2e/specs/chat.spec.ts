@@ -30,7 +30,7 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
 	await expect(messages.getByText(ANSWER)).toBeVisible();
 	await expect(messages.getByText(`Searched your documents for “${QUESTION}”`)).toBeVisible();
-	await messages.getByText("Show sources").click();
+	await messages.getByText(`Searched your documents for “${QUESTION}”`).click();
 	await expect(messages.getByRole("listitem").filter({ hasText: /^Refund policy$/ })).toBeVisible();
 	// The citation opens the passage it cites; the cited document is listed under the answer.
 	await expect(messages.getByRole("list", { name: "Sources" })).toContainText("Refund policy[1]");

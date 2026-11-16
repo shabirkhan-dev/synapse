@@ -135,12 +135,16 @@ description as children, optional `badge` and `actions`); lists with nothing in 
 replies). Colour comes only from the theme tokens in `packages/ui/src/styles/globals.css`: one indigo
 accent (`--primary`, also `--ring`, `--sidebar-primary` and the current page in the sidebar) on
 neutral surfaces, with light and dark values measured for contrast (noted next to each token).
-Light, dark or system is chosen in the sidebar footer (`components/layout/theme-switcher.tsx`, a
-radio group) and kept by `next-themes` 0.4.6 (`providers/theme-provider.tsx`): it puts `light` or
+Light, dark or system is chosen in the account menu at the foot of the sidebar
+(`components/layout/account-menu.tsx`, a shadcn `DropdownMenu` with a radio group, Sign out and the
+account link; a gear next to it opens the account page) and kept by `next-themes` 0.4.6 (`providers/theme-provider.tsx`): it puts `light` or
 `dark` on `<html>` before paint, so Tailwind's `dark:` variant is the `.dark` class, not the media
 query. Dark mode has depth by surface: the frame (`--sidebar`) is darkest, the page panel
 (`--background`) a step lighter, cards lighter again. The current sidebar page is a neutral pill with
-its icon in the accent. Counts next to sidebar links come in through `SessionGate`'s `navBadges`
+its icon in the accent; the main group has no visible heading; the top bar shows the page as a pill
+tab; the dark panel has a soft accent glow in one corner. Chat: your message is a card, replies are
+larger text, a search step is an expandable row, and the composer is a floating card with a round
+send button. Counts next to sidebar links come in through `SessionGate`'s `navBadges`
 (e.g. the oversight feature's `PendingApprovalsBadge`).
 
 Untrusted text from the model or documents is never rendered as HTML. Answers (Playground and chat)

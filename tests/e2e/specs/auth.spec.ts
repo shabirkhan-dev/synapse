@@ -54,7 +54,8 @@ test("sign up, keep the session in an httpOnly cookie, verify the email, sign ou
 	await expect(page).toHaveURL(/\/verify-email$/);
 
 	await page.goto("/documents");
-	await page.getByRole("button", { name: "Sign out" }).click();
+	await page.getByRole("button", { name: "Account menu" }).click();
+	await page.getByRole("menuitem", { name: "Sign out" }).click();
 	await expect(page).toHaveURL(/\/sign-in$/);
 	expect(await refreshCookie(context)).toBeUndefined();
 	await page.goto("/documents");

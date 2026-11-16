@@ -119,10 +119,11 @@ export function Markdown({
 	text,
 	citations = NO_CITATIONS,
 	renderCitation = defaultCitation,
+	className,
 	...rest
 }: MarkdownProps & Omit<ComponentProps<"div">, "children">) {
 	return (
-		<div className="flex flex-col gap-3 text-sm break-words" {...rest}>
+		<div className={`flex flex-col gap-3 break-words ${className ?? "text-sm"}`} {...rest}>
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm, htmlAsText]}
 				skipHtml
