@@ -4,8 +4,21 @@ import type { AskedQuestion } from "../types/playground.types";
 import { AnswerText } from "./answer-text";
 import { SourceLink } from "./source-link";
 
-/** The answer, its numbered sources and what produced it. `feedback` renders below the answer. */
-export function AnswerPanel({ result, feedback }: { result: AskedQuestion; feedback: ReactNode }) {
+/**
+ * The answer, its numbered sources and what produced it. `actions` (copy, ask again) and
+ * `feedback` render below the answer, `followUps` after the sources.
+ */
+export function AnswerPanel({
+	result,
+	feedback,
+	actions,
+	followUps,
+}: {
+	result: AskedQuestion;
+	feedback: ReactNode;
+	actions?: ReactNode;
+	followUps?: ReactNode;
+}) {
 	const { answer, citations, provenance } = result;
 	return (
 		<section aria-label="Answer" className="flex flex-col gap-4">
@@ -17,7 +30,12 @@ export function AnswerPanel({ result, feedback }: { result: AskedQuestion; feedb
 				text={answer ?? ""}
 				citations={new Set(citations.map((citation) => citation.index))}
 			/>
-			{provenance ? feedback : null}
+			{provenance ? (
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					{feedback}
+					{actions ? <div className="flex items-center gap-1">{actions}</div> : null}
+				</div>
+			) : null}
 			{citations.length > 0 ? (
 				<div className="flex flex-col gap-2">
 					<h3 className="text-xs font-medium">Sources</h3>
@@ -32,6 +50,7 @@ export function AnswerPanel({ result, feedback }: { result: AskedQuestion; feedb
 					</ol>
 				</div>
 			) : null}
+			{followUps}
 			{provenance ? (
 				<details className="text-xs text-muted-foreground">
 					<summary className="cursor-pointer select-none">How this answer was made</summary>

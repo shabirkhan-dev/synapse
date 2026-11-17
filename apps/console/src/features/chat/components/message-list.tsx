@@ -1,8 +1,10 @@
-import { AiNetworkIcon } from "@hugeicons/core-free-icons";
+import { AiNetworkIcon, RepeatIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Button } from "@synapse/ui/components/button";
 import { isTextUIPart, isToolUIPart } from "ai";
 
 import { CitationPopover } from "@/components/shared/citation-popover";
+import { CopyButton } from "@/components/shared/copy-button";
 import { Markdown } from "@/components/shared/markdown";
 
 import type { ChatMessage, ChatPart } from "../types/chat.types";
@@ -14,12 +16,14 @@ export type MessageListProps = {
 	messages: ChatMessage[];
 	/** The last assistant message is still arriving. */
 	streaming: boolean;
+	/** Answer the last question again; offered on the last reply when given. */
+	onRegenerate?: () => void;
 };
 
 const visible = (part: ChatPart) => isTextUIPart(part) || isToolUIPart(part);
 
 /** The conversation, oldest first: your messages on the trailing side, Synapse's on the leading. */
-export function MessageList({ messages, streaming }: MessageListProps) {
+export function MessageList({ messages, streaming, onRegenerate }: MessageListProps) {
 	const shown = messages.filter(
 		(message) =>
 			message.role === "user" || (message.role === "assistant" && message.parts.some(visible)),
@@ -28,7 +32,7 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 
 	return (
 		<ol aria-label="Messages" className="flex flex-col gap-6">
-			{shown.map((message) =>
+			{shown.map((message, position) =>
 				message.role === "user" ? (
 					<li key={message.id} className="flex justify-end">
 						<div className="max-w-[min(85%,42rem)] rounded-2xl border bg-card px-4 py-3 text-[0.95rem] leading-relaxed shadow-xs">
@@ -37,7 +41,14 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 						</div>
 					</li>
 				) : (
-					<AssistantMessage key={message.id} message={message} />
+					<AssistantMessage
+						key={message.id}
+						message={message}
+						done={!(streaming && position === shown.length - 1)}
+						{...(onRegenerate && !streaming && position === shown.length - 1
+							? { onRegenerate }
+							: {})}
+					/>
 				),
 			)}
 			{waiting ? (
@@ -51,7 +62,16 @@ export function MessageList({ messages, streaming }: MessageListProps) {
 }
 
 /** A reply: its text with `[n]` opening the cited passage, its tool calls, and the cited sources. */
-function AssistantMessage({ message }: { message: ChatMessage }) {
+function AssistantMessage({
+	message,
+	done,
+	onRegenerate,
+}: {
+	message: ChatMessage;
+	/** Fully arrived: its actions can show. */
+	done: boolean;
+	onRegenerate?: () => void;
+}) {
 	const passages = passagesOf(message);
 	const known = new Set(passages.keys());
 	const cited = citedIn(message, passages).flatMap((citation) => {
@@ -80,6 +100,23 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
 				) : null,
 			)}
 			{cited.length > 0 ? <SourceCards passages={cited} /> : null}
+			{done ? (
+				<div className="-ms-2 flex items-center gap-1">
+					<CopyButton text={textOf(message)} />
+					{onRegenerate ? (
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							className="gap-1.5 text-muted-foreground"
+							onClick={onRegenerate}
+						>
+							<HugeiconsIcon icon={RepeatIcon} strokeWidth={1.75} aria-hidden="true" />
+							Regenerate
+						</Button>
+					) : null}
+				</div>
+			) : null}
 		</li>
 	);
 }

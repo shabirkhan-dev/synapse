@@ -8,6 +8,7 @@ import {
 } from "@synapse/ui/components/table";
 import Link from "next/link";
 
+import { documentRoute } from "../constants/documents.constants";
 import type { DocumentSummary } from "../types/document.types";
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
@@ -28,7 +29,7 @@ export function DocumentsTable({ documents }: { documents: DocumentSummary[] }) 
 					<TableRow key={document.id}>
 						<TableCell className="font-medium">
 							<Link
-								href={`/documents/${encodeURIComponent(document.id)}`}
+								href={documentRoute(document.id)}
 								className="underline-offset-2 hover:underline"
 							>
 								{document.title}

@@ -120,9 +120,10 @@ createServer(async (request, response) => {
 	}
 	if (request.url?.endsWith("/chat/completions")) {
 		// The answer judge (evaluation runs that score answers) gets a fixed verdict.
-		const judging = JSON.stringify((body as ChatRequest).messages ?? []).includes(
-			"You grade answers",
-		);
+		const sent = JSON.stringify((body as ChatRequest).messages ?? []);
+		const judging = sent.includes("You grade answers");
+		// Suggested follow-up questions after an answer.
+		const suggesting = sent.includes("You suggest what the user might ask next");
 		response.end(
 			JSON.stringify({
 				id: "e2e",
@@ -136,7 +137,9 @@ createServer(async (request, response) => {
 							role: "assistant",
 							content: judging
 								? '{"faithfulness": 0.9, "relevance": 0.8, "reason": "Supported by the refund policy."}'
-								: "Within 30 days [1].",
+								: suggesting
+									? '["Can I return a used item?", "Who pays the return shipping?"]'
+									: "Within 30 days [1].",
 						},
 						finish_reason: "stop",
 					},

@@ -15,12 +15,14 @@ export type SessionGateProps = {
 	children: ReactNode;
 	/** The organization picker for the header (owned by the organizations feature). */
 	switcher?: ReactNode;
+	/** The command palette trigger for the top bar (owned by the command-palette feature). */
+	search?: ReactNode;
 	/** Counts next to sidebar links, by href (owned by the features that know them). */
 	navBadges?: Partial<Record<string, ReactNode>>;
 };
 
 /** Workspace pages: signed-out visitors go to `/sign-in`; signed-in ones get the app shell. */
-export function SessionGate({ children, switcher, navBadges }: SessionGateProps) {
+export function SessionGate({ children, switcher, search, navBadges }: SessionGateProps) {
 	const router = useRouter();
 	const status = useSessionStatus();
 	const signOut = useSignOutMutation();
@@ -35,6 +37,7 @@ export function SessionGate({ children, switcher, navBadges }: SessionGateProps)
 		<AppShell
 			email={me.data?.email ?? null}
 			switcher={switcher}
+			search={search}
 			navBadges={navBadges}
 			notice={
 				me.data && !me.data.emailVerifiedAt ? <UnverifiedNotice email={me.data.email} /> : null

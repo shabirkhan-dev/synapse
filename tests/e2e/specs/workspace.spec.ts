@@ -10,7 +10,7 @@ test("add a document, ask about it, follow the citation, rate the answer", async
 
 	await page.getByRole("link", { name: "Playground", exact: true }).click();
 	await page.getByLabel("Question").fill("How long do refunds take?");
-	await page.getByRole("button", { name: "Ask" }).click();
+	await page.getByRole("button", { name: "Ask", exact: true }).click();
 	await expect(
 		page.getByText("I could not find any ingested documents to answer from."),
 	).toBeVisible();

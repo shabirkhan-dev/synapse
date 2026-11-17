@@ -54,7 +54,7 @@ export const chatService = {
 	 * Send one message; the API stores it, replays the conversation's history to the model and
 	 * streams the reply (AI SDK UI message stream).
 	 */
-	async send({
+	send({
 		message,
 		conversationId,
 		signal,
@@ -63,18 +63,23 @@ export const chatService = {
 		conversationId: string | null;
 		signal: AbortSignal;
 	}): Promise<Reply> {
-		const response = await apiStream(endpoints.chat.send, {
-			method: "POST",
-			body: conversationId ? { message, conversationId } : { message },
-			signal,
-		});
-		const body = response.body as ReadableStream<Uint8Array>;
-		const chunks = parseJsonEventStream({ stream: body, schema: uiMessageChunkSchema }).pipeThrough(
-			unwrap(),
-		);
-		return {
-			conversationId: response.headers.get(CONVERSATION_ID_HEADER),
-			snapshots: readUIMessageStream<ChatMessage>({ stream: chunks, terminateOnError: true }),
-		};
+		return streamReply(conversationId ? { message, conversationId } : { message }, signal);
+	},
+
+	/** Answer the conversation's last question again; the API replaces the reply after it. */
+	regenerate({ conversationId, signal }: { conversationId: string; signal: AbortSignal }) {
+		return streamReply({ conversationId, regenerate: true }, signal);
 	},
 };
+
+async function streamReply(body: Record<string, unknown>, signal: AbortSignal): Promise<Reply> {
+	const response = await apiStream(endpoints.chat.send, { method: "POST", body, signal });
+	const stream = response.body as ReadableStream<Uint8Array>;
+	const chunks = parseJsonEventStream({ stream, schema: uiMessageChunkSchema }).pipeThrough(
+		unwrap(),
+	);
+	return {
+		conversationId: response.headers.get(CONVERSATION_ID_HEADER),
+		snapshots: readUIMessageStream<ChatMessage>({ stream: chunks, terminateOnError: true }),
+	};
+}

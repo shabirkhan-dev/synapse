@@ -24,6 +24,7 @@ export const endpoints = {
 	},
 	rag: {
 		query: "/rag/query",
+		followUps: "/rag/follow-ups",
 	},
 	chat: {
 		send: "/chat",

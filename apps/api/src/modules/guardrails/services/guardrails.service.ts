@@ -91,6 +91,11 @@ export class GuardrailsService {
 		return result.passages;
 	}
 
+	/** A model-written suggestion shown as a clickable question must carry no instructions. */
+	isPlainSuggestion(text: string): boolean {
+		return !sanitizeUntrustedText(text).flagged;
+	}
+
 	/** A fact to remember must not carry instructions (memory poisoning); throws 422 and audits. */
 	async checkFact(ownerId: string, fact: string, context: RequestContext) {
 		await this.checkInput(ownerId, fact, "memory.fact", context);

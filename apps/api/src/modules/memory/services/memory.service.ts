@@ -65,6 +65,32 @@ export class MemoryService {
 		};
 	}
 
+	/**
+	 * Regenerate the last reply: drop what came after the last user message and return the history
+	 * ending with that message, ready to be answered again.
+	 */
+	async regenerate(
+		ownerId: string,
+		conversationId: string,
+	): Promise<{ conversationId: string; history: Array<Record<string, unknown>> }> {
+		await this.conversation(ownerId, conversationId);
+		await this.options.conversations.removeAfterLastUserMessage(ownerId, conversationId);
+		const stored = await this.options.conversations.messages(ownerId, conversationId, {
+			latest: this.options.history.maxMessages,
+		});
+		if (stored.at(-1)?.role !== "user") {
+			throw new AppError({
+				statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+				code: MEMORY_ERROR_CODES.NOTHING_TO_REGENERATE,
+				message: MEMORY_MESSAGES.NOTHING_TO_REGENERATE,
+			});
+		}
+		return {
+			conversationId,
+			history: selectHistory(stored, this.options.history).map((entry) => entry.message),
+		};
+	}
+
 	/** Store the messages of a finished reply (ids already stored are skipped). */
 	saveMessages(ownerId: string, conversationId: string, messages: ChatMessage[]): Promise<void> {
 		return this.options.conversations.append(ownerId, conversationId, messages);

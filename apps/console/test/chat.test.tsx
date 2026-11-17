@@ -255,3 +255,98 @@ describe("ChatThreadContainer (mocked API)", () => {
 		expect(screen.queryByRole("list", { name: "Messages" })).toBeNull();
 	});
 });
+
+describe("Copy, regenerate and follow-ups", () => {
+	test("a finished reply can be copied; the last one regenerated in a stored conversation", async () => {
+		const writeText = mock(async () => {});
+		Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+		signedIn();
+		const bodies: unknown[] = [];
+		mockFetch((call) => {
+			if (call.url.endsWith("/rag/follow-ups")) {
+				return Response.json({
+					success: true,
+					statusCode: 200,
+					message: "OK",
+					data: {
+						questions: ["Who pays return shipping?"],
+						chatModel: "fake:m",
+						promptVersion: "follow-ups@1",
+					},
+				});
+			}
+			bodies.push(call.body);
+			return sse([
+				{ type: "start", messageId: "m2" },
+				{ type: "text-start", id: "t2" },
+				{ type: "text-delta", id: "t2", delta: "Thirty days, again." },
+				{ type: "text-end", id: "t2" },
+				{ type: "finish" },
+			]);
+		});
+		const answer: ChatMessage = {
+			id: "a1",
+			role: "assistant",
+			parts: [{ type: "text", text: "Within 30 days." }],
+		};
+		renderWithQuery(
+			<ChatThreadContainer
+				conversationId="c1"
+				initialMessages={[user("u1", "How long for refunds?"), answer]}
+				onStarted={() => {}}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+		await waitFor(() => expect(writeText).toHaveBeenCalledWith("Within 30 days."));
+		await screen.findByText("Copied");
+
+		// Suggested next questions under the last reply.
+		await screen.findByRole("button", { name: /Who pays return shipping\?/ });
+
+		fireEvent.click(screen.getByRole("button", { name: "Regenerate" }));
+		await screen.findByText("Thirty days, again.");
+		expect(screen.queryByText("Within 30 days.")).toBeNull();
+		expect(bodies[0]).toEqual({ conversationId: "c1", regenerate: true });
+		// Still one question, one reply.
+		expect(screen.getAllByText("How long for refunds?")).toHaveLength(1);
+	});
+
+	test("a new, unsaved conversation offers no regenerate; picking a follow-up sends it", async () => {
+		signedIn();
+		const bodies: unknown[] = [];
+		mockFetch((call) => {
+			if (call.url.endsWith("/rag/follow-ups")) {
+				return Response.json({
+					success: true,
+					statusCode: 200,
+					message: "OK",
+					data: {
+						questions: ["And for sale items?"],
+						chatModel: "fake:m",
+						promptVersion: "follow-ups@1",
+					},
+				});
+			}
+			bodies.push(call.body);
+			return sse(ANSWER, { "x-conversation-id": "c9" });
+		});
+		renderWithQuery(
+			<ChatThreadContainer
+				conversationId={null}
+				initialMessages={[
+					user("u1", "Refunds?"),
+					{ id: "a1", role: "assistant", parts: [{ type: "text", text: "30 days." }] },
+				]}
+				onStarted={() => {}}
+			/>,
+		);
+		expect(screen.queryByRole("button", { name: "Regenerate" })).toBeNull();
+		fireEvent.click(await screen.findByRole("button", { name: /And for sale items\?/ }));
+		await waitFor(() => expect(bodies).toHaveLength(1));
+		expect((bodies[0] as { message: { parts: { text: string }[] } }).message.parts[0]?.text).toBe(
+			"And for sale items?",
+		);
+		await screen.findByRole("button", { name: "Regenerate" });
+	});
+});

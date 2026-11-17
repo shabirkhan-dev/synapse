@@ -247,4 +247,45 @@ describe("PlaygroundContainer (mocked API)", () => {
 			documentIds: [DOCUMENTS[0]?.id],
 		});
 	});
+
+	test("an answer can be copied, asked again, and followed up with the same passages and scope", async () => {
+		const writeText = mock(async () => {});
+		Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+		signedIn();
+		const calls = mockFetch(
+			withDocuments((call) =>
+				call.url.endsWith("/rag/follow-ups")
+					? ok({
+							questions: ["Is shipping refunded?", "What about sale items?"],
+							chatModel: "fake:m",
+							promptVersion: "follow-ups@1",
+						})
+					: ok(answered),
+			),
+		);
+		renderWithQuery(<PlaygroundContainer />);
+		fireEvent.click(await screen.findByText("Shipping", { selector: "li span" }));
+		await ask("How long for refunds?", "4");
+		await screen.findByText(/Refunds are accepted within 30 days/);
+
+		fireEvent.click(screen.getByRole("button", { name: "Copy answer" }));
+		await waitFor(() => expect(writeText).toHaveBeenCalledWith(answered.answer));
+
+		fireEvent.click(await screen.findByRole("button", { name: /What about sale items\?/ }));
+		await waitFor(() => expect(asked(calls)).toHaveLength(2));
+		expect(asked(calls)[1]?.body).toEqual({
+			query: "What about sale items?",
+			topK: 4,
+			documentIds: [DOCUMENTS[1]?.id],
+		});
+		expect(calls.find((call) => call.url.endsWith("/rag/follow-ups"))?.body).toEqual({
+			question: "How long for refunds?",
+			answer: answered.answer,
+		});
+
+		await screen.findByText(/Refunds are accepted within 30 days/);
+		fireEvent.click(screen.getByRole("button", { name: "Ask again" }));
+		await waitFor(() => expect(asked(calls)).toHaveLength(3));
+		expect(asked(calls)[2]?.body).toEqual(asked(calls)[1]?.body);
+	});
 });

@@ -81,8 +81,14 @@ export class ChatService {
 			conversationId = continued.conversationId;
 			messages = continued.history;
 		}
+		if (body.regenerate && body.conversationId) {
+			const again = await memory.regenerate(ownerId, body.conversationId);
+			conversationId = again.conversationId;
+			messages = again.history;
+		}
 		const validated = await validate(messages);
 		if (!body.message) {
+			// Stateless turns, and a regenerated question (checked again under today's policy).
 			await guardrails.checkInput(ownerId, lastUserText(validated), "chat.message", context);
 		}
 		const recalled = await memory.recallContext(ownerId, lastUserText(validated));
@@ -127,6 +133,7 @@ export class ChatService {
 					conversationId,
 					context,
 					documentIds: body.documentIds,
+					regenerated: body.regenerate === true,
 					steps,
 					usage: totalUsage,
 					finishReason,
@@ -138,6 +145,7 @@ export class ChatService {
 					conversationId,
 					context,
 					documentIds: body.documentIds,
+					regenerated: body.regenerate === true,
 					steps,
 					usage: sumUsage(steps),
 					finishReason: "aborted",
@@ -188,6 +196,7 @@ export class ChatService {
 		conversationId,
 		context,
 		documentIds,
+		regenerated,
 		steps,
 		usage,
 		finishReason,
@@ -197,6 +206,7 @@ export class ChatService {
 		conversationId: string | null;
 		context: RequestContext;
 		documentIds: readonly string[] | undefined;
+		regenerated: boolean;
 		steps: ReadonlyArray<StepResult<ToolSet>>;
 		usage: TokenCounts;
 		finishReason: string;
@@ -219,6 +229,7 @@ export class ChatService {
 					tools,
 					// Traceability: this turn's searches could only read these documents.
 					...(documentIds?.length ? { scopedToDocumentIds: [...documentIds] } : {}),
+					...(regenerated ? { regenerated: true } : {}),
 				},
 				provenance: {
 					chatModel: `${chatInfo.provider}:${chatInfo.model}`,

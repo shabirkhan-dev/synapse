@@ -1,6 +1,9 @@
 "use client";
 
+import { RepeatIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Button } from "@synapse/ui/components/button";
 import {
 	Card,
 	CardContent,
@@ -12,8 +15,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { CopyButton } from "@/components/shared/copy-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { useDocumentsQuery } from "@/features/documents";
+import { FollowUpsContainer } from "@/features/follow-ups";
 
 import { AnswerPanel } from "../components/answer-panel";
 import { DocumentScope } from "../components/document-scope";
@@ -23,6 +28,7 @@ import { QuestionForm } from "../components/question-form";
 import { PLAYGROUND_SCOPE_PARAM } from "../constants/playground.constants";
 import { useAskQuestionMutation } from "../hooks/mutations/use-ask-question-mutation";
 import { useSendFeedbackMutation } from "../hooks/mutations/use-send-feedback-mutation";
+import type { QuestionInput } from "../types/playground.types";
 
 /** Ask a question over your documents; see the answer, its sources and passages, and rate it. */
 export function PlaygroundContainer() {
@@ -31,7 +37,14 @@ export function PlaygroundContainer() {
 	const documents = useDocumentsQuery();
 	// "Ask about this document" arrives with the document already chosen.
 	const [scope, setScope] = useState<string[]>(useSearchParams().getAll(PLAYGROUND_SCOPE_PARAM));
+	// The last question as asked (passages, scope), to ask it again or follow it up the same way.
+	const [lastInput, setLastInput] = useState<QuestionInput | null>(null);
 	const result = ask.data;
+	const askWith = (input: QuestionInput) => {
+		feedback.reset();
+		setLastInput(input);
+		ask.mutate(input);
+	};
 	// Only the rating for the answer on screen counts.
 	const rated =
 		feedback.data && result && feedback.data.requestId === result.requestId
@@ -48,10 +61,7 @@ export function PlaygroundContainer() {
 					<DocumentScope documents={documents.data ?? []} selected={scope} onChange={setScope} />
 					<QuestionForm
 						pending={ask.isPending}
-						onSubmit={(input) => {
-							feedback.reset();
-							ask.mutate({ ...input, documentIds: scope });
-						}}
+						onSubmit={(input) => askWith({ ...input, documentIds: scope })}
 					/>
 				</CardContent>
 			</Card>
@@ -82,6 +92,31 @@ export function PlaygroundContainer() {
 						<CardContent>
 							<AnswerPanel
 								result={result}
+								actions={
+									<>
+										<CopyButton text={result.answer ?? ""} label="Copy answer" />
+										{lastInput ? (
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												className="gap-1.5 text-muted-foreground"
+												onClick={() => askWith(lastInput)}
+											>
+												<HugeiconsIcon icon={RepeatIcon} strokeWidth={1.75} aria-hidden="true" />
+												Ask again
+											</Button>
+										) : null}
+									</>
+								}
+								followUps={
+									result.provenance && lastInput ? (
+										<FollowUpsContainer
+											answered={{ question: result.question, answer: result.answer ?? "" }}
+											onPick={(question) => askWith({ ...lastInput, query: question })}
+										/>
+									) : null
+								}
 								feedback={
 									<FeedbackButtons
 										rated={rated}

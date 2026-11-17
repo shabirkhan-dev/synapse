@@ -3,6 +3,8 @@
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { useEffect, useRef } from "react";
 
+import { FollowUpsContainer } from "@/features/follow-ups";
+
 import { ChatComposer } from "../components/chat-composer";
 import { ChatEmptyState } from "../components/chat-empty-state";
 import { MessageList } from "../components/message-list";
@@ -21,12 +23,19 @@ export function ChatThreadContainer({
 	initialMessages,
 	onStarted,
 }: ChatThreadContainerProps) {
-	const { messages, status, send, stop } = useChatThread({
+	const { messages, status, send, regenerate, canRegenerate, stop } = useChatThread({
 		conversationId,
 		initialMessages,
 		onStarted,
 	});
 	const streaming = status.kind === "streaming";
+	const last = messages.at(-1);
+	const question = messages.findLast((message) => message.role === "user");
+	// Follow-ups once a reply has fully arrived (not while it streams, not after a failure).
+	const answered =
+		!streaming && status.kind !== "failed" && last?.role === "assistant" && question
+			? { question: textOf(question), answer: textOf(last) }
+			: null;
 	const end = useRef<HTMLDivElement>(null);
 
 	// Follow the answer as it grows, unless the reader has scrolled up to read something else.
@@ -42,8 +51,15 @@ export function ChatThreadContainer({
 			{messages.length === 0 ? (
 				<ChatEmptyState onPick={send} />
 			) : (
-				<MessageList messages={messages} streaming={streaming} />
+				<MessageList
+					messages={messages}
+					streaming={streaming}
+					{...(canRegenerate ? { onRegenerate: () => void regenerate() } : {})}
+				/>
 			)}
+			{answered && answered.answer ? (
+				<FollowUpsContainer answered={answered} onPick={(next) => void send(next)} />
+			) : null}
 			{status.kind === "failed" ? (
 				<Alert variant="destructive">
 					<AlertTitle>Synapse could not answer</AlertTitle>
@@ -71,4 +87,11 @@ export function ChatThreadContainer({
 			</div>
 		</div>
 	);
+}
+
+function textOf(message: ChatMessage): string {
+	return message.parts
+		.flatMap((part) => (part.type === "text" ? [part.text] : []))
+		.join("")
+		.trim();
 }

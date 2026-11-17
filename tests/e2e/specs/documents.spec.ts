@@ -95,7 +95,7 @@ test("asking about one document searches only that document", async ({ page }) =
 	await expect(page.getByRole("checkbox", { name: "Refund policy" })).not.toBeChecked();
 
 	await page.getByLabel("Question").fill("How long do refunds take?");
-	await page.getByRole("button", { name: "Ask" }).click();
+	await page.getByRole("button", { name: "Ask", exact: true }).click();
 	await expect(page.getByText("Searched 1 chosen document only.")).toBeVisible();
 	const passages = page.getByRole("list", { name: "Retrieved passages" });
 	await expect(passages.getByText(/Orders ship within two business days/)).toBeVisible();
@@ -103,7 +103,7 @@ test("asking about one document searches only that document", async ({ page }) =
 
 	// Back to every document: both are searched again.
 	await page.getByRole("button", { name: "Search all documents" }).click();
-	await page.getByRole("button", { name: "Ask" }).click();
+	await page.getByRole("button", { name: "Ask", exact: true }).click();
 	await expect(passages.getByText(/Refunds are accepted/)).toBeVisible();
 	await expect(page.getByText("Searched 1 chosen document only.")).toHaveCount(0);
 });

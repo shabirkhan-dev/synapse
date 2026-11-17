@@ -111,6 +111,10 @@ contextual retrieval and Ragas.
 | Risk: chaos "Postgres goes away" failed once in CI — requests hung up to 45 s on a database blip; now fail within ~5 s | ✅ | syn-071 |
 | Answer quality scores (faithfulness, relevance) in evaluations | ✅ | syn-073 |
 | Several files at once; web pages by URL (SSRF-safe) | ✅ | syn-074 |
-| Follow-up suggestions, copy, regenerate; ⌘K palette | ⏭️ | syn-075 |
+| Follow-up suggestions, copy, regenerate; ⌘K palette | ✅ | syn-075 |
+
+| Chat: choose documents (the API already scopes chat turns) | ⏭️ | — |
+| Re-chunk documents from before text-v2 / syn-074 (context column empty) in the worker | ⬜ | — |
+| Check the answer judge against its labelled cases with a real model (needs a chat key) | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

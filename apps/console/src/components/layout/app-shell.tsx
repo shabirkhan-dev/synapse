@@ -1,18 +1,5 @@
 "use client";
 
-import {
-	Activity01Icon,
-	AiSearchIcon,
-	Analytics01Icon,
-	BubbleChatIcon,
-	ChartEvaluationIcon,
-	CheckmarkCircle02Icon,
-	DashboardSpeed01Icon,
-	Files01Icon,
-	Robot01Icon,
-	TestTube01Icon,
-	UserGroupIcon,
-} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
 	Sidebar,
@@ -38,6 +25,7 @@ import type { ReactNode } from "react";
 import { BrandMark } from "@/components/shared/brand-mark";
 
 import { AccountMenu } from "./account-menu";
+import { MAIN_GROUP, NAV, type NavItem } from "./navigation";
 
 export type AppShellProps = {
 	children: ReactNode;
@@ -45,6 +33,8 @@ export type AppShellProps = {
 	email: string | null;
 	/** The organization picker, at the top of the sidebar. */
 	switcher?: ReactNode;
+	/** Search / command palette trigger, at the end of the top bar. */
+	search?: ReactNode;
 	/** A one-line notice above the page (e.g. verify your email). */
 	notice?: ReactNode;
 	/** Counts next to sidebar links, by href (e.g. pending approvals). */
@@ -53,34 +43,7 @@ export type AppShellProps = {
 	signingOut: boolean;
 };
 
-type NavItem = { href: string; label: string; icon: typeof Files01Icon };
-
-const NAV: ReadonlyArray<{ label: string; items: ReadonlyArray<NavItem> }> = [
-	{
-		label: "Workspace",
-		items: [
-			{ href: "/documents", label: "Documents", icon: Files01Icon },
-			{ href: "/chat", label: "Chat", icon: BubbleChatIcon },
-			{ href: "/playground", label: "Playground", icon: TestTube01Icon },
-			{ href: "/retrieval", label: "Retrieval", icon: AiSearchIcon },
-			{ href: "/evaluations", label: "Evaluations", icon: ChartEvaluationIcon },
-			{ href: "/agents", label: "Agents", icon: Robot01Icon },
-		],
-	},
-	{
-		label: "Oversight",
-		items: [
-			{ href: "/approvals", label: "Approvals", icon: CheckmarkCircle02Icon },
-			{ href: "/activity", label: "Activity", icon: Activity01Icon },
-			{ href: "/usage", label: "Usage", icon: Analytics01Icon },
-			{ href: "/system", label: "System", icon: DashboardSpeed01Icon },
-		],
-	},
-	{ label: "Organization", items: [{ href: "/team", label: "Team", icon: UserGroupIcon }] },
-];
-
 const ALL = NAV.flatMap((group) => group.items);
-const MAIN_GROUP = "Workspace";
 
 /**
  * The app frame: a sidebar (organization, navigation, you) and the page in an inset panel. On
@@ -90,6 +53,7 @@ export function AppShell({
 	children,
 	email,
 	switcher,
+	search,
 	notice,
 	navBadges,
 	onSignOut,
@@ -170,6 +134,7 @@ export function AppShell({
 							<span className="truncate">{title}</span>
 						</span>
 					</p>
+					{search ? <div className="ms-auto">{search}</div> : null}
 				</header>
 				{notice ? (
 					<div className="mx-4 rounded-xl border bg-muted/60 px-4 py-2.5 md:mx-6">{notice}</div>

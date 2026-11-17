@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 
 import { chatConversations, chatMessages, type Database } from "@synapse/database";
 import type { StoredMessage } from "@synapse/memory";
@@ -82,6 +82,22 @@ export class DrizzleConversationRepository implements ConversationStore {
 					and(eq(chatConversations.id, conversationId), eq(chatConversations.ownerId, ownerId)),
 				);
 		});
+	}
+
+	async removeAfterLastUserMessage(ownerId: string, conversationId: string): Promise<number> {
+		const scope = and(
+			eq(chatMessages.conversationId, conversationId),
+			eq(chatMessages.ownerId, ownerId),
+		);
+		const lastUser = this.db
+			.select({ ordinal: sql`max(${chatMessages.ordinal})` })
+			.from(chatMessages)
+			.where(and(scope, eq(chatMessages.role, "user")));
+		const rows = await this.db
+			.delete(chatMessages)
+			.where(and(scope, gt(chatMessages.ordinal, sql`(${lastUser})`)))
+			.returning({ id: chatMessages.id });
+		return rows.length;
 	}
 
 	async remove(ownerId: string, id: string): Promise<boolean> {

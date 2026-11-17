@@ -78,7 +78,7 @@ export function registerRoutes(
 	const { questions, ingests, evaluationRuns } = config.limits;
 	app.on(
 		"POST",
-		[`${basePath}/chat`, `${basePath}/rag/query`],
+		[`${basePath}/chat`, `${basePath}/rag/query`, `${basePath}/rag/follow-ups`],
 		createUsageLimit(rateLimiter, "questions", questions),
 	);
 	app.on(

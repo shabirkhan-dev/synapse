@@ -6,6 +6,8 @@ export const queryKeys = {
 	},
 	currentUser: ["current-user"] as const,
 	sessions: ["sessions"] as const,
+	/** Suggested next questions for one answer (never refetched: the same answer, same ideas). */
+	followUps: (question: string, answer: string) => ["follow-ups", question, answer] as const,
 	conversations: {
 		all: ["conversations"] as const,
 		detail: (id: string) => ["conversations", id] as const,

@@ -21,6 +21,8 @@ export interface ConversationStore {
 		options?: { latest?: number },
 	): Promise<Array<StoredMessage<Record<string, unknown>>>>;
 	append(ownerId: string, conversationId: string, messages: NewMessage[]): Promise<void>;
+	/** Delete everything after the last user message (the reply being regenerated); returns the count. */
+	removeAfterLastUserMessage(ownerId: string, conversationId: string): Promise<number>;
 	remove(ownerId: string, id: string): Promise<boolean>;
 	removeAll(ownerId: string): Promise<number>;
 }

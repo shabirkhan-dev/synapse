@@ -10,6 +10,8 @@ import { RAG_MESSAGES } from "../constants/rag.constants";
 import {
 	documentChunksQuerySchema,
 	documentIdParamsSchema,
+	followUpsBodySchema,
+	followUpsSchema,
 	ingestDocumentBodySchema,
 	uploadDocumentBodySchema,
 	urlDocumentBodySchema,
@@ -179,6 +181,24 @@ const queryRoute = createRoute({
 	},
 });
 
+const followUpsRoute = createRoute({
+	method: "post",
+	path: "/follow-ups",
+	tags: ["RAG"],
+	summary: "Suggest up to three follow-up questions for an answer (one chat model call)",
+	security,
+	request: {
+		body: { required: true, content: { "application/json": { schema: followUpsBodySchema } } },
+	},
+	responses: {
+		200: {
+			description: "Suggested questions (possibly none)",
+			content: { "application/json": { schema: successEnvelope(followUpsSchema) } },
+		},
+		...errorResponses,
+	},
+});
+
 const purgeRoute = createRoute({
 	method: "post",
 	path: "/documents/purge",
@@ -267,6 +287,14 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 			actorId: c.get("user").sub,
 		});
 		return success(c, { id }, RAG_MESSAGES.DOCUMENT_DELETED);
+	});
+
+	app.openapi(followUpsRoute, async (c) => {
+		const suggested = await rag.followUps(c.get("user").orgId, c.req.valid("json"), {
+			requestId: c.get("requestId"),
+			actorId: c.get("user").sub,
+		});
+		return success(c, suggested, RAG_MESSAGES.FOLLOW_UPS_SUGGESTED);
 	});
 
 	app.openapi(queryRoute, async (c) => {

@@ -105,6 +105,23 @@ export const documentScopeSchema = z
 	.max(RAG_MAX_SCOPE_DOCUMENTS)
 	.openapi({ description: "Only these documents are searched" });
 
+export const followUpsBodySchema = z
+	.object({
+		question: z.string().trim().min(1).max(2000).openapi({ example: "How long do refunds take?" }),
+		answer: z.string().trim().min(1).max(20_000).openapi({ example: "Within 30 days [1]." }),
+	})
+	.openapi("FollowUpsBody");
+
+export const followUpsSchema = z
+	.object({
+		/** Up to three next questions; empty when the model gave nothing usable. */
+		questions: z.array(z.string()),
+		/** `provider:model` and prompt version that suggested them. */
+		chatModel: z.string(),
+		promptVersion: z.string(),
+	})
+	.openapi("FollowUps");
+
 export const ragQueryBodySchema = z
 	.object({
 		query: z

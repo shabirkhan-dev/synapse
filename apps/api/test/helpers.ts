@@ -817,6 +817,17 @@ export class InMemoryConversationStore implements ConversationStore {
 		}
 	}
 
+	async removeAfterLastUserMessage(ownerId: string, conversationId: string) {
+		const mine = this.stored.filter(
+			(m) => m.ownerId === ownerId && m.conversationId === conversationId,
+		);
+		const lastUser = mine.findLastIndex((m) => m.role === "user");
+		if (lastUser === -1) return 0;
+		const drop = new Set(mine.slice(lastUser + 1));
+		this.stored = this.stored.filter((m) => !drop.has(m));
+		return drop.size;
+	}
+
 	async remove(ownerId: string, id: string) {
 		const before = this.conversations.length;
 		this.conversations = this.conversations.filter((c) => !(c.id === id && c.ownerId === ownerId));

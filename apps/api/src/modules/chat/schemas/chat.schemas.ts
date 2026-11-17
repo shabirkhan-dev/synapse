@@ -14,14 +14,19 @@ export const chatBodySchema = z
 		message: uiMessage.optional(),
 		/** Continue this conversation; omit to start one (its id comes back in `x-conversation-id`). */
 		conversationId: z.uuid().optional(),
+		/** Answer the conversation's last question again, replacing the reply after it. */
+		regenerate: z.literal(true).optional(),
 		/** This turn's document search reads only these documents of the organization. */
 		documentIds: z.array(z.uuid()).min(1).max(RAG_MAX_SCOPE_DOCUMENTS).optional(),
 	})
-	.refine((body) => Boolean(body.messages) !== Boolean(body.message), {
+	.refine((body) => [body.messages, body.message, body.regenerate].filter(Boolean).length === 1, {
 		message: CHAT_MESSAGES.BODY_SHAPE,
 	})
-	.refine((body) => !body.conversationId || Boolean(body.message), {
+	.refine((body) => !body.conversationId || Boolean(body.message ?? body.regenerate), {
 		message: CHAT_MESSAGES.CONVERSATION_NEEDS_MESSAGE,
+	})
+	.refine((body) => !body.regenerate || Boolean(body.conversationId), {
+		message: CHAT_MESSAGES.REGENERATE_NEEDS_CONVERSATION,
 	})
 	.openapi("ChatBody");
 

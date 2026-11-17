@@ -29,6 +29,7 @@ import {
 	createAnswerGenerator,
 	type GeneratedAnswer,
 	RAG_ANSWER_CITED_PROMPT,
+	suggestFollowUps,
 } from "@synapse/generation";
 import { createRagAnswerGraph, type RagAnswerGraph } from "@synapse/orchestration";
 import { createRetriever, type RetrievalMode, type Retriever } from "@synapse/retrieval";
@@ -393,6 +394,26 @@ export class RagService {
 			matches,
 			citations: answer.citations,
 			provenance,
+		};
+	}
+
+	/**
+	 * Up to three questions to ask next about an answer (the chat model, `follow-ups@1`). The
+	 * question passes the input policy again; a suggestion carrying instructions is dropped.
+	 */
+	async followUps(
+		ownerId: string,
+		input: { question: string; answer: string },
+		context: RequestContext = NO_REQUEST,
+	): Promise<{ questions: string[]; chatModel: string; promptVersion: string }> {
+		await this.options.guardrails.checkInput(ownerId, input.question, "rag.query", context);
+		const suggested = await suggestFollowUps({ chat: this.models.chat, ...input });
+		return {
+			questions: suggested.questions.filter((question) =>
+				this.options.guardrails.isPlainSuggestion(question),
+			),
+			chatModel: `${suggested.model.provider}:${suggested.model.model}`,
+			promptVersion: suggested.promptVersion,
 		};
 	}
 

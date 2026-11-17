@@ -25,6 +25,8 @@ export function useChatThread({
 	const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
 	const [status, setStatus] = useState<ThreadStatus>({ kind: "idle" });
 	const conversation = useRef(conversationId);
+	// Stored conversations can be answered again; a new one is stored once its first reply starts.
+	const [stored, setStored] = useState(conversationId !== null);
 	const controller = useRef<AbortController | null>(null);
 
 	useEffect(() => () => controller.current?.abort(), []);
@@ -46,6 +48,7 @@ export function useChatThread({
 				});
 				if (reply.conversationId && !conversation.current) {
 					conversation.current = reply.conversationId;
+					setStored(true);
 					onStarted(reply.conversationId);
 				}
 				for await (const snapshot of reply.snapshots) {
@@ -73,7 +76,39 @@ export function useChatThread({
 		[messages, onStarted, queryClient],
 	);
 
+	/** Answer the last question again (stored conversations only); its old reply is replaced. */
+	const regenerate = useCallback(async () => {
+		const id = conversation.current;
+		const lastQuestion = messages.findLastIndex((message) => message.role === "user");
+		if (!id || lastQuestion === -1) return;
+		const kept = messages.slice(0, lastQuestion + 1);
+		const abort = new AbortController();
+		controller.current = abort;
+		setMessages(kept);
+		setStatus({ kind: "streaming" });
+		try {
+			const reply = await chatService.regenerate({ conversationId: id, signal: abort.signal });
+			for await (const snapshot of reply.snapshots) {
+				setMessages([...kept, snapshot]);
+			}
+			setStatus({ kind: "idle" });
+		} catch (error) {
+			if (abort.signal.aborted) {
+				setStatus({ kind: "idle" });
+			} else {
+				// The API dropped the old reply before answering again, so it is not shown either.
+				setStatus({
+					kind: "failed",
+					message: error instanceof Error ? error.message : "The answer stopped.",
+					draft: "",
+				});
+			}
+		} finally {
+			controller.current = null;
+		}
+	}, [messages]);
+
 	const stop = useCallback(() => controller.current?.abort(), []);
 
-	return { messages, status, send, stop };
+	return { messages, status, send, regenerate, canRegenerate: stored, stop };
 }

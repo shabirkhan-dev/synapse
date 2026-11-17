@@ -23,6 +23,7 @@ export const RAG_MESSAGES = {
 	MODE_NEEDS_RETRIEVAL_ONLY: "mode only applies to retrieval: set answer to false",
 	DOCUMENT_DELETED: "Document deleted",
 	QUERY_ANSWERED: "Query answered",
+	FOLLOW_UPS_SUGGESTED: "Follow-up questions suggested",
 	MATCHES_FOUND: "Matching passages retrieved",
 	EMPTY_DOCUMENT: "Document content is empty",
 	DOCUMENT_NOT_FOUND: "Document not found",

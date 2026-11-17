@@ -170,6 +170,12 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `localStorage` (`theme`), applied as a class on `<html>`; the sidebar keeps its open state in a `sidebar_state` cookie.
   Pages use `PageHeader` / `EmptyState` / `BrandMark` from `components/shared` (syn-065); the accent is
   indigo `--primary`, re-measure contrast (comments in `globals.css`) when changing a token.
+- **Answer flow** (syn-075): follow-ups are one extra chat call per finished answer (Playground and
+  chat), on the questions budget (so an answer costs two of the 20/min); they are not audited or in
+  Usage (the response names the model and prompt version). Regenerate needs a stored conversation and
+  replaces only the last reply (no history of earlier versions); if it fails, the old reply is already
+  gone. The palette lists the 8 latest conversations and documents (typing filters those, it does not
+  search the server). Copy needs the clipboard permission (secure context).
 - **e2e** (`tests/e2e`): Playwright's `getByLabel` matches substrings, so use `{ exact: true }`
   for "Title" (the upload form has "Title (optional)"). Wait for a page by its heading role, not `getByText`: Next's route
   announcer repeats the page title (strict-mode clash). Needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears

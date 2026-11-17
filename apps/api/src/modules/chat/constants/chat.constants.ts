@@ -4,8 +4,10 @@ export const CHAT_ERROR_CODES = {
 
 export const CHAT_MESSAGES = {
 	BODY_SHAPE:
-		"Send either `messages` (stateless chat) or `message` (one new message in a stored conversation)",
-	CONVERSATION_NEEDS_MESSAGE: "`conversationId` goes with `message`, not `messages`",
+		"Send one of `messages` (stateless chat), `message` (one new message in a stored conversation) or `regenerate`",
+	CONVERSATION_NEEDS_MESSAGE:
+		"`conversationId` goes with `message` or `regenerate`, not `messages`",
+	REGENERATE_NEEDS_CONVERSATION: "`regenerate` needs the `conversationId` to answer again",
 } as const;
 
 export const CHAT_MAX_MESSAGES = 200;

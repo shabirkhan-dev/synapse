@@ -223,6 +223,18 @@ export function UsersContainer() {
 
 Don't create a container for a component that needs no data.
 
+## Shell extras (syn-075)
+
+- **Command palette** (`features/command-palette`): ⌘K / Ctrl+K or the top-bar Search button; pages
+  (from `components/layout/navigation.ts`, shared with the sidebar), recent conversations and
+  documents, fetched only once the palette opens (`enabled` on their query hooks). shadcn `command`
+  (cmdk) inside our `Dialog` so the title is inside the popup (accessible name).
+- **Copy and regenerate**: `components/shared/copy-button.tsx` on chat replies and the Playground
+  answer; chat Regenerate on the last reply of a stored conversation (`chatService.regenerate`), the
+  Playground's "Ask again" repeats the last question with its passages and scope.
+- **Follow-ups** (`features/follow-ups`): `FollowUpsContainer` under a finished answer in chat and the
+  Playground; one `POST /rag/follow-ups` per answer (cached forever, no retry, failures show nothing).
+
 ## Tests
 
 `bun --cwd=apps/console test` (Bun + happy-dom + Testing Library, `test/setup.ts` preloaded):

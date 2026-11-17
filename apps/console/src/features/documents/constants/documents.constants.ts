@@ -16,6 +16,10 @@ export const CHUNK_PAGE_SIZE = 50;
 
 export const DOCUMENTS_ROUTE = "/documents";
 
+/** One document's page. */
+export const documentRoute = (documentId: string) =>
+	`${DOCUMENTS_ROUTE}/${encodeURIComponent(documentId)}`;
+
 /** The Playground, narrowed to one document (`d` is the Playground's scope parameter). */
 export const askAboutDocumentRoute = (documentId: string) =>
 	`/playground?d=${encodeURIComponent(documentId)}`;

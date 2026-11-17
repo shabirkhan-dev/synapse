@@ -229,6 +229,69 @@ describe("chat", () => {
 		});
 	});
 
+	test("regenerate answers the last question again, replacing the old reply, and is audited as such", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: async () =>
+				streamResult(textStreamParts(`Reply ${chatModel.doStreamCalls.length}`)),
+		});
+		const { app, conversations, auditEvents } = buildTestApp({ chatModel });
+		const send = async (body: unknown) => {
+			const response = await app.request("/api/v1/chat", {
+				method: "POST",
+				headers: await authHeaders(),
+				body: JSON.stringify(body),
+			});
+			await readStream(response);
+			return response;
+		};
+		const first = await send({ message: userMessage("What is the refund window?") });
+		const conversationId = first.headers.get("x-conversation-id") ?? "";
+		await waitFor(() => conversations.stored.length === 2);
+
+		const again = await send({ conversationId, regenerate: true });
+		expect(again.status).toBe(200);
+		expect(again.headers.get("x-conversation-id")).toBe(conversationId);
+		await waitFor(() =>
+			conversations.stored.some((m) => JSON.stringify(m.message).includes("Reply 2")),
+		);
+		const stored = conversations.stored.filter((m) => m.conversationId === conversationId);
+		expect(stored.map((m) => m.role)).toEqual(["user", "assistant"]);
+		expect(JSON.stringify(stored[1]?.message)).toContain("Reply 2");
+		// The model saw the question again, not the old reply.
+		const prompt = JSON.stringify(chatModel.doStreamCalls[1]?.prompt);
+		expect(prompt).toContain("What is the refund window?");
+		expect(prompt).not.toContain("Reply 1");
+		await waitFor(
+			() => auditEvents.events.filter((e) => e.action === "chat.message.answered").length === 2,
+		);
+		expect(
+			auditEvents.events.findLast((e) => e.action === "chat.message.answered")?.data,
+		).toMatchObject({
+			regenerated: true,
+		});
+	});
+
+	test("regenerate needs a conversation of yours with a question in it", async () => {
+		const { app } = buildTestApp();
+		const post = async (body: unknown) =>
+			(
+				await app.request("/api/v1/chat", {
+					method: "POST",
+					headers: await authHeaders(),
+					body: JSON.stringify(body),
+				})
+			).status;
+		expect(await post({ regenerate: true })).toBe(422);
+		expect(
+			await post({
+				regenerate: true,
+				message: userMessage("x"),
+				conversationId: crypto.randomUUID(),
+			}),
+		).toBe(422);
+		expect(await post({ regenerate: true, conversationId: crypto.randomUUID() })).toBe(404);
+	});
+
 	test("a tool-using answer records the tools and the tokens of every step", async () => {
 		const chatModel = new MockLanguageModelV4({
 			doStream: [

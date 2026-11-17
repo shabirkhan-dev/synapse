@@ -105,11 +105,11 @@ export function UploadDocumentForm({
 				// oxlint-disable-next-line no-await-in-loop -- one upload at a time (per-user budget, order)
 				await onSubmit({ file: chosen, title: undefined });
 				done.push({ name: chosen.name, ok: true, message: "Added" });
-			} catch (error) {
+			} catch (failure) {
 				done.push({
 					name: chosen.name,
 					ok: false,
-					message: error instanceof Error ? error.message : "Could not be added",
+					message: failure instanceof Error ? failure.message : "Could not be added",
 				});
 			}
 			setProgress({ done: done.length, total: files.length });
@@ -226,8 +226,8 @@ export function UploadDocumentForm({
 			) : null}
 			{results.length > 0 ? (
 				<ul aria-label="Upload results" className="flex flex-col gap-1.5 text-xs">
-					{results.map((result, index) => (
-						<li key={`${result.name}-${index}`} className="flex items-start gap-2">
+					{results.map((result) => (
+						<li key={`${result.name}:${result.message}`} className="flex items-start gap-2">
 							<HugeiconsIcon
 								icon={result.ok ? CheckmarkCircle02Icon : Cancel01Icon}
 								strokeWidth={1.75}
