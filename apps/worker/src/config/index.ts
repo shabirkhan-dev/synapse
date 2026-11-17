@@ -17,6 +17,8 @@ export type WorkerConfiguration = {
 	database: DatabaseOptions;
 	ai: ModelGatewayOptions;
 	reembedBatchSize: number;
+	/** The api's chunking, used when re-chunking documents written by an older chunker. */
+	chunking: { size: number; overlap: number };
 	reliability: Pick<
 		ModelReliabilityOptions,
 		"chatTimeoutMs" | "embeddingTimeoutMs" | "retry" | "breaker"
@@ -48,6 +50,7 @@ export function createConfiguration(env: Env): WorkerConfiguration {
 			),
 		},
 		reembedBatchSize: env.WORKER_REEMBED_BATCH_SIZE,
+		chunking: { size: env.RAG_CHUNK_SIZE, overlap: env.RAG_CHUNK_OVERLAP },
 		reliability: {
 			chatTimeoutMs: env.AI_CHAT_TIMEOUT_MS,
 			embeddingTimeoutMs: env.AI_EMBEDDING_TIMEOUT_MS,

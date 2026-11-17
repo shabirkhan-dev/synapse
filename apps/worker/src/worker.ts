@@ -42,18 +42,24 @@ await registerJobs(queue, {
 	db: database.db,
 	embedding: gateway.embedding,
 	reembedBatchSize: config.reembedBatchSize,
+	chunking: config.chunking,
 	logger,
 });
 
-// Every start checks for chunks from another embedding model (e.g. after the model changed); the
-// queue is exclusive, so restarts never stack duplicate runs.
+// Every start checks for chunks from another embedding model (e.g. after the model changed) and
+// for documents chunked before text-v2; the queues are exclusive, so restarts never stack runs.
 if (config.ai.embedding.apiKey) {
 	await queue.send(KNOWLEDGE_QUEUES.REEMBED_CHUNKS, {});
+	await queue.send(KNOWLEDGE_QUEUES.RECHUNK_DOCUMENTS, {});
 } else {
-	logger.warn("no embedding API key: skipping the re-embedding check");
+	logger.warn("no embedding API key: skipping the re-embedding and re-chunking checks");
 }
 logger.info("worker started", {
-	queues: [KNOWLEDGE_QUEUES.REEMBED_CHUNKS, MAINTENANCE_QUEUES.PRUNE],
+	queues: [
+		KNOWLEDGE_QUEUES.REEMBED_CHUNKS,
+		KNOWLEDGE_QUEUES.RECHUNK_DOCUMENTS,
+		MAINTENANCE_QUEUES.PRUNE,
+	],
 });
 
 async function shutdown(signal: string) {

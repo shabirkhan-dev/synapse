@@ -55,8 +55,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   (`Title › headings`), which is embedded and keyword-indexed with the content. Until syn-074 the
   API computed the context but did not save it (embeddings had it; the column, the keyword index
   and the document page did not): documents added before 2026-11-17 have `context = null`. Chunks from before
-  are text-v1 (no context) and show "Out of date" on the document page; nothing re-chunks them
-  automatically (the worker only re-embeds), so re-adding the document is the way to upgrade it.
+  are text-v1 (no context); since syn-077 the worker re-chunks them on start
+  (`knowledge.rechunk-documents`: text rebuilt from the overlapping chunks, then chunked and embedded
+  again, one embedding call per document; needs the embedding key). text-v2 chunks saved without
+  context (2026-11-16/17) cannot be rebuilt (their headings are not in the content): re-add those.
   The seed retrieval eval showed no change (0.944 recall@3 and MRR): its documents are short and
   have no headings.
 - **Scoped questions** (syn-070): up to 20 documents per question (`RAG_MAX_SCOPE_DOCUMENTS`); unknown
@@ -105,7 +107,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   does not read it yet.
 - **One global tracer provider per process:** tests that call `startTracing` must `shutdown()` after.
 - **Worker:** pg-boss creates and migrates its own `pgboss` schema on start; the api still applies
-  our migrations (the worker never does). Re-embedding runs on worker start only (no API trigger
+  our migrations (the worker never does). Re-embedding and re-chunking run on worker start only (no API trigger
   yet); the worker has logs but no tracing yet. Docker images build and run (syn-041); in the agent
   sandbox, pull base images from `mirror.gcr.io` (Docker Hub rate-limits) and build with
   `docker buildx bake` on the host network with the proxy CA as `build_ca` (`deploy/README.md`).

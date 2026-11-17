@@ -40,6 +40,9 @@ export const envSchema = z
 		AI_CIRCUIT_RESET_MS: z.coerce.number().int().min(1000).max(3_600_000).default(30_000),
 		/** Chunks embedded per call (and per checkpoint) when re-embedding. */
 		WORKER_REEMBED_BATCH_SIZE: z.coerce.number().int().min(1).max(2048).default(100),
+		/** Same chunking as the api (one `.env`): old documents are re-chunked with it. */
+		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
+		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 	})
 	.superRefine((env, context) => {
 		const provider = env.AI_EMBEDDING_PROVIDER;

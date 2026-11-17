@@ -10,7 +10,7 @@
   queues hold at most one queued-or-running job, so restarts and schedules never stack duplicates.
 - **Checkpoints:** long jobs save progress in `job_checkpoints` keyed by the job id, which stays the
   same across retries; a retry resumes after the last checkpoint and the row is removed on success.
-  Handlers are idempotent (re-embedding filters on the embedding model, pruning deletes by age).
+  Handlers are idempotent (re-embedding filters on the embedding model, re-chunking on a pre-text-v2 chunker version, pruning deletes by age).
 - Jobs today: `knowledge.reembed-chunks` (on worker start), `maintenance.prune` (daily, 03:17 UTC).
 - Planned: after the retry limit, park the job for a human (`human-oversight`); reconciliation jobs.
 

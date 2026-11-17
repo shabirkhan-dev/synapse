@@ -23,3 +23,10 @@ export {
 	type ReembedResult,
 	type StaleChunk,
 } from "./reembedding/reembedder";
+export { chunkingOf, reassembleChunks } from "./rechunking/reassemble";
+export {
+	createRechunker,
+	type RechunkCheckpoint,
+	type RechunkerOptions,
+	type RechunkPorts,
+} from "./rechunking/rechunker";

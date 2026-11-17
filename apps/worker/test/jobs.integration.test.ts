@@ -15,9 +15,13 @@ import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import { createLogger } from "@synapse/observability";
 import { eq, sql } from "drizzle-orm";
 
+import { chunkText } from "@synapse/knowledge";
+
 import {
+	createRechunkDocumentsJob,
 	createReembedChunksJob,
 	DrizzleCheckpointRepository,
+	DrizzleRechunkRepository,
 	DrizzleReembedRepository,
 } from "@/modules/knowledge";
 import { DrizzleMaintenanceRepository } from "@/modules/maintenance";
@@ -114,6 +118,128 @@ describe.skipIf(!url)("worker jobs (postgres)", () => {
 		expect(healthy.calls).toBe(1);
 		expect(await models()).toEqual(Array.from({ length: 5 }, () => "test:embed-new"));
 		expect(await checkpoints.load(job.id)).toBeNull();
+	});
+
+	test("documents chunked before text-v2 are re-chunked with headings as context; a retry resumes", async () => {
+		const rechunkOwner = `worker-it-${crypto.randomUUID()}`;
+		const text = [
+			"# Returns",
+			"",
+			"Items can be returned within 30 days of delivery. ".repeat(10).trim(),
+			"",
+			"## Exceptions",
+			"",
+			"Gift cards and personalised items cannot be returned. ".repeat(8).trim(),
+		].join("\n");
+		const zero = Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0);
+		const insertOld = async (title: string) => {
+			const pieces = chunkText(text, { size: 300, overlap: 60 });
+			const [document] = await database.db
+				.insert(ragDocuments)
+				.values({ ownerId: rechunkOwner, title, chunkCount: pieces.length })
+				.returning();
+			await database.db.insert(ragChunks).values(
+				pieces.map((content, chunkIndex) => ({
+					documentId: document?.id ?? "",
+					ownerId: rechunkOwner,
+					chunkIndex,
+					content,
+					embedding: zero,
+					chunkerVersion: "text-v1;size=300;overlap=60",
+					embeddingModel: "test:embed-new",
+				})),
+			);
+			return document?.id ?? "";
+		};
+		const ids = [await insertOld("Policy A"), await insertOld("Policy B")].toSorted();
+		// Already current: never touched.
+		const [current] = await database.db
+			.insert(ragDocuments)
+			.values({ ownerId: rechunkOwner, title: "Current", chunkCount: 1 })
+			.returning();
+		await database.db.insert(ragChunks).values({
+			documentId: current?.id ?? "",
+			ownerId: rechunkOwner,
+			chunkIndex: 0,
+			content: "Already chunked by text-v2.",
+			context: "Current",
+			embedding: zero,
+			chunkerVersion: "text-v2;size=1000;overlap=150",
+			embeddingModel: "test:embed-new",
+		});
+
+		const documents = new DrizzleRechunkRepository(database.db);
+		const checkpoints = new DrizzleCheckpointRepository(database.db);
+		const job: QueueJob<{ ownerId?: string }> = {
+			id: crypto.randomUUID(),
+			queue: "knowledge.rechunk-documents",
+			data: { ownerId: rechunkOwner },
+			retryCount: 0,
+		};
+		const chunking = { size: 1000, overlap: 150 };
+		// Attempt 1: the provider fails on the second document.
+		const crashing = flakyEmbedding(2);
+		await expect(
+			createRechunkDocumentsJob({ documents, checkpoints, embedding: crashing, chunking, logger })(
+				job,
+			),
+		).rejects.toThrow("embedding provider timed out");
+		expect(await checkpoints.load(job.id)).toEqual({ afterDocumentId: ids[0], rechunked: 1 });
+
+		const healthy = flakyEmbedding();
+		await createRechunkDocumentsJob({
+			documents,
+			checkpoints,
+			embedding: healthy,
+			chunking,
+			logger,
+		})({
+			...job,
+			retryCount: 1,
+		});
+		expect(healthy.calls).toBe(1);
+		expect(await checkpoints.load(job.id)).toBeNull();
+
+		const rows = await database.db
+			.select({
+				documentId: ragChunks.documentId,
+				context: ragChunks.context,
+				version: ragChunks.chunkerVersion,
+				content: ragChunks.content,
+			})
+			.from(ragChunks)
+			.where(eq(ragChunks.ownerId, rechunkOwner));
+		for (const id of ids) {
+			const mine = rows.filter((row) => row.documentId === id);
+			expect(mine.every((row) => row.version === "text-v2;size=1000;overlap=150")).toBe(true);
+			expect(mine.some((row) => row.context?.endsWith("Returns › Exceptions"))).toBe(true);
+			// Headings moved into the context; the text itself is all there once.
+			expect(mine.some((row) => row.content.includes("# Returns"))).toBe(false);
+			expect(mine.map((row) => row.content).join(" ")).toContain(
+				"Gift cards and personalised items",
+			);
+			const [document] = await database.db
+				.select({ chunkCount: ragDocuments.chunkCount })
+				.from(ragDocuments)
+				.where(eq(ragDocuments.id, id));
+			expect(document?.chunkCount).toBe(mine.length);
+		}
+		expect(rows.filter((row) => row.documentId === current?.id)).toEqual([
+			{
+				documentId: current?.id ?? "",
+				context: "Current",
+				version: "text-v2;size=1000;overlap=150",
+				content: "Already chunked by text-v2.",
+			},
+		]);
+
+		// Nothing left: a new run does no work.
+		const idle = flakyEmbedding();
+		await createRechunkDocumentsJob({ documents, checkpoints, embedding: idle, chunking, logger })({
+			...job,
+			id: crypto.randomUUID(),
+		});
+		expect(idle.calls).toBe(0);
 	});
 
 	test("pg-boss delivers jobs and the exclusive policy refuses duplicates", async () => {
