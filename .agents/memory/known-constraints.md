@@ -172,6 +172,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   throwaway `SYSTEM_DATABASE_URL`, use ports 8200/5602/5499 and start the API from source per test
   file. The chaos suite cuts Postgres with a TCP proxy (connections refused, not black-holed: a
   hanging database is not covered). Every request body is capped at 2 MiB (auth 4 KiB).
+- **Database outages fail fast** (syn-071): queries wait at most `DATABASE_CONNECT_TIMEOUT_SECONDS` (5 s)
+  for a connection while Postgres is unreachable (postgres.js treats an opened-then-closed connection as
+  transient and waited 30 s by default); reconnects are ≤ 1 s apart; the checkpointer `pg` pool gives up
+  after 5 s; `/health/ready` answers `503` within 2 s. A request can still take up to ~6 s to fail.
 - **Every `pg` pool needs an `error` listener** (`pool.on("error", …)`): an idle connection that
   drops otherwise crashes the process. The checkpointer adapter takes `onError` (syn-051); pg-boss
   has its own (`boss.on("error")`).

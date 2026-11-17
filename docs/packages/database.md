@@ -31,6 +31,7 @@ migration runner. Any app or package that needs Postgres depends on this package
 | Export | Import | What it does |
 | --- | --- | --- |
 | `createDatabase`, `Database`, `DatabaseOptions` | `@synapse/database` | Create a client: `{ db, client, close }` |
+| `DATABASE_CONNECT_TIMEOUT_SECONDS` (5), `databaseReconnectDelay` | `@synapse/database` | While Postgres is unreachable, queries fail after 5 s (postgres.js default 30 s) and reconnects are at most 1 s apart (default grows to 20 s), see Notes |
 | `runMigrations(db, folder)` | `@synapse/database` | Apply SQL migrations from a folder |
 | `MIGRATIONS_TABLE`, `sourceMigrationsFolder` | `@synapse/database` | Journal table name; the package's own `migrations/` (source only) |
 | tables + row types, `EMBEDDING_DIMENSIONS` | `@synapse/database/schema` (also re-exported from the root) | Drizzle schema |
@@ -52,3 +53,10 @@ build copies it to `apps/api/dist/migrations`.
 `pg_advisory_xact_lock` first, so two processes starting together (API replicas, parallel test
 suites) apply each migration once; the second waits and finds nothing to do (tested on a fresh
 database; it failed every time without the lock).
+- **Outages fail fast** (syn-071): postgres.js treats a connection that opens and is then closed
+  (`CONNECTION_CLOSED`: a cut network, a restarting Postgres, a proxy in front) as transient and keeps
+  queries waiting until `connect_timeout` has passed since the first failure, reconnecting with a
+  backoff that grows to 20 s. With the defaults a blip held requests for 30–45 s and the pool took
+  10 s or more to notice Postgres was back. The client sets `connect_timeout: 5` and a reconnect
+  delay capped at 1 s; measured through the chaos proxy (300 cuts with queries in flight): worst
+  wait 5.8 s (was 44 s), recovery ≤ 1 s (was 11.6 s). `test/client.test.ts` pins it without Postgres.

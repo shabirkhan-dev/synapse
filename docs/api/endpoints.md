@@ -5,7 +5,7 @@
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | GET | `/api/v1/health` | — | Liveness (no dependencies) |
-| GET | `/api/v1/health/ready` | — | Readiness (checks Postgres); `503` if unreachable |
+| GET | `/api/v1/health/ready` | — | Readiness (checks Postgres); `503` if unreachable or the check takes over 2 s (`HEALTH_READY_TIMEOUT_MS`) |
 | POST | `/api/v1/auth/sign-up` | — | Create an account (`email`, `password` 12–128 chars, optional `session: "cookie"`) and a session → `{ user, tokens }`; emails a verification link. `409 AUTH_EMAIL_TAKEN` if the email exists (case-insensitive). 10/hour per IP. Body ≤ 4 KB |
 | POST | `/api/v1/auth/sign-in` | — | Email + password (optional `session: "cookie"`) → `{ user, tokens }`. `401 AUTH_INVALID_CREDENTIALS` for any wrong combination. 10 per 15 min per email, 100 per IP |
 | POST | `/api/v1/auth/refresh` | — | `refreshToken` (or, with an empty JSON body, the `synapse_refresh` cookie) → new `tokens` for the same session; the old refresh token stops working, and replaying it revokes the session — except within `AUTH_REFRESH_REUSE_GRACE_SECONDS` (10 s) of the rotation, which returns an access token only (no `refreshToken`, no cookie change). `401 AUTH_REFRESH_TOKEN_INVALID` (a dead cookie is cleared) |

@@ -108,8 +108,8 @@ contextual retrieval and Ragas.
 | Light / dark / system theme switch; refined surfaces (Calesto, HockeyStack as inspiration) | ✅ | syn-069 |
 | Closer to the Calesto reference: account menu, page pill, chat cards, floating composer | ✅ | syn-072 |
 | Scoped questions: ask about chosen documents | ✅ | syn-070 |
-| Risk: chaos "Postgres goes away" failed once in CI (API refused connections) | ⏭️ | syn-071 |
-| Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | syn-073 |
+| Risk: chaos "Postgres goes away" failed once in CI — requests hung up to 45 s on a database blip; now fail within ~5 s | ✅ | syn-071 |
+| Answer quality scores (faithfulness, relevance) in evaluations | ⏭️ | syn-073 |
 | Several files at once; web pages by URL | ⬜ | — |
 | Follow-up suggestions, copy, regenerate; ⌘K palette | ⬜ | — |
 

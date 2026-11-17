@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { withTimeout } from "@synapse/reliability";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { failure } from "@/shared/responses/error-response";
@@ -6,7 +7,11 @@ import { apiErrorSchema, successEnvelope } from "@/shared/responses/response.typ
 import { success } from "@/shared/responses/success-response";
 import type { AppBindings } from "@/shared/types/app-types";
 
-import { HEALTH_ERROR_CODES, HEALTH_MESSAGES } from "../constants/health.constants";
+import {
+	HEALTH_ERROR_CODES,
+	HEALTH_MESSAGES,
+	HEALTH_READY_TIMEOUT_MS,
+} from "../constants/health.constants";
 import { healthSchema, readinessSchema } from "../schemas/health.schemas";
 
 const healthRoute = createRoute({
@@ -63,7 +68,10 @@ export function createHealthRoutes({
 
 	app.openapi(readyRoute, async (c) => {
 		try {
-			await pingDatabase();
+			await withTimeout(() => pingDatabase(), {
+				timeoutMs: HEALTH_READY_TIMEOUT_MS,
+				name: "database ping",
+			});
 		} catch {
 			return failure(
 				c,

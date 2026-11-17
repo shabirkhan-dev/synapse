@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { HEALTH_READY_TIMEOUT_MS } from "@/modules/health";
+
 import { buildTestApp } from "./helpers";
 
 describe("openapi", () => {
@@ -76,6 +78,17 @@ describe("openapi", () => {
 		expect(response.status).toBe(503);
 		expect((await response.json()).error.code).toBe("DATABASE_UNAVAILABLE");
 		expect((await app.request("/api/v1/health/ready")).status).toBe(200);
+	});
+
+	test("readiness answers 503 within its deadline when the database hangs", async () => {
+		const hanging = buildTestApp({ pingDatabase: () => new Promise<void>(() => {}) });
+		const started = performance.now();
+		const response = await hanging.app.request("/api/v1/health/ready");
+		expect(response.status).toBe(503);
+		expect((await response.json()).error.code).toBe("DATABASE_UNAVAILABLE");
+		const ms = performance.now() - started;
+		expect(ms).toBeGreaterThanOrEqual(HEALTH_READY_TIMEOUT_MS - 50);
+		expect(ms).toBeLessThan(HEALTH_READY_TIMEOUT_MS + 1_000);
 	});
 
 	test("unknown routes use the error envelope", async () => {

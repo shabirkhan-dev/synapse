@@ -26,7 +26,8 @@ export function createPostgresCheckpointer({
 	schema = "langgraph",
 	onError,
 }: PostgresCheckpointerOptions): PostgresCheckpointer {
-	const pool = new Pool({ connectionString });
+	// `pg` waits for a connection forever by default; fail like the main client does (5 s).
+	const pool = new Pool({ connectionString, connectionTimeoutMillis: 5_000 });
 	pool.on("error", onError);
 	const saver = new PostgresSaver(pool, undefined, { schema });
 	return { saver, setup: () => saver.setup(), close: () => saver.end() };
