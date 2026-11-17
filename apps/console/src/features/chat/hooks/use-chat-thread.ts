@@ -14,10 +14,13 @@ import type { ChatMessage, ThreadStatus } from "../types/chat.types";
 export function useChatThread({
 	conversationId,
 	initialMessages,
+	documentIds = [],
 	onStarted,
 }: {
 	conversationId: string | null;
 	initialMessages: ChatMessage[];
+	/** The documents this thread's turns search (chosen above the composer); empty = all. */
+	documentIds?: string[];
 	/** The API started a stored conversation for the first message. */
 	onStarted: (id: string) => void;
 }) {
@@ -44,6 +47,7 @@ export function useChatThread({
 				const reply = await chatService.send({
 					message: sent,
 					conversationId: conversation.current,
+					documentIds,
 					signal: abort.signal,
 				});
 				if (reply.conversationId && !conversation.current) {
@@ -73,7 +77,7 @@ export function useChatThread({
 				void queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
 			}
 		},
-		[messages, onStarted, queryClient],
+		[messages, documentIds, onStarted, queryClient],
 	);
 
 	/** Answer the last question again (stored conversations only); its old reply is replaced. */
@@ -87,7 +91,11 @@ export function useChatThread({
 		setMessages(kept);
 		setStatus({ kind: "streaming" });
 		try {
-			const reply = await chatService.regenerate({ conversationId: id, signal: abort.signal });
+			const reply = await chatService.regenerate({
+				conversationId: id,
+				documentIds,
+				signal: abort.signal,
+			});
 			for await (const snapshot of reply.snapshots) {
 				setMessages([...kept, snapshot]);
 			}
@@ -106,7 +114,7 @@ export function useChatThread({
 		} finally {
 			controller.current = null;
 		}
-	}, [messages]);
+	}, [messages, documentIds]);
 
 	const stop = useCallback(() => controller.current?.abort(), []);
 

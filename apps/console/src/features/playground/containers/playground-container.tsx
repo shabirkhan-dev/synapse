@@ -16,16 +16,16 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { CopyButton } from "@/components/shared/copy-button";
+import { DocumentScope } from "@/components/shared/document-scope";
 import { PageHeader } from "@/components/shared/page-header";
 import { useDocumentsQuery } from "@/features/documents";
 import { FollowUpsContainer } from "@/features/follow-ups";
 
 import { AnswerPanel } from "../components/answer-panel";
-import { DocumentScope } from "../components/document-scope";
 import { FeedbackButtons } from "../components/feedback-buttons";
 import { MatchesList } from "../components/matches-list";
 import { QuestionForm } from "../components/question-form";
-import { PLAYGROUND_SCOPE_PARAM } from "../constants/playground.constants";
+import { PLAYGROUND_LIMITS, PLAYGROUND_SCOPE_PARAM } from "../constants/playground.constants";
 import { useAskQuestionMutation } from "../hooks/mutations/use-ask-question-mutation";
 import { useSendFeedbackMutation } from "../hooks/mutations/use-send-feedback-mutation";
 import type { QuestionInput } from "../types/playground.types";
@@ -58,7 +58,12 @@ export function PlaygroundContainer() {
 			</PageHeader>
 			<Card>
 				<CardContent className="flex flex-col gap-4">
-					<DocumentScope documents={documents.data ?? []} selected={scope} onChange={setScope} />
+					<DocumentScope
+						documents={documents.data ?? []}
+						selected={scope}
+						onChange={setScope}
+						max={PLAYGROUND_LIMITS.SCOPE_MAX}
+					/>
 					<QuestionForm
 						pending={ask.isPending}
 						onSubmit={(input) => askWith({ ...input, documentIds: scope })}

@@ -4,18 +4,18 @@ import { Button } from "@synapse/ui/components/button";
 import { Checkbox } from "@synapse/ui/components/checkbox";
 import { Label } from "@synapse/ui/components/label";
 
-import { PLAYGROUND_LIMITS } from "../constants/playground.constants";
-
 export type DocumentScopeProps = {
 	documents: { id: string; title: string }[];
 	/** Ids of the chosen documents; empty = every document. */
 	selected: string[];
 	onChange: (selected: string[]) => void;
+	/** Most documents one question may search (the API allows 20). */
+	max?: number;
 };
 
 /** Narrow a question to chosen documents; with none chosen, every document is searched. */
-export function DocumentScope({ documents, selected, onChange }: DocumentScopeProps) {
-	const full = selected.length >= PLAYGROUND_LIMITS.SCOPE_MAX;
+export function DocumentScope({ documents, selected, onChange, max = 20 }: DocumentScopeProps) {
+	const full = selected.length >= max;
 	const chosen = documents.filter((document) => selected.includes(document.id));
 	const summary =
 		chosen.length === 0
@@ -68,7 +68,7 @@ export function DocumentScope({ documents, selected, onChange }: DocumentScopePr
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<p className="text-xs text-muted-foreground">
 						{full
-							? `At most ${PLAYGROUND_LIMITS.SCOPE_MAX} documents per question.`
+							? `At most ${max} documents per question.`
 							: "Choose none to search every document."}
 					</p>
 					{selected.length > 0 ? (

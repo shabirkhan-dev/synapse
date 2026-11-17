@@ -1,7 +1,10 @@
 "use client";
 
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { DocumentScope } from "@/components/shared/document-scope";
+import { useDocumentsQuery } from "@/features/documents";
 
 import { FollowUpsContainer } from "@/features/follow-ups";
 
@@ -23,9 +26,13 @@ export function ChatThreadContainer({
 	initialMessages,
 	onStarted,
 }: ChatThreadContainerProps) {
+	// Which documents this conversation's turns search; kept while the page is open.
+	const [scope, setScope] = useState<string[]>([]);
+	const documents = useDocumentsQuery();
 	const { messages, status, send, regenerate, canRegenerate, stop } = useChatThread({
 		conversationId,
 		initialMessages,
+		documentIds: scope,
 		onStarted,
 	});
 	const streaming = status.kind === "streaming";
@@ -48,6 +55,7 @@ export function ChatThreadContainer({
 
 	return (
 		<div className="flex flex-1 flex-col gap-6">
+			<DocumentScope documents={documents.data ?? []} selected={scope} onChange={setScope} />
 			{messages.length === 0 ? (
 				<ChatEmptyState onPick={send} />
 			) : (

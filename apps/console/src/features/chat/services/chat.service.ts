@@ -57,18 +57,43 @@ export const chatService = {
 	send({
 		message,
 		conversationId,
+		documentIds = [],
 		signal,
 	}: {
 		message: ChatMessage;
 		conversationId: string | null;
+		/** Search only these documents this turn; empty = all of them. */
+		documentIds?: string[];
 		signal: AbortSignal;
 	}): Promise<Reply> {
-		return streamReply(conversationId ? { message, conversationId } : { message }, signal);
+		return streamReply(
+			{
+				message,
+				...(conversationId ? { conversationId } : {}),
+				...(documentIds.length > 0 ? { documentIds } : {}),
+			},
+			signal,
+		);
 	},
 
 	/** Answer the conversation's last question again; the API replaces the reply after it. */
-	regenerate({ conversationId, signal }: { conversationId: string; signal: AbortSignal }) {
-		return streamReply({ conversationId, regenerate: true }, signal);
+	regenerate({
+		conversationId,
+		documentIds = [],
+		signal,
+	}: {
+		conversationId: string;
+		documentIds?: string[];
+		signal: AbortSignal;
+	}) {
+		return streamReply(
+			{
+				conversationId,
+				regenerate: true,
+				...(documentIds.length > 0 ? { documentIds } : {}),
+			},
+			signal,
+		);
 	},
 };
 

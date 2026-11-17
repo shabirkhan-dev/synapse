@@ -79,3 +79,29 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	await expect(run).toContainText("You");
 	await expect(run).toContainText(/chat-assistant@\d/);
 });
+
+test("a chat turn narrowed to one document cites only that document", async ({ page }) => {
+	const email = uniqueEmail("chatscope");
+	await signUpViaApi(email);
+	await signIn(page, email);
+	for (const [title, text] of [
+		["Refund policy", "Refunds are accepted within 30 days of purchase."],
+		["Shipping policy", "Refund requests for shipping fees are handled by the carrier."],
+	] as const) {
+		await page.getByLabel("Title", { exact: true }).fill(title);
+		await page.getByLabel("Text").fill(text);
+		await page.getByRole("button", { name: "Add document" }).click();
+		await expect(page.getByRole("link", { name: title })).toBeVisible();
+	}
+
+	await page.getByRole("link", { name: "Chat", exact: true }).click();
+	await expect(page.getByRole("heading", { name: "New chat" })).toBeVisible();
+	await page.getByText("Search in").click();
+	await page.getByRole("checkbox", { name: "Shipping policy" }).click();
+	await expect(page.getByText("Shipping policy", { exact: true }).first()).toBeVisible();
+	await page.getByLabel("Message", { exact: true }).fill(QUESTION);
+	await page.getByLabel("Message", { exact: true }).press("Enter");
+	const sources = page.getByRole("list", { name: "Sources" });
+	await expect(sources).toContainText("Shipping policy");
+	await expect(sources).not.toContainText("Refund policy");
+});

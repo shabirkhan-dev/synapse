@@ -61,8 +61,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   have no headings.
 - **Scoped questions** (syn-070): up to 20 documents per question (`RAG_MAX_SCOPE_DOCUMENTS`); unknown
   or other owners' ids match nothing (no error). A scoped vector search is exact (sequential over the
-  owner's chosen chunks), fine for a few documents. The chat page has no picker yet (the API takes
-  `documentIds`); the Playground scope lives in the page state and `?d=` only seeds it.
+  owner's chosen chunks), fine for a few documents. Chat has the same picker since syn-076 (top of the
+  thread, applies to every turn and regenerate; kept while the page is open, not stored with the
+  conversation); the Playground scope lives in the page state and `?d=` only seeds it.
 - **Chunk versions:** every new chunk stores `chunker_version` and `embedding_model`; rows from before
   migration `0002_chunk_versions` have nulls. Vector search only compares chunks with the current
   `embedding_model` (or null), so changing the embedding model hides old vectors until re-embedded

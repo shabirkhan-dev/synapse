@@ -235,7 +235,9 @@ describe("ChatThreadContainer (mocked API)", () => {
 		fireEvent.change(screen.getByLabelText("Message"), { target: { value: "And now?" } });
 		fireEvent.click(screen.getByRole("button", { name: "Send" }));
 		await screen.findByText("Within 30 days.");
-		expect(calls[0]?.body).toMatchObject({ conversationId: "conv-9" });
+		expect(calls.find((call) => call.method === "POST")?.body).toMatchObject({
+			conversationId: "conv-9",
+		});
 	});
 
 	test("a refused message is taken back and returned to the box with the reason", async () => {
@@ -275,6 +277,7 @@ describe("Copy, regenerate and follow-ups", () => {
 					},
 				});
 			}
+			if (call.method === "GET") return Response.json({ success: true, data: [] });
 			bodies.push(call.body);
 			return sse([
 				{ type: "start", messageId: "m2" },
@@ -328,6 +331,7 @@ describe("Copy, regenerate and follow-ups", () => {
 					},
 				});
 			}
+			if (call.method === "GET") return Response.json({ success: true, data: [] });
 			bodies.push(call.body);
 			return sse(ANSWER, { "x-conversation-id": "c9" });
 		});
@@ -348,5 +352,50 @@ describe("Copy, regenerate and follow-ups", () => {
 			"And for sale items?",
 		);
 		await screen.findByRole("button", { name: "Regenerate" });
+	});
+
+	test("documents chosen above the thread go with every turn", async () => {
+		signedIn();
+		const posts: unknown[] = [];
+		mockFetch((call) => {
+			if (call.method === "GET" && call.url.endsWith("/rag/documents")) {
+				return Response.json({
+					success: true,
+					data: [
+						{
+							id: "d1",
+							title: "Refund policy",
+							source: null,
+							chunkCount: 1,
+							createdAt: "2026-11-17T09:00:00Z",
+						},
+						{
+							id: "d2",
+							title: "Shipping",
+							source: null,
+							chunkCount: 1,
+							createdAt: "2026-11-17T09:00:00Z",
+						},
+					],
+				});
+			}
+			if (call.url.endsWith("/rag/follow-ups")) return failure(500, "X", "no");
+			posts.push(call.body);
+			return sse(ANSWER, { "x-conversation-id": "c3" });
+		});
+		renderWithQuery(
+			<ChatThreadContainer conversationId={null} initialMessages={[]} onStarted={mock()} />,
+		);
+		expect(screen.getByText("All documents")).toBeDefined();
+		// The label, as a user clicks it (happy-dom does not toggle Base UI's span on click).
+		fireEvent.click(await screen.findByText("Shipping", { selector: "li span" }));
+		await screen.findByText("Shipping", { selector: "span.truncate" });
+		fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Ship to Oslo?" } });
+		fireEvent.click(screen.getByRole("button", { name: "Send" }));
+		await screen.findByText("Within 30 days.");
+		expect(posts[0]).toMatchObject({ documentIds: ["d2"] });
+		expect((posts[0] as { message: { parts: { text: string }[] } }).message.parts[0]?.text).toBe(
+			"Ship to Oslo?",
+		);
 	});
 });

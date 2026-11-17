@@ -232,6 +232,8 @@ Don't create a container for a component that needs no data.
 - **Copy and regenerate**: `components/shared/copy-button.tsx` on chat replies and the Playground
   answer; chat Regenerate on the last reply of a stored conversation (`chatService.regenerate`), the
   Playground's "Ask again" repeats the last question with its passages and scope.
+- **Document scope** (`components/shared/document-scope.tsx`): the "Search in" picker of the Playground
+  and, since syn-076, the top of a chat thread (turns and regenerate send `documentIds`).
 - **Follow-ups** (`features/follow-ups`): `FollowUpsContainer` under a finished answer in chat and the
   Playground; one `POST /rag/follow-ups` per answer (cached forever, no retry, failures show nothing).
 
