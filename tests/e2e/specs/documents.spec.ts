@@ -72,3 +72,38 @@ test("a Markdown file is uploaded under its name and its text is searchable", as
 		page.getByRole("list", { name: "Chunks" }).getByText(/returned within \*\*14 days\*\*/),
 	).toBeVisible();
 });
+
+test("asking about one document searches only that document", async ({ page }) => {
+	const email = uniqueEmail("scope");
+	await signUpViaApi(email);
+	await signIn(page, email);
+	for (const [title, text] of [
+		["Refund policy", "Refunds are accepted within 30 days of purchase."],
+		["Shipping policy", "Orders ship within two business days; refunds of shipping are not given."],
+	] as const) {
+		await page.getByLabel("Title", { exact: true }).fill(title);
+		await page.getByLabel("Text").fill(text);
+		await page.getByRole("button", { name: "Add document" }).click();
+		await expect(page.getByRole("link", { name: title })).toBeVisible();
+	}
+
+	await page.getByRole("link", { name: "Shipping policy" }).click();
+	await page.getByRole("link", { name: "Ask about this document" }).click();
+	await expect(page).toHaveURL(/\/playground\?d=[0-9a-f-]{36}$/);
+	await expect(page.getByText("Search in")).toBeVisible();
+	await expect(page.getByRole("checkbox", { name: "Shipping policy" })).toBeChecked();
+	await expect(page.getByRole("checkbox", { name: "Refund policy" })).not.toBeChecked();
+
+	await page.getByLabel("Question").fill("How long do refunds take?");
+	await page.getByRole("button", { name: "Ask" }).click();
+	await expect(page.getByText("Searched 1 chosen document only.")).toBeVisible();
+	const passages = page.getByRole("list", { name: "Retrieved passages" });
+	await expect(passages.getByText(/Orders ship within two business days/)).toBeVisible();
+	await expect(passages.getByText(/Refunds are accepted/)).toHaveCount(0);
+
+	// Back to every document: both are searched again.
+	await page.getByRole("button", { name: "Search all documents" }).click();
+	await page.getByRole("button", { name: "Ask" }).click();
+	await expect(passages.getByText(/Refunds are accepted/)).toBeVisible();
+	await expect(page.getByText("Searched 1 chosen document only.")).toHaveCount(0);
+});

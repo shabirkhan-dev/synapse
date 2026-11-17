@@ -5,6 +5,7 @@ export {
 } from "./fusion/reciprocal-rank-fusion";
 export {
 	createRetriever,
+	type DocumentScope,
 	type KeywordSearchRequest,
 	type RetrievalMode,
 	type RerankOptions,

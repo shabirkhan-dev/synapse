@@ -6,6 +6,7 @@ import {
 	RAG_DEFAULT_LIST_LIMIT,
 	RAG_MAX_CHUNK_PAGE,
 	RAG_MAX_DOCUMENT_CHARS,
+	RAG_MAX_SCOPE_DOCUMENTS,
 	RAG_MAX_TITLE_CHARS,
 } from "../constants/rag.constants";
 
@@ -81,6 +82,13 @@ export const ragMatchSchema = z
 	})
 	.openapi("RagMatch");
 
+/** A question narrowed to chosen documents; ids of other organizations simply match nothing. */
+export const documentScopeSchema = z
+	.array(z.uuid())
+	.min(1)
+	.max(RAG_MAX_SCOPE_DOCUMENTS)
+	.openapi({ description: "Only these documents are searched" });
+
 export const ragQueryBodySchema = z
 	.object({
 		query: z
@@ -97,6 +105,8 @@ export const ragQueryBodySchema = z
 		 * `keyword` is full-text alone. Answers always use the configured pipeline.
 		 */
 		mode: z.enum(["hybrid", "vector", "keyword"]).optional(),
+		/** Search (and answer from) only these documents of the organization. Absent = all of them. */
+		documentIds: documentScopeSchema.optional(),
 	})
 	.refine((body) => body.mode === undefined || body.answer === false, {
 		message: RAG_MESSAGES.MODE_NEEDS_RETRIEVAL_ONLY,

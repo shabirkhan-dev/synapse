@@ -1,4 +1,4 @@
-import { and, asc, cosineDistance, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, cosineDistance, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import {
 	chunkSearchText,
@@ -141,9 +141,15 @@ export class DrizzleRagRepository implements RagRepository {
 		embedding,
 		embeddingModel,
 		limit,
+		documentIds,
 	}: VectorSearchRequest): Promise<RagMatch[]> {
 		const distance = cosineDistance(ragChunks.embedding, embedding);
+		const scoped = documentIds?.length ? [...documentIds] : null;
 		const rows = await this.db.transaction(async (tx) => {
+			// A few chosen documents are always searched exactly. Postgres usually plans that itself
+			// (filter, then sort); this rules out the HNSW plan, which filters after walking the
+			// index and can stop (`hnsw.max_scan_tuples`) before it meets their chunks.
+			if (scoped) await tx.execute(sql`set local enable_indexscan = off`);
 			// HNSW fetches `ef_search` nearest candidates across all owners before the owner filter,
 			// so a tenant among many could get fewer than `limit` rows. Iterative scans (pgvector
 			// 0.8+) keep scanning until the limit is filled; relaxed order is re-sorted below.
@@ -159,6 +165,7 @@ export class DrizzleRagRepository implements RagRepository {
 					.where(
 						and(
 							eq(ragChunks.ownerId, ownerId),
+							scoped ? inArray(ragChunks.documentId, scoped) : undefined,
 							// Vectors from another model are not comparable; legacy rows have no model recorded.
 							or(eq(ragChunks.embeddingModel, embeddingModel), isNull(ragChunks.embeddingModel)),
 						),
@@ -172,7 +179,12 @@ export class DrizzleRagRepository implements RagRepository {
 		return rows.map(withNumericScore).toSorted(byScoreThenContent);
 	}
 
-	async keywordSearch({ ownerId, query, limit }: KeywordSearchRequest): Promise<RagMatch[]> {
+	async keywordSearch({
+		ownerId,
+		query,
+		limit,
+		documentIds,
+	}: KeywordSearchRequest): Promise<RagMatch[]> {
 		const vector = searchVector(chunkSearchText(ragChunks));
 		const tsQuery = searchQuery(query);
 		const rank = sql<number>`ts_rank_cd(${vector}, ${tsQuery})`;
@@ -181,7 +193,13 @@ export class DrizzleRagRepository implements RagRepository {
 			.from(ragChunks)
 			.innerJoin(ragDocuments, eq(ragDocuments.id, ragChunks.documentId))
 			// The @@ on the indexed expression uses the GIN index.
-			.where(and(eq(ragChunks.ownerId, ownerId), sql`${vector} @@ ${tsQuery}`))
+			.where(
+				and(
+					eq(ragChunks.ownerId, ownerId),
+					documentIds?.length ? inArray(ragChunks.documentId, [...documentIds]) : undefined,
+					sql`${vector} @@ ${tsQuery}`,
+				),
+			)
 			.orderBy(desc(rank), ...tieBreak)
 			.limit(limit);
 		return rows.map(withNumericScore);

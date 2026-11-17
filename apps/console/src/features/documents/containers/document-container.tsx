@@ -15,11 +15,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { LinkButton } from "@/components/shared/link-button";
 import { ApiError } from "@/lib/api/api-error";
 
 import { ChunkList } from "../components/chunk-list";
 import { DeleteDocument } from "../components/delete-document";
-import { CHUNK_PAGE_SIZE, DOCUMENTS_ROUTE } from "../constants/documents.constants";
+import {
+	askAboutDocumentRoute,
+	CHUNK_PAGE_SIZE,
+	DOCUMENTS_ROUTE,
+} from "../constants/documents.constants";
 import { useDeleteDocumentMutation } from "../hooks/mutations/use-delete-document-mutation";
 import { useDocumentQuery } from "../hooks/queries/use-document-query";
 
@@ -114,12 +119,19 @@ export function DocumentContainer({ id }: { id: string }) {
 							</p>
 						) : null}
 					</div>
-					<DeleteDocument
-						title={detail.title}
-						chunkCount={total}
-						deleting={remove.isPending}
-						onDelete={() => remove.mutate(id, { onSuccess: () => router.replace(DOCUMENTS_ROUTE) })}
-					/>
+					<div className="flex flex-wrap items-center gap-2">
+						<LinkButton variant="outline" href={askAboutDocumentRoute(id)}>
+							Ask about this document
+						</LinkButton>
+						<DeleteDocument
+							title={detail.title}
+							chunkCount={total}
+							deleting={remove.isPending}
+							onDelete={() =>
+								remove.mutate(id, { onSuccess: () => router.replace(DOCUMENTS_ROUTE) })
+							}
+						/>
+					</div>
 				</div>
 				{remove.isError ? (
 					<Alert variant="destructive">

@@ -143,6 +143,43 @@ describe("chat", () => {
 		expect(second.map((match) => match.citation)).toEqual([3, 4]);
 	});
 
+	test("a turn narrowed to chosen documents searches only them, and its audit record says so", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: [
+				streamResult(toolCallStreamParts("searchDocuments", { query: "policy" })),
+				streamResult(textStreamParts("Shipping only.")),
+			],
+		});
+		const { app, auditEvents } = buildTestApp({ chatModel });
+		const headers = await authHeaders();
+		const ids = await Promise.all(
+			["Refunds", "Shipping"].map(async (title) => {
+				const response = await app.request("/api/v1/rag/documents", {
+					method: "POST",
+					headers,
+					body: JSON.stringify({ title, content: `${title} policy text for the scope test.` }),
+				});
+				return (await response.json()).data.id as string;
+			}),
+		);
+		const shipping = ids[1] as string;
+		const events = await readStream(
+			await app.request("/api/v1/chat", {
+				method: "POST",
+				headers,
+				body: JSON.stringify({ messages: [userMessage("policy?")], documentIds: [shipping] }),
+			}),
+		);
+		const output = events.find((e) => e.type === "tool-output-available")?.output as {
+			documentId: string;
+		}[];
+		expect(output.map((match) => match.documentId)).toEqual([shipping]);
+		await waitFor(() => auditEvents.events.some((e) => e.action === "chat.message.answered"));
+		expect(
+			auditEvents.events.find((e) => e.action === "chat.message.answered")?.data,
+		).toMatchObject({ scopedToDocumentIds: [shipping] });
+	});
+
 	test("currentTime falls back to UTC for unknown zones", async () => {
 		const { rag, memory, guardrails } = buildTestApp();
 		const tools = createChatTools({

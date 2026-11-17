@@ -5,7 +5,10 @@ import { DEFAULT_RRF_K, reciprocalRankFusion } from "../fusion/reciprocal-rank-f
 /** Anything a search returns: it must be identifiable and carry a relevance score. */
 export type SearchMatch = { chunkId: string; score: number };
 
-export type VectorSearchRequest = {
+/** Narrows a search to chosen documents of the owner; absent = every document. */
+export type DocumentScope = { documentIds?: readonly string[] };
+
+export type VectorSearchRequest = DocumentScope & {
 	ownerId: string;
 	embedding: number[];
 	/** Only chunks embedded with this model (plus legacy rows without one) are comparable. */
@@ -13,11 +16,16 @@ export type VectorSearchRequest = {
 	limit: number;
 };
 
-export type KeywordSearchRequest = { ownerId: string; query: string; limit: number };
+export type KeywordSearchRequest = DocumentScope & {
+	ownerId: string;
+	query: string;
+	limit: number;
+};
 
 /**
- * Data access supplied by the caller. Every request carries the owner, so the access filter runs
- * inside the query, never as a post-filter. Results are ordered best first.
+ * Data access supplied by the caller. Every request carries the owner (and the document scope, when
+ * one is chosen), so both filters run inside the query, never as a post-filter. Results are ordered
+ * best first.
  */
 export type RetrievalPorts<TMatch extends SearchMatch> = {
 	embedQuery(query: string): Promise<number[]>;
@@ -73,9 +81,10 @@ export function createRetriever<TMatch extends SearchMatch>(
 		count: number,
 		topK: number,
 		run: RetrievalMode,
+		scope: DocumentScope,
 	): Promise<RetrievedMatch<TMatch>[]> {
 		if (run === "keyword") {
-			const matches = await ports.keywordSearch({ ownerId, query, limit: count });
+			const matches = await ports.keywordSearch({ ownerId, query, limit: count, ...scope });
 			return matches.map((match, index) =>
 				Object.assign({}, match, { ranks: { keyword: index + 1 } }),
 			);
@@ -87,6 +96,7 @@ export function createRetriever<TMatch extends SearchMatch>(
 				embedding,
 				embeddingModel,
 				limit: count,
+				...scope,
 			});
 			return matches.map((match, index) =>
 				Object.assign({}, match, { ranks: { vector: index + 1 } }),
@@ -94,8 +104,8 @@ export function createRetriever<TMatch extends SearchMatch>(
 		}
 		const limit = Math.max(topK * candidateMultiplier, count);
 		const [vectorMatches, keywordMatches] = await Promise.all([
-			ports.vectorSearch({ ownerId, embedding, embeddingModel, limit }),
-			ports.keywordSearch({ ownerId, query, limit }),
+			ports.vectorSearch({ ownerId, embedding, embeddingModel, limit, ...scope }),
+			ports.keywordSearch({ ownerId, query, limit, ...scope }),
 		]);
 		return reciprocalRankFusion([vectorMatches, keywordMatches], (match) => match.chunkId, rrfK)
 			.slice(0, count)
@@ -126,15 +136,19 @@ export function createRetriever<TMatch extends SearchMatch>(
 			query,
 			topK,
 			mode: run = mode,
+			documentIds,
 		}: {
 			ownerId: string;
 			query: string;
 			topK: number;
 			/** Run this mode for one call instead of the configured one (e.g. to compare modes). */
 			mode?: RetrievalMode;
+			/** Search only these documents of the owner. */
+			documentIds?: readonly string[];
 		}): Promise<RetrievedMatch<TMatch>[]> {
 			const count = rerank ? Math.max(topK, rerank.candidates) : topK;
-			const candidates = await firstStage(ownerId, query, count, topK, run);
+			const scope = documentIds?.length ? { documentIds } : {};
+			const candidates = await firstStage(ownerId, query, count, topK, run, scope);
 			if (!rerank || candidates.length === 0) return candidates.slice(0, topK);
 			try {
 				const ranked = await rerank.reranker.rerank({

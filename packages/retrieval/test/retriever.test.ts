@@ -24,6 +24,18 @@ function ports(vector: Match[], keyword: Match[]) {
 
 const m = (chunkId: string, score = 0.5): Match => ({ chunkId, score, content: chunkId });
 
+/** The requests both searches received for one scoped retrieval. */
+async function scopedCalls(mode: "vector" | "hybrid" | "keyword", documentIds: string[]) {
+	const { value, calls } = ports([m("a")], [m("a")]);
+	await createRetriever(value, { mode, embeddingModel: "test:e" }).retrieve({
+		ownerId: "u1",
+		query: "q",
+		topK: 1,
+		documentIds,
+	});
+	return [...calls.vector, ...calls.keyword] as Array<{ documentIds?: string[] }>;
+}
+
 describe("retriever", () => {
 	test("vector mode keeps cosine scores and never runs keyword search", async () => {
 		const { value, calls } = ports([m("a", 0.9), m("b", 0.8)], [m("z")]);
@@ -51,6 +63,18 @@ describe("retriever", () => {
 		expect(matches[0]?.ranks).toEqual({ vector: 3, keyword: 1 });
 		expect(matches[1]?.ranks).toEqual({ vector: 1 });
 		expect(calls.keyword).toEqual([{ ownerId: "u1", query: "refund", limit: 6 }]);
+	});
+
+	test("a document scope reaches both searches in every mode; an empty one is no scope", async () => {
+		expect((await scopedCalls("vector", ["d1"])).map((call) => call.documentIds)).toEqual([["d1"]]);
+		expect((await scopedCalls("keyword", ["d1"])).map((call) => call.documentIds)).toEqual([
+			["d1"],
+		]);
+		expect((await scopedCalls("hybrid", ["d1", "d2"])).map((call) => call.documentIds)).toEqual([
+			["d1", "d2"],
+			["d1", "d2"],
+		]);
+		expect((await scopedCalls("hybrid", [])).every((call) => !("documentIds" in call))).toBe(true);
 	});
 
 	test("keyword mode runs full-text search only and embeds nothing", async () => {

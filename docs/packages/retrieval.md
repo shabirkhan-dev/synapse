@@ -30,9 +30,9 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
 
 | Export | What it does |
 | --- | --- |
-| `createRetriever(ports, { mode, embeddingModel, candidateMultiplier?, rrfK?, rerank? })` | `retrieve({ ownerId, query, topK, mode? })` (`mode` runs another mode for one call, e.g. to compare); `reranker` = `provider:model` or `null` |
+| `createRetriever(ports, { mode, embeddingModel, candidateMultiplier?, rrfK?, rerank? })` | `retrieve({ ownerId, query, topK, mode?, documentIds? })` (`mode` runs another mode for one call, e.g. to compare; `documentIds` narrows both searches to those documents, an empty list means no scope); `reranker` = `provider:model` or `null` |
 | `RerankOptions` (`reranker`, `text(match)`, `candidates`, `onError?`) | Second stage: the best `candidates` first-stage matches go to a `Reranker` (`@synapse/core/contracts`) |
-| `RetrievalPorts` (`embedQuery`, `vectorSearch`, `keywordSearch`), `VectorSearchRequest`, `KeywordSearchRequest` | What the caller implements (the API repository) |
+| `RetrievalPorts` (`embedQuery`, `vectorSearch`, `keywordSearch`), `VectorSearchRequest`, `KeywordSearchRequest`, `DocumentScope` | What the caller implements (the API repository); requests carry `documentIds` when scoped |
 | `reciprocalRankFusion(lists, key, k = 60)` | Merge ranked lists by id |
 
 - **`vector` mode:** one vector search; `score` = cosine similarity.
@@ -52,6 +52,12 @@ Find the right knowledge for a query, safely: rewrite, search, fuse, rerank and 
 - The owner filter runs inside each query. Vector search sets `hnsw.iterative_scan = relaxed_order`
   for its transaction (pgvector ≥ 0.8), so HNSW keeps scanning past other tenants' rows until `topK`
   is filled (up to `hnsw.max_scan_tuples`); the relaxed order is re-sorted in memory.
+- **Scoped search (syn-070):** with `documentIds`, both searches filter `document_id = any(...)` in
+  the same query as the owner filter, before ranking. A scoped vector search also sets
+  `enable_indexscan = off` for its transaction, so it is always exact (filter, then sort): HNSW
+  filters after walking the graph and could stop at `hnsw.max_scan_tuples` before reaching a few
+  chosen documents. Postgres already picks the exact plan for small scopes; the setting rules out
+  the other one.
 - Results are deterministic: equal scores are tie-broken by content (vector: in memory, so the SQL
   keeps the HNSW-friendly `ORDER BY distance`; keyword: in SQL).
 

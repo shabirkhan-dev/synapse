@@ -9,15 +9,15 @@ export const playgroundService = {
 	 * Ask over the user's documents. The console picks the request id (the API keeps a well-formed
 	 * `x-request-id`), so feedback can point at this exact answer without reading response headers.
 	 */
-	async ask({ query, topK }: QuestionInput): Promise<AskedQuestion> {
+	async ask({ query, topK, documentIds = [] }: QuestionInput): Promise<AskedQuestion> {
 		const requestId = `console_${crypto.randomUUID()}`;
 		const answer = await api(endpoints.rag.query, {
 			method: "POST",
-			body: { query, topK },
+			body: { query, topK, ...(documentIds.length > 0 ? { documentIds } : {}) },
 			headers: { "x-request-id": requestId },
 			schema: ragAnswerSchema,
 		});
-		return { ...answer, question: query, requestId };
+		return { ...answer, question: query, requestId, scopedTo: documentIds };
 	},
 
 	/** Thumbs up/down on an answer; rating it again replaces the earlier rating. */

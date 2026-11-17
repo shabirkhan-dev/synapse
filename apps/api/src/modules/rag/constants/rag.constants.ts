@@ -43,6 +43,9 @@ export const RAG_MAX_TITLE_CHARS = 300;
 
 export const RAG_DEFAULT_LIST_LIMIT = 50;
 
+/** Most documents one question can be narrowed to (`documentIds`). */
+export const RAG_MAX_SCOPE_DOCUMENTS = 20;
+
 /** Chunks per page on a document's detail. */
 export const RAG_DEFAULT_CHUNK_PAGE = 50;
 export const RAG_MAX_CHUNK_PAGE = 200;

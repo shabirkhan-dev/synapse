@@ -259,11 +259,13 @@ export class InMemoryRagRepository implements RagRepository {
 		embedding,
 		embeddingModel,
 		limit,
+		documentIds,
 	}: VectorSearchRequest): Promise<RagMatch[]> {
 		return this.chunks
 			.filter(
 				(chunk) =>
 					chunk.ownerId === ownerId &&
+					(!documentIds?.length || documentIds.includes(chunk.documentId)) &&
 					(chunk.embeddingModel == null || chunk.embeddingModel === embeddingModel),
 			)
 			.map((chunk) =>
@@ -277,10 +279,19 @@ export class InMemoryRagRepository implements RagRepository {
 	}
 
 	/** Stand-in for Postgres full-text: count of query words present in the chunk. */
-	async keywordSearch({ ownerId, query, limit }: KeywordSearchRequest): Promise<RagMatch[]> {
+	async keywordSearch({
+		ownerId,
+		query,
+		limit,
+		documentIds,
+	}: KeywordSearchRequest): Promise<RagMatch[]> {
 		const words = query.toLowerCase().match(/[a-z0-9-]+/g) ?? [];
 		return this.chunks
-			.filter((chunk) => chunk.ownerId === ownerId)
+			.filter(
+				(chunk) =>
+					chunk.ownerId === ownerId &&
+					(!documentIds?.length || documentIds.includes(chunk.documentId)),
+			)
 			.map((chunk) => {
 				// Like the Postgres index: the context line is searched with the content.
 				const text = `${chunk.context ?? ""} ${chunk.content}`.toLowerCase();

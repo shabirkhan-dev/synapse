@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-16. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-17. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -107,9 +107,9 @@ contextual retrieval and Ragas.
 | Context-carrying chunks: heading path + title in embeddings and keyword index | ✅ | syn-068 |
 | Light / dark / system theme switch; refined surfaces (Calesto, HockeyStack as inspiration) | ✅ | syn-069 |
 | Closer to the Calesto reference: account menu, page pill, chat cards, floating composer | ✅ | syn-072 |
-| Scoped questions: ask about chosen documents | ⏭️ | syn-070 |
+| Scoped questions: ask about chosen documents | ✅ | syn-070 |
 | Risk: chaos "Postgres goes away" failed once in CI (API refused connections) | ⏭️ | syn-071 |
-| Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | — |
+| Answer quality scores (faithfulness, relevance) in evaluations | ⬜ | syn-073 |
 | Several files at once; web pages by URL | ⬜ | — |
 | Follow-up suggestions, copy, regenerate; ⌘K palette | ⬜ | — |
 

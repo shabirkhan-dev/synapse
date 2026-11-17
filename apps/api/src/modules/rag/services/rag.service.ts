@@ -142,7 +142,13 @@ export class RagService {
 			ports: {
 				// Passages are sanitized once, here: the model (and the returned matches) see the cleaned text.
 				retrieve: async ({ question, context }) => {
-					const matches = await this.search(context.ownerId, question, context.topK);
+					const matches = await this.search(
+						context.ownerId,
+						question,
+						context.topK,
+						undefined,
+						context.documentIds,
+					);
 					const sanitized = await options.guardrails.sanitizePassages(
 						context.ownerId,
 						matches.map((match) => Object.assign({}, match, { id: match.chunkId })),
@@ -263,8 +269,16 @@ export class RagService {
 		query: string,
 		topK = this.options.defaultTopK,
 		mode?: RetrievalMode,
+		/** Search only these documents of the owner; absent or empty = all of them. */
+		documentIds?: readonly string[],
 	): Promise<RagMatch[]> {
-		return this.retriever.retrieve({ ownerId, query, topK, ...(mode ? { mode } : {}) });
+		return this.retriever.retrieve({
+			ownerId,
+			query,
+			topK,
+			...(mode ? { mode } : {}),
+			...(documentIds?.length ? { documentIds } : {}),
+		});
 	}
 
 	/** A user's search (`answer: false`): input policy first, then retrieval (any mode). */
@@ -274,9 +288,10 @@ export class RagService {
 		topK?: number,
 		context: RequestContext = NO_REQUEST,
 		mode?: RetrievalMode,
+		documentIds?: readonly string[],
 	): Promise<RagMatch[]> {
 		await this.options.guardrails.checkInput(ownerId, query, "rag.query", context);
-		return this.search(ownerId, query, topK, mode);
+		return this.search(ownerId, query, topK, mode, documentIds);
 	}
 
 	async answer(
@@ -284,6 +299,8 @@ export class RagService {
 		question: string,
 		topK?: number,
 		context: RequestContext = NO_REQUEST,
+		/** Answer only from these documents of the owner. */
+		documentIds?: readonly string[],
 	): Promise<RagAnswer> {
 		await this.options.guardrails.checkInput(ownerId, question, "rag.query", context);
 		const { passages: matches, answer } = await this.answerGraph.run({
@@ -293,6 +310,7 @@ export class RagService {
 				requestId: context.requestId,
 				...(context.actorId ? { actorId: context.actorId } : {}),
 				...(topK === undefined ? {} : { topK }),
+				...(documentIds?.length ? { documentIds } : {}),
 			},
 		});
 		if (!answer) {
@@ -322,6 +340,8 @@ export class RagService {
 				answer: text,
 				citedChunkIds: answer.citations.map((citation) => citation.chunkId),
 				contextChunkIds: answer.context.map((citation) => citation.chunkId),
+				// Traceability: the answer could only draw on these documents.
+				...(documentIds?.length ? { scopedToDocumentIds: [...documentIds] } : {}),
 			},
 			provenance,
 		});
@@ -450,7 +470,13 @@ function fileRejectedError(status: Exclude<FileExtraction["status"], "extracted"
 }
 
 /** Who and how much to retrieve for one answer run. */
-type AnswerScope = { ownerId: string; requestId: string | null; actorId?: string; topK?: number };
+type AnswerScope = {
+	ownerId: string;
+	requestId: string | null;
+	actorId?: string;
+	topK?: number;
+	documentIds?: readonly string[];
+};
 
 function toContextPassage(match: RagMatch) {
 	return {

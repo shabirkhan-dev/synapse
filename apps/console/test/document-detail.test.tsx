@@ -76,6 +76,9 @@ describe("DocumentContainer (mocked API)", () => {
 		await screen.findByRole("heading", { level: 1, name: "Refund policy" });
 		expect(screen.getByRole("link", { name: "https://example.com/refunds" })).toBeDefined();
 		expect(screen.getByText("Chunks 1–50 of 60")).toBeDefined();
+		expect(screen.getByRole("link", { name: "Ask about this document" }).getAttribute("href")).toBe(
+			"/playground?d=d1",
+		);
 		fireEvent.click(screen.getByRole("button", { name: "Next" }));
 		await screen.findByText("Chunks 51–60 of 60");
 		expect(screen.getByText("Passage 51")).toBeDefined();

@@ -87,7 +87,16 @@ export class ChatService {
 		}
 		const recalled = await memory.recallContext(ownerId, lastUserText(validated));
 		const tools = guardrails.allowedTools(
-			createChatTools({ rag, memory, guardrails, ownerId, organizationId, topK, context }),
+			createChatTools({
+				rag,
+				memory,
+				guardrails,
+				ownerId,
+				organizationId,
+				topK,
+				context,
+				...(body.documentIds ? { documentIds: body.documentIds } : {}),
+			}),
 		);
 		const result = streamText({
 			model: chatModel,
@@ -117,6 +126,7 @@ export class ChatService {
 					organizationId,
 					conversationId,
 					context,
+					documentIds: body.documentIds,
 					steps,
 					usage: totalUsage,
 					finishReason,
@@ -127,6 +137,7 @@ export class ChatService {
 					organizationId,
 					conversationId,
 					context,
+					documentIds: body.documentIds,
 					steps,
 					usage: sumUsage(steps),
 					finishReason: "aborted",
@@ -176,6 +187,7 @@ export class ChatService {
 		organizationId,
 		conversationId,
 		context,
+		documentIds,
 		steps,
 		usage,
 		finishReason,
@@ -184,6 +196,7 @@ export class ChatService {
 		organizationId: string;
 		conversationId: string | null;
 		context: RequestContext;
+		documentIds: readonly string[] | undefined;
 		steps: ReadonlyArray<StepResult<ToolSet>>;
 		usage: TokenCounts;
 		finishReason: string;
@@ -200,7 +213,13 @@ export class ChatService {
 				subjectType: "conversation",
 				subjectId: conversationId,
 				requestId: context.requestId,
-				data: { finishReason, steps: steps.length, tools },
+				data: {
+					finishReason,
+					steps: steps.length,
+					tools,
+					// Traceability: this turn's searches could only read these documents.
+					...(documentIds?.length ? { scopedToDocumentIds: [...documentIds] } : {}),
+				},
 				provenance: {
 					chatModel: `${chatInfo.provider}:${chatInfo.model}`,
 					promptVersion: promptVersion(CHAT_ASSISTANT_PROMPT),

@@ -1,18 +1,48 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-import { PlaygroundContainer } from "@/features/playground";
-import { AnswerText } from "@/features/playground/components/answer-text";
-import { MatchesList } from "@/features/playground/components/matches-list";
-import { SourceLink } from "@/features/playground/components/source-link";
-import { setAccessToken } from "@/lib/api/session";
+import { type Call, failure, mockFetch, ok, renderWithQuery, signedIn } from "./helpers";
 
-import { failure, mockFetch, ok, renderWithQuery, signedIn } from "./helpers";
+// The page reads the address bar ("Ask about this document" arrives with `?d=<id>`).
+let search = new URLSearchParams();
+mock.module("next/navigation", () => ({
+	useRouter: () => ({ replace: mock(), push: mock(), back: mock() }),
+	usePathname: () => "/playground",
+	useSearchParams: () => search,
+}));
+
+const { PlaygroundContainer } = await import("@/features/playground");
+const { AnswerText } = await import("@/features/playground/components/answer-text");
+const { MatchesList } = await import("@/features/playground/components/matches-list");
+const { SourceLink } = await import("@/features/playground/components/source-link");
+const { setAccessToken } = await import("@/lib/api/session");
 
 afterEach(() => {
 	cleanup();
 	setAccessToken(null);
+	search = new URLSearchParams();
 });
+
+const doc = (id: string, title: string) => ({
+	id,
+	title,
+	source: null,
+	metadata: {},
+	chunkCount: 1,
+	contentHash: "h",
+	createdAt: "2026-11-09T10:00:00Z",
+});
+const DOCUMENTS = [
+	doc("11111111-1111-4111-8111-111111111111", "Refunds"),
+	doc("22222222-2222-4222-8222-222222222222", "Shipping"),
+];
+
+/** The page also loads the document list (for the scope picker); `handler` answers the rest. */
+const withDocuments =
+	(handler: (call: Call) => Response) =>
+	(call: Call): Response =>
+		call.method === "GET" && call.url.endsWith("/rag/documents") ? ok(DOCUMENTS) : handler(call);
+const asked = (calls: Call[]) => calls.filter((call) => call.url.endsWith("/rag/query"));
 
 const match = (chunkId: string, title: string, ranks = {}) => ({
 	chunkId,
@@ -92,17 +122,20 @@ async function ask(question: string, topK = "3") {
 describe("PlaygroundContainer (mocked API)", () => {
 	test("asks with its own request id, shows the cited answer and provenance, and rates that answer", async () => {
 		signedIn();
-		const calls = mockFetch((call) =>
-			call.url.endsWith("/oversight/feedback")
-				? ok({ ...(call.body as object), comment: null, createdAt: "2026-11-09T10:00:00Z" })
-				: ok(answered),
+		const calls = mockFetch(
+			withDocuments((call) =>
+				call.url.endsWith("/oversight/feedback")
+					? ok({ ...(call.body as object), comment: null, createdAt: "2026-11-09T10:00:00Z" })
+					: ok(answered),
+			),
 		);
 		renderWithQuery(<PlaygroundContainer />);
 		await ask("How long for refunds?");
 
 		await screen.findByText(/Refunds are accepted within 30 days/);
-		const query = calls[0];
+		const query = asked(calls)[0];
 		expect(query?.body).toEqual({ query: "How long for refunds?", topK: 3 });
+		expect(screen.queryByText(/chosen document/)).toBeNull();
 		const requestId = query?.headers.get("x-request-id") ?? "";
 		expect(requestId).toMatch(/^console_[0-9a-f-]{36}$/);
 		expect(screen.getAllByRole("link", { name: /^Source / })).toHaveLength(2);
@@ -112,26 +145,29 @@ describe("PlaygroundContainer (mocked API)", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "No" }));
 		await screen.findByText("Thanks, noted.");
-		expect(calls[1]?.body).toEqual({ requestId, rating: "down" });
+		const rated = calls.find((call) => call.url.endsWith("/oversight/feedback"));
+		expect(rated?.body).toEqual({ requestId, rating: "down" });
 		expect(screen.getByRole("button", { name: "No" }).getAttribute("aria-pressed")).toBe("true");
 
 		// A new question starts unrated.
 		await ask("And shipping?");
-		await waitFor(() => expect(calls).toHaveLength(3));
+		await waitFor(() => expect(asked(calls)).toHaveLength(2));
 		await screen.findByText(/Refunds are accepted/);
 		expect(screen.queryByText("Thanks, noted.")).toBeNull();
-		expect(calls[2]?.headers.get("x-request-id")).not.toBe(requestId);
+		expect(asked(calls)[1]?.headers.get("x-request-id")).not.toBe(requestId);
 	});
 
 	test("with no documents: the API's message, no feedback, a link to add documents", async () => {
 		signedIn();
-		mockFetch(() =>
-			ok({
-				answer: "I could not find any ingested documents to answer from.",
-				matches: [],
-				citations: [],
-				provenance: null,
-			}),
+		mockFetch((call) =>
+			call.url.endsWith("/rag/documents")
+				? ok([])
+				: ok({
+						answer: "I could not find any ingested documents to answer from.",
+						matches: [],
+						citations: [],
+						provenance: null,
+					}),
 		);
 		renderWithQuery(<PlaygroundContainer />);
 		await ask("Anything?");
@@ -145,11 +181,13 @@ describe("PlaygroundContainer (mocked API)", () => {
 
 	test("a provider outage shows the API's message", async () => {
 		signedIn();
-		mockFetch(() =>
-			failure(
-				503,
-				"RELIABILITY_CIRCUIT_OPEN",
-				"A provider is unavailable right now; try again shortly",
+		mockFetch(
+			withDocuments(() =>
+				failure(
+					503,
+					"RELIABILITY_CIRCUIT_OPEN",
+					"A provider is unavailable right now; try again shortly",
+				),
 			),
 		);
 		renderWithQuery(<PlaygroundContainer />);
@@ -159,11 +197,54 @@ describe("PlaygroundContainer (mocked API)", () => {
 
 	test("validates the question and the passage count before calling the API", async () => {
 		signedIn();
-		const calls = mockFetch(() => ok(answered));
+		const calls = mockFetch(withDocuments(() => ok(answered)));
 		renderWithQuery(<PlaygroundContainer />);
 		await ask("   ", "99");
 		expect(screen.getByText("Ask a question")).toBeDefined();
 		expect(screen.getByText("At most 20")).toBeDefined();
-		expect(calls).toHaveLength(0);
+		expect(asked(calls)).toHaveLength(0);
+	});
+
+	test("a question can be narrowed to chosen documents, and cleared back to all", async () => {
+		signedIn();
+		const calls = mockFetch(withDocuments(() => ok(answered)));
+		renderWithQuery(<PlaygroundContainer />);
+		expect(screen.getByText("All documents")).toBeDefined();
+
+		// The label, as a user clicks it (happy-dom does not toggle Base UI's span on click).
+		const option = (title: string) => screen.findByText(title, { selector: "li span" });
+		fireEvent.click(await option("Shipping"));
+		await screen.findByText("Shipping", { selector: "span.truncate" });
+		fireEvent.click(await option("Refunds"));
+		await screen.findByText("2 documents");
+		await ask("What is covered?");
+		await screen.findByText("Searched 2 chosen documents only.");
+		expect(asked(calls)[0]?.body).toEqual({
+			query: "What is covered?",
+			topK: 3,
+			documentIds: [DOCUMENTS[1]?.id, DOCUMENTS[0]?.id],
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Search all documents" }));
+		expect(screen.getByText("All documents")).toBeDefined();
+		await ask("And now?");
+		await waitFor(() => expect(asked(calls)).toHaveLength(2));
+		expect(asked(calls)[1]?.body).toEqual({ query: "And now?", topK: 3 });
+	});
+
+	test("arriving from a document's page searches only that document", async () => {
+		signedIn();
+		search = new URLSearchParams({ d: DOCUMENTS[0]?.id ?? "" });
+		const calls = mockFetch(withDocuments(() => ok(answered)));
+		renderWithQuery(<PlaygroundContainer />);
+		// The title shows once the list has loaded.
+		await screen.findByText("Refunds", { selector: "span.truncate" });
+		await ask("How long?");
+		await screen.findByText("Searched 1 chosen document only.");
+		expect(asked(calls)[0]?.body).toEqual({
+			query: "How long?",
+			topK: 3,
+			documentIds: [DOCUMENTS[0]?.id],
+		});
 	});
 });

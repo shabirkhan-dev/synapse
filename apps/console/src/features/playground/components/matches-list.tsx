@@ -9,7 +9,7 @@ export function MatchesList({ matches }: { matches: RagMatch[] }) {
 		return <p className="text-xs text-muted-foreground">No passages matched.</p>;
 	}
 	return (
-		<ol className="flex flex-col gap-3">
+		<ol aria-label="Retrieved passages" className="flex flex-col gap-3">
 			{matches.map((match, position) => (
 				<li key={match.chunkId} className="flex flex-col gap-1 rounded-md border p-3">
 					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">

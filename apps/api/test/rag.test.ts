@@ -29,6 +29,9 @@ async function searchBiscuit(searchMode: "vector" | "hybrid") {
 	return (await response.json()).data.matches;
 }
 
+const titles = (reply: { body: { data: { matches: { documentTitle: string }[] } } }) =>
+	reply.body.data.matches.map((match) => match.documentTitle).toSorted();
+
 describe("rag", () => {
 	test("ingest chunks, embeds and stores a document", async () => {
 		const repository = new InMemoryRagRepository();
@@ -203,6 +206,56 @@ describe("rag", () => {
 		).json();
 		expect(query.data.matches).toEqual([]);
 		expect(query.data.answer).toContain("could not find");
+	});
+
+	test("a question can be narrowed to chosen documents: search, answer and the audit record follow", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doGenerate: textGenerateResult("Express shipping costs $19 [1]."),
+		});
+		const { app, auditEvents } = buildTestApp({ chatModel });
+		const headers = await authHeaders("alice");
+		const add = async (title: string, content: string, as = headers) =>
+			(
+				await (
+					await app.request("/api/v1/rag/documents", {
+						method: "POST",
+						headers: as,
+						body: JSON.stringify({ title, content }),
+					})
+				).json()
+			).data.id as string;
+		const shipping = await add("Shipping", "Express shipping costs $19 and arrives in two days.");
+		await add("Refunds", "Refunds for shipping costs are paid within five days.");
+		const bobs = await add("Bob's shipping", "Bob ships by drone.", await authHeaders("bob"));
+		const ask = async (body: Record<string, unknown>) => {
+			const response = await app.request("/api/v1/rag/query", {
+				method: "POST",
+				headers,
+				body: JSON.stringify({ query: "shipping costs", ...body }),
+			});
+			return { status: response.status, body: await response.json() };
+		};
+
+		expect(titles(await ask({ answer: false }))).toEqual(["Refunds", "Shipping"]);
+		for (const mode of ["hybrid", "vector", "keyword"]) {
+			// oxlint-disable-next-line no-await-in-loop -- one mode after another keeps the output readable
+			expect(titles(await ask({ answer: false, mode, documentIds: [shipping] }))).toEqual([
+				"Shipping",
+			]);
+		}
+		// Someone else's document id narrows the search to nothing; it is never read.
+		expect(titles(await ask({ answer: false, documentIds: [bobs] }))).toEqual([]);
+
+		const answered = await ask({ documentIds: [shipping] });
+		expect(titles(answered)).toEqual(["Shipping"]);
+		expect(answered.body.data.citations).toHaveLength(1);
+		const recorded = auditEvents.events.find((event) => event.action === "rag.query.answered");
+		expect(recorded?.data).toMatchObject({ scopedToDocumentIds: [shipping] });
+
+		expect((await ask({ documentIds: [] })).status).toBe(422);
+		expect((await ask({ documentIds: ["not-a-uuid"] })).status).toBe(422);
+		const tooMany = Array.from({ length: 21 }, () => crypto.randomUUID());
+		expect((await ask({ documentIds: tooMany })).status).toBe(422);
 	});
 
 	test("a document's detail lists its chunks in order with their versions, paged and owner-scoped", async () => {

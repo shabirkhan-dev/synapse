@@ -9,13 +9,18 @@ import {
 	CardTitle,
 } from "@synapse/ui/components/card";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { useDocumentsQuery } from "@/features/documents";
 
 import { AnswerPanel } from "../components/answer-panel";
+import { DocumentScope } from "../components/document-scope";
 import { FeedbackButtons } from "../components/feedback-buttons";
 import { MatchesList } from "../components/matches-list";
 import { QuestionForm } from "../components/question-form";
+import { PLAYGROUND_SCOPE_PARAM } from "../constants/playground.constants";
 import { useAskQuestionMutation } from "../hooks/mutations/use-ask-question-mutation";
 import { useSendFeedbackMutation } from "../hooks/mutations/use-send-feedback-mutation";
 
@@ -23,6 +28,9 @@ import { useSendFeedbackMutation } from "../hooks/mutations/use-send-feedback-mu
 export function PlaygroundContainer() {
 	const ask = useAskQuestionMutation();
 	const feedback = useSendFeedbackMutation();
+	const documents = useDocumentsQuery();
+	// "Ask about this document" arrives with the document already chosen.
+	const [scope, setScope] = useState<string[]>(useSearchParams().getAll(PLAYGROUND_SCOPE_PARAM));
 	const result = ask.data;
 	// Only the rating for the answer on screen counts.
 	const rated =
@@ -36,12 +44,13 @@ export function PlaygroundContainer() {
 				Ask a question; the answer is written from your documents and cites them.
 			</PageHeader>
 			<Card>
-				<CardContent>
+				<CardContent className="flex flex-col gap-4">
+					<DocumentScope documents={documents.data ?? []} selected={scope} onChange={setScope} />
 					<QuestionForm
 						pending={ask.isPending}
 						onSubmit={(input) => {
 							feedback.reset();
-							ask.mutate(input);
+							ask.mutate({ ...input, documentIds: scope });
 						}}
 					/>
 				</CardContent>
@@ -62,6 +71,13 @@ export function PlaygroundContainer() {
 					<Card>
 						<CardHeader>
 							<CardTitle>Answer</CardTitle>
+							{result.scopedTo.length > 0 ? (
+								<CardDescription>
+									{result.scopedTo.length === 1
+										? "Searched 1 chosen document only."
+										: `Searched ${result.scopedTo.length} chosen documents only.`}
+								</CardDescription>
+							) : null}
 						</CardHeader>
 						<CardContent>
 							<AnswerPanel

@@ -15,3 +15,7 @@ export const UPLOAD_LIMITS = {
 export const CHUNK_PAGE_SIZE = 50;
 
 export const DOCUMENTS_ROUTE = "/documents";
+
+/** The Playground, narrowed to one document (`d` is the Playground's scope parameter). */
+export const askAboutDocumentRoute = (documentId: string) =>
+	`/playground?d=${encodeURIComponent(documentId)}`;

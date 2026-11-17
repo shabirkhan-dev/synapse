@@ -276,6 +276,82 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		await database.db.execute(sql`delete from rag_documents where id = ${crowd.id}`);
 	}, 20_000);
 
+	test("a search narrowed to chosen documents reads only them, exactly, and never another owner's", async () => {
+		const tenant = `it-scope-${crypto.randomUUID()}`;
+		// The same owner's 300 chunks sit right at the query; the chosen document is far from it.
+		const crowd = await repository.createDocument(
+			{ ownerId: tenant, title: "Crowd" },
+			Array.from({ length: 300 }, (_, chunkIndex) => ({
+				chunkIndex,
+				content: `crowd handbook ${chunkIndex}`,
+				embedding: nearAxis(0, chunkIndex),
+				embeddingModel: MODEL,
+			})),
+		);
+		const chosen = await repository.createDocument(
+			{ ownerId: tenant, title: "Chosen" },
+			[0, 1].map((chunkIndex) => ({
+				chunkIndex,
+				content: `chosen handbook ${chunkIndex}`,
+				embedding: nearAxis(1, 9000 + chunkIndex),
+				embeddingModel: MODEL,
+			})),
+		);
+		const other = `it-scope-other-${crypto.randomUUID()}`;
+		const theirs = await repository.createDocument({ ownerId: other, title: "Theirs" }, [
+			{
+				chunkIndex: 0,
+				content: "their handbook",
+				embedding: nearAxis(0, -2),
+				embeddingModel: MODEL,
+			},
+		]);
+		const query = vector(tenant, nearAxis(0, -1), 5);
+
+		// Unscoped, the crowd fills every place.
+		const all = await repository.searchChunks(query);
+		expect(all.every((match) => match.documentId === crowd.id)).toBe(true);
+
+		// Where the planner would otherwise walk HNSW (sorts off), the scoped search still returns
+		// exactly the chosen chunks (the repository turns index scans off for it).
+		const hnswOnly = createDatabase({
+			url: withStartupParameter(url ?? "", "enable_sort=off"),
+			poolMax: 1,
+		});
+		const scoped = await new DrizzleRagRepository(hnswOnly.db).searchChunks({
+			...query,
+			documentIds: [chosen.id],
+		});
+		await hnswOnly.close();
+		expect(scoped.map((match) => match.content).toSorted()).toEqual([
+			"chosen handbook 0",
+			"chosen handbook 1",
+		]);
+
+		const keyword = await repository.keywordSearch({
+			ownerId: tenant,
+			query: "handbook",
+			limit: 5,
+			documentIds: [chosen.id],
+		});
+		expect(keyword.map((match) => match.documentId)).toEqual([chosen.id, chosen.id]);
+
+		// Another owner's document id matches nothing, in either search.
+		expect(await repository.searchChunks({ ...query, documentIds: [theirs.id] })).toEqual([]);
+		expect(
+			await repository.keywordSearch({
+				ownerId: tenant,
+				query: "handbook",
+				limit: 5,
+				documentIds: [theirs.id],
+			}),
+		).toEqual([]);
+
+		await repository.deleteDocument(tenant, crowd.id);
+		await repository.deleteDocument(tenant, chosen.id);
+		await repository.deleteDocument(other, theirs.id);
+	}, 20_000);
+
 	test("vector search ignores chunks embedded with another model", async () => {
 		const embedding = fakeEmbedding("model filter");
 		const document = await repository.createDocument({ ownerId: owner, title: "Models" }, [

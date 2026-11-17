@@ -229,7 +229,7 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	});
 
 	app.openapi(queryRoute, async (c) => {
-		const { query, topK, answer, mode } = c.req.valid("json");
+		const { query, topK, answer, mode, documentIds } = c.req.valid("json");
 		const ownerId = c.get("user").orgId;
 		if (!answer) {
 			return success(
@@ -242,6 +242,7 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 						topK,
 						{ requestId: c.get("requestId"), actorId: c.get("user").sub },
 						mode,
+						documentIds,
 					),
 					citations: [],
 					provenance: null,
@@ -249,10 +250,13 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 				RAG_MESSAGES.MATCHES_FOUND,
 			);
 		}
-		const answered = await rag.answer(ownerId, query, topK, {
-			requestId: c.get("requestId"),
-			actorId: c.get("user").sub,
-		});
+		const answered = await rag.answer(
+			ownerId,
+			query,
+			topK,
+			{ requestId: c.get("requestId"), actorId: c.get("user").sub },
+			documentIds,
+		);
 		return success(c, answered, RAG_MESSAGES.QUERY_ANSWERED);
 	});
 

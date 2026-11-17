@@ -1,5 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
+import { RAG_MAX_SCOPE_DOCUMENTS } from "@/modules/rag";
+
 import { CHAT_MAX_MESSAGES, CHAT_MESSAGES } from "../constants/chat.constants";
 
 const uiMessage = z.record(z.string(), z.unknown());
@@ -12,6 +14,8 @@ export const chatBodySchema = z
 		message: uiMessage.optional(),
 		/** Continue this conversation; omit to start one (its id comes back in `x-conversation-id`). */
 		conversationId: z.uuid().optional(),
+		/** This turn's document search reads only these documents of the organization. */
+		documentIds: z.array(z.uuid()).min(1).max(RAG_MAX_SCOPE_DOCUMENTS).optional(),
 	})
 	.refine((body) => Boolean(body.messages) !== Boolean(body.message), {
 		message: CHAT_MESSAGES.BODY_SHAPE,
