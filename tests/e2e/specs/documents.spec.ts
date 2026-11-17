@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { signIn, signUpViaApi } from "../support/accounts";
-import { uniqueEmail } from "../support/env";
+import { E2E, uniqueEmail } from "../support/env";
 
 test("a document opens from the list with its chunks, and deleting it asks first", async ({
 	page,
@@ -106,4 +106,41 @@ test("asking about one document searches only that document", async ({ page }) =
 	await page.getByRole("button", { name: "Ask" }).click();
 	await expect(passages.getByText(/Refunds are accepted/)).toBeVisible();
 	await expect(page.getByText("Searched 1 chosen document only.")).toHaveCount(0);
+});
+
+test("several files are uploaded at once, and a web page is added by its address", async ({
+	page,
+}) => {
+	const email = uniqueEmail("many");
+	await signUpViaApi(email);
+	await signIn(page, email);
+
+	await page.getByLabel(/Choose a file/).setInputFiles([
+		{
+			name: "Returns.md",
+			mimeType: "text/markdown",
+			buffer: Buffer.from("# Returns\n\nWithin 14 days."),
+		},
+		{
+			name: "Shipping.txt",
+			mimeType: "text/plain",
+			buffer: Buffer.from("Orders ship in two days."),
+		},
+	]);
+	await page.getByRole("button", { name: "Upload 2 files" }).click();
+	const results = page.getByRole("list", { name: "Upload results" });
+	await expect(results).toContainText("Returns.md — Added");
+	await expect(results).toContainText("Shipping.txt — Added");
+	await expect(page.getByRole("link", { name: "Returns" })).toBeVisible();
+	await expect(page.getByRole("link", { name: "Shipping" })).toBeVisible();
+
+	// Internal addresses are refused unless the deployment allows them (only this test stack does).
+	await page.getByLabel("Web page").fill(`http://127.0.0.1:${E2E.modelPort}/pages/warranty.html`);
+	await page.getByRole("button", { name: "Add page" }).click();
+	await expect(page.getByText("Added “Warranty | Example shop”.")).toBeVisible();
+	await page.getByRole("link", { name: "Warranty | Example shop" }).click();
+	const chunks = page.getByRole("list", { name: "Chunks" });
+	await expect(chunks.getByText(/two-year warranty/)).toBeVisible();
+	await expect(chunks.getByText(/Water damage/)).toBeVisible();
+	await expect(chunks.getByText(/track\(\)|Home · Shop/)).toHaveCount(0);
 });

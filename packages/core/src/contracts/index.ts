@@ -12,3 +12,4 @@ export type { EmailMessage, EmailSender } from "./email-sender";
 export type { RerankedDocument, Reranker, RerankRequest } from "./reranker";
 export type { JobHandler, JobQueue, QueueJob, QueueOptions } from "./job-queue";
 export { PDF_ERROR_CODES, type PdfTextExtractor } from "./pdf-text-extractor";
+export { WEB_PAGE_ERROR_CODES, type WebPage, type WebPageReader } from "./web-page-reader";

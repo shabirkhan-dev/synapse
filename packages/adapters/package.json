@@ -10,7 +10,8 @@
 		"./email": "./src/email/index.ts",
 		"./queue": "./src/queue/index.ts",
 		"./checkpointer": "./src/checkpointer/index.ts",
-		"./pdf": "./src/pdf/index.ts"
+		"./pdf": "./src/pdf/index.ts",
+		"./web": "./src/web/index.ts"
 	},
 	"scripts": {
 		"lint": "oxlint",

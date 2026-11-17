@@ -1,5 +1,6 @@
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
 import { createWorkerPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createWebPageReader } from "@synapse/adapters/web";
 import { createAuditLog } from "@synapse/audit";
 import { createDatabase } from "@synapse/database";
 import { embeddingVersion } from "@synapse/knowledge";
@@ -113,6 +114,10 @@ const rag = new RagService(repository, gateway, {
 			import.meta.url,
 		),
 		timeoutMs: config.rag.pdfTimeoutMs,
+	}),
+	web: createWebPageReader({
+		timeoutMs: config.rag.web.timeoutMs,
+		allowPrivateNetworks: config.rag.web.allowPrivateNetworks,
 	}),
 	...(reranker
 		? {

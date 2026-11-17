@@ -110,7 +110,7 @@ contextual retrieval and Ragas.
 | Scoped questions: ask about chosen documents | ✅ | syn-070 |
 | Risk: chaos "Postgres goes away" failed once in CI — requests hung up to 45 s on a database blip; now fail within ~5 s | ✅ | syn-071 |
 | Answer quality scores (faithfulness, relevance) in evaluations | ✅ | syn-073 |
-| Several files at once; web pages by URL | ⏭️ | — |
-| Follow-up suggestions, copy, regenerate; ⌘K palette | ⬜ | — |
+| Several files at once; web pages by URL (SSRF-safe) | ✅ | syn-074 |
+| Follow-up suggestions, copy, regenerate; ⌘K palette | ⏭️ | syn-075 |
 
 Cards are raised for "—" rows when they become the next two or three steps.

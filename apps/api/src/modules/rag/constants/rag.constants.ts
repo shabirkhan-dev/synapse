@@ -7,6 +7,12 @@ export const RAG_ERROR_CODES = {
 	FILE_UNREADABLE: "RAG_FILE_UNREADABLE",
 	FILE_TIMED_OUT: "RAG_FILE_TIMED_OUT",
 	FILE_TOO_LONG: "RAG_FILE_TOO_LONG",
+	URL_NOT_ALLOWED: "RAG_URL_NOT_ALLOWED",
+	URL_UNREACHABLE: "RAG_URL_UNREACHABLE",
+	URL_TIMED_OUT: "RAG_URL_TIMED_OUT",
+	URL_TOO_LARGE: "RAG_URL_TOO_LARGE",
+	URL_UNSUPPORTED: "RAG_URL_UNSUPPORTED",
+	URL_HAS_NO_TEXT: "RAG_URL_HAS_NO_TEXT",
 } as const;
 
 export const RAG_MESSAGES = {
@@ -27,6 +33,14 @@ export const RAG_MESSAGES = {
 	FILE_TIMED_OUT: "This PDF took too long to read. Try a smaller file, or export it again as PDF",
 	FILE_TOO_LONG: (max: number) =>
 		`This file has more than ${max.toLocaleString("en-US")} characters of text; split it up`,
+	URL_NOT_ALLOWED:
+		"That address can't be read: use a public http(s) page (no private or internal addresses, standard ports only)",
+	URL_UNREACHABLE: "That page could not be reached or did not answer with a page",
+	URL_TIMED_OUT: "That page took too long to answer",
+	URL_TOO_LARGE: "That page is too large to add (over 2 MiB)",
+	URL_UNSUPPORTED:
+		"Only web pages (HTML) and plain text can be added by address; upload PDFs as files",
+	URL_HAS_NO_TEXT: "That page has no readable text (it may need JavaScript to show its content)",
 	NO_DOCUMENTS_TO_ANSWER_FROM: "I could not find any ingested documents to answer from.",
 	PURGE_REQUESTED: "Deleting all documents needs approval; approve it in /oversight/approvals",
 	PURGE_SUMMARY: (count: number, max: number) =>

@@ -4,6 +4,7 @@ import { SignJWT } from "jose";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import { createPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createWebPageReader } from "@synapse/adapters/web";
 import {
 	type AuditStore,
 	createAuditLog,
@@ -15,6 +16,7 @@ import type {
 	EmailSender,
 	PdfTextExtractor,
 	Reranker,
+	WebPageReader,
 } from "@synapse/core/contracts";
 import type {
 	AnswerFeedback,
@@ -1042,7 +1044,10 @@ export function buildTestApp({
 	reranker,
 	limits = testConfig.limits,
 	pdf = createPdfTextExtractor(),
+	web = createWebPageReader(),
 }: {
+	/** Reads web pages by URL; tests pass a fake (the real one refuses local addresses). */
+	web?: WebPageReader;
 	/** Reads uploaded PDFs; in-process by default (the server uses a worker thread). */
 	pdf?: PdfTextExtractor;
 	reranker?: Reranker;
@@ -1095,6 +1100,7 @@ export function buildTestApp({
 		audit,
 		guardrails,
 		pdf,
+		web,
 		...(reranker
 			? {
 					rerank: {

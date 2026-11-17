@@ -28,6 +28,22 @@ export const ingestDocumentBodySchema = z
 	})
 	.openapi("IngestDocumentBody");
 
+export const urlDocumentBodySchema = z
+	.object({
+		url: z
+			.url({ protocol: /^https?$/ })
+			.max(2048)
+			.openapi({ example: "https://example.com/refunds" }),
+		title: z
+			.string()
+			.trim()
+			.min(1)
+			.max(RAG_MAX_TITLE_CHARS)
+			.optional()
+			.openapi({ description: "Defaults to the page's title" }),
+	})
+	.openapi("UrlDocumentBody");
+
 export const uploadDocumentBodySchema = z
 	.object({
 		file: z

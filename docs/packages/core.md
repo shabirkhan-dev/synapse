@@ -34,6 +34,7 @@ nothing in the workspace (only Zod and the standard library)
 | `ModelGateway`, `ChatGateway`, `EmbeddingGateway`, `ModelInfo`, `TextGenerationRequest/Result`, `TokenUsage`, `CallOptions` | `@synapse/core/contracts` | How domain code calls models; implemented in `@synapse/adapters` |
 | `Reranker`, `RerankRequest`, `RerankedDocument` | `@synapse/core/contracts` | Second-stage ranking (`{ index, score }` best first); implemented in `@synapse/adapters/model-gateway` |
 | `PdfTextExtractor`, `PDF_ERROR_CODES` | `@synapse/core/contracts` | `extract(bytes)` → `{ pages }`; throws `PDF_UNREADABLE`. Implemented in `@synapse/adapters/pdf` |
+| `WebPageReader`, `WebPage`, `WEB_PAGE_ERROR_CODES` | `@synapse/core/contracts` | `read(url)` → `{ url, title, text, mediaType }` (headings as Markdown); throws `WEB_PAGE_NOT_ALLOWED` (SSRF and scheme/port/credential refusals), `UNREACHABLE`, `TIMEOUT`, `TOO_LARGE`, `UNSUPPORTED_TYPE`, `TOO_MANY_REDIRECTS` |
 | `JobQueue`, `QueueJob`, `QueueOptions`, `JobHandler` | `@synapse/core/contracts` | Background jobs; implemented in `@synapse/adapters/queue` (pg-boss) |
 | `EmailSender`, `EmailMessage` | `@synapse/core/contracts` | How code sends email; implemented in `@synapse/adapters/email` (Resend) |
 

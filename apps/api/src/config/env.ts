@@ -123,6 +123,13 @@ export const envSchema = z
 		RAG_RERANK_CANDIDATES: z.coerce.number().int().min(1).max(100).default(20),
 		/** An uploaded PDF is read in a worker thread that is stopped after this long. */
 		RAG_PDF_TIMEOUT_MS: z.coerce.number().int().min(1000).max(300_000).default(15_000),
+		/** Reading one web page by URL (DNS, redirects and body), then it is abandoned. */
+		RAG_WEB_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
+		/**
+		 * Development and tests only: let "add a web page" reach private and loopback addresses and
+		 * any port. Production refuses `true` (SSRF).
+		 */
+		RAG_WEB_ALLOW_PRIVATE_NETWORKS: z.enum(["true", "false"]).default("false"),
 		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
 		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
@@ -185,6 +192,14 @@ export const envSchema = z
 		}
 		if (env.NODE_ENV !== "production") {
 			return;
+		}
+		if (env.RAG_WEB_ALLOW_PRIVATE_NETWORKS === "true") {
+			context.addIssue({
+				code: "custom",
+				path: ["RAG_WEB_ALLOW_PRIVATE_NETWORKS"],
+				message:
+					"RAG_WEB_ALLOW_PRIVATE_NETWORKS must be false in production (server-side request forgery)",
+			});
 		}
 		if (env.JWT_SECRET === developmentJwtSecret) {
 			context.addIssue({

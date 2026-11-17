@@ -49,6 +49,22 @@ export const ingestDocumentFormSchema = z.object({
 		.transform((value) => value || undefined),
 });
 
+/** "Add a web page": a public http(s) address; the API decides what it may read. */
+export const webPageFormSchema = z.object({
+	url: z
+		.string()
+		.trim()
+		.min(1, "Paste the page's address")
+		.max(DOCUMENT_LIMITS.SOURCE_MAX, `At most ${DOCUMENT_LIMITS.SOURCE_MAX} characters`)
+		.refine((value) => {
+			try {
+				return ["http:", "https:"].includes(new URL(value).protocol);
+			} catch {
+				return false;
+			}
+		}, "Use a full address starting with https://"),
+});
+
 const hasUploadExtension = (file: File) =>
 	UPLOAD_LIMITS.EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension));
 

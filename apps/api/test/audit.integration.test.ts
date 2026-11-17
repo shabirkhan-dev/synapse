@@ -4,6 +4,7 @@ import { MockLanguageModelV4 } from "ai/test";
 
 import { createAiSdkModelGateway } from "@synapse/adapters/model-gateway";
 import { createPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createWebPageReader } from "@synapse/adapters/web";
 import { createAuditLog } from "@synapse/audit";
 import {
 	auditEvents,
@@ -68,6 +69,7 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 				audit,
 				guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, audit),
 				pdf: createPdfTextExtractor(),
+				web: createWebPageReader(),
 			},
 		);
 		await rag.ingest(owner, { title: "Refunds", content: "Refunds are accepted within 30 days." });

@@ -146,6 +146,14 @@ createServer(async (request, response) => {
 		);
 		return;
 	}
+	// A web page for "Add a web page" (the API reads it like any public page).
+	if (request.url === "/pages/warranty.html") {
+		response.setHeader("content-type", "text/html; charset=utf-8");
+		response.end(
+			"<!doctype html><html><head><title>Warranty | Example shop</title><script>track()</script></head><body><nav>Home · Shop</nav><main><h1>Warranty</h1><p>Every device carries a two-year warranty.</p><h2>Not covered</h2><ul><li>Water damage</li><li>Lost devices</li></ul></main><footer>© Example</footer></body></html>",
+		);
+		return;
+	}
 	if (request.url === "/health") {
 		response.end("{}");
 		return;

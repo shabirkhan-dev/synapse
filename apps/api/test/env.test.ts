@@ -35,6 +35,22 @@ describe("env", () => {
 		expect(env.NODE_ENV).toBe("production");
 	});
 
+	test("private networks for web pages are refused in production (SSRF)", () => {
+		const production = {
+			NODE_ENV: "production",
+			JWT_SECRET: "x".repeat(40),
+			AI_API_KEY: "test-key-not-real",
+			RESEND_API_KEY: "re_test_not_real",
+		};
+		expect(parseEnv(production).RAG_WEB_ALLOW_PRIVATE_NETWORKS).toBe("false");
+		expect(() => parseEnv({ ...production, RAG_WEB_ALLOW_PRIVATE_NETWORKS: "true" })).toThrow(
+			/RAG_WEB_ALLOW_PRIVATE_NETWORKS must be false in production/,
+		);
+		expect(
+			parseEnv({ RAG_WEB_ALLOW_PRIVATE_NETWORKS: "true" }).RAG_WEB_ALLOW_PRIVATE_NETWORKS,
+		).toBe("true");
+	});
+
 	test("in production each selected vendor needs its own key", () => {
 		const base = {
 			NODE_ENV: "production",

@@ -8,6 +8,7 @@ import {
 	createTermOverlapReranker,
 } from "@synapse/adapters/model-gateway";
 import { createPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createWebPageReader } from "@synapse/adapters/web";
 import { createAuditLog } from "@synapse/audit";
 import type { Reranker } from "@synapse/core/contracts";
 import { createDatabase } from "@synapse/database";
@@ -65,6 +66,7 @@ const ragWith = (reranker?: Reranker) =>
 			audit: evaluationAudit,
 			guardrails: new GuardrailsService({ maxInputChars: 4000, blockedTerms: [] }, evaluationAudit),
 			pdf: createPdfTextExtractor(),
+			web: createWebPageReader(),
 			...(reranker
 				? {
 						rerank: {

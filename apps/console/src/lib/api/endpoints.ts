@@ -60,6 +60,7 @@ export const endpoints = {
 		ingest: "/rag/documents",
 		purge: "/rag/documents/purge",
 		upload: "/rag/documents/upload",
+		url: "/rag/documents/url",
 		detail: (id: string) => `/rag/documents/${encodeURIComponent(id)}`,
 	},
 } as const;

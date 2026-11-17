@@ -83,7 +83,11 @@ export function registerRoutes(
 	);
 	app.on(
 		"POST",
-		[`${basePath}/rag/documents`, `${basePath}/rag/documents/upload`],
+		[
+			`${basePath}/rag/documents`,
+			`${basePath}/rag/documents/upload`,
+			`${basePath}/rag/documents/url`,
+		],
 		createUsageLimit(rateLimiter, "ingests", ingests),
 	);
 	app.on(

@@ -26,6 +26,14 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `422 RAG_FILE_TIMED_OUT`); each upload pays a worker start (~0.1–0.3 s); no OCR, so scanned PDFs are
   refused (`RAG_FILE_HAS_NO_TEXT`); PDF layout (columns, tables) is flattened to text order.
   The original file is not stored, only its text. The console checks type and size before sending.
+- **Web pages by URL** (syn-074, `POST /rag/documents/url`): one page, no crawling or re-sync; no
+  JavaScript, so pages that render their text with scripts come back empty (`RAG_URL_HAS_NO_TEXT`);
+  HTML or plain text only (PDF links are refused: upload the file); ≤ 2 MiB, 10 s, ports 80/443, at
+  most 5 redirects. Public addresses only, re-checked on every redirect, with the IP pinned for the
+  request; behind an outbound HTTP proxy the proxy makes the final connection. The text is read
+  once: a page that changes later is not updated. Character sets other than UTF-8 are not decoded.
+  **Several files** go one request each from the console (≤ 20 per batch, each ≤ 2 MiB), so one
+  failing file does not stop the rest; there is no multi-file API.
 - **Evaluations** (syn-054): one question set per organization (≤ 50 questions, each pointing at 1–10
   documents by id; a deleted document just stops being found). A run is inline in the request:
   every question × three modes, each a real search (two embedding calls per question), k ≤ 20,
@@ -44,7 +52,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);
   use `import.meta.url`.
 - **Chunker text-v2** (syn-068): chunks keep to Markdown sections and store `rag_chunks.context`
-  (`Title › headings`), which is embedded and keyword-indexed with the content. Chunks from before
+  (`Title › headings`), which is embedded and keyword-indexed with the content. Until syn-074 the
+  API computed the context but did not save it (embeddings had it; the column, the keyword index
+  and the document page did not): documents added before 2026-11-17 have `context = null`. Chunks from before
   are text-v1 (no context) and show "Out of date" on the document page; nothing re-chunks them
   automatically (the worker only re-embeds), so re-adding the document is the way to upgrade it.
   The seed retrieval eval showed no change (0.944 recall@3 and MRR): its documents are short and

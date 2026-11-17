@@ -1,5 +1,11 @@
 import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
-import type { ModelGateway, PdfTextExtractor, Reranker } from "@synapse/core/contracts";
+import {
+	type ModelGateway,
+	type PdfTextExtractor,
+	type Reranker,
+	WEB_PAGE_ERROR_CODES,
+	type WebPageReader,
+} from "@synapse/core/contracts";
 import type { AnswerProvenance } from "@synapse/core/types";
 import { isSynapseError } from "@synapse/core/errors";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
@@ -54,6 +60,8 @@ export type RagServiceOptions = {
 	guardrails: GuardrailsService;
 	/** Reads uploaded PDFs (`@synapse/adapters/pdf`). */
 	pdf: PdfTextExtractor;
+	/** Reads public web pages by URL, refusing internal addresses (`@synapse/adapters/web`). */
+	web: WebPageReader;
 	/** Second-stage ranking of the best `candidates`; a failure falls back to the fused order. */
 	rerank?: { reranker: Reranker; candidates: number; onError: (error: unknown) => void };
 };
@@ -231,6 +239,40 @@ export class RagService {
 		);
 	}
 
+	/** A public web page's text (headings kept), then the same path as `ingest` (dedup included). */
+	async ingestUrl(
+		ownerId: string,
+		input: { url: string; title?: string | undefined },
+		context: RequestContext = NO_REQUEST,
+	): Promise<IngestOutcome> {
+		const page = await this.options.web.read(input.url).catch(webPageError);
+		if (!page.text.trim()) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+				code: RAG_ERROR_CODES.URL_HAS_NO_TEXT,
+				message: RAG_MESSAGES.URL_HAS_NO_TEXT,
+			});
+		}
+		if (page.text.length > RAG_MAX_DOCUMENT_CHARS) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+				code: RAG_ERROR_CODES.FILE_TOO_LONG,
+				message: RAG_MESSAGES.FILE_TOO_LONG(RAG_MAX_DOCUMENT_CHARS),
+			});
+		}
+		const title = input.title ?? page.title ?? new URL(page.url).hostname;
+		return this.ingest(
+			ownerId,
+			{
+				title: title.slice(0, RAG_MAX_TITLE_CHARS),
+				content: page.text,
+				source: page.url,
+				metadata: { url: page.url, mediaType: page.mediaType, fetchedAt: new Date().toISOString() },
+			},
+			context,
+		);
+	}
+
 	private async index(document: IngestableDocument): Promise<RagDocument> {
 		const prepared = await this.knowledge
 			.prepare(document.content, { title: document.title })
@@ -246,9 +288,10 @@ export class RagService {
 				metadata: document.metadata,
 				contentHash: document.contentHash,
 			},
-			prepared.chunks.map(({ chunkIndex, content, embedding }) => ({
+			prepared.chunks.map(({ chunkIndex, content, context, embedding }) => ({
 				chunkIndex,
 				content,
+				context,
 				embedding,
 				chunkerVersion: prepared.chunkerVersion,
 				embeddingModel: prepared.embeddingModel,
@@ -442,6 +485,47 @@ function toAppError(error: unknown): never {
 		});
 	}
 	throw error;
+}
+
+/** The reader's refusals, as API errors with a message for people. */
+function webPageError(error: unknown): never {
+	if (!isSynapseError(error)) throw error;
+	const reason: Record<string, [string, string, AppError["statusCode"]]> = {
+		[WEB_PAGE_ERROR_CODES.NOT_ALLOWED]: [
+			RAG_ERROR_CODES.URL_NOT_ALLOWED,
+			RAG_MESSAGES.URL_NOT_ALLOWED,
+			HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		],
+		[WEB_PAGE_ERROR_CODES.UNREACHABLE]: [
+			RAG_ERROR_CODES.URL_UNREACHABLE,
+			RAG_MESSAGES.URL_UNREACHABLE,
+			HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		],
+		[WEB_PAGE_ERROR_CODES.TOO_MANY_REDIRECTS]: [
+			RAG_ERROR_CODES.URL_UNREACHABLE,
+			RAG_MESSAGES.URL_UNREACHABLE,
+			HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		],
+		[WEB_PAGE_ERROR_CODES.TIMEOUT]: [
+			RAG_ERROR_CODES.URL_TIMED_OUT,
+			RAG_MESSAGES.URL_TIMED_OUT,
+			HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		],
+		[WEB_PAGE_ERROR_CODES.TOO_LARGE]: [
+			RAG_ERROR_CODES.URL_TOO_LARGE,
+			RAG_MESSAGES.URL_TOO_LARGE,
+			HTTP_STATUS.UNPROCESSABLE_ENTITY,
+		],
+		[WEB_PAGE_ERROR_CODES.UNSUPPORTED_TYPE]: [
+			RAG_ERROR_CODES.URL_UNSUPPORTED,
+			RAG_MESSAGES.URL_UNSUPPORTED,
+			HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE,
+		],
+	};
+	const mapped = reason[error.code];
+	if (!mapped) throw error;
+	const [code, message, statusCode] = mapped;
+	throw new AppError({ statusCode, code, message, cause: error });
 }
 
 function emptyDocumentError(): AppError {

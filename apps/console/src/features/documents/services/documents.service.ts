@@ -14,6 +14,7 @@ import type {
 	DocumentSummary,
 	IngestDocumentInput,
 	UploadDocumentInput,
+	WebPageInput,
 } from "../types/document.types";
 
 export const documentsService = {
@@ -32,6 +33,10 @@ export const documentsService = {
 		if (title) form.append("title", title);
 		return api(endpoints.documents.upload, { method: "POST", body: form, schema: documentSchema });
 	},
+
+	/** A public web page: the API reads it (refusing internal addresses), then stores it like `ingest`. */
+	addWebPage: (input: WebPageInput): Promise<DocumentSummary> =>
+		api(endpoints.documents.url, { method: "POST", body: input, schema: documentSchema }),
 
 	/** The document with one page of its chunks, in order. */
 	detail: (id: string, offset: number): Promise<DocumentDetail> =>

@@ -164,4 +164,97 @@ describe("DocumentsContainer (mocked API)", () => {
 			expect(screen.queryByText("This file has no text to search.") === null).toBe(true),
 		);
 	});
+
+	test("several files go one after another; each gets its own result line", async () => {
+		signedIn();
+		const stored: ReturnType<typeof doc>[] = [];
+		const calls = mockFetch((call) => {
+			if (call.method === "POST") {
+				const name = ((call.body as FormData).get("file") as File).name;
+				if (name === "scan.pdf") {
+					return failure(422, "RAG_FILE_HAS_NO_TEXT", "This file has no text to search.");
+				}
+				const created = doc(`d-${name}`, name.replace(/\.[^.]+$/, ""));
+				stored.unshift(created);
+				return ok(created, 201);
+			}
+			return ok(stored);
+		});
+		renderWithQuery(<DocumentsContainer />);
+		await screen.findByText(/No documents yet/);
+
+		const files = [
+			new File(["# A"], "a.md", { type: "text/markdown" }),
+			new File(["%PDF-1.4"], "scan.pdf", { type: "application/pdf" }),
+			new File(["b"], "b.txt", { type: "text/plain" }),
+		];
+		fireEvent.change(screen.getByLabelText(/Choose a file/), { target: { files } });
+		expect(screen.getByText("a.md, scan.pdf, b.txt")).toBeDefined();
+		// One title cannot fit several files, so the field is hidden.
+		expect(screen.getByLabelText("Title (optional)").closest("div")?.className).toContain("hidden");
+		fireEvent.click(screen.getByRole("button", { name: "Upload 3 files" }));
+
+		const results = await screen.findByRole("list", { name: "Upload results" });
+		expect(results.textContent).toContain("a.md — Added");
+		expect(results.textContent).toContain("scan.pdf — This file has no text to search.");
+		expect(results.textContent).toContain("b.txt — Added");
+		const sent = calls
+			.filter((call) => call.method === "POST")
+			.map((call) => ((call.body as FormData).get("file") as File).name);
+		expect(sent).toEqual(["a.md", "scan.pdf", "b.txt"]);
+		await screen.findByRole("cell", { name: "b" });
+		expect(screen.getByText("Choose a file or drop it here")).toBeDefined();
+	});
+
+	test("one bad file among several stops the batch before anything is sent", async () => {
+		signedIn();
+		const calls = mockFetch(() => ok([]));
+		renderWithQuery(<DocumentsContainer />);
+		await screen.findByText(/No documents yet/);
+		fireEvent.change(screen.getByLabelText(/Choose a file/), {
+			target: { files: [new File(["a"], "a.md"), new File(["x"], "slides.pptx")] },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Upload 2 files" }));
+		await screen.findByText("slides.pptx: Upload a .txt, .md or .pdf file");
+		expect(calls.filter((call) => call.method === "POST")).toHaveLength(0);
+	});
+
+	test("a web page is added by address; the API's refusal is shown and the address kept", async () => {
+		signedIn();
+		const stored: ReturnType<typeof doc>[] = [];
+		const calls = mockFetch((call) => {
+			if (call.method === "POST" && call.url.endsWith("/rag/documents/url")) {
+				const { url } = call.body as { url: string };
+				if (url.includes("internal")) {
+					return failure(422, "RAG_URL_NOT_ALLOWED", "That address can't be read");
+				}
+				const created = doc("w1", "Refund policy | Example");
+				stored.unshift(created);
+				return ok(created, 201);
+			}
+			return ok(stored);
+		});
+		renderWithQuery(<DocumentsContainer />);
+		await screen.findByText(/No documents yet/);
+		const address = screen.getByLabelText("Web page") as HTMLInputElement;
+
+		fireEvent.change(address, { target: { value: "example.com/refunds" } });
+		fireEvent.click(screen.getByRole("button", { name: "Add page" }));
+		await screen.findByText("Use a full address starting with https://");
+		expect(calls.filter((call) => call.method === "POST")).toHaveLength(0);
+
+		fireEvent.change(address, { target: { value: "http://internal.local/admin" } });
+		fireEvent.click(screen.getByRole("button", { name: "Add page" }));
+		await screen.findByText("That address can't be read");
+		expect(address.value).toBe("http://internal.local/admin");
+
+		fireEvent.change(address, { target: { value: " https://example.com/refunds " } });
+		fireEvent.click(screen.getByRole("button", { name: "Add page" }));
+		await screen.findByText("Added “Refund policy | Example”.");
+		await screen.findByRole("cell", { name: "Refund policy | Example" });
+		expect(calls.findLast((call) => call.method === "POST")?.body).toEqual({
+			url: "https://example.com/refunds",
+		});
+		expect(address.value).toBe("");
+	});
 });

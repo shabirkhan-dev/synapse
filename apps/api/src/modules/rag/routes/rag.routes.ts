@@ -12,6 +12,7 @@ import {
 	documentIdParamsSchema,
 	ingestDocumentBodySchema,
 	uploadDocumentBodySchema,
+	urlDocumentBodySchema,
 	listDocumentsQuerySchema,
 	ragDocumentDetailSchema,
 	ragDocumentSchema,
@@ -45,6 +46,35 @@ const ingestRoute = createRoute({
 		200: {
 			description: "Same content already ingested by this user; the existing document is returned",
 			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
+		...errorResponses,
+	},
+});
+
+const urlRoute = createRoute({
+	method: "post",
+	path: "/documents/url",
+	tags: ["RAG"],
+	summary:
+		"Ingest a public web page: read its text (headings kept), then chunk, embed and store it",
+	description:
+		"Only public http(s) pages on ports 80/443. Private, loopback, link-local and other internal addresses are refused, including after redirects (at most 5); the page must answer within the deadline, be HTML or plain text and at most 2 MiB.",
+	security,
+	request: {
+		body: { required: true, content: { "application/json": { schema: urlDocumentBodySchema } } },
+	},
+	responses: {
+		201: {
+			description: "Document stored; `source` is the page's address after redirects",
+			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
+		200: {
+			description: "Same text already ingested by this owner; the existing document is returned",
+			content: { "application/json": { schema: successEnvelope(ragDocumentSchema) } },
+		},
+		415: {
+			description: "Not a web page or plain text (e.g. a PDF or an image)",
+			content: { "application/json": { schema: apiErrorSchema } },
 		},
 		...errorResponses,
 	},
@@ -179,6 +209,17 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 
 	app.openapi(ingestRoute, async (c) => {
 		const { document, created } = await rag.ingest(c.get("user").orgId, c.req.valid("json"), {
+			requestId: c.get("requestId"),
+			actorId: c.get("user").sub,
+		});
+		if (!created) {
+			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
+		}
+		return success(c, document, RAG_MESSAGES.DOCUMENT_INGESTED, HTTP_STATUS.CREATED);
+	});
+
+	app.openapi(urlRoute, async (c) => {
+		const { document, created } = await rag.ingestUrl(c.get("user").orgId, c.req.valid("json"), {
 			requestId: c.get("requestId"),
 			actorId: c.get("user").sub,
 		});

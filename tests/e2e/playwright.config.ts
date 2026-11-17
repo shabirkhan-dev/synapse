@@ -26,6 +26,8 @@ const apiEnv = {
 	LANGFUSE_SECRET_KEY: "",
 	OTEL_EXPORTER_OTLP_ENDPOINT: "",
 	AI_RERANK_PROVIDER: "",
+	// "Add a web page" reads pages the fake provider serves on 127.0.0.1 (refused in production).
+	RAG_WEB_ALLOW_PRIVATE_NETWORKS: "true",
 };
 
 /**

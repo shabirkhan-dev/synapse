@@ -16,9 +16,11 @@ import { PurgeRequestContainer } from "@/features/oversight";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 
+import { AddWebPageForm } from "../components/add-web-page-form";
 import { DocumentsTable } from "../components/documents-table";
 import { IngestDocumentForm } from "../components/ingest-document-form";
 import { UploadDocumentForm } from "../components/upload-document-form";
+import { useAddWebPageMutation } from "../hooks/mutations/use-add-web-page-mutation";
 import { useIngestDocumentMutation } from "../hooks/mutations/use-ingest-document-mutation";
 import { useUploadDocumentMutation } from "../hooks/mutations/use-upload-document-mutation";
 import { useDocumentsQuery } from "../hooks/queries/use-documents-query";
@@ -28,6 +30,7 @@ export function DocumentsContainer() {
 	const documents = useDocumentsQuery();
 	const ingest = useIngestDocumentMutation();
 	const upload = useUploadDocumentMutation();
+	const webPage = useAddWebPageMutation();
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -36,9 +39,9 @@ export function DocumentsContainer() {
 			</PageHeader>
 			<Card>
 				<CardHeader>
-					<CardTitle>Add a document</CardTitle>
+					<CardTitle>Add documents</CardTitle>
 					<CardDescription>
-						Upload a file or paste text; the same text twice is stored once.
+						Upload files, paste text or add a web page; the same text twice is stored once.
 					</CardDescription>
 				</CardHeader>
 				{/* Side by side on wide screens: one way or the other, never both. */}
@@ -61,6 +64,14 @@ export function DocumentsContainer() {
 						error={ingest.error ? ingest.error.message : null}
 						onSubmit={(input) => ingest.mutateAsync(input)}
 					/>
+					<Separator className="lg:col-span-3" />
+					<div className="lg:col-span-3">
+						<AddWebPageForm
+							pending={webPage.isPending}
+							error={webPage.error ? webPage.error.message : null}
+							onSubmit={(input) => webPage.mutateAsync(input)}
+						/>
+					</div>
 				</CardContent>
 			</Card>
 			<Card>

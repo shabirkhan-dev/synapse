@@ -2,6 +2,7 @@
 
 import { FileUploadIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CheckmarkCircle02Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { Alert, AlertDescription } from "@synapse/ui/components/alert";
 import { Input } from "@synapse/ui/components/input";
 import { Label } from "@synapse/ui/components/label";
@@ -15,9 +16,10 @@ import { uploadDocumentFormSchema } from "../schemas/document.schema";
 import type { UploadDocumentInput } from "../types/document.types";
 
 export type UploadDocumentFormProps = {
-	/** Resolves when stored; the form clears itself then. */
+	/** Stores one file; resolves when stored. Several files are sent one after another. */
 	onSubmit: (input: UploadDocumentInput) => Promise<unknown>;
 	pending: boolean;
+	/** The last single-file upload's error (several files show a result per file instead). */
 	error: string | null;
 	/** A new file was chosen: the last upload's error no longer applies. */
 	onFileChange: () => void;
@@ -25,9 +27,23 @@ export type UploadDocumentFormProps = {
 
 type Field = keyof UploadDocumentInput;
 
+/** What happened to each file of a multi-file upload. */
+type FileResult = { name: string; ok: boolean; message: string };
+
 const ACCEPT = [...UPLOAD_LIMITS.EXTENSIONS, "text/plain", "text/markdown", "application/pdf"].join(
 	",",
 );
+
+const MAX_FILES = 20;
+
+/** The chosen files, as the drop zone names them. */
+function describe(files: File[]): string {
+	if (files.length <= 3) return files.map((file) => file.name).join(", ");
+	return `${files
+		.slice(0, 3)
+		.map((file) => file.name)
+		.join(", ")} and ${files.length - 3} more`;
+}
 
 function formatSize(bytes: number): string {
 	return bytes < 1024 * 1024
@@ -35,7 +51,10 @@ function formatSize(bytes: number): string {
 		: `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** A file picker that also takes a dropped file, and an optional title. */
+/**
+ * A file picker that also takes dropped files. One file can be given a title; several are uploaded
+ * one after another, each reported on its own line.
+ */
 export function UploadDocumentForm({
 	onSubmit,
 	pending,
@@ -43,13 +62,18 @@ export function UploadDocumentForm({
 	onFileChange,
 }: UploadDocumentFormProps) {
 	const input = useRef<HTMLInputElement>(null);
-	const [file, setFile] = useState<File | null>(null);
+	const [files, setFiles] = useState<File[]>([]);
 	const [dragging, setDragging] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
+	const [results, setResults] = useState<FileResult[]>([]);
+	const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+	const file = files.length === 1 ? (files[0] ?? null) : null;
+	const many = files.length > 1;
 
-	function choose(files: FileList | null) {
-		setFile(files?.[0] ?? null);
+	function choose(list: FileList | null) {
+		setFiles(list ? [...list] : []);
 		setFieldErrors({});
+		setResults([]);
 		onFileChange();
 	}
 
@@ -60,9 +84,49 @@ export function UploadDocumentForm({
 		choose(event.dataTransfer.files);
 	}
 
+	/** Several files: check them all first, then send them in turn and report each. */
+	async function submitMany(formElement: HTMLFormElement) {
+		if (files.length > MAX_FILES) {
+			setFieldErrors({ file: `Choose at most ${MAX_FILES} files at a time` });
+			return;
+		}
+		for (const chosen of files) {
+			const parsed = uploadDocumentFormSchema.safeParse({ file: chosen, title: "" });
+			if (!parsed.success) {
+				setFieldErrors({ file: `${chosen.name}: ${parsed.error.issues[0]?.message ?? "invalid"}` });
+				return;
+			}
+		}
+		setFieldErrors({});
+		const done: FileResult[] = [];
+		setProgress({ done: 0, total: files.length });
+		for (const chosen of files) {
+			try {
+				// oxlint-disable-next-line no-await-in-loop -- one upload at a time (per-user budget, order)
+				await onSubmit({ file: chosen, title: undefined });
+				done.push({ name: chosen.name, ok: true, message: "Added" });
+			} catch (error) {
+				done.push({
+					name: chosen.name,
+					ok: false,
+					message: error instanceof Error ? error.message : "Could not be added",
+				});
+			}
+			setProgress({ done: done.length, total: files.length });
+		}
+		setProgress(null);
+		setResults(done);
+		formElement.reset();
+		setFiles([]);
+	}
+
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		const formElement = event.currentTarget;
+		if (many) {
+			await submitMany(formElement);
+			return;
+		}
 		const parsed = uploadDocumentFormSchema.safeParse({
 			file,
 			title: new FormData(formElement).get("upload-title") ?? "",
@@ -77,7 +141,7 @@ export function UploadDocumentForm({
 		try {
 			await onSubmit(parsed.data);
 			formElement.reset();
-			setFile(null);
+			setFiles([]);
 		} catch {
 			// The container shows the API's message through `error`; keep the file chosen.
 		}
@@ -111,16 +175,21 @@ export function UploadDocumentForm({
 						aria-hidden="true"
 					/>
 					<span className="font-medium break-all">
-						{file ? file.name : "Choose a file or drop it here"}
+						{files.length > 0 ? describe(files) : "Choose a file or drop it here"}
 					</span>
 					<span id="upload-file-hint" className="text-muted-foreground">
-						{file ? formatSize(file.size) : ".txt, .md or .pdf, up to 2 MB"}
+						{many
+							? `${files.length} files · ${formatSize(files.reduce((sum, item) => sum + item.size, 0))}`
+							: file
+								? formatSize(file.size)
+								: `.txt, .md or .pdf, up to 2 MB each; up to ${MAX_FILES} at once`}
 					</span>
 					<input
 						ref={input}
 						id="upload-file"
 						name="upload-file"
 						type="file"
+						multiple
 						accept={ACCEPT}
 						className="sr-only"
 						onChange={(event) => choose(event.currentTarget.files)}
@@ -134,7 +203,7 @@ export function UploadDocumentForm({
 					</p>
 				) : null}
 			</div>
-			<div className="flex flex-col gap-1.5">
+			<div className={cn("flex flex-col gap-1.5", many && "hidden")}>
 				<Label htmlFor="upload-title">Title (optional)</Label>
 				<Input
 					id="upload-title"
@@ -150,13 +219,43 @@ export function UploadDocumentForm({
 					</p>
 				) : null}
 			</div>
-			{error ? (
+			{error && !many && results.length === 0 ? (
 				<Alert variant="destructive">
 					<AlertDescription>{error}</AlertDescription>
 				</Alert>
 			) : null}
-			<SubmitButton disabled={pending} className="self-start">
-				{pending ? "Uploading…" : "Upload file"}
+			{results.length > 0 ? (
+				<ul aria-label="Upload results" className="flex flex-col gap-1.5 text-xs">
+					{results.map((result, index) => (
+						<li key={`${result.name}-${index}`} className="flex items-start gap-2">
+							<HugeiconsIcon
+								icon={result.ok ? CheckmarkCircle02Icon : Cancel01Icon}
+								strokeWidth={1.75}
+								className={cn(
+									"mt-px size-4 shrink-0",
+									result.ok ? "text-primary" : "text-destructive",
+								)}
+								aria-hidden="true"
+							/>
+							<span className="min-w-0 break-words">
+								<span className="font-medium">{result.name}</span>
+								<span className={result.ok ? "text-muted-foreground" : "text-destructive"}>
+									{" "}
+									— {result.message}
+								</span>
+							</span>
+						</li>
+					))}
+				</ul>
+			) : null}
+			<SubmitButton disabled={pending || progress !== null} className="self-start">
+				{progress
+					? `Uploading ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+					: pending
+						? "Uploading…"
+						: many
+							? `Upload ${files.length} files`
+							: "Upload file"}
 			</SubmitButton>
 		</form>
 	);
