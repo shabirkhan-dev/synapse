@@ -223,6 +223,22 @@ export function UsersContainer() {
 
 Don't create a container for a component that needs no data.
 
+## Look and feel (syn-078)
+
+| Token | Value |
+| --- | --- |
+| Font | Inter (self-hosted, `@fontsource-variable/inter` imported by `@synapse/ui` `globals.css`), then Apple's system font; `letter-spacing: -0.15px` on `body` |
+| Dark surfaces | one flat `#1C1C1C` for sidebar, page and cards, separated by `#2B2B2B` borders; popovers `#222222`; hover and muted `#262626` |
+| Text | `#E5E5E5`, secondary `#A1A1A1` (13.5:1 and 6.6:1 on `#1C1C1C`); light theme text `#1C1C1C` |
+| Radius | `rounded-sm` 6px, `rounded-md`/`lg` 8px, `rounded-xl`+ 12px, or `rounded-full`; nothing else |
+| Size | 14px for body, controls, labels, tables and menus (`text-sm`); 12px only for hints and metadata; controls 36px (inputs and default buttons), 32px small |
+| Icons | HugeIcons only |
+
+The shell is a plain sidebar with a border (no inset panel) and a sticky header with a breadcrumb
+(`Section / Page`, the parent muted). Pick-one controls use `components/shared/segmented-control`;
+states use `components/shared/status-dot` (a dot plus the label, never colour alone). `SidebarInset`
+is a `div`: the page's own `<main>` is the only main landmark.
+
 ## Shell extras (syn-075)
 
 - **Command palette** (`features/command-palette`): ⌘K / Ctrl+K or the top-bar Search button; pages

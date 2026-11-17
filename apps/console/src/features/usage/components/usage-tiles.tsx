@@ -7,6 +7,10 @@ const unpriced = (count: number) =>
 		? "1 answer has no price"
 		: `${formatCount(count)} answers have no price`;
 
+/** The exact count, only when the compact value rounds it (12.3K → 12,345). */
+const exactIfRounded = (count: number) =>
+	formatCompact(count) === formatCount(count) ? null : formatCount(count);
+
 /** The headline numbers for the window. */
 export function UsageTiles({ totals }: { totals: Usage["totals"] }) {
 	const tiles = [
@@ -14,12 +18,12 @@ export function UsageTiles({ totals }: { totals: Usage["totals"] }) {
 		{
 			label: "Input tokens",
 			value: formatCompact(totals.inputTokens),
-			note: formatCount(totals.inputTokens),
+			note: exactIfRounded(totals.inputTokens),
 		},
 		{
 			label: "Output tokens",
 			value: formatCompact(totals.outputTokens),
-			note: formatCount(totals.outputTokens),
+			note: exactIfRounded(totals.outputTokens),
 		},
 		{
 			label: "Estimated cost",
@@ -36,7 +40,7 @@ export function UsageTiles({ totals }: { totals: Usage["totals"] }) {
 		<dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
 			{tiles.map((tile) => (
 				<div key={tile.label} className="flex flex-col gap-1 rounded-xl border bg-card p-4">
-					<dt className="text-xs text-muted-foreground">{tile.label}</dt>
+					<dt className="text-sm text-muted-foreground">{tile.label}</dt>
 					<dd className="text-2xl font-semibold tracking-tight tabular-nums">{tile.value}</dd>
 					{tile.note ? (
 						<dd className="text-xs text-muted-foreground tabular-nums">{tile.note}</dd>

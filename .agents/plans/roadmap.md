@@ -114,6 +114,7 @@ contextual retrieval and Ragas.
 | Follow-up suggestions, copy, regenerate; ⌘K palette | ✅ | syn-075 |
 | Chat: choose documents (the API already scopes chat turns) | ✅ | syn-076 |
 | Re-chunk documents from before text-v2 in the worker (text-v2 without saved context: re-add) | ✅ | syn-077 |
+| Console UI/UX pass 2: Inter, flat #1C1C1C, 14px controls, breadcrumb shell (the human's spec) | ✅ | syn-078 |
 | Check the answer judge against its labelled cases with a real model (needs a chat key) | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

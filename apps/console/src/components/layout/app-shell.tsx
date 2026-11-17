@@ -68,7 +68,7 @@ export function AppShell({
 
 	return (
 		<SidebarProvider>
-			<Sidebar variant="inset">
+			<Sidebar>
 				<SidebarHeader className="gap-3">
 					<Link href="/documents" className="w-fit rounded-md px-1 pt-1">
 						<BrandMark />
@@ -83,7 +83,7 @@ export function AppShell({
 								{group.label === MAIN_GROUP ? (
 									<h2 className="sr-only">{group.label}</h2>
 								) : (
-									<SidebarGroupLabel className="text-[0.8rem] font-normal">
+									<SidebarGroupLabel className="text-xs font-normal">
 										{group.label}
 									</SidebarGroupLabel>
 								)}
@@ -113,31 +113,46 @@ export function AppShell({
 					/>
 				</SidebarFooter>
 			</Sidebar>
-			{/* A soft accent glow in the corner of the dark panel; the light panel stays plain. */}
-			<SidebarInset className="min-w-0 dark:bg-[radial-gradient(ellipse_70%_55%_at_100%_100%,color-mix(in_oklab,var(--primary)_10%,transparent),transparent)]">
-				<header className="flex h-14 shrink-0 items-center gap-3 px-4">
-					<SidebarTrigger aria-label="Show or hide the sidebar" className="-ms-1" />
-					<p className="flex min-w-0 items-center gap-2 text-sm">
-						{section && section !== MAIN_GROUP ? (
-							<span className="hidden text-muted-foreground sm:inline">{section}</span>
-						) : null}
-						<span className="inline-flex min-w-0 items-center gap-2 rounded-full border bg-card px-3 py-1.5 font-medium shadow-xs">
-							{current ? (
-								<HugeiconsIcon
-									icon={current.icon}
-									size={15}
-									strokeWidth={1.75}
-									className="shrink-0 text-primary"
-									aria-hidden="true"
-								/>
-							) : null}
-							<span className="truncate">{title}</span>
-						</span>
-					</p>
+			<SidebarInset className="min-w-0">
+				<header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 md:px-6">
+					<SidebarTrigger aria-label="Show or hide the sidebar" className="-ms-1.5" />
+					{/* Section, muted, then the page; inside a page (one document) the page links back. */}
+					<nav aria-label="Breadcrumb" className="min-w-0">
+						<ol className="flex min-w-0 items-center gap-2 text-[0.9375rem]">
+							<li className="hidden shrink-0 text-muted-foreground sm:block">
+								{section ?? "Synapse"}
+							</li>
+							<li aria-hidden="true" className="hidden text-muted-foreground/60 sm:block">
+								/
+							</li>
+							{current && pathname !== current.href ? (
+								<>
+									<li className="shrink-0">
+										<Link
+											href={current.href}
+											className="rounded-sm text-muted-foreground hover:text-foreground"
+										>
+											{title}
+										</Link>
+									</li>
+									<li aria-hidden="true" className="text-muted-foreground/60">
+										/
+									</li>
+									<li className="truncate font-medium" aria-current="page">
+										Details
+									</li>
+								</>
+							) : (
+								<li className="truncate font-medium" aria-current="page">
+									{title}
+								</li>
+							)}
+						</ol>
+					</nav>
 					{search ? <div className="ms-auto">{search}</div> : null}
 				</header>
 				{notice ? (
-					<div className="mx-4 rounded-xl border bg-muted/60 px-4 py-2.5 md:mx-6">{notice}</div>
+					<div className="border-b bg-muted/40 px-4 py-2.5 text-sm md:px-6">{notice}</div>
 				) : null}
 				<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-6">{children}</main>
 			</SidebarInset>
@@ -165,7 +180,7 @@ function NavLink({
 		<SidebarMenuItem>
 			<SidebarMenuButton
 				isActive={active}
-				className="h-10 gap-3 rounded-lg px-2.5 text-[0.95rem] [&_svg]:size-[18px]! [&_svg]:text-muted-foreground data-active:[&_svg]:text-sidebar-primary"
+				className="h-9 gap-3 rounded-md px-2.5 text-sm [&_svg]:size-[18px]! [&_svg]:text-muted-foreground data-active:font-medium data-active:[&_svg]:text-sidebar-primary"
 				render={
 					<Link
 						href={item.href}

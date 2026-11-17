@@ -15,6 +15,8 @@ import {
 	TableRow,
 } from "@synapse/ui/components/table";
 
+import { StatusDot } from "@/components/shared/status-dot";
+
 import { CIRCUIT_LABELS, JOB_STATES } from "../constants/system.constants";
 import type { Circuit, SystemStatus } from "../types/system.types";
 
@@ -47,8 +49,6 @@ function circuitText(circuit: Circuit): {
 		tone: "bad",
 	};
 }
-
-const TONE = { ok: "secondary", wait: "outline", bad: "destructive" } as const;
 
 function Tile({ label, value, detail }: { label: string; value: string; detail: string }) {
 	return (
@@ -133,7 +133,7 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 										<TableCell>{CIRCUIT_LABELS[circuit.name] ?? circuit.name}</TableCell>
 										<TableCell>
 											<span className="flex flex-wrap items-center gap-2">
-												<Badge variant={TONE[text.tone]}>{text.label}</Badge>
+												<StatusDot tone={text.tone}>{text.label}</StatusDot>
 												<span className="text-xs text-muted-foreground">{text.detail}</span>
 											</span>
 										</TableCell>

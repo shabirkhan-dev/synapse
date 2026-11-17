@@ -35,7 +35,7 @@ export function ApprovalsList({
 	onReject,
 }: ApprovalsListProps) {
 	return (
-		<ul className="flex flex-col gap-3">
+		<ul className="flex flex-col divide-y">
 			{approvals.map((approval) => (
 				<ApprovalItem
 					key={approval.id}
@@ -77,7 +77,7 @@ function ApprovalItem({
 	}
 
 	return (
-		<li className="flex flex-col gap-3 rounded-md border p-4">
+		<li className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
 			<div className="flex flex-wrap items-center gap-2">
 				<Badge variant="outline">{ACTION_LABELS[approval.action] ?? approval.action}</Badge>
 				<span className="text-xs text-muted-foreground">

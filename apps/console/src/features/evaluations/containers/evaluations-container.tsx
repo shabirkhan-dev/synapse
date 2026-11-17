@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 
 import { useDocumentsQuery } from "@/features/documents";
 import { PageHeader } from "@/components/shared/page-header";
+import { SegmentedControl } from "@/components/shared/segmented-control";
 
 import { AddQuestionForm } from "../components/add-question-form";
 import { QuestionsTable } from "../components/questions-table";
@@ -114,21 +115,13 @@ export function EvaluationsContainer() {
 				</CardHeader>
 				<CardContent className="flex flex-col gap-6">
 					<div className="flex flex-wrap items-center gap-3">
-						<div role="group" aria-label="Top k" className="flex gap-1">
-							{K_OPTIONS.map((option) => (
-								<Button
-									key={option}
-									size="sm"
-									variant={option === k ? "secondary" : "ghost"}
-									aria-pressed={option === k}
-									onClick={() => setK(option)}
-								>
-									Top {option}
-								</Button>
-							))}
-						</div>
+						<SegmentedControl
+							label="Top k"
+							options={K_OPTIONS.map((option) => ({ value: option, label: `Top ${option}` }))}
+							value={k}
+							onChange={setK}
+						/>
 						<Button
-							size="sm"
 							disabled={questionCount === 0 || runEvaluation.isPending}
 							onClick={() =>
 								runEvaluation.mutate(
