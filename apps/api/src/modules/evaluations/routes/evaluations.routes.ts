@@ -125,7 +125,8 @@ export function createEvaluationRoutes(evaluations: EvaluationsService) {
 	});
 
 	app.openapi(runRoute, async (c) => {
-		const run = await evaluations.run(scope(c), c.req.valid("json").k);
+		const { k, judgeAnswers } = c.req.valid("json");
+		const run = await evaluations.run(scope(c), k, judgeAnswers);
 		return success(c, run, EVAL_MESSAGES.RUN_COMPLETED, HTTP_STATUS.CREATED);
 	});
 

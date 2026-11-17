@@ -587,7 +587,8 @@ export class InMemoryEvaluationRepository implements EvaluationRepository {
 			embeddingModel: run.embeddingModel,
 			chunkerVersion: run.chunkerVersion,
 			modes: run.results.modes,
-			cases: run.results.cases,
+			answers: run.results.answers ?? null,
+			cases: run.results.cases.map((item) => ({ ...item, answer: item.answer ?? null })),
 			createdAt: new Date().toISOString(),
 		};
 		this.runs.unshift(stored);
@@ -1165,7 +1166,7 @@ export function buildTestApp({
 		memory,
 		organizations,
 		chat,
-		evaluations: new EvaluationsService(evaluationStore, rag, audit),
+		evaluations: new EvaluationsService(evaluationStore, rag, audit, gateway.chat),
 		system: new SystemService({ repository: systemRepository, circuits, config: testConfig, rag }),
 		rateLimiter: usageLimiter,
 		pingDatabase,

@@ -5,3 +5,6 @@ const when = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "sh
 export const formatRecall = (value: number): string => percent.format(value);
 export const formatMrr = (value: number): string => decimal.format(value);
 export const formatWhen = (iso: string): string => when.format(new Date(iso));
+/** A 0–1 judge score as a percentage; "Not judged" when the judge gave none. */
+export const formatScore = (value: number | null): string =>
+	value === null ? "Not judged" : percent.format(value);

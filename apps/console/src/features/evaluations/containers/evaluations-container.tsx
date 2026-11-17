@@ -2,6 +2,7 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
+import { Checkbox } from "@synapse/ui/components/checkbox";
 import {
 	Card,
 	CardContent,
@@ -9,6 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@synapse/ui/components/card";
+import { Label } from "@synapse/ui/components/label";
 import { useMemo, useState } from "react";
 
 import { useDocumentsQuery } from "@/features/documents";
@@ -35,6 +37,7 @@ export function EvaluationsContainer() {
 	const deleteQuestion = useDeleteEvalQuestionMutation();
 	const runEvaluation = useRunEvaluationMutation();
 	const [k, setK] = useState<number>(DEFAULT_K);
+	const [judgeAnswers, setJudgeAnswers] = useState(false);
 	const [chosenRunId, setChosenRunId] = useState<string | null>(null);
 	const selectedRunId = chosenRunId ?? runs.data?.[0]?.id ?? null;
 	const run = useEvalRunQuery(selectedRunId);
@@ -105,7 +108,8 @@ export function EvaluationsContainer() {
 					<CardTitle>Runs</CardTitle>
 					<CardDescription>
 						Each run asks every question in all three modes. “Found in top k” is the share of
-						expected documents among the first k results; MRR rewards finding them first.
+						expected documents among the first k results; MRR rewards finding them first. Scoring
+						answers also writes an answer to each question and has the chat model grade it.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-col gap-6">
@@ -127,11 +131,28 @@ export function EvaluationsContainer() {
 							size="sm"
 							disabled={questionCount === 0 || runEvaluation.isPending}
 							onClick={() =>
-								runEvaluation.mutate(k, { onSuccess: (finished) => setChosenRunId(finished.id) })
+								runEvaluation.mutate(
+									{ k, judgeAnswers },
+									{ onSuccess: (finished) => setChosenRunId(finished.id) },
+								)
 							}
 						>
 							{runEvaluation.isPending ? "Running…" : "Run evaluation"}
 						</Button>
+						<div className="flex items-center gap-2">
+							<Label className="flex items-center gap-2 font-normal">
+								<Checkbox
+									checked={judgeAnswers}
+									onCheckedChange={(next) => setJudgeAnswers(next === true)}
+									disabled={runEvaluation.isPending}
+									aria-describedby="judge-answers-cost"
+								/>
+								Also score answers
+							</Label>
+							<span id="judge-answers-cost" className="text-xs text-muted-foreground">
+								2 chat model calls each
+							</span>
+						</div>
 					</div>
 					{runEvaluation.isError ? (
 						<Alert variant="destructive">

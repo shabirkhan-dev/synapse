@@ -11,3 +11,4 @@ export type EvalQuestion = z.infer<typeof evalQuestionSchema>;
 export type EvalRunSummary = z.infer<typeof evalRunSummarySchema>;
 export type EvalRun = z.infer<typeof evalRunSchema>;
 export type AddQuestionInput = z.output<typeof addQuestionFormSchema>;
+export type RunEvaluationInput = { k: number; judgeAnswers: boolean };

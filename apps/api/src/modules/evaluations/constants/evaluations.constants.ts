@@ -7,6 +7,8 @@ export const EVAL_ERROR_CODES = {
 } as const;
 
 export const EVAL_MESSAGES = {
+	ANSWER_FAILED: "No answer: the chat model call failed",
+	JUDGE_FAILED: "Not judged: the judge's reply could not be read or the call failed",
 	QUESTIONS_FETCHED: "Evaluation questions retrieved",
 	QUESTION_ADDED: "Evaluation question added",
 	QUESTION_DELETED: "Evaluation question deleted",
@@ -29,3 +31,6 @@ export const EVAL_MODES = ["hybrid", "vector", "keyword"] as const;
 export const EVAL_CHUNKS_PER_RESULT = 4;
 export const EVAL_MAX_CHUNKS = 50;
 export const EVAL_RUN_LIST_LIMIT = 20;
+
+/** Questions answered and judged at a time when a run scores answers (each is two model calls). */
+export const EVAL_ANSWER_CONCURRENCY = 4;

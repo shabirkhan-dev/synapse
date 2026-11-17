@@ -1,6 +1,18 @@
 import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
-import type { EvalRunResults, EvalSearchMode } from "@synapse/database";
-import { evaluateRetrieval, type RetrievalReport } from "@synapse/evaluation";
+import type { ChatGateway } from "@synapse/core/contracts";
+import type {
+	EvalAnswerSummary,
+	EvalCaseAnswer,
+	EvalRunResults,
+	EvalSearchMode,
+} from "@synapse/database";
+import {
+	ANSWER_JUDGE_VERSION,
+	evaluateRetrieval,
+	judgeAnswer,
+	mean,
+	type RetrievalReport,
+} from "@synapse/evaluation";
 
 import type { RagService } from "@/modules/rag";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
@@ -8,6 +20,7 @@ import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
 
 import {
+	EVAL_ANSWER_CONCURRENCY,
 	EVAL_CHUNKS_PER_RESULT,
 	EVAL_ERROR_CODES,
 	EVAL_MAX_CHUNKS,
@@ -32,8 +45,10 @@ type Scope = { ownerId: string; actorId: string; context: RequestContext };
 export class EvaluationsService {
 	constructor(
 		private readonly repository: EvaluationRepository,
-		private readonly rag: Pick<RagService, "search" | "hasDocument" | "versions">,
+		private readonly rag: Pick<RagService, "search" | "hasDocument" | "versions" | "answer">,
 		private readonly audit: AuditLog,
+		/** Grades answers when a run asks for it (the chat model, through the gateway). */
+		private readonly judge: ChatGateway,
 	) {}
 
 	listQuestions(ownerId: string): Promise<EvalQuestion[]> {
@@ -80,8 +95,15 @@ export class EvaluationsService {
 		}
 	}
 
-	/** Every question through each mode; stored with the embedding model and chunker it ran on. */
-	async run({ ownerId, actorId, context }: Scope, k: number): Promise<EvalRun> {
+	/**
+	 * Every question through each mode; with `judgeAnswers`, each is also answered (hybrid, top k)
+	 * and the answer judged. Stored with the embedding model and chunker it ran on.
+	 */
+	async run(
+		{ ownerId, actorId, context }: Scope,
+		k: number,
+		judgeAnswers = false,
+	): Promise<EvalRun> {
 		const questions = await this.repository.listQuestions(ownerId);
 		if (questions.length === 0) {
 			throw new AppError({
@@ -115,6 +137,13 @@ export class EvaluationsService {
 			evaluate("vector"),
 			evaluate("keyword"),
 		]);
+		const answers = judgeAnswers
+			? await this.answerAll(
+					{ ownerId, actorId, context },
+					questions.map((item) => item.question),
+					k,
+				)
+			: null;
 		const reports: Record<EvalSearchMode, RetrievalReport> = { hybrid, vector, keyword };
 		const rankOf = (mode: EvalSearchMode, caseIndex: number, expected: string[]) => {
 			const retrieved = reports[mode].cases[caseIndex]?.retrieved ?? [];
@@ -136,7 +165,9 @@ export class EvaluationsService {
 					vector: rankOf("vector", caseIndex, item.expectedDocumentIds),
 					keyword: rankOf("keyword", caseIndex, item.expectedDocumentIds),
 				},
+				...(answers ? { answer: answers[caseIndex] } : {}),
 			})),
+			...(answers ? { answers: this.summarize(answers) } : {}),
 		};
 		const { embeddingModel, chunkerVersion } = this.rag.versions;
 		const run = await this.repository.saveRun({
@@ -161,10 +192,78 @@ export class EvaluationsService {
 				embeddingModel,
 				chunkerVersion,
 				modes: results.modes,
+				...(results.answers ? { answers: results.answers } : {}),
 			},
 			provenance: null,
 		});
 		return run;
+	}
+
+	/** Answer and judge every question, a few at a time; a failure leaves that one unjudged. */
+	private async answerAll(scope: Scope, questions: string[], k: number): Promise<EvalCaseAnswer[]> {
+		const results: EvalCaseAnswer[] = [];
+		for (let start = 0; start < questions.length; start += EVAL_ANSWER_CONCURRENCY) {
+			const batch = questions.slice(start, start + EVAL_ANSWER_CONCURRENCY);
+			// oxlint-disable-next-line no-await-in-loop -- batches bound the parallel model calls
+			results.push(
+				...(await Promise.all(batch.map((question) => this.answerOne(scope, question, k)))),
+			);
+		}
+		return results;
+	}
+
+	private async answerOne(
+		{ ownerId, context }: Scope,
+		question: string,
+		k: number,
+	): Promise<EvalCaseAnswer> {
+		const unjudged = (text: string, reason: string | null) => ({
+			text,
+			faithfulness: null,
+			relevance: null,
+			reason,
+		});
+		let answer: Awaited<ReturnType<RagService["answer"]>>;
+		try {
+			answer = await this.rag.answer(ownerId, question, k, context);
+		} catch {
+			return unjudged("", EVAL_MESSAGES.ANSWER_FAILED);
+		}
+		// Nothing to answer from: there is no answer to grade.
+		if (answer.provenance === null) return unjudged(answer.answer, null);
+		try {
+			const judgement = await judgeAnswer({
+				chat: this.judge,
+				question,
+				answer: answer.answer,
+				passages: answer.matches.map((match, position) => ({
+					index: position + 1,
+					title: match.documentTitle,
+					content: match.content,
+				})),
+			});
+			return {
+				text: answer.answer,
+				faithfulness: judgement.faithfulness,
+				relevance: judgement.relevance,
+				reason: judgement.reason || null,
+			};
+		} catch {
+			return unjudged(answer.answer, EVAL_MESSAGES.JUDGE_FAILED);
+		}
+	}
+
+	private summarize(answers: EvalCaseAnswer[]): EvalAnswerSummary {
+		const judged = answers.filter(
+			(answer): answer is EvalCaseAnswer & { faithfulness: number; relevance: number } =>
+				answer.faithfulness !== null && answer.relevance !== null,
+		);
+		return {
+			judge: { ...this.judge.info, version: ANSWER_JUDGE_VERSION },
+			faithfulness: judged.length ? mean(judged.map((answer) => answer.faithfulness)) : null,
+			relevance: judged.length ? mean(judged.map((answer) => answer.relevance)) : null,
+			judged: judged.length,
+		};
 	}
 
 	listRuns(ownerId: string): Promise<EvalRunSummary[]> {

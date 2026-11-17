@@ -30,6 +30,12 @@ const run = {
 	embeddingModel: "openai/text-embedding-3-small",
 	chunkerVersion: "text-v1",
 	modes: { hybrid: metrics(1, 1), vector: metrics(1, 0.5), keyword: metrics(0, 0) },
+	answers: null as null | {
+		judge: { provider: string; model: string; version: string };
+		faithfulness: number | null;
+		relevance: number | null;
+		judged: number;
+	},
 	createdAt: "2026-11-13T09:00:00Z",
 	cases: [
 		{
@@ -37,8 +43,34 @@ const run = {
 			question: "How long do refunds take?",
 			expectedDocumentIds: ["d1"],
 			ranks: { hybrid: 1, vector: 2, keyword: null },
+			answer: null as null | {
+				text: string;
+				faithfulness: number | null;
+				relevance: number | null;
+				reason: string | null;
+			},
 		},
 	],
+};
+
+/** The same run with answers written and judged. */
+const judged: typeof run = {
+	...run,
+	answers: {
+		judge: { provider: "openrouter", model: "openai/gpt-4o-mini", version: "answer-judge@1" },
+		faithfulness: 0.75,
+		relevance: 1,
+		judged: 1,
+	},
+	cases: run.cases.map((item) => ({
+		...item,
+		answer: {
+			text: "Within 30 days [1].",
+			faithfulness: 0.75,
+			relevance: 1,
+			reason: "Three of four claims are in the passages.",
+		},
+	})),
 };
 
 /** A small fake API: documents, questions (added in memory) and runs. */
@@ -65,13 +97,14 @@ function fakeApi() {
 		}
 		if (path === "/evaluations/questions") return ok(questions);
 		if (path === "/evaluations/runs" && call.method === "POST") {
-			runs.unshift(run);
-			return ok(run, 201);
+			const made = (call.body as { judgeAnswers?: boolean }).judgeAnswers ? judged : run;
+			runs.unshift(made);
+			return ok(made, 201);
 		}
 		if (path === "/evaluations/runs") {
 			return ok(runs.map(({ cases: _cases, ...summary }) => summary));
 		}
-		if (path === "/evaluations/runs/r1") return ok(run);
+		if (path === "/evaluations/runs/r1") return ok(runs[0] ?? run);
 		throw new Error(`unexpected ${call.method} ${path}`);
 	});
 	return { calls, questions };
@@ -137,5 +170,41 @@ describe("EvaluationsContainer (mocked API)", () => {
 		expect(
 			calls.find((call) => call.url.endsWith("/evaluations/runs") && call.method === "POST")?.body,
 		).toEqual({ k: 3 });
+	});
+
+	test("scoring answers sends the option and shows faithfulness, relevance and the judge's reason", async () => {
+		signedIn();
+		const { questions, calls } = fakeApi();
+		questions.push({ ...run.cases[0], id: "q1", createdAt: "2026-11-13T08:30:00Z" } as never);
+		renderWithQuery(<EvaluationsContainer />);
+		await screen.findByText("No runs yet.");
+		expect(screen.queryByRole("heading", { name: "Answer quality" })).toBeNull();
+
+		fireEvent.click(screen.getByText("Also score answers"));
+		await waitFor(() =>
+			expect(
+				screen.getByRole("checkbox", { name: /Also score answers/ }).getAttribute("aria-checked"),
+			).toBe("true"),
+		);
+		const runButton = screen.getByRole("button", { name: "Run evaluation" });
+		await waitFor(() => expect((runButton as HTMLButtonElement).disabled).toBe(false));
+		fireEvent.click(runButton);
+
+		const quality = (await screen.findByRole("heading", { name: "Answer quality" })).closest(
+			"section",
+		) as HTMLElement;
+		expect(within(quality).getByText("Faithful to the passages").nextSibling?.textContent).toBe(
+			"75%",
+		);
+		expect(within(quality).getByText("Answers the question").nextSibling?.textContent).toBe("100%");
+		expect(within(quality).getByText("answer-judge@1")).toBeDefined();
+		const ranks = screen.getByRole("table", {
+			name: "Rank of the first expected document for each question",
+		});
+		expect(within(ranks).getByText("Three of four claims are in the passages.")).toBeDefined();
+		expect(within(ranks).getByRole("columnheader", { name: "Faithful" })).toBeDefined();
+		expect(
+			calls.find((call) => call.url.endsWith("/evaluations/runs") && call.method === "POST")?.body,
+		).toEqual({ k: 5, judgeAnswers: true });
 	});
 });

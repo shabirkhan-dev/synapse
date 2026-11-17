@@ -14,7 +14,11 @@ export const addQuestionBodySchema = z
 	.openapi("AddEvalQuestionBody");
 
 export const runBodySchema = z
-	.object({ k: z.number().int().min(1).max(EVAL_MAX_K).default(EVAL_DEFAULT_K) })
+	.object({
+		k: z.number().int().min(1).max(EVAL_MAX_K).default(EVAL_DEFAULT_K),
+		/** Also answer each question and have the chat model judge it (two model calls each). */
+		judgeAnswers: z.boolean().default(false),
+	})
 	.openapi("RunEvaluationBody");
 
 export const evalQuestionSchema = z
@@ -49,6 +53,15 @@ export const evalRunSummarySchema = z
 		embeddingModel: z.string(),
 		chunkerVersion: z.string(),
 		modes: modeRecord(metricsSchema),
+		/** Mean judge scores (0–1) over the judged answers; null for retrieval-only runs. */
+		answers: z
+			.object({
+				judge: z.object({ provider: z.string(), model: z.string(), version: z.string() }),
+				faithfulness: z.number().nullable(),
+				relevance: z.number().nullable(),
+				judged: z.number().int(),
+			})
+			.nullable(),
 		createdAt: z.string(),
 	})
 	.openapi("EvalRunSummary");
@@ -62,6 +75,15 @@ export const evalRunSchema = evalRunSummarySchema
 				expectedDocumentIds: z.array(z.uuid()),
 				/** 1-based rank of the first expected document per mode; null when not retrieved. */
 				ranks: modeRecord(z.number().int().nullable()),
+				/** The answer and its judge scores; null for retrieval-only runs. */
+				answer: z
+					.object({
+						text: z.string(),
+						faithfulness: z.number().nullable(),
+						relevance: z.number().nullable(),
+						reason: z.string().nullable(),
+					})
+					.nullable(),
 			}),
 		),
 	})

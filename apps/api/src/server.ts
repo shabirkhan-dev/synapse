@@ -173,7 +173,12 @@ const app = createApp({
 	memory,
 	organizations,
 	chat,
-	evaluations: new EvaluationsService(new DrizzleEvaluationRepository(database.db), rag, audit),
+	evaluations: new EvaluationsService(
+		new DrizzleEvaluationRepository(database.db),
+		rag,
+		audit,
+		gateway.chat,
+	),
 	system: new SystemService({
 		repository: new DrizzleSystemRepository(database.db),
 		circuits,

@@ -13,6 +13,14 @@ const metricsSchema = z.object({ recallAtK: z.number(), mrr: z.number() });
 const byMode = <T extends z.ZodType>(value: T) =>
 	z.object({ hybrid: value, vector: value, keyword: value });
 
+/** Answer quality, when the run also wrote and judged an answer per question (syn-073). */
+const answersSchema = z.object({
+	judge: z.object({ provider: z.string(), model: z.string(), version: z.string() }),
+	faithfulness: z.number().nullable(),
+	relevance: z.number().nullable(),
+	judged: z.number().int(),
+});
+
 export const evalRunSummarySchema = z.object({
 	id: z.string(),
 	k: z.number().int(),
@@ -20,6 +28,7 @@ export const evalRunSummarySchema = z.object({
 	embeddingModel: z.string(),
 	chunkerVersion: z.string(),
 	modes: byMode(metricsSchema),
+	answers: answersSchema.nullable(),
 	createdAt: z.string(),
 });
 
@@ -30,6 +39,14 @@ export const evalRunSchema = evalRunSummarySchema.extend({
 			question: z.string(),
 			expectedDocumentIds: z.array(z.string()),
 			ranks: byMode(z.number().int().nullable()),
+			answer: z
+				.object({
+					text: z.string(),
+					faithfulness: z.number().nullable(),
+					relevance: z.number().nullable(),
+					reason: z.string().nullable(),
+				})
+				.nullable(),
 		}),
 	),
 });

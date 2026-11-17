@@ -48,4 +48,17 @@ test("a question with its document is run through every mode and scored", async 
 			.getByRole("table", { name: "Score per search mode" })
 			.getByRole("row", { name: /Keywords/ }),
 	).toContainText("100%");
+
+	// Scoring answers: each question is answered and graded by the (fake) chat model.
+	await page.getByText("Also score answers").click();
+	await page.getByRole("button", { name: "Run evaluation" }).click();
+	const quality = page.getByRole("region", { name: "Answer quality" });
+	await expect(quality.getByText("Faithful to the passages")).toBeVisible();
+	await expect(quality).toContainText("90%");
+	await expect(quality).toContainText("answer-judge@1");
+	await expect(
+		page
+			.getByRole("table", { name: "Rank of the first expected document for each question" })
+			.getByRole("columnheader", { name: "Faithful" }),
+	).toBeVisible();
 });

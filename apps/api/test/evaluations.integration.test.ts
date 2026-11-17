@@ -64,7 +64,10 @@ describe.skipIf(!url)("DrizzleEvaluationRepository (postgres)", () => {
 		const runs = await repository.listRuns(owner, 10);
 		expect(runs.map((run) => run.id)).toEqual([second.id, first.id]);
 		expect(runs[0]).not.toHaveProperty("cases");
-		expect((await repository.findRun(owner, first.id))?.cases).toEqual(results.cases);
+		expect((await repository.findRun(owner, first.id))?.cases).toEqual(
+			results.cases.map((item) => ({ ...item, answer: null })),
+		);
+		expect(runs[0]?.answers).toBeNull();
 		expect((await repository.findRun(owner, first.id))?.modes).toEqual(results.modes);
 		expect(await repository.findRun(other, first.id)).toBeNull();
 	});

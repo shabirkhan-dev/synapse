@@ -1,4 +1,4 @@
-import type { EvalRunResults } from "@synapse/database";
+import type { EvalAnswerSummary, EvalCaseAnswer, EvalRunResults } from "@synapse/database";
 
 export type EvalQuestion = {
 	id: string;
@@ -14,12 +14,16 @@ export type EvalRunSummary = {
 	embeddingModel: string;
 	chunkerVersion: string;
 	modes: EvalRunResults["modes"];
+	/** Mean answer scores; null when the run did not judge answers. */
+	answers: EvalAnswerSummary | null;
 	createdAt: string;
 };
 
-export type EvalRun = EvalRunSummary & { cases: EvalRunResults["cases"] };
+export type EvalRun = EvalRunSummary & {
+	cases: Array<Omit<EvalRunResults["cases"][number], "answer"> & { answer: EvalCaseAnswer | null }>;
+};
 
-export type NewEvalRun = Omit<EvalRunSummary, "id" | "createdAt" | "modes"> & {
+export type NewEvalRun = Omit<EvalRunSummary, "id" | "createdAt" | "modes" | "answers"> & {
 	ownerId: string;
 	createdBy: string;
 	results: EvalRunResults;

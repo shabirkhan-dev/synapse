@@ -25,7 +25,26 @@ export type EvalRunResults = {
 		expectedDocumentIds: string[];
 		/** 1-based rank of the first expected document per mode, null when not retrieved. */
 		ranks: Record<EvalSearchMode, number | null>;
+		/** Present when the run also answered and judged the question (syn-073). */
+		answer?: EvalCaseAnswer;
 	}>;
+	/** Means over the judged answers; absent for retrieval-only runs. */
+	answers?: EvalAnswerSummary;
+};
+
+/** One answer and its judge scores (0–1); null scores when it could not be judged. */
+export type EvalCaseAnswer = {
+	text: string;
+	faithfulness: number | null;
+	relevance: number | null;
+	reason: string | null;
+};
+
+export type EvalAnswerSummary = {
+	judge: { provider: string; model: string; version: string };
+	faithfulness: number | null;
+	relevance: number | null;
+	judged: number;
 };
 
 /** One run of every question through each search mode, with the versions it ran on. */

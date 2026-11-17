@@ -19,10 +19,14 @@ export function toEvalRunSummary(row: Omit<EvalRunRow, "ownerId" | "createdBy">)
 		embeddingModel: row.embeddingModel,
 		chunkerVersion: row.chunkerVersion,
 		modes: row.results.modes,
+		answers: row.results.answers ?? null,
 		createdAt: row.createdAt.toISOString(),
 	};
 }
 
 export function toEvalRun(row: EvalRunRow): EvalRun {
-	return { ...toEvalRunSummary(row), cases: row.results.cases };
+	return {
+		...toEvalRunSummary(row),
+		cases: row.results.cases.map((item) => ({ ...item, answer: item.answer ?? null })),
+	};
 }

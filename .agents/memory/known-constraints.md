@@ -29,7 +29,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Evaluations** (syn-054): one question set per organization (≤ 50 questions, each pointing at 1–10
   documents by id; a deleted document just stops being found). A run is inline in the request:
   every question × three modes, each a real search (two embedding calls per question), k ≤ 20,
-  chunks fetched = min(50, 4k). Only retrieval is scored (no answer quality). Runs record the
+  chunks fetched = min(50, 4k). Answers are scored only when a run asks for it (`judgeAnswers`, syn-073): two chat calls per question, four questions at a time, inline in the request; the judge is the deployment's chat model (often the same model that wrote the answer), one rubric call rather than claim-by-claim, and has not yet been checked against `JUDGE_CHECK_CASES` with a real model (no key in dev). Judge calls are not in Usage (the answers are). Runs record the
   embedding model and chunker, so scores across a model change are not comparable.
 - **Agents page** (syn-055) is read-only: models, prompts, tools and limits come from env and code
   (`CHAT_TOOLS` in the chat module is the one source of tool descriptions). Runs are audit events
