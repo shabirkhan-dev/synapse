@@ -13,8 +13,11 @@ test("chat streams an answer that searched the documents; the conversation is ke
 	const email = uniqueEmail("chat");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
-	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
+	await page
+		.getByLabel("Text", { exact: true })
+		.fill("Refunds are accepted within 30 days of purchase.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 
@@ -88,8 +91,9 @@ test("a chat turn narrowed to one document cites only that document", async ({ p
 		["Refund policy", "Refunds are accepted within 30 days of purchase."],
 		["Shipping policy", "Refund requests for shipping fees are handled by the carrier."],
 	] as const) {
+		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
-		await page.getByLabel("Text").fill(text);
+		await page.getByLabel("Text", { exact: true }).fill(text);
 		await page.getByRole("button", { name: "Add document" }).click();
 		await expect(page.getByRole("link", { name: title })).toBeVisible();
 	}

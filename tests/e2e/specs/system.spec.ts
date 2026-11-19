@@ -7,8 +7,9 @@ test("an owner sees the database, circuits, jobs, index and traces on System", a
 	const email = uniqueEmail("system");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
-	await page.getByLabel("Text").fill("Refunds are accepted within 30 days.");
+	await page.getByLabel("Text", { exact: true }).fill("Refunds are accepted within 30 days.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("link", { name: "Refund policy" })).toBeVisible();
 

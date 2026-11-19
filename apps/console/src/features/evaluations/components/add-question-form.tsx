@@ -80,7 +80,7 @@ export function AddQuestionForm({ documents, onSubmit, pending, error }: AddQues
 						Add documents first; questions point at them.
 					</p>
 				) : (
-					<ul className="flex max-h-56 flex-col gap-2 overflow-y-auto">
+					<ul className="flex max-h-56 flex-col gap-2 overflow-y-auto overscroll-contain">
 						{documents.map((document) => (
 							<li key={document.id}>
 								<Label className="flex items-center gap-2 font-normal">

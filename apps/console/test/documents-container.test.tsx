@@ -44,6 +44,7 @@ describe("DocumentsContainer (mocked API)", () => {
 		renderWithQuery(<DocumentsContainer />);
 		await screen.findByText(/No documents yet/);
 
+		fireEvent.click(screen.getByRole("tab", { name: "Paste text" }));
 		fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Refund policy" } });
 		fireEvent.change(screen.getByLabelText("Text"), { target: { value: "Within 30 days." } });
 		fireEvent.click(screen.getByRole("button", { name: "Add document" }));
@@ -77,6 +78,7 @@ describe("DocumentsContainer (mocked API)", () => {
 		);
 		renderWithQuery(<DocumentsContainer />);
 		await screen.findByText(/No documents yet/);
+		fireEvent.click(screen.getByRole("tab", { name: "Paste text" }));
 		fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Huge" } });
 		fireEvent.change(screen.getByLabelText("Text"), { target: { value: "x" } });
 		fireEvent.click(screen.getByRole("button", { name: "Add document" }));
@@ -236,7 +238,8 @@ describe("DocumentsContainer (mocked API)", () => {
 		});
 		renderWithQuery(<DocumentsContainer />);
 		await screen.findByText(/No documents yet/);
-		const address = screen.getByLabelText("Web page") as HTMLInputElement;
+		fireEvent.click(screen.getByRole("tab", { name: "Web page" }));
+		const address = screen.getByLabelText("Page address") as HTMLInputElement;
 
 		fireEvent.change(address, { target: { value: "example.com/refunds" } });
 		fireEvent.click(screen.getByRole("button", { name: "Add page" }));

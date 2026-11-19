@@ -233,11 +233,22 @@ Don't create a container for a component that needs no data.
 | Radius | `rounded-sm` 6px, `rounded-md`/`lg` 8px, `rounded-xl`+ 12px, or `rounded-full`; nothing else |
 | Size | 14px for body, controls, labels, tables and menus (`text-sm`); 12px only for hints and metadata; controls 36px (inputs and default buttons), 32px small |
 | Icons | HugeIcons only |
+| Mono | JetBrains Mono (self-hosted, `@fontsource-variable/jetbrains-mono`) for ids, model names and versions, at 12px, with normal tracking |
 
 The shell is a plain sidebar with a border (no inset panel) and a sticky header with a breadcrumb
 (`Section / Page`, the parent muted). Pick-one controls use `components/shared/segmented-control`;
 states use `components/shared/status-dot` (a dot plus the label, never colour alone). `SidebarInset`
 is a `div`: the page's own `<main>` is the only main landmark.
+
+Details (syn-079): table text starts at the card's edge (first and last cells have no outer
+padding), headers are muted 13px, numbers use `tabular-nums`, rows have no hover (they are not
+clickable); a ghost button that ends a row or a line takes `-me-3` / `-ms-3` so its label lines up.
+Buttons scale to 0.96 when pressed (only with motion allowed) and name the properties they
+transition. Card descriptions stop at 65 characters a line. A form with several ways in uses
+`@synapse/ui` `Tabs` (Documents: Upload files · Paste text · Web page, each panel kept mounted);
+extra detail goes behind `components/shared/disclosure` (a chevron, not the browser's triangle);
+inline citation numbers share one look (`components/shared/citation-mark`) in chat and the
+Playground. Scrolling menus and lists in popovers use `overscroll-contain`.
 
 ## Shell extras (syn-075)
 

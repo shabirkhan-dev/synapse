@@ -11,8 +11,11 @@ test("deleting all documents waits for approval; approving runs it; activity rec
 	await signIn(page, email);
 	await expect(page.getByText(email).first()).toBeVisible();
 
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
-	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
+	await page
+		.getByLabel("Text", { exact: true })
+		.fill("Refunds are accepted within 30 days of purchase.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 
@@ -54,8 +57,9 @@ test("a rejected request deletes nothing", async ({ page }) => {
 	const email = uniqueEmail("reject");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Keep me");
-	await page.getByLabel("Text").fill("This document should survive.");
+	await page.getByLabel("Text", { exact: true }).fill("This document should survive.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Keep me" })).toBeVisible();
 

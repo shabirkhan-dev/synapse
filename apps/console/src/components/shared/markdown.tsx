@@ -2,6 +2,8 @@ import type { ComponentProps, ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { CITATION_MARK_CLASS } from "./citation-mark";
+
 export type MarkdownProps = {
 	/** Model output: Markdown, untrusted. Raw HTML in it is shown as text, never rendered. */
 	text: string;
@@ -106,10 +108,10 @@ function defaultCitation(index: number) {
 	return (
 		<a
 			href={`${CITATION_HREF}${index}`}
-			className="align-super text-[0.7em] font-medium text-primary underline-offset-2 hover:underline"
+			className={CITATION_MARK_CLASS}
 			aria-label={`Source ${index}`}
 		>
-			[{index}]
+			{index}
 		</a>
 	);
 }

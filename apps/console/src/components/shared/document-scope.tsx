@@ -41,7 +41,7 @@ export function DocumentScope({ documents, selected, onChange, max = 20 }: Docum
 				{documents.length === 0 ? (
 					<p className="text-xs text-muted-foreground">No documents yet.</p>
 				) : (
-					<ul className="flex max-h-56 flex-col gap-2 overflow-y-auto">
+					<ul className="flex max-h-56 flex-col gap-2 overflow-y-auto overscroll-contain">
 						{documents.map((document) => {
 							const checked = selected.includes(document.id);
 							return (

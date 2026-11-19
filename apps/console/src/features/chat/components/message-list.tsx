@@ -101,7 +101,7 @@ function AssistantMessage({
 			)}
 			{cited.length > 0 ? <SourceCards passages={cited} /> : null}
 			{done ? (
-				<div className="-ms-2 flex items-center gap-1">
+				<div className="-ms-3 flex items-center gap-1">
 					<CopyButton text={textOf(message)} />
 					{onRegenerate ? (
 						<Button

@@ -1,7 +1,5 @@
 "use client";
 
-import { Link01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription } from "@synapse/ui/components/alert";
 import { Input } from "@synapse/ui/components/input";
 import { Label } from "@synapse/ui/components/label";
@@ -46,16 +44,8 @@ export function AddWebPageForm({ onSubmit, pending, error }: AddWebPageFormProps
 	}
 
 	return (
-		<form className="flex flex-col gap-2" onSubmit={handleSubmit} noValidate>
-			<Label htmlFor="page-url" className="flex items-center gap-1.5">
-				<HugeiconsIcon
-					icon={Link01Icon}
-					strokeWidth={1.75}
-					className="size-4 text-muted-foreground"
-					aria-hidden="true"
-				/>
-				Web page
-			</Label>
+		<form className="flex flex-col gap-1.5" onSubmit={handleSubmit} noValidate>
+			<Label htmlFor="page-url">Page address</Label>
 			<div className="flex flex-col gap-2 sm:flex-row">
 				<Input
 					id="page-url"

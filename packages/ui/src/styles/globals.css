@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 @import "shadcn/tailwind.css";
 
 /* Dark is the `.dark` class on <html>, set by the console's theme provider (light, dark or system). */
@@ -54,6 +55,9 @@
     --font-sans:
         "Inter Variable", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
         sans-serif;
+    /* Ids, model names and versions: JetBrains Mono (self-hosted), then the platform's mono. */
+    --font-mono:
+        "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 :root {
@@ -152,5 +156,10 @@
     font-family: var(--font-sans);
     letter-spacing: -0.15px;
     font-feature-settings: "cv11", "ss03";
+    }
+  /* Monospace keeps its own spacing: the body's negative tracking crowds fixed-width glyphs. */
+  code, kbd, samp, pre, .font-mono {
+    letter-spacing: 0;
+    font-feature-settings: normal;
     }
 }

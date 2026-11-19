@@ -46,7 +46,7 @@ export function AgentRunsTable({ runs, currentUserId }: AgentRunsTableProps) {
 						</TableCell>
 						<TableCell>{AGENT_LABELS[run.agent]}</TableCell>
 						<TableCell>{run.actorId === currentUserId ? "You" : "A member"}</TableCell>
-						<TableCell className="max-w-64 truncate">
+						<TableCell className="max-w-48 truncate">
 							{run.question ?? <span className="text-muted-foreground">In a conversation</span>}
 						</TableCell>
 						<TableCell>{whatItDid(run)}</TableCell>

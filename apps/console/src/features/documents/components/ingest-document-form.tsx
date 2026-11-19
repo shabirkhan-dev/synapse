@@ -61,15 +61,17 @@ export function IngestDocumentForm({ onSubmit, pending, error }: IngestDocumentF
 
 	return (
 		<form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-			<div className="flex flex-col gap-1.5">
-				<Label htmlFor="title">Title</Label>
-				<Input id="title" name="title" {...invalid("title")} />
-				{fieldError("title")}
-			</div>
-			<div className="flex flex-col gap-1.5">
-				<Label htmlFor="source">Source (optional)</Label>
-				<Input id="source" name="source" placeholder="https://…" {...invalid("source")} />
-				{fieldError("source")}
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="title">Title</Label>
+					<Input id="title" name="title" {...invalid("title")} />
+					{fieldError("title")}
+				</div>
+				<div className="flex flex-col gap-1.5">
+					<Label htmlFor="source">Source (optional)</Label>
+					<Input id="source" name="source" placeholder="https://…" {...invalid("source")} />
+					{fieldError("source")}
+				</div>
 			</div>
 			<div className="flex flex-col gap-1.5">
 				<Label htmlFor="content">Text</Label>

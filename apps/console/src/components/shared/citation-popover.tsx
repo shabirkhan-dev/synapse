@@ -1,5 +1,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@synapse/ui/components/popover";
 
+import { CITATION_MARK_CLASS } from "./citation-mark";
+
 export type CitedPassage = {
 	/** The `[n]` the answer uses. */
 	citation: number;
@@ -19,7 +21,7 @@ export function CitationPopover({ passage }: { passage: CitedPassage }) {
 		<Popover>
 			<PopoverTrigger
 				aria-label={`Source ${passage.citation}: ${passage.title}`}
-				className="mx-0.5 inline-flex h-4 min-w-4 -translate-y-1 items-center justify-center rounded bg-primary/10 px-1 align-baseline text-[0.65rem] font-semibold text-primary tabular-nums hover:bg-primary/20"
+				className={CITATION_MARK_CLASS}
 			>
 				{passage.citation}
 			</PopoverTrigger>
@@ -42,7 +44,7 @@ export function CitationPopover({ passage }: { passage: CitedPassage }) {
 						<span className="truncate text-muted-foreground">{passage.source}</span>
 					)
 				) : null}
-				<blockquote className="max-h-48 overflow-y-auto border-s-2 border-primary/40 ps-2 leading-relaxed whitespace-pre-wrap text-muted-foreground">
+				<blockquote className="max-h-48 overflow-y-auto overscroll-contain border-s-2 border-primary/40 ps-2 leading-relaxed whitespace-pre-wrap text-muted-foreground">
 					{passage.content}
 				</blockquote>
 			</PopoverContent>

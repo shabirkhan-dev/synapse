@@ -162,18 +162,20 @@ export function UploadDocumentForm({
 					onDragLeave={() => setDragging(false)}
 					onDrop={handleDrop}
 					className={cn(
-						"flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-dashed border-input px-4 py-7 text-center text-sm transition-colors hover:bg-muted/50",
+						"flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-dashed border-input px-4 py-8 text-center text-sm transition-colors hover:bg-muted/50",
 						"has-[:focus-visible]:border-ring has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/30",
 						dragging && "border-ring bg-muted",
 						fileError && "border-destructive",
 					)}
 				>
-					<HugeiconsIcon
-						icon={FileUploadIcon}
-						strokeWidth={1.5}
-						className="size-5 text-muted-foreground"
-						aria-hidden="true"
-					/>
+					<span className="mb-2 flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+						<HugeiconsIcon
+							icon={FileUploadIcon}
+							strokeWidth={1.5}
+							className="size-5"
+							aria-hidden="true"
+						/>
+					</span>
 					<span className="font-medium break-all">
 						{files.length > 0 ? describe(files) : "Choose a file or drop it here"}
 					</span>

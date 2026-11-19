@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { Disclosure } from "@/components/shared/disclosure";
+
 import type { AskedQuestion } from "../types/playground.types";
 import { AnswerText } from "./answer-text";
 import { SourceLink } from "./source-link";
@@ -33,7 +35,7 @@ export function AnswerPanel({
 			{provenance ? (
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					{feedback}
-					{actions ? <div className="flex items-center gap-1">{actions}</div> : null}
+					{actions ? <div className="-me-3 flex items-center gap-1">{actions}</div> : null}
 				</div>
 			) : null}
 			{citations.length > 0 ? (
@@ -52,9 +54,8 @@ export function AnswerPanel({
 			) : null}
 			{followUps}
 			{provenance ? (
-				<details className="text-xs text-muted-foreground">
-					<summary className="cursor-pointer select-none">How this answer was made</summary>
-					<dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+				<Disclosure summary="How this answer was made">
+					<dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1.5 ps-5 [&_dd]:break-all [&_dd]:font-mono [&_dd]:text-foreground [&_dt]:text-muted-foreground">
 						<dt>Chat model</dt>
 						<dd>{provenance.chatModel}</dd>
 						<dt>Prompt</dt>
@@ -66,13 +67,13 @@ export function AnswerPanel({
 						<dt>Reranker</dt>
 						<dd>{provenance.reranker ?? "none"}</dd>
 						<dt>Tokens</dt>
-						<dd>
+						<dd className="tabular-nums">
 							{provenance.usage.inputTokens ?? "?"} in · {provenance.usage.outputTokens ?? "?"} out
 						</dd>
 						<dt>Request id</dt>
-						<dd className="font-mono">{result.requestId}</dd>
+						<dd>{result.requestId}</dd>
 					</dl>
-				</details>
+				</Disclosure>
 			) : null}
 		</section>
 	);

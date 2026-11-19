@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-17. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-19. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -115,6 +115,7 @@ contextual retrieval and Ragas.
 | Chat: choose documents (the API already scopes chat turns) | ✅ | syn-076 |
 | Re-chunk documents from before text-v2 in the worker (text-v2 without saved context: re-add) | ✅ | syn-077 |
 | Console UI/UX pass 2: Inter, flat #1C1C1C, 14px controls, breadcrumb shell (the human's spec) | ✅ | syn-078 |
+| Console detail polish: tabs for adding documents, mono font, aligned tables, one citation look | ✅ | syn-079 |
 | Check the answer judge against its labelled cases with a real model (needs a chat key) | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

@@ -13,8 +13,11 @@ test("an answered question shows up in usage with its tokens and the models behi
 	await expect(page.getByText(/No answers in the last 30 days/)).toBeVisible();
 
 	await page.getByRole("link", { name: "Documents", exact: true }).click();
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
-	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
+	await page
+		.getByLabel("Text", { exact: true })
+		.fill("Refunds are accepted within 30 days of purchase.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 	await page.getByRole("link", { name: "Playground", exact: true }).click();

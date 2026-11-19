@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Disclosure } from "@/components/shared/disclosure";
+
 import type { UsageDay } from "../types/usage.types";
 import { formatCount, formatDay } from "../utils/format";
 
@@ -28,17 +30,21 @@ export function DailyChart({ days }: { days: UsageDay[] }) {
 					: "No answers in this window."}
 			</figcaption>
 			<div className="relative" aria-hidden="true">
-				<div className="flex justify-between text-[0.625rem] text-muted-foreground tabular-nums">
-					<span>{formatCount(max)}</span>
-				</div>
 				<div
-					className="flex h-40 items-end gap-0.5 border-b border-border"
+					className="relative mt-5 flex h-40 items-end gap-0.5 border-b border-border"
 					onPointerLeave={() => setHovered(null)}
 				>
+					{/* Guide lines at the busiest day and halfway; the top one is labelled. */}
+					<div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-border">
+						<span className="absolute start-0 -translate-y-full pb-0.5 text-[0.6875rem] text-muted-foreground tabular-nums">
+							{formatCount(max)}
+						</span>
+					</div>
+					<div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-border/60" />
 					{days.map((day, index) => (
 						<div
 							key={day.day}
-							className="flex h-full min-w-0 flex-1 items-end justify-center"
+							className="relative flex h-full min-w-0 flex-1 items-end justify-center"
 							onPointerEnter={() => setHovered(index)}
 						>
 							{day.answers > 0 ? (
@@ -50,7 +56,7 @@ export function DailyChart({ days }: { days: UsageDay[] }) {
 						</div>
 					))}
 				</div>
-				<div className="mt-1 flex justify-between text-[0.625rem] text-muted-foreground">
+				<div className="mt-1.5 flex justify-between text-[0.6875rem] text-muted-foreground">
 					<span>{first ? formatDay(first.day) : ""}</span>
 					<span>{last ? formatDay(last.day) : ""}</span>
 				</div>
@@ -71,11 +77,8 @@ export function DailyChart({ days }: { days: UsageDay[] }) {
 					</div>
 				) : null}
 			</div>
-			<details className="text-xs">
-				<summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-					Show the numbers as a table
-				</summary>
-				<table className="mt-2 w-full text-left">
+			<Disclosure summary="Show the numbers as a table">
+				<table className="w-full text-left">
 					<caption className="sr-only">Answers and tokens per day</caption>
 					<thead className="text-muted-foreground">
 						<tr>
@@ -106,7 +109,7 @@ export function DailyChart({ days }: { days: UsageDay[] }) {
 						))}
 					</tbody>
 				</table>
-			</details>
+			</Disclosure>
 		</figure>
 	);
 }

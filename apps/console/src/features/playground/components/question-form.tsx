@@ -72,9 +72,7 @@ export function QuestionForm({ onSubmit, pending }: QuestionFormProps) {
 						error={errors.topK}
 					/>
 				</div>
-				<SubmitButton size="lg" disabled={pending}>
-					{pending ? "Thinking…" : "Ask"}
-				</SubmitButton>
+				<SubmitButton disabled={pending}>{pending ? "Thinking…" : "Ask"}</SubmitButton>
 			</div>
 		</form>
 	);

@@ -9,9 +9,10 @@ test("a document opens from the list with its chunks, and deleting it asks first
 	const email = uniqueEmail("doc");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Shipping policy");
 	await page.getByLabel("Source (optional)").fill("https://example.com/shipping");
-	await page.getByLabel("Text").fill("Orders ship within two business days.");
+	await page.getByLabel("Text", { exact: true }).fill("Orders ship within two business days.");
 	await page.getByRole("button", { name: "Add document" }).click();
 
 	await page.getByRole("link", { name: "Shipping policy" }).click();
@@ -81,8 +82,9 @@ test("asking about one document searches only that document", async ({ page }) =
 		["Refund policy", "Refunds are accepted within 30 days of purchase."],
 		["Shipping policy", "Orders ship within two business days; refunds of shipping are not given."],
 	] as const) {
+		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
-		await page.getByLabel("Text").fill(text);
+		await page.getByLabel("Text", { exact: true }).fill(text);
 		await page.getByRole("button", { name: "Add document" }).click();
 		await expect(page.getByRole("link", { name: title })).toBeVisible();
 	}
@@ -135,7 +137,10 @@ test("several files are uploaded at once, and a web page is added by its address
 	await expect(page.getByRole("link", { name: "Shipping" })).toBeVisible();
 
 	// Internal addresses are refused unless the deployment allows them (only this test stack does).
-	await page.getByLabel("Web page").fill(`http://127.0.0.1:${E2E.modelPort}/pages/warranty.html`);
+	await page.getByRole("tab", { name: "Web page" }).click();
+	await page
+		.getByLabel("Page address")
+		.fill(`http://127.0.0.1:${E2E.modelPort}/pages/warranty.html`);
 	await page.getByRole("button", { name: "Add page" }).click();
 	await expect(page.getByText("Added “Warranty | Example shop”.")).toBeVisible();
 	await page.getByRole("link", { name: "Warranty | Example shop" }).click();

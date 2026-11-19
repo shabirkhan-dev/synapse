@@ -82,8 +82,11 @@ test("at 320px a table wider than the screen says so and can be scrolled with th
 	await signUpViaApi(email);
 	await page.setViewportSize({ width: 320, height: 800 });
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
-	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
+	await page
+		.getByLabel("Text", { exact: true })
+		.fill("Refunds are accepted within 30 days of purchase.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	const table = page.getByRole("region", { name: "Table, scrolls sideways" });
 	await expect(table).toHaveAttribute("tabindex", "0");

@@ -23,8 +23,7 @@ export function ModelsTable({ models }: { models: UsageModel[] }) {
 					<TableHead>Prompt</TableHead>
 					<TableHead>Embedding model</TableHead>
 					<TableHead className="text-right">Answers</TableHead>
-					<TableHead className="text-right">Input tokens</TableHead>
-					<TableHead className="text-right">Output tokens</TableHead>
+					<TableHead className="text-right">Tokens in / out</TableHead>
 					<TableHead className="text-right">Est. cost</TableHead>
 				</TableRow>
 			</TableHeader>
@@ -38,8 +37,9 @@ export function ModelsTable({ models }: { models: UsageModel[] }) {
 						<TableCell className="font-mono text-xs">{model.promptVersion}</TableCell>
 						<TableCell className="font-mono text-xs">{model.embeddingModel}</TableCell>
 						<TableCell className="text-right">{formatCount(model.answers)}</TableCell>
-						<TableCell className="text-right">{formatCount(model.inputTokens)}</TableCell>
-						<TableCell className="text-right">{formatCount(model.outputTokens)}</TableCell>
+						<TableCell className="text-right">
+							{formatCount(model.inputTokens)} / {formatCount(model.outputTokens)}
+						</TableCell>
 						<TableCell className="text-right">
 							{model.costUsd === null ? (
 								<span className="text-muted-foreground">No price</span>

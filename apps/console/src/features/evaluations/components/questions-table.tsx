@@ -44,6 +44,7 @@ export function QuestionsTable({ questions, titles, onDelete, deletingId }: Ques
 							<Button
 								size="sm"
 								variant="ghost"
+								className="-me-3"
 								disabled={deletingId === item.id}
 								onClick={() => onDelete(item.id)}
 								aria-label={`Delete question “${item.question}”`}

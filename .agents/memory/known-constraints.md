@@ -175,6 +175,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   indigo `--primary`, re-measure contrast (comments in `globals.css`) when changing a token. Since
   syn-078 the tokens follow the human's spec (Inter, #1C1C1C / #E5E5E5 / #A1A1A1 dark, 6/8/12px radii,
   14px controls): keep new UI on them; the header shows a breadcrumb (no page pill).
+  Since syn-079 the Documents add forms are tabs (Upload files first): tests click the "Paste text"
+  or "Web page" tab first, and `getByLabel("Text")` needs `{ exact: true }` (the "Paste text" panel
+  is labelled by its tab). The web page field is labelled "Page address".
 - **Answer flow** (syn-075): follow-ups are one extra chat call per finished answer (Playground and
   chat), on the questions budget (so an answer costs two of the 20/min); they are not audited or in
   Usage (the response names the model and prompt version). Regenerate needs a stored conversation and

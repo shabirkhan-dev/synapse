@@ -12,9 +12,10 @@ test("one query runs through hybrid, meaning and keyword search side by side", a
 		{ title: "Shipping policy", text: "Orders ship within two business days." },
 	]) {
 		// oxlint-disable-next-line no-await-in-loop
+		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		// oxlint-disable-next-line no-await-in-loop
-		await page.getByLabel("Text").fill(text);
+		await page.getByLabel("Text", { exact: true }).fill(text);
 		// oxlint-disable-next-line no-await-in-loop
 		await page.getByRole("button", { name: "Add document" }).click();
 		// oxlint-disable-next-line no-await-in-loop

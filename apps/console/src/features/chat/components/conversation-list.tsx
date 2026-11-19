@@ -74,11 +74,12 @@ export function ConversationList({
 										</time>
 									</span>
 								</Link>
+								{/* Shown on hover or focus where there is a pointer; always on touch screens. */}
 								<Button
 									type="button"
 									variant="ghost"
 									size="icon"
-									className="absolute end-1 text-muted-foreground"
+									className={`absolute end-1 size-8 text-muted-foreground transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100 ${active ? "" : "[@media(hover:hover)]:opacity-0"}`}
 									disabled={deletingId === conversation.id}
 									aria-label={`Delete conversation “${conversation.title}”`}
 									onClick={() => setConfirming(conversation)}

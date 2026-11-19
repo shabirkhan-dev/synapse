@@ -37,7 +37,7 @@ export function CompareForm({ pending, onCompare }: CompareFormProps) {
 					error={errors.query}
 				/>
 			</div>
-			<div className="w-32">
+			<div className="w-40">
 				<FormField
 					name="topK"
 					label="Passages per mode"

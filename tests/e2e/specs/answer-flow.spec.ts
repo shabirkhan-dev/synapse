@@ -11,8 +11,11 @@ test("Ctrl+K jumps anywhere; answers offer follow-ups, copy and a fresh answer",
 	const email = uniqueEmail("flow");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
-	await page.getByLabel("Text").fill("Refunds are accepted within 30 days of purchase.");
+	await page
+		.getByLabel("Text", { exact: true })
+		.fill("Refunds are accepted within 30 days of purchase.");
 	await page.getByRole("button", { name: "Add document" }).click();
 	await expect(page.getByRole("cell", { name: "Refund policy" })).toBeVisible();
 

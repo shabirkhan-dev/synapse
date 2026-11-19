@@ -10,7 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@synapse/ui/components/card";
-import { Separator } from "@synapse/ui/components/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@synapse/ui/components/tabs";
 
 import { PurgeRequestContainer } from "@/features/oversight";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -44,34 +44,37 @@ export function DocumentsContainer() {
 						Upload files, paste text or add a web page; the same text twice is stored once.
 					</CardDescription>
 				</CardHeader>
-				{/* Side by side on wide screens: one way or the other, never both. */}
-				<CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-					<UploadDocumentForm
-						pending={upload.isPending}
-						error={upload.error ? upload.error.message : null}
-						onSubmit={(input) => upload.mutateAsync(input)}
-						onFileChange={upload.reset}
-					/>
-					<div className="flex items-center gap-3 text-xs text-muted-foreground lg:flex-col">
-						<Separator className="flex-1 lg:hidden" />
-						<Separator orientation="vertical" className="hidden flex-1 lg:block" />
-						<span>or paste text</span>
-						<Separator className="flex-1 lg:hidden" />
-						<Separator orientation="vertical" className="hidden flex-1 lg:block" />
-					</div>
-					<IngestDocumentForm
-						pending={ingest.isPending}
-						error={ingest.error ? ingest.error.message : null}
-						onSubmit={(input) => ingest.mutateAsync(input)}
-					/>
-					<Separator className="lg:col-span-3" />
-					<div className="lg:col-span-3">
-						<AddWebPageForm
-							pending={webPage.isPending}
-							error={webPage.error ? webPage.error.message : null}
-							onSubmit={(input) => webPage.mutateAsync(input)}
-						/>
-					</div>
+				{/* One way at a time; every panel stays mounted, so switching keeps what was typed. */}
+				<CardContent>
+					<Tabs defaultValue="files">
+						<TabsList aria-label="How to add">
+							<TabsTrigger value="files">Upload files</TabsTrigger>
+							<TabsTrigger value="text">Paste text</TabsTrigger>
+							<TabsTrigger value="web">Web page</TabsTrigger>
+						</TabsList>
+						<TabsContent value="files" keepMounted className="pt-4">
+							<UploadDocumentForm
+								pending={upload.isPending}
+								error={upload.error ? upload.error.message : null}
+								onSubmit={(input) => upload.mutateAsync(input)}
+								onFileChange={upload.reset}
+							/>
+						</TabsContent>
+						<TabsContent value="text" keepMounted className="pt-4">
+							<IngestDocumentForm
+								pending={ingest.isPending}
+								error={ingest.error ? ingest.error.message : null}
+								onSubmit={(input) => ingest.mutateAsync(input)}
+							/>
+						</TabsContent>
+						<TabsContent value="web" keepMounted className="pt-4">
+							<AddWebPageForm
+								pending={webPage.isPending}
+								error={webPage.error ? webPage.error.message : null}
+								onSubmit={(input) => webPage.mutateAsync(input)}
+							/>
+						</TabsContent>
+					</Tabs>
 				</CardContent>
 			</Card>
 			<Card>

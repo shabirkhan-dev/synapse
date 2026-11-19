@@ -87,7 +87,7 @@ describe("DailyChart", () => {
 			<DailyChart days={[day("2026-11-10", 0), day("2026-11-11", 3), day("2026-11-12", 1)]} />,
 		);
 		expect(screen.getByText("Busiest: Nov 11 with 3 answers.")).toBeDefined();
-		const slots = container.querySelectorAll(".h-40 > div");
+		const slots = container.querySelectorAll(".h-40 > div.flex-1");
 		expect(slots).toHaveLength(3);
 		expect(slots[0]?.children).toHaveLength(0);
 		fireEvent.pointerEnter(slots[1] as Element);

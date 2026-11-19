@@ -12,9 +12,10 @@ test("a question with its document is run through every mode and scored", async 
 		["Shipping", "Orders ship within two business days."],
 	] as const) {
 		// oxlint-disable-next-line no-await-in-loop -- one document after the other
+		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		// oxlint-disable-next-line no-await-in-loop
-		await page.getByLabel("Text").fill(text);
+		await page.getByLabel("Text", { exact: true }).fill(text);
 		// oxlint-disable-next-line no-await-in-loop
 		await page.getByRole("button", { name: "Add document" }).click();
 		// oxlint-disable-next-line no-await-in-loop
