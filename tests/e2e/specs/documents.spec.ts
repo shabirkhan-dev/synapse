@@ -78,11 +78,11 @@ test("asking about one document searches only that document", async ({ page }) =
 	const email = uniqueEmail("scope");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	for (const [title, text] of [
 		["Refund policy", "Refunds are accepted within 30 days of purchase."],
 		["Shipping policy", "Orders ship within two business days; refunds of shipping are not given."],
 	] as const) {
-		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		await page.getByLabel("Text", { exact: true }).fill(text);
 		await page.getByRole("button", { name: "Add document" }).click();

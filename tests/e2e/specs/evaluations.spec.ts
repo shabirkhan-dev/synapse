@@ -7,12 +7,12 @@ test("a question with its document is run through every mode and scored", async 
 	const email = uniqueEmail("eval");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	for (const [title, text] of [
 		["Refund policy", "Refunds are accepted within 30 days of purchase."],
 		["Shipping", "Orders ship within two business days."],
 	] as const) {
 		// oxlint-disable-next-line no-await-in-loop -- one document after the other
-		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		// oxlint-disable-next-line no-await-in-loop
 		await page.getByLabel("Text", { exact: true }).fill(text);

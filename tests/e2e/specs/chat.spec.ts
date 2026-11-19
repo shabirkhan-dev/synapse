@@ -87,11 +87,11 @@ test("a chat turn narrowed to one document cites only that document", async ({ p
 	const email = uniqueEmail("chatscope");
 	await signUpViaApi(email);
 	await signIn(page, email);
+	await page.getByRole("tab", { name: "Paste text" }).click();
 	for (const [title, text] of [
 		["Refund policy", "Refunds are accepted within 30 days of purchase."],
 		["Shipping policy", "Refund requests for shipping fees are handled by the carrier."],
 	] as const) {
-		await page.getByRole("tab", { name: "Paste text" }).click();
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		await page.getByLabel("Text", { exact: true }).fill(text);
 		await page.getByRole("button", { name: "Add document" }).click();

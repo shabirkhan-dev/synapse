@@ -13,6 +13,7 @@ test("one query runs through hybrid, meaning and keyword search side by side", a
 	]) {
 		// oxlint-disable-next-line no-await-in-loop
 		await page.getByRole("tab", { name: "Paste text" }).click();
+		// oxlint-disable-next-line no-await-in-loop
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		// oxlint-disable-next-line no-await-in-loop
 		await page.getByLabel("Text", { exact: true }).fill(text);
