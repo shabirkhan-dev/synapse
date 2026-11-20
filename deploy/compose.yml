@@ -176,6 +176,33 @@ services:
         condition: service_healthy
     logging: *logging
 
+  # Optional: copies the dumps to S3-compatible storage. Enable with COMPOSE_PROFILES=offsite and
+  # the BACKUP_S3_* settings in deploy/.env (docs/runbooks/database-backup.md).
+  offsite:
+    image: rclone/rclone:1.75.2
+    profiles: [offsite]
+    restart: unless-stopped
+    entrypoint: ["/backup/offsite.sh"]
+    environment:
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-synapse}
+      BACKUP_OFFSITE_INTERVAL_SECONDS: ${BACKUP_OFFSITE_INTERVAL_SECONDS:-3600}
+      BACKUP_OFFSITE_KEEP_DAYS: ${BACKUP_OFFSITE_KEEP_DAYS:-90}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}
+      RCLONE_CONFIG_OFFSITE_TYPE: s3
+      RCLONE_CONFIG_OFFSITE_PROVIDER: ${BACKUP_S3_PROVIDER:-Other}
+      RCLONE_CONFIG_OFFSITE_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      RCLONE_CONFIG_OFFSITE_REGION: ${BACKUP_S3_REGION:-auto}
+      RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      RCLONE_CONFIG_OFFSITE_NO_CHECK_BUCKET: "true"
+    volumes:
+      - ./backup:/backup:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      - backup
+    logging: *logging
+
 secrets:
   build_ca:
     # Empty unless the build runs behind a TLS-inspecting proxy.

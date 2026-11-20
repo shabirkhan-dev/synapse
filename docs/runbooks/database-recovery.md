@@ -35,3 +35,15 @@ The script refuses a non-empty target without `--replace` (exit 3) and refuses `
 anything is connected (exit 4). It creates the `vector` extension before loading data; HNSW indexes
 are rebuilt by the restore. Users stay signed in: sessions are rows in the restored database, so any
 session created after the dump is gone and those users sign in again.
+
+## From the off-site copy
+
+When the host's `BACKUP_DIR` is gone, fetch a dump back first (needs the same `BACKUP_S3_*` settings
+and `BACKUP_ENCRYPTION_PASSPHRASE` in `deploy/.env`), then restore it as above:
+
+```bash
+docker compose -f deploy/compose.yml --env-file deploy/.env run --rm offsite --list
+docker compose -f deploy/compose.yml --env-file deploy/.env run --rm offsite --fetch synapse-20261120T020554Z.dump
+docker compose -f deploy/compose.yml --env-file deploy/.env exec backup /backup/restore.sh /backups/synapse-20261120T020554Z.dump
+```
+

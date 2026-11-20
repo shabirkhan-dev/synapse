@@ -123,9 +123,9 @@ contextual retrieval and Ragas.
 | Step | Status | Card |
 | --- | --- | --- |
 | Images built and pushed to GHCR on a tag; SSH deploy once the host secrets exist | ✅ | syn-052 |
-| Off-site backup copies (S3-compatible, optional) | 🔄 | syn-080 |
-| Document permissions inside an organization (ADR-0008) | ⏭️ | syn-081 |
-| Invite people by email | ⬜ | syn-082 |
+| Off-site backup copies (S3-compatible, optional) | ✅ | syn-080 |
+| Document permissions inside an organization (ADR-0008) | 🔄 | syn-081 |
+| Invite people by email | ⏭️ | syn-082 |
 | Personal API keys | ⬜ | syn-083 |
 | Two-step sign-in (TOTP) | ⬜ | syn-084 |
 | Secrets removed from chat tool results | ⬜ | syn-085 |

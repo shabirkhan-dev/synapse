@@ -143,7 +143,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   api logs `token counting … native: false`). o200k_base is exact for OpenAI models only. The native
   parity tests are skipped where the binding is not built (the CI `rust` job builds it).
 - **Production is one host** (`deploy/compose.yml`, syn-041): Caddy TLS, daily `pg_dump` kept 14 days
-  on the same disk (off-site copy is the operator's job). Restores go into an empty database only:
+  on the same disk; since syn-080 an optional `offsite` service (rclone, profile `offsite`) copies them to
+  an S3-compatible bucket, encrypted when `BACKUP_ENCRYPTION_PASSPHRASE` is set (tested against
+  `rclone serve s3`, not a cloud bucket yet). Restores go into an empty database only:
   pg-boss partitioned tables break `pg_restore --clean`. Let's Encrypt issuance is untested.
   **CD** (syn-052): images go to `ghcr.io/<owner>/synapse/*` on every main push and `v*` tag; the
   console image needs the repository variable `API_HOST` (main skips it, a release fails); the SSH
