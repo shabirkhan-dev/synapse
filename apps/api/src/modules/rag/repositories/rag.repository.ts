@@ -1,24 +1,55 @@
-import { and, asc, cosineDistance, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	cosineDistance,
+	desc,
+	eq,
+	inArray,
+	isNull,
+	or,
+	type SQL,
+	sql,
+} from "drizzle-orm";
 
 import {
 	chunkSearchText,
 	type Database,
+	organizationMembers,
 	ragChunks,
+	ragDocumentMembers,
 	ragDocuments,
 	searchQuery,
 	searchVector,
 } from "@synapse/database";
-import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
+import type { DocumentReader, KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 
 import { toRagDocument } from "../mappers/rag.mapper";
 import type {
 	NewRagChunk,
+	DocumentAccess,
 	NewRagDocument,
 	RagChunk,
 	RagDocument,
 	RagMatch,
+	RagReader,
 	RagRepository,
 } from "../types/rag.types";
+
+/**
+ * The documents a reader may read (ADR-0008), as a condition on `rag_documents`: everything for
+ * `readsAll`; otherwise open documents, their own and those shared with them. No reader means open
+ * documents only, so a caller that forgets the reader can never reach a restricted one.
+ */
+function readableBy(reader: DocumentReader | undefined): SQL | undefined {
+	if (reader?.readsAll) return undefined;
+	const open = eq(ragDocuments.access, "organization");
+	if (!reader) return open;
+	return or(
+		open,
+		eq(ragDocuments.createdBy, reader.userId),
+		sql`exists (select 1 from ${ragDocumentMembers} where ${ragDocumentMembers.documentId} = ${ragDocuments.id} and ${ragDocumentMembers.userId} = ${reader.userId})`,
+	);
+}
 
 export class DrizzleRagRepository implements RagRepository {
 	constructor(private readonly db: Database) {}
@@ -34,6 +65,8 @@ export class DrizzleRagRepository implements RagRepository {
 					metadata: document.metadata ?? {},
 					chunkCount: chunks.length,
 					contentHash: document.contentHash ?? null,
+					access: document.access ?? "organization",
+					createdBy: document.createdBy ?? null,
 				})
 				// A concurrent ingest of the same content won the race: return its document.
 				.onConflictDoNothing({ target: [ragDocuments.ownerId, ragDocuments.contentHash] })
@@ -65,11 +98,11 @@ export class DrizzleRagRepository implements RagRepository {
 		});
 	}
 
-	async listDocuments(ownerId: string, limit: number): Promise<RagDocument[]> {
+	async listDocuments(reader: RagReader, limit: number): Promise<RagDocument[]> {
 		const rows = await this.db
 			.select()
 			.from(ragDocuments)
-			.where(eq(ragDocuments.ownerId, ownerId))
+			.where(and(eq(ragDocuments.ownerId, reader.ownerId), readableBy(reader)))
 			.orderBy(desc(ragDocuments.createdAt))
 			.limit(limit);
 		return rows.map(toRagDocument);
@@ -84,11 +117,17 @@ export class DrizzleRagRepository implements RagRepository {
 		return row ? toRagDocument(row) : null;
 	}
 
-	async findDocument(ownerId: string, documentId: string): Promise<RagDocument | null> {
+	async findDocument(reader: RagReader, documentId: string): Promise<RagDocument | null> {
 		const [row] = await this.db
 			.select()
 			.from(ragDocuments)
-			.where(and(eq(ragDocuments.id, documentId), eq(ragDocuments.ownerId, ownerId)))
+			.where(
+				and(
+					eq(ragDocuments.id, documentId),
+					eq(ragDocuments.ownerId, reader.ownerId),
+					readableBy(reader),
+				),
+			)
 			.limit(1);
 		return row ? toRagDocument(row) : null;
 	}
@@ -120,10 +159,16 @@ export class DrizzleRagRepository implements RagRepository {
 			.limit(limit);
 	}
 
-	async deleteDocument(ownerId: string, documentId: string): Promise<boolean> {
+	async deleteDocument(reader: RagReader, documentId: string): Promise<boolean> {
 		const rows = await this.db
 			.delete(ragDocuments)
-			.where(and(eq(ragDocuments.id, documentId), eq(ragDocuments.ownerId, ownerId)))
+			.where(
+				and(
+					eq(ragDocuments.id, documentId),
+					eq(ragDocuments.ownerId, reader.ownerId),
+					readableBy(reader),
+				),
+			)
 			.returning({ id: ragDocuments.id });
 		return rows.length > 0;
 	}
@@ -142,6 +187,7 @@ export class DrizzleRagRepository implements RagRepository {
 		embeddingModel,
 		limit,
 		documentIds,
+		reader,
 	}: VectorSearchRequest): Promise<RagMatch[]> {
 		const distance = cosineDistance(ragChunks.embedding, embedding);
 		const scoped = documentIds?.length ? [...documentIds] : null;
@@ -166,6 +212,8 @@ export class DrizzleRagRepository implements RagRepository {
 						and(
 							eq(ragChunks.ownerId, ownerId),
 							scoped ? inArray(ragChunks.documentId, scoped) : undefined,
+							// Per-document access, inside the query: unreadable chunks are never ranked.
+							readableBy(reader),
 							// Vectors from another model are not comparable; legacy rows have no model recorded.
 							or(eq(ragChunks.embeddingModel, embeddingModel), isNull(ragChunks.embeddingModel)),
 						),
@@ -184,6 +232,7 @@ export class DrizzleRagRepository implements RagRepository {
 		query,
 		limit,
 		documentIds,
+		reader,
 	}: KeywordSearchRequest): Promise<RagMatch[]> {
 		const vector = searchVector(chunkSearchText(ragChunks));
 		const tsQuery = searchQuery(query);
@@ -197,12 +246,61 @@ export class DrizzleRagRepository implements RagRepository {
 				and(
 					eq(ragChunks.ownerId, ownerId),
 					documentIds?.length ? inArray(ragChunks.documentId, [...documentIds]) : undefined,
+					readableBy(reader),
 					sql`${vector} @@ ${tsQuery}`,
 				),
 			)
 			.orderBy(desc(rank), ...tieBreak)
 			.limit(limit);
 		return rows.map(withNumericScore);
+	}
+
+	async listDocumentMembers(documentId: string): Promise<string[]> {
+		const rows = await this.db
+			.select({ userId: ragDocumentMembers.userId })
+			.from(ragDocumentMembers)
+			.where(eq(ragDocumentMembers.documentId, documentId))
+			.orderBy(asc(ragDocumentMembers.createdAt), asc(ragDocumentMembers.userId));
+		return rows.map((row) => row.userId);
+	}
+
+	async setDocumentAccess({
+		ownerId,
+		documentId,
+		access,
+		userIds,
+	}: {
+		ownerId: string;
+		documentId: string;
+		access: DocumentAccess;
+		userIds: readonly string[];
+	}): Promise<string[] | null> {
+		return this.db.transaction(async (tx) => {
+			const updated = await tx
+				.update(ragDocuments)
+				.set({ access, updatedAt: new Date() })
+				.where(and(eq(ragDocuments.id, documentId), eq(ragDocuments.ownerId, ownerId)))
+				.returning({ id: ragDocuments.id });
+			if (updated.length === 0) return null;
+			await tx.delete(ragDocumentMembers).where(eq(ragDocumentMembers.documentId, documentId));
+			if (access === "organization" || userIds.length === 0) return [];
+			// Only members of this organization can be given access.
+			const members = await tx
+				.select({ userId: organizationMembers.userId })
+				.from(organizationMembers)
+				.where(
+					and(
+						sql`${organizationMembers.organizationId}::text = ${ownerId}`,
+						inArray(organizationMembers.userId, [...userIds]),
+					),
+				);
+			if (members.length === 0) return [];
+			await tx
+				.insert(ragDocumentMembers)
+				.values(members.map(({ userId }) => ({ documentId, userId })))
+				.onConflictDoNothing();
+			return userIds.filter((id) => members.some((member) => member.userId === id));
+		});
 	}
 
 	async ping(): Promise<void> {

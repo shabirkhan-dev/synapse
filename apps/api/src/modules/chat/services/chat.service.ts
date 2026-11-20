@@ -17,7 +17,7 @@ import type { Logger } from "@synapse/observability";
 
 import type { GuardrailsService } from "@/modules/guardrails";
 import type { MemoryService } from "@/modules/memory";
-import type { RagService } from "@/modules/rag";
+import type { RagReader, RagService } from "@/modules/rag";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
@@ -51,6 +51,7 @@ export class ChatService {
 	async streamReply({
 		ownerId,
 		organizationId,
+		reader,
 		body,
 		context,
 		abortSignal,
@@ -59,6 +60,8 @@ export class ChatService {
 		ownerId: string;
 		/** Active organization: document search is scoped to it. */
 		organizationId: string;
+		/** Who searches: only documents this reader may read are found (ADR-0008). */
+		reader: RagReader;
 		body: ChatBody;
 		context: RequestContext;
 		abortSignal?: AbortSignal;
@@ -99,6 +102,7 @@ export class ChatService {
 				guardrails,
 				ownerId,
 				organizationId,
+				reader,
 				topK,
 				context,
 				...(body.documentIds ? { documentIds: body.documentIds } : {}),

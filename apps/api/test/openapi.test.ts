@@ -54,6 +54,7 @@ describe("openapi", () => {
 			"/api/v1/rag/documents/upload",
 			"/api/v1/rag/documents/url",
 			"/api/v1/rag/documents/{id}",
+			"/api/v1/rag/documents/{id}/access",
 			"/api/v1/rag/follow-ups",
 			"/api/v1/rag/query",
 			"/api/v1/system/status",

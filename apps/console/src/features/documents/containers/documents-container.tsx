@@ -10,8 +10,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@synapse/ui/components/card";
+import { Checkbox } from "@synapse/ui/components/checkbox";
+import { Label } from "@synapse/ui/components/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@synapse/ui/components/tabs";
+import { useState } from "react";
 
+import { useCurrentUserQuery } from "@/features/auth";
 import { PurgeRequestContainer } from "@/features/oversight";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
@@ -31,6 +35,12 @@ export function DocumentsContainer() {
 	const ingest = useIngestDocumentMutation();
 	const upload = useUploadDocumentMutation();
 	const webPage = useAddWebPageMutation();
+	const me = useCurrentUserQuery();
+	const inTeam = Boolean(me.data && me.data.organization.id !== me.data.id);
+	const [onlyMe, setOnlyMe] = useState(false);
+	// Only in a team: a personal organization has no one else to hide it from.
+	const access = inTeam && onlyMe ? ("restricted" as const) : undefined;
+	const withAccess = <T,>(input: T) => (access ? { ...input, access } : input);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -56,7 +66,7 @@ export function DocumentsContainer() {
 							<UploadDocumentForm
 								pending={upload.isPending}
 								error={upload.error ? upload.error.message : null}
-								onSubmit={(input) => upload.mutateAsync(input)}
+								onSubmit={(input) => upload.mutateAsync(withAccess(input))}
 								onFileChange={upload.reset}
 							/>
 						</TabsContent>
@@ -64,17 +74,32 @@ export function DocumentsContainer() {
 							<IngestDocumentForm
 								pending={ingest.isPending}
 								error={ingest.error ? ingest.error.message : null}
-								onSubmit={(input) => ingest.mutateAsync(input)}
+								onSubmit={(input) => ingest.mutateAsync(withAccess(input))}
 							/>
 						</TabsContent>
 						<TabsContent value="web" keepMounted className="pt-4">
 							<AddWebPageForm
 								pending={webPage.isPending}
 								error={webPage.error ? webPage.error.message : null}
-								onSubmit={(input) => webPage.mutateAsync(input)}
+								onSubmit={(input) => webPage.mutateAsync(withAccess(input))}
 							/>
 						</TabsContent>
 					</Tabs>
+					{inTeam ? (
+						<Label className="mt-5 flex items-start gap-2.5 border-t pt-4 font-normal">
+							<Checkbox
+								className="mt-0.5"
+								checked={onlyMe}
+								onCheckedChange={(checked) => setOnlyMe(checked)}
+							/>
+							<span className="flex flex-col gap-0.5">
+								<span>Only me for now</span>
+								<span className="text-xs text-muted-foreground">
+									Owners and admins can still see it. Share it with others from its page.
+								</span>
+							</span>
+						</Label>
+					) : null}
 				</CardContent>
 			</Card>
 			<Card>

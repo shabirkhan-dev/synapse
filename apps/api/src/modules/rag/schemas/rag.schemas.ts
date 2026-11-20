@@ -1,5 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
+import { DOCUMENT_ACCESS } from "@synapse/database/schema";
+
 import {
 	RAG_DEFAULT_CHUNK_PAGE,
 	RAG_MESSAGES,
@@ -7,8 +9,16 @@ import {
 	RAG_MAX_CHUNK_PAGE,
 	RAG_MAX_DOCUMENT_CHARS,
 	RAG_MAX_SCOPE_DOCUMENTS,
+	RAG_MAX_SHARED_USERS,
 	RAG_MAX_TITLE_CHARS,
 } from "../constants/rag.constants";
+
+/** Who may read a document inside the organization (ADR-0008). */
+export const documentAccessSchema = z.enum(DOCUMENT_ACCESS).openapi({
+	description:
+		"`organization`: every member. `restricted`: whoever added it, the people it is shared with, owners and admins",
+	example: "organization",
+});
 
 export const ingestDocumentBodySchema = z
 	.object({
@@ -25,6 +35,7 @@ export const ingestDocumentBodySchema = z
 			.optional()
 			.openapi({ example: "https://example.com/refunds" }),
 		metadata: z.record(z.string(), z.unknown()).optional(),
+		access: documentAccessSchema.optional(),
 	})
 	.openapi("IngestDocumentBody");
 
@@ -41,6 +52,7 @@ export const urlDocumentBodySchema = z
 			.max(RAG_MAX_TITLE_CHARS)
 			.optional()
 			.openapi({ description: "Defaults to the page's title" }),
+		access: documentAccessSchema.optional(),
 	})
 	.openapi("UrlDocumentBody");
 
@@ -56,6 +68,7 @@ export const uploadDocumentBodySchema = z
 			.max(RAG_MAX_TITLE_CHARS)
 			.optional()
 			.openapi({ description: "Defaults to the file name without its extension" }),
+		access: documentAccessSchema.optional(),
 	})
 	.openapi("UploadDocumentBody");
 
@@ -68,9 +81,24 @@ export const ragDocumentSchema = z
 		chunkCount: z.number().int(),
 		/** SHA-256 of the normalized content; re-ingesting the same content returns this document. */
 		contentHash: z.string().nullable(),
+		access: documentAccessSchema,
+		/** Who added it; null for documents from before per-document access. */
+		createdBy: z.uuid().nullable(),
 		createdAt: z.string(),
 	})
 	.openapi("RagDocument");
+
+export const documentAccessBodySchema = z
+	.object({
+		access: documentAccessSchema,
+		/** Organization members to share a restricted document with; ignored for `organization`. */
+		userIds: z.array(z.uuid()).max(RAG_MAX_SHARED_USERS).default([]),
+	})
+	.openapi("DocumentAccessBody");
+
+export const documentAccessResultSchema = z
+	.object({ access: documentAccessSchema, sharedWith: z.array(z.uuid()) })
+	.openapi("DocumentAccess");
 
 export const ragMatchSchema = z
 	.object({
@@ -215,5 +243,9 @@ export const ragDocumentDetailSchema = ragDocumentSchema
 		page: z.object({ offset: z.number().int(), limit: z.number().int(), total: z.number().int() }),
 		/** What a chunk stored now gets; a different `embeddingModel` is skipped by vector search. */
 		current: z.object({ chunkerVersion: z.string(), embeddingModel: z.string() }),
+		/** Users a restricted document is shared with (besides its creator, owners and admins). */
+		sharedWith: z.array(z.uuid()),
+		/** Whether you may change who reads it (its creator, owners, admins). */
+		canManageAccess: z.boolean(),
 	})
 	.openapi("RagDocumentDetail");

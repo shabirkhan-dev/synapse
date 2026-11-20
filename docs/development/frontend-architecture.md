@@ -250,6 +250,15 @@ extra detail goes behind `components/shared/disclosure` (a chevron, not the brow
 inline citation numbers share one look (`components/shared/citation-mark`) in chat and the
 Playground. Scrolling menus and lists in popovers use `overscroll-contain`.
 
+## Document access (syn-081)
+
+In a team, the Documents add panel has **Only me for now** (sends `access: "restricted"` with any of
+the three ways in), the list marks restricted documents with a lock (named "(restricted)" for
+assistive tech), and a document's page has **Who can see it** (`DocumentAccessCard`: everyone, or
+chosen members; owners, admins and the adder are shown as always reading it). Whether you are in a
+team comes from `/auth/me` (a personal organization's id is the user's id); members come from
+`useMembersQuery` exported by the organizations feature.
+
 ## Shell extras (syn-075)
 
 - **Command palette** (`features/command-palette`): ⌘K / Ctrl+K or the top-bar Search button; pages

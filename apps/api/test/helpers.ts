@@ -34,7 +34,7 @@ import {
 import { MemorySaver } from "@synapse/orchestration";
 import type { OrganizationRole } from "@synapse/security";
 import { redactPiiDeep } from "@synapse/security";
-import type { KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
+import type { DocumentReader, KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
 import { EMBEDDING_DIMENSIONS } from "@synapse/database/schema";
 import { createLogger, instrumentModelGateway } from "@synapse/observability";
 import { withModelReliability } from "@synapse/reliability";
@@ -81,10 +81,13 @@ import {
 	type NewRagDocument,
 	type RagDocument,
 	type RagMatch,
+	type RagReader,
 	type RagRepository,
 	RagService,
 	registerRagActions,
 } from "@/modules/rag";
+
+type DocumentAccess = RagDocument["access"];
 
 export const testConfig = loadConfiguration({
 	NODE_ENV: "test",
@@ -166,6 +169,22 @@ export function toolCallStreamParts(
 export class InMemoryRagRepository implements RagRepository {
 	documents: Array<RagDocument & { ownerId: string }> = [];
 	chunks: Array<NewRagChunk & { id: string; documentId: string; ownerId: string }> = [];
+	/** documentId → users it is shared with. */
+	shares = new Map<string, string[]>();
+	/** Members of an organization, for `setDocumentAccess` (`buildTestApp` wires the org store). */
+	membersOf: (organizationId: string) => string[] = () => [];
+
+	/** Same rule as the SQL `readableBy` (ADR-0008); no reader = open documents only. */
+	private readable(documentId: string, reader?: DocumentReader): boolean {
+		const document = this.documents.find((d) => d.id === documentId);
+		if (!document) return false;
+		if (reader?.readsAll || document.access === "organization") return true;
+		if (!reader) return false;
+		return (
+			document.createdBy === reader.userId ||
+			(this.shares.get(documentId) ?? []).includes(reader.userId)
+		);
+	}
 
 	async createDocument(document: NewRagDocument, chunks: NewRagChunk[]): Promise<RagDocument> {
 		const stored = {
@@ -176,6 +195,8 @@ export class InMemoryRagRepository implements RagRepository {
 			metadata: document.metadata ?? {},
 			chunkCount: chunks.length,
 			contentHash: document.contentHash ?? null,
+			access: document.access ?? "organization",
+			createdBy: document.createdBy ?? null,
 			createdAt: new Date().toISOString(),
 		};
 		this.documents.push(stored);
@@ -191,9 +212,11 @@ export class InMemoryRagRepository implements RagRepository {
 		return publicDocument;
 	}
 
-	async listDocuments(ownerId: string, limit: number): Promise<RagDocument[]> {
+	async listDocuments(reader: RagReader, limit: number): Promise<RagDocument[]> {
 		return this.documents
-			.filter((document) => document.ownerId === ownerId)
+			.filter(
+				(document) => document.ownerId === reader.ownerId && this.readable(document.id, reader),
+			)
 			.slice(-limit)
 			.toReversed()
 			.map(({ ownerId: _ownerId, ...document }) => document);
@@ -208,9 +231,9 @@ export class InMemoryRagRepository implements RagRepository {
 		return document;
 	}
 
-	async findDocument(ownerId: string, documentId: string): Promise<RagDocument | null> {
-		const found = this.documents.find((d) => d.id === documentId && d.ownerId === ownerId);
-		if (!found) return null;
+	async findDocument(reader: RagReader, documentId: string): Promise<RagDocument | null> {
+		const found = this.documents.find((d) => d.id === documentId && d.ownerId === reader.ownerId);
+		if (!found || !this.readable(documentId, reader)) return null;
 		const { ownerId: _ownerId, ...document } = found;
 		return document;
 	}
@@ -247,7 +270,9 @@ export class InMemoryRagRepository implements RagRepository {
 		return mine.length;
 	}
 
-	async deleteDocument(ownerId: string, documentId: string): Promise<boolean> {
+	async deleteDocument(reader: RagReader, documentId: string): Promise<boolean> {
+		if (!this.readable(documentId, reader)) return false;
+		const ownerId = reader.ownerId;
 		const before = this.documents.length;
 		this.documents = this.documents.filter((d) => !(d.id === documentId && d.ownerId === ownerId));
 		this.chunks = this.chunks.filter(
@@ -256,17 +281,43 @@ export class InMemoryRagRepository implements RagRepository {
 		return this.documents.length < before;
 	}
 
+	async listDocumentMembers(documentId: string): Promise<string[]> {
+		return [...(this.shares.get(documentId) ?? [])];
+	}
+
+	async setDocumentAccess({
+		ownerId,
+		documentId,
+		access,
+		userIds,
+	}: {
+		ownerId: string;
+		documentId: string;
+		access: DocumentAccess;
+		userIds: readonly string[];
+	}): Promise<string[] | null> {
+		const document = this.documents.find((d) => d.id === documentId && d.ownerId === ownerId);
+		if (!document) return null;
+		document.access = access;
+		const members = this.membersOf(ownerId);
+		const kept = access === "restricted" ? userIds.filter((id) => members.includes(id)) : [];
+		this.shares.set(documentId, kept);
+		return kept;
+	}
+
 	async searchChunks({
 		ownerId,
 		embedding,
 		embeddingModel,
 		limit,
 		documentIds,
+		reader,
 	}: VectorSearchRequest): Promise<RagMatch[]> {
 		return this.chunks
 			.filter(
 				(chunk) =>
 					chunk.ownerId === ownerId &&
+					this.readable(chunk.documentId, reader) &&
 					(!documentIds?.length || documentIds.includes(chunk.documentId)) &&
 					(chunk.embeddingModel == null || chunk.embeddingModel === embeddingModel),
 			)
@@ -286,12 +337,14 @@ export class InMemoryRagRepository implements RagRepository {
 		query,
 		limit,
 		documentIds,
+		reader,
 	}: KeywordSearchRequest): Promise<RagMatch[]> {
 		const words = query.toLowerCase().match(/[a-z0-9-]+/g) ?? [];
 		return this.chunks
 			.filter(
 				(chunk) =>
 					chunk.ownerId === ownerId &&
+					this.readable(chunk.documentId, reader) &&
 					(!documentIds?.length || documentIds.includes(chunk.documentId)),
 			)
 			.map((chunk) => {
@@ -1147,6 +1200,12 @@ export function buildTestApp({
 		topK: testConfig.rag.topK,
 	});
 	const organizationStore = new InMemoryOrganizationStore(() => authRepository.users);
+	if (repository instanceof InMemoryRagRepository) {
+		repository.membersOf = (organizationId) =>
+			organizationStore.memberships
+				.filter((membership) => membership.organizationId === organizationId)
+				.map((membership) => membership.userId);
+	}
 	const organizations = new OrganizationsService({
 		store: organizationStore,
 		findUserIdByEmail: async (address) =>

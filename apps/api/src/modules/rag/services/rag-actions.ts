@@ -7,7 +7,9 @@ import type { RagService } from "./rag.service";
 export function registerRagActions(oversight: OversightService, rag: RagService): void {
 	oversight.registerAction<ActionInput, { deleted: number }>(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
 		describe: async ({ ownerId }) => {
-			const documents = await rag.listDocuments(ownerId, RAG_DEFAULT_LIST_LIMIT + 1);
+			// Counts every document (restricted ones too): the purge deletes them all.
+			const everything = { ownerId, userId: null, readsAll: true } as const;
+			const documents = await rag.listDocuments(everything, RAG_DEFAULT_LIST_LIMIT + 1);
 			return RAG_MESSAGES.PURGE_SUMMARY(documents.length, RAG_DEFAULT_LIST_LIMIT);
 		},
 		execute: ({ ownerId, requestedBy }) => rag.purgeDocuments(ownerId, requestedBy),

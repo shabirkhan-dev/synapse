@@ -14,7 +14,7 @@ import {
 	type RetrievalReport,
 } from "@synapse/evaluation";
 
-import type { RagService } from "@/modules/rag";
+import type { RagReader, RagService } from "@/modules/rag";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import type { RequestContext } from "@/shared/types/app-types";
@@ -36,7 +36,8 @@ import type {
 } from "../types/evaluations.types";
 
 /** Who acts, for whom (the active organization) and under which request. */
-type Scope = { ownerId: string; actorId: string; context: RequestContext };
+/** `reader` decides which documents searches and answers may use (ADR-0008). */
+type Scope = { ownerId: string; actorId: string; reader: RagReader; context: RequestContext };
 
 /**
  * A team's own retrieval evaluation: questions with the documents that should answer them, run
@@ -56,7 +57,7 @@ export class EvaluationsService {
 	}
 
 	async addQuestion(
-		{ ownerId, actorId }: Scope,
+		{ ownerId, actorId, reader }: Scope,
 		input: { question: string; expectedDocumentIds: string[] },
 	): Promise<EvalQuestion> {
 		if ((await this.repository.countQuestions(ownerId)) >= EVAL_MAX_QUESTIONS) {
@@ -67,7 +68,7 @@ export class EvaluationsService {
 			});
 		}
 		const ids = [...new Set(input.expectedDocumentIds)];
-		const found = await Promise.all(ids.map((id) => this.rag.hasDocument(ownerId, id)));
+		const found = await Promise.all(ids.map((id) => this.rag.hasDocument(reader, id)));
 		const unknown = ids.filter((_, index) => !found[index]);
 		if (unknown.length > 0) {
 			throw new AppError({
@@ -100,7 +101,7 @@ export class EvaluationsService {
 	 * and the answer judged. Stored with the embedding model and chunker it ran on.
 	 */
 	async run(
-		{ ownerId, actorId, context }: Scope,
+		{ ownerId, actorId, reader, context }: Scope,
 		k: number,
 		judgeAnswers = false,
 	): Promise<EvalRun> {
@@ -130,7 +131,7 @@ export class EvaluationsService {
 				k,
 				setup: { mode },
 				search: async (query) =>
-					(await this.rag.search(ownerId, query, topK, mode)).map((match) => match.documentId),
+					(await this.rag.search(reader, query, topK, mode)).map((match) => match.documentId),
 			});
 		const [hybrid, vector, keyword] = await Promise.all([
 			evaluate("hybrid"),
@@ -139,7 +140,7 @@ export class EvaluationsService {
 		]);
 		const answers = judgeAnswers
 			? await this.answerAll(
-					{ ownerId, actorId, context },
+					{ ownerId, actorId, reader, context },
 					questions.map((item) => item.question),
 					k,
 				)
@@ -213,7 +214,7 @@ export class EvaluationsService {
 	}
 
 	private async answerOne(
-		{ ownerId, context }: Scope,
+		{ reader, context }: Scope,
 		question: string,
 		k: number,
 	): Promise<EvalCaseAnswer> {
@@ -225,7 +226,7 @@ export class EvaluationsService {
 		});
 		let answer: Awaited<ReturnType<RagService["answer"]>>;
 		try {
-			answer = await this.rag.answer(ownerId, question, k, context);
+			answer = await this.rag.answer(reader, question, k, context);
 		} catch {
 			return unjudged("", EVAL_MESSAGES.ANSWER_FAILED);
 		}

@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 
+import { readerOf } from "@/modules/rag";
 import { errorResponses } from "@/shared/responses/error-response";
 import type { AppBindings } from "@/shared/types/app-types";
 
@@ -33,6 +34,7 @@ export function createChatRoutes(chat: ChatService) {
 		const { result, conversationId, stream } = await chat.streamReply({
 			ownerId: c.get("user").sub,
 			organizationId: c.get("user").orgId,
+			reader: readerOf(c.get("user")),
 			body: c.req.valid("json"),
 			context: { requestId: c.get("requestId"), actorId: c.get("user").sub },
 			abortSignal: c.req.raw.signal,

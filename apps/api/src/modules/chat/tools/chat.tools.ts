@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import type { GuardrailsService } from "@/modules/guardrails";
 import type { MemoryService } from "@/modules/memory";
-import type { RagService } from "@/modules/rag";
+import type { RagReader, RagService } from "@/modules/rag";
 import type { RequestContext } from "@/shared/types/app-types";
 
 import { CHAT_TOOLS } from "../constants/chat.constants";
@@ -15,6 +15,7 @@ export function createChatTools({
 	guardrails,
 	ownerId,
 	organizationId = ownerId,
+	reader = { ownerId: organizationId, userId: ownerId, readsAll: false },
 	topK,
 	documentIds,
 	context = { requestId: null },
@@ -27,6 +28,8 @@ export function createChatTools({
 	ownerId: string;
 	/** Active organization (documents); defaults to the personal one. */
 	organizationId?: string;
+	/** Who searches (ADR-0008); defaults to the user without `documents.read_all`. */
+	reader?: RagReader;
 	topK: number;
 	/** The turn is narrowed to these documents: every search reads only them. */
 	documentIds?: readonly string[];
@@ -43,13 +46,7 @@ export function createChatTools({
 				topK: z.number().int().min(1).max(20).optional().describe("How many passages to return"),
 			}),
 			async execute({ query, topK: requested }) {
-				const found = await rag.search(
-					organizationId,
-					query,
-					requested ?? topK,
-					undefined,
-					documentIds,
-				);
+				const found = await rag.search(reader, query, requested ?? topK, undefined, documentIds);
 				// Tool output is untrusted: instruction-like text is removed before the model reads it.
 				const matches = await guardrails.sanitizePassages(
 					organizationId,

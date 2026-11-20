@@ -92,6 +92,8 @@ const reranker: Reranker | undefined =
 const rag = ragWith();
 const reranked = reranker ? ragWith(reranker) : undefined;
 const ownerId = `eval-${crypto.randomUUID()}`;
+/** The script reads and writes as no user: every document of its throwaway owner. */
+const reader = { ownerId, userId: null, readsAll: true } as const;
 /** stored document id → dataset document id */
 const datasetIds = new Map<string, string>();
 
@@ -99,7 +101,7 @@ try {
 	const ingested = await Promise.all(
 		RETRIEVAL_SEED.documents.map(async (document) => ({
 			datasetId: document.id,
-			outcome: await rag.ingest(ownerId, document),
+			outcome: await rag.ingest(reader, document),
 		})),
 	);
 	for (const { datasetId, outcome } of ingested) datasetIds.set(outcome.document.id, datasetId);
@@ -111,7 +113,7 @@ try {
 			k: config.EVAL_K,
 			setup: { ...setup, ...extra },
 			search: async (query) =>
-				(await service.search(ownerId, query, config.EVAL_K)).map(
+				(await service.search(reader, query, config.EVAL_K)).map(
 					(match) => datasetIds.get(match.documentId) ?? match.documentId,
 				),
 		});
@@ -143,6 +145,6 @@ try {
 		console.info(`${formatRetrievalReport(report)}\n\nno baseline at ${path} (report only)`);
 	}
 } finally {
-	await Promise.all([...datasetIds.keys()].map((id) => rag.deleteDocument(ownerId, id)));
+	await Promise.all([...datasetIds.keys()].map((id) => rag.deleteDocument(reader, id)));
 	await database.close();
 }

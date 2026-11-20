@@ -51,7 +51,10 @@ describe("DocumentsContainer (mocked API)", () => {
 
 		await screen.findByRole("cell", { name: "Refund policy" });
 		expect(calls.filter((call) => call.method === "POST")).toHaveLength(1);
-		expect(calls.filter((call) => call.method === "GET")).toHaveLength(2);
+		const listed = calls.filter(
+			(call) => call.method === "GET" && call.url.endsWith("/rag/documents"),
+		);
+		expect(listed).toHaveLength(2);
 	});
 
 	test("a failed load shows the API's message and can be retried", async () => {

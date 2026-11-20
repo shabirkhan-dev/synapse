@@ -7,7 +7,7 @@
 | Authentication | In-house (ADR-0005): email + password (Argon2id), 15-min HS256 access tokens (`sub`, `sid`), rotating refresh tokens with reuse detection, sessions in Postgres; the console's refresh token is an httpOnly `SameSite=Strict` cookie scoped to `/api/v1/auth` (ADR-0007) | `security/authentication` + API `auth` module (live) |
 | Brute-force protection | Postgres fixed-window rate limits on sign-in, sign-up, reset and verification emails (hashed keys) | API `auth` module (→ `reliability` later) |
 | Account recovery | Email verification and password reset via single-use, expiring, hashed links; email via Resend | `security/authentication` + API `auth` module |
-| Authorization / tenancy | Organizations are tenants (ADR-0006): shared rows scoped to the token's `org` (personal = `sub`), per-user rows to `sub`; roles owner/admin/member checked from the database on every request | `security/permissions` (live) + API `organizations` |
+| Authorization / tenancy | Organizations are tenants (ADR-0006): shared rows scoped to the token's `org` (personal = `sub`), per-user rows to `sub`; roles owner/admin/member checked from the database on every request; documents can be restricted to chosen members, filtered inside every search and read (ADR-0008) | `security/permissions` (live) + API `organizations` |
 | Secrets | Env vars, Zod-validated; production rejects dev defaults | `security/secrets` |
 | Input limits | Zod validation, 2 MB ingest limit, 200-message chat limit, guardrails input policy (length, blocked terms) | `guardrails/input` (live) |
 | Prompt injection | Instruction-like text removed from passages and tool results; prompts frame them as data; facts with instructions refused | `guardrails` (live) |

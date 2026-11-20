@@ -5,8 +5,18 @@ import { DEFAULT_RRF_K, reciprocalRankFusion } from "../fusion/reciprocal-rank-f
 /** Anything a search returns: it must be identifiable and carry a relevance score. */
 export type SearchMatch = { chunkId: string; score: number };
 
-/** Narrows a search to chosen documents of the owner; absent = every document. */
-export type DocumentScope = { documentIds?: readonly string[] };
+/**
+ * Who is searching, for per-document access inside the owner (ADR-0008). `readsAll` (owners and
+ * admins) sees every document; anyone else sees open documents, their own and those shared with
+ * them. Adapters must treat a missing reader as "open documents only", never as "everything".
+ */
+export type DocumentReader =
+	| { userId: string; readsAll: boolean }
+	/** Work no user does (jobs, scripts, approved actions) reads everything of the owner. */
+	| { userId: null; readsAll: true };
+
+/** Narrows a search to chosen documents of the owner (absent = every document) and the reader. */
+export type DocumentScope = { documentIds?: readonly string[]; reader?: DocumentReader };
 
 export type VectorSearchRequest = DocumentScope & {
 	ownerId: string;
@@ -137,6 +147,7 @@ export function createRetriever<TMatch extends SearchMatch>(
 			topK,
 			mode: run = mode,
 			documentIds,
+			reader,
 		}: {
 			ownerId: string;
 			query: string;
@@ -145,9 +156,14 @@ export function createRetriever<TMatch extends SearchMatch>(
 			mode?: RetrievalMode;
 			/** Search only these documents of the owner. */
 			documentIds?: readonly string[];
+			/** Who searches; passed to both searches, which filter by it before ranking. */
+			reader?: DocumentReader;
 		}): Promise<RetrievedMatch<TMatch>[]> {
 			const count = rerank ? Math.max(topK, rerank.candidates) : topK;
-			const scope = documentIds?.length ? { documentIds } : {};
+			const scope: DocumentScope = {
+				...(documentIds?.length ? { documentIds } : {}),
+				...(reader ? { reader } : {}),
+			};
 			const candidates = await firstStage(ownerId, query, count, topK, run, scope);
 			if (!rerank || candidates.length === 0) return candidates.slice(0, topK);
 			try {

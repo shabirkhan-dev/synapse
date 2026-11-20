@@ -16,16 +16,20 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { LinkButton } from "@/components/shared/link-button";
+import { useCurrentUserQuery } from "@/features/auth";
+import { useMembersQuery } from "@/features/organizations";
 import { ApiError } from "@/lib/api/api-error";
 
 import { ChunkList } from "../components/chunk-list";
 import { DeleteDocument } from "../components/delete-document";
+import { DocumentAccessCard } from "../components/document-access-card";
 import {
 	askAboutDocumentRoute,
 	CHUNK_PAGE_SIZE,
 	DOCUMENTS_ROUTE,
 } from "../constants/documents.constants";
 import { useDeleteDocumentMutation } from "../hooks/mutations/use-delete-document-mutation";
+import { useSetDocumentAccessMutation } from "../hooks/mutations/use-set-document-access-mutation";
 import { useDocumentQuery } from "../hooks/queries/use-document-query";
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
@@ -37,6 +41,11 @@ export function DocumentContainer({ id }: { id: string }) {
 	const [offset, setOffset] = useState(0);
 	const document = useDocumentQuery(id, offset);
 	const remove = useDeleteDocumentMutation();
+	const setAccess = useSetDocumentAccessMutation();
+	const me = useCurrentUserQuery();
+	// A personal organization's id is its user's: sharing only means something in a team.
+	const teamId = me.data && me.data.organization.id !== me.data.id ? me.data.organization.id : null;
+	const members = useMembersQuery(teamId);
 
 	const back = (
 		<Link
@@ -140,6 +149,21 @@ export function DocumentContainer({ id }: { id: string }) {
 					</Alert>
 				) : null}
 			</div>
+
+			{teamId ? (
+				<DocumentAccessCard
+					// Remount with the saved state after each change.
+					key={`${detail.access}:${detail.sharedWith.join(",")}`}
+					access={detail.access}
+					sharedWith={detail.sharedWith}
+					members={members.data ?? []}
+					createdBy={detail.createdBy}
+					canManage={detail.canManageAccess}
+					saving={setAccess.isPending}
+					error={setAccess.error ? setAccess.error.message : null}
+					onSave={(change) => setAccess.mutate({ id, ...change })}
+				/>
+			) : null}
 
 			<Card>
 				<CardHeader>

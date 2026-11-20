@@ -1,3 +1,5 @@
+import { LockIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
 	Table,
 	TableBody,
@@ -34,6 +36,15 @@ export function DocumentsTable({ documents }: { documents: DocumentSummary[] }) 
 							>
 								{document.title}
 							</Link>
+							{document.access === "restricted" ? (
+								<span
+									className="ms-2 inline-flex translate-y-0.5 text-muted-foreground"
+									title="Only some people in the team can see this"
+								>
+									<HugeiconsIcon icon={LockIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
+									<span className="sr-only">(restricted)</span>
+								</span>
+							) : null}
 						</TableCell>
 						<TableCell className="max-w-64 truncate text-muted-foreground">
 							{document.source ?? "—"}

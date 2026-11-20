@@ -11,6 +11,8 @@ export function toRagDocument(row: RagDocumentRow): RagDocument {
 		metadata: row.metadata,
 		chunkCount: row.chunkCount,
 		contentHash: row.contentHash,
+		access: row.access,
+		createdBy: row.createdBy,
 		createdAt: row.createdAt.toISOString(),
 	};
 }

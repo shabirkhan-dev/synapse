@@ -8,6 +8,8 @@ import type { AppBindings } from "@/shared/types/app-types";
 
 import { RAG_MESSAGES } from "../constants/rag.constants";
 import {
+	documentAccessBodySchema,
+	documentAccessResultSchema,
 	documentChunksQuerySchema,
 	documentIdParamsSchema,
 	followUpsBodySchema,
@@ -28,6 +30,7 @@ import {
 } from "@/modules/oversight";
 
 import type { RagService } from "../services/rag.service";
+import { readerOf } from "../utils/reader";
 
 const security = [{ bearerAuth: [] }];
 
@@ -163,6 +166,35 @@ const deleteRoute = createRoute({
 	},
 });
 
+const accessRoute = createRoute({
+	method: "put",
+	path: "/documents/{id}/access",
+	tags: ["RAG"],
+	summary: "Set who may read a document: the organization, or only the people you choose",
+	description:
+		"Only whoever added the document, owners and admins may change it. A restricted document is read by its adder, the listed organization members (others are dropped), owners and admins; searches, answers and chat leave it out for everyone else.",
+	security,
+	request: {
+		params: documentIdParamsSchema,
+		body: { required: true, content: { "application/json": { schema: documentAccessBodySchema } } },
+	},
+	responses: {
+		200: {
+			description: "The access now in force",
+			content: { "application/json": { schema: successEnvelope(documentAccessResultSchema) } },
+		},
+		403: {
+			description: "You may read the document but not change who reads it",
+			content: { "application/json": { schema: apiErrorSchema } },
+		},
+		404: {
+			description: "Not a document you can read in the active organization",
+			content: { "application/json": { schema: apiErrorSchema } },
+		},
+		...errorResponses,
+	},
+});
+
 const queryRoute = createRoute({
 	method: "post",
 	path: "/query",
@@ -228,7 +260,7 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	});
 
 	app.openapi(ingestRoute, async (c) => {
-		const { document, created } = await rag.ingest(c.get("user").orgId, c.req.valid("json"), {
+		const { document, created } = await rag.ingest(readerOf(c.get("user")), c.req.valid("json"), {
 			requestId: c.get("requestId"),
 			actorId: c.get("user").sub,
 		});
@@ -239,10 +271,14 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	});
 
 	app.openapi(urlRoute, async (c) => {
-		const { document, created } = await rag.ingestUrl(c.get("user").orgId, c.req.valid("json"), {
-			requestId: c.get("requestId"),
-			actorId: c.get("user").sub,
-		});
+		const { document, created } = await rag.ingestUrl(
+			readerOf(c.get("user")),
+			c.req.valid("json"),
+			{
+				requestId: c.get("requestId"),
+				actorId: c.get("user").sub,
+			},
+		);
 		if (!created) {
 			return success(c, document, RAG_MESSAGES.DOCUMENT_ALREADY_INGESTED, HTTP_STATUS.OK);
 		}
@@ -250,10 +286,10 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	});
 
 	app.openapi(uploadRoute, async (c) => {
-		const { file, title } = c.req.valid("form");
+		const { file, title, access } = c.req.valid("form");
 		const { document, created } = await rag.ingestFile(
-			c.get("user").orgId,
-			{ file: { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) }, title },
+			readerOf(c.get("user")),
+			{ file: { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) }, title, access },
 			{ requestId: c.get("requestId"), actorId: c.get("user").sub },
 		);
 		if (!created) {
@@ -266,14 +302,14 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 		const { limit } = c.req.valid("query");
 		return success(
 			c,
-			await rag.listDocuments(c.get("user").orgId, limit),
+			await rag.listDocuments(readerOf(c.get("user")), limit),
 			RAG_MESSAGES.DOCUMENTS_FETCHED,
 		);
 	});
 
 	app.openapi(detailRoute, async (c) => {
 		const detail = await rag.getDocument(
-			c.get("user").orgId,
+			readerOf(c.get("user")),
 			c.req.valid("param").id,
 			c.req.valid("query"),
 		);
@@ -282,11 +318,21 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 
 	app.openapi(deleteRoute, async (c) => {
 		const { id } = c.req.valid("param");
-		await rag.deleteDocument(c.get("user").orgId, id, {
+		await rag.deleteDocument(readerOf(c.get("user")), id, {
 			requestId: c.get("requestId"),
 			actorId: c.get("user").sub,
 		});
 		return success(c, { id }, RAG_MESSAGES.DOCUMENT_DELETED);
+	});
+
+	app.openapi(accessRoute, async (c) => {
+		const result = await rag.setAccess(
+			readerOf(c.get("user")),
+			c.req.valid("param").id,
+			c.req.valid("json"),
+			{ requestId: c.get("requestId"), actorId: c.get("user").sub },
+		);
+		return success(c, result, RAG_MESSAGES.DOCUMENT_ACCESS_UPDATED, HTTP_STATUS.OK);
 	});
 
 	app.openapi(followUpsRoute, async (c) => {
@@ -299,14 +345,14 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 
 	app.openapi(queryRoute, async (c) => {
 		const { query, topK, answer, mode, documentIds } = c.req.valid("json");
-		const ownerId = c.get("user").orgId;
+		const reader = readerOf(c.get("user"));
 		if (!answer) {
 			return success(
 				c,
 				{
 					answer: null,
 					matches: await rag.retrieve(
-						ownerId,
+						reader,
 						query,
 						topK,
 						{ requestId: c.get("requestId"), actorId: c.get("user").sub },
@@ -320,7 +366,7 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 			);
 		}
 		const answered = await rag.answer(
-			ownerId,
+			reader,
 			query,
 			topK,
 			{ requestId: c.get("requestId"), actorId: c.get("user").sub },

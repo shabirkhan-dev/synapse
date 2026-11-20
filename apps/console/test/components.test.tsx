@@ -84,6 +84,8 @@ describe("DocumentsTable", () => {
 						title: "Refunds",
 						source: "https://a.test",
 						chunkCount: 3,
+						access: "organization",
+						createdBy: null,
 						createdAt: "2026-11-09T10:00:00Z",
 					},
 					{
@@ -91,11 +93,15 @@ describe("DocumentsTable", () => {
 						title: "Shipping",
 						source: null,
 						chunkCount: 1,
+						access: "restricted",
+						createdBy: "u1",
 						createdAt: "2026-11-08T10:00:00Z",
 					},
 				]}
 			/>,
 		);
+		// A restricted document is marked (an icon, named for assistive tech); an open one is not.
+		expect(screen.getAllByText("(restricted)")).toHaveLength(1);
 		const rows = screen.getAllByRole("row");
 		expect(rows).toHaveLength(3);
 		expect(rows[1]?.textContent).toContain("Refunds");

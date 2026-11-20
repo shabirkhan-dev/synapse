@@ -21,6 +21,9 @@ import { DrizzleRagRepository, RagService } from "@/modules/rag";
 
 import { createMockEmbeddingModel, testConfig, textGenerateResult } from "./helpers";
 
+/** A reader that sees every document of the owner (as scripts and approved actions do). */
+const everything = (ownerId: string) => ({ ownerId, userId: null, readsAll: true }) as const;
+
 const provenance = (chatModel: string, inputTokens: number) => ({
 	chatModel,
 	promptVersion: "rag-answer@2",
@@ -72,11 +75,16 @@ describe.skipIf(!url)("audit trail (postgres)", () => {
 				web: createWebPageReader(),
 			},
 		);
-		await rag.ingest(owner, { title: "Refunds", content: "Refunds are accepted within 30 days." });
-		await rag.answer(owner, "refund window? call +1 415 555 0100", undefined, {
+		await rag.ingest(everything(owner), {
+			title: "Refunds",
+			content: "Refunds are accepted within 30 days.",
+		});
+		await rag.answer(everything(owner), "refund window? call +1 415 555 0100", undefined, {
 			requestId: "req_it_1",
 		});
-		await rag.answer(owner, "how many days for a refund?", undefined, { requestId: "req_it_2" });
+		await rag.answer(everything(owner), "how many days for a refund?", undefined, {
+			requestId: "req_it_2",
+		});
 
 		const answered = await audit.list(owner, { limit: 10, action: "rag.query.answered" });
 		expect(answered.map((e) => e.requestId)).toEqual(["req_it_2", "req_it_1"]);

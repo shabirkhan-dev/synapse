@@ -15,7 +15,6 @@ import {
 	type FileExtraction,
 	type UploadedFile,
 	type IngestableDocument,
-	type IngestionPipeline,
 } from "@synapse/ingestion";
 import {
 	type ChunkOptions,
@@ -46,7 +45,14 @@ import {
 	RAG_MAX_TITLE_CHARS,
 	RAG_MESSAGES,
 } from "../constants/rag.constants";
-import type { RagDocument, RagDocumentDetail, RagMatch, RagRepository } from "../types/rag.types";
+import type {
+	DocumentAccess,
+	RagDocument,
+	RagDocumentDetail,
+	RagMatch,
+	RagReader,
+	RagRepository,
+} from "../types/rag.types";
 
 export type RagServiceOptions = {
 	chunk: ChunkOptions;
@@ -74,6 +80,8 @@ export type IngestInput = {
 	content: string;
 	source?: string | undefined;
 	metadata?: Record<string, unknown> | undefined;
+	/** Who may read it (ADR-0008); default `organization`. `restricted` starts as the adder's only. */
+	access?: DocumentAccess | undefined;
 };
 
 /** `created: false` means the owner already had this content; nothing was re-embedded. */
@@ -94,8 +102,6 @@ export type RagAnswer = {
 export class RagService {
 	/** chunk + embed with recorded versions, via `@synapse/knowledge`. */
 	private readonly knowledge: ChunkPreparer;
-	/** normalize → dedup (per owner) → chunk + embed + store, via `@synapse/ingestion`. */
-	private readonly ingestion: IngestionPipeline<RagDocument>;
 	/** vector or hybrid (vector + keyword, RRF) search, via `@synapse/retrieval`. */
 	private readonly retriever: Retriever<RagMatch>;
 	/** versioned prompt + budgeted context + citations + provenance, via `@synapse/generation`. */
@@ -114,10 +120,6 @@ export class RagService {
 			embedding: models.embedding,
 			chunking: options.chunk,
 			dimensions: EMBEDDING_DIMENSIONS,
-		});
-		this.ingestion = createIngestionPipeline<RagDocument>({
-			findByContentHash: (ownerId, hash) => repository.findByContentHash(ownerId, hash),
-			index: (document) => this.index(document),
 		});
 		const knowledge = this.knowledge;
 		this.retriever = createRetriever<RagMatch>(
@@ -152,14 +154,14 @@ export class RagService {
 				// Passages are sanitized once, here: the model (and the returned matches) see the cleaned text.
 				retrieve: async ({ question, context }) => {
 					const matches = await this.search(
-						context.ownerId,
+						context.reader,
 						question,
 						context.topK,
 						undefined,
 						context.documentIds,
 					);
 					const sanitized = await options.guardrails.sanitizePassages(
-						context.ownerId,
+						context.reader.ownerId,
 						matches.map((match) => Object.assign({}, match, { id: match.chunkId })),
 						"rag.query",
 						{
@@ -179,15 +181,33 @@ export class RagService {
 	}
 
 	async ingest(
-		ownerId: string,
-		input: IngestInput,
+		reader: RagReader,
+		{ access = "organization", ...input }: IngestInput,
 		context: RequestContext = NO_REQUEST,
 	): Promise<IngestOutcome> {
-		const result = await this.ingestion.ingest(ownerId, input);
+		const { ownerId } = reader;
+		// normalize → dedup (per owner) → chunk + embed + store, via `@synapse/ingestion`; built per
+		// call so the access level and adder are stored in the same insert as the document.
+		const pipeline = createIngestionPipeline<RagDocument>({
+			findByContentHash: (owner, hash) => this.repository.findByContentHash(owner, hash),
+			index: (document) => this.index(document, { access, createdBy: reader.userId }),
+		});
+		const result = await pipeline.ingest(ownerId, input);
 		if (result.status === "empty") {
 			throw emptyDocumentError();
 		}
 		const { document } = result;
+		// The same text exists in a document this reader may not read: say so without revealing it.
+		if (
+			result.status === "duplicate" &&
+			!(await this.repository.findDocument(reader, document.id))
+		) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.CONFLICT,
+				code: RAG_ERROR_CODES.DUPLICATE_OF_RESTRICTED,
+				message: RAG_MESSAGES.DUPLICATE_OF_RESTRICTED,
+			});
+		}
 		if (result.status === "created") {
 			await this.options.audit.record({
 				ownerId,
@@ -201,6 +221,7 @@ export class RagService {
 					source: document.source,
 					chunkCount: document.chunkCount,
 					contentHash: document.contentHash,
+					access: document.access,
 				},
 				provenance: null,
 			});
@@ -210,8 +231,8 @@ export class RagService {
 
 	/** Text from an uploaded .txt, .md or .pdf, then the same path as `ingest` (dedup included). */
 	async ingestFile(
-		ownerId: string,
-		upload: { file: UploadedFile; title?: string | undefined },
+		reader: RagReader,
+		upload: { file: UploadedFile; title?: string | undefined; access?: DocumentAccess | undefined },
 		context: RequestContext = NO_REQUEST,
 	): Promise<IngestOutcome> {
 		const extracted = await extractFileText(upload.file, { pdf: this.options.pdf });
@@ -225,8 +246,9 @@ export class RagService {
 		}
 		const title = (upload.title ?? extracted.title) || upload.file.name;
 		return this.ingest(
-			ownerId,
+			reader,
 			{
+				access: upload.access,
 				title: title.slice(0, RAG_MAX_TITLE_CHARS),
 				content: extracted.content,
 				source: upload.file.name,
@@ -242,8 +264,8 @@ export class RagService {
 
 	/** A public web page's text (headings kept), then the same path as `ingest` (dedup included). */
 	async ingestUrl(
-		ownerId: string,
-		input: { url: string; title?: string | undefined },
+		reader: RagReader,
+		input: { url: string; title?: string | undefined; access?: DocumentAccess | undefined },
 		context: RequestContext = NO_REQUEST,
 	): Promise<IngestOutcome> {
 		const page = await this.options.web.read(input.url).catch(webPageError);
@@ -263,8 +285,9 @@ export class RagService {
 		}
 		const title = input.title ?? page.title ?? new URL(page.url).hostname;
 		return this.ingest(
-			ownerId,
+			reader,
 			{
+				access: input.access,
 				title: title.slice(0, RAG_MAX_TITLE_CHARS),
 				content: page.text,
 				source: page.url,
@@ -274,7 +297,10 @@ export class RagService {
 		);
 	}
 
-	private async index(document: IngestableDocument): Promise<RagDocument> {
+	private async index(
+		document: IngestableDocument,
+		{ access, createdBy }: { access: DocumentAccess; createdBy: string | null },
+	): Promise<RagDocument> {
 		const prepared = await this.knowledge
 			.prepare(document.content, { title: document.title })
 			.catch(toAppError);
@@ -288,6 +314,8 @@ export class RagService {
 				source: document.source,
 				metadata: document.metadata,
 				contentHash: document.contentHash,
+				access,
+				createdBy,
 			},
 			prepared.chunks.map(({ chunkIndex, content, context, embedding }) => ({
 				chunkIndex,
@@ -309,7 +337,7 @@ export class RagService {
 	}
 
 	async search(
-		ownerId: string,
+		reader: RagReader,
 		query: string,
 		topK = this.options.defaultTopK,
 		mode?: RetrievalMode,
@@ -317,7 +345,9 @@ export class RagService {
 		documentIds?: readonly string[],
 	): Promise<RagMatch[]> {
 		return this.retriever.retrieve({
-			ownerId,
+			ownerId: reader.ownerId,
+			// Only documents this reader may read are searched (ADR-0008).
+			reader: reader.userId === null ? { userId: null, readsAll: true } : reader,
 			query,
 			topK,
 			...(mode ? { mode } : {}),
@@ -327,30 +357,31 @@ export class RagService {
 
 	/** A user's search (`answer: false`): input policy first, then retrieval (any mode). */
 	async retrieve(
-		ownerId: string,
+		reader: RagReader,
 		query: string,
 		topK?: number,
 		context: RequestContext = NO_REQUEST,
 		mode?: RetrievalMode,
 		documentIds?: readonly string[],
 	): Promise<RagMatch[]> {
-		await this.options.guardrails.checkInput(ownerId, query, "rag.query", context);
-		return this.search(ownerId, query, topK, mode, documentIds);
+		await this.options.guardrails.checkInput(reader.ownerId, query, "rag.query", context);
+		return this.search(reader, query, topK, mode, documentIds);
 	}
 
 	async answer(
-		ownerId: string,
+		reader: RagReader,
 		question: string,
 		topK?: number,
 		context: RequestContext = NO_REQUEST,
 		/** Answer only from these documents of the owner. */
 		documentIds?: readonly string[],
 	): Promise<RagAnswer> {
+		const { ownerId } = reader;
 		await this.options.guardrails.checkInput(ownerId, question, "rag.query", context);
 		const { passages: matches, answer } = await this.answerGraph.run({
 			question,
 			context: {
-				ownerId,
+				reader,
 				requestId: context.requestId,
 				...(context.actorId ? { actorId: context.actorId } : {}),
 				...(topK === undefined ? {} : { topK }),
@@ -417,8 +448,8 @@ export class RagService {
 		};
 	}
 
-	listDocuments(ownerId: string, limit = RAG_DEFAULT_LIST_LIMIT): Promise<RagDocument[]> {
-		return this.repository.listDocuments(ownerId, limit);
+	listDocuments(reader: RagReader, limit = RAG_DEFAULT_LIST_LIMIT): Promise<RagDocument[]> {
+		return this.repository.listDocuments(reader, limit);
 	}
 
 	/** Runs only after an approval (`rag.purge-documents`, see the oversight module). */
@@ -438,25 +469,30 @@ export class RagService {
 		return { deleted };
 	}
 
-	async hasDocument(ownerId: string, documentId: string): Promise<boolean> {
-		return (await this.repository.findDocument(ownerId, documentId)) !== null;
+	async hasDocument(reader: RagReader, documentId: string): Promise<boolean> {
+		return (await this.repository.findDocument(reader, documentId)) !== null;
 	}
 
-	/** A document and one page of its chunks; 404 unless it belongs to the owner. */
+	/** The document, or 404 when it is missing or this reader may not read it (never 403: no hint). */
+	private async readable(reader: RagReader, documentId: string): Promise<RagDocument> {
+		const document = await this.repository.findDocument(reader, documentId);
+		if (!document) throw documentNotFoundError();
+		return document;
+	}
+
+	/** A document and one page of its chunks; 404 unless this reader may read it (ADR-0008). */
 	async getDocument(
-		ownerId: string,
+		reader: RagReader,
 		documentId: string,
 		{ offset, limit }: { offset: number; limit: number },
 	): Promise<RagDocumentDetail> {
-		const document = await this.repository.findDocument(ownerId, documentId);
-		if (!document) {
-			throw new AppError({
-				statusCode: HTTP_STATUS.NOT_FOUND,
-				code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND,
-				message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
-			});
-		}
-		const chunks = await this.repository.listChunks({ ownerId, documentId, offset, limit });
+		const document = await this.readable(reader, documentId);
+		const [chunks, sharedWith] = await Promise.all([
+			this.repository.listChunks({ ownerId: reader.ownerId, documentId, offset, limit }),
+			document.access === "restricted"
+				? this.repository.listDocumentMembers(documentId)
+				: Promise.resolve([]),
+		]);
 		return {
 			...document,
 			chunks,
@@ -465,22 +501,57 @@ export class RagService {
 				chunkerVersion: this.knowledge.chunkerVersion,
 				embeddingModel: this.knowledge.embeddingModel,
 			},
+			sharedWith,
+			canManageAccess: canManage(reader, document),
 		};
 	}
 
+	/**
+	 * Who may read a document: the whole organization, or (`restricted`) its adder, the given
+	 * organization members, owners and admins. Only the adder, owners and admins may change it.
+	 */
+	async setAccess(
+		reader: RagReader,
+		documentId: string,
+		{ access, userIds }: { access: DocumentAccess; userIds: readonly string[] },
+		context: RequestContext = NO_REQUEST,
+	): Promise<{ access: DocumentAccess; sharedWith: string[] }> {
+		const document = await this.readable(reader, documentId);
+		if (!canManage(reader, document)) throw accessForbiddenError();
+		const unique = [...new Set(userIds)].filter((id) => id !== document.createdBy);
+		const sharedWith = await this.repository.setDocumentAccess({
+			ownerId: reader.ownerId,
+			documentId,
+			access,
+			userIds: access === "restricted" ? unique : [],
+		});
+		if (!sharedWith) throw documentNotFoundError();
+		await this.options.audit.record({
+			ownerId: reader.ownerId,
+			actorId: context.actorId ?? reader.userId ?? reader.ownerId,
+			action: AUDIT_ACTIONS.RAG_DOCUMENT_ACCESS_CHANGED,
+			subjectType: "document",
+			subjectId: documentId,
+			requestId: context.requestId,
+			data: { access, sharedWith },
+			provenance: null,
+		});
+		return { access, sharedWith };
+	}
+
 	async deleteDocument(
-		ownerId: string,
+		reader: RagReader,
 		documentId: string,
 		context: RequestContext = NO_REQUEST,
 	): Promise<void> {
-		const deleted = await this.repository.deleteDocument(ownerId, documentId);
-		if (!deleted) {
-			throw new AppError({
-				statusCode: HTTP_STATUS.NOT_FOUND,
-				code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND,
-				message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
-			});
+		const document = await this.readable(reader, documentId);
+		// A restricted document is removed only by those who decide who reads it.
+		if (document.access === "restricted" && !canManage(reader, document)) {
+			throw accessForbiddenError();
 		}
+		const deleted = await this.repository.deleteDocument(reader, documentId);
+		if (!deleted) throw documentNotFoundError();
+		const ownerId = reader.ownerId;
 		await this.options.audit.record({
 			ownerId,
 			actorId: context.actorId ?? ownerId,
@@ -492,6 +563,27 @@ export class RagService {
 			provenance: null,
 		});
 	}
+}
+
+/** The adder of a document, owners and admins decide who reads it (ADR-0008). */
+function canManage(reader: RagReader, document: RagDocument): boolean {
+	return reader.readsAll || document.createdBy === reader.userId;
+}
+
+function documentNotFoundError(): AppError {
+	return new AppError({
+		statusCode: HTTP_STATUS.NOT_FOUND,
+		code: RAG_ERROR_CODES.DOCUMENT_NOT_FOUND,
+		message: RAG_MESSAGES.DOCUMENT_NOT_FOUND,
+	});
+}
+
+function accessForbiddenError(): AppError {
+	return new AppError({
+		statusCode: HTTP_STATUS.FORBIDDEN,
+		code: RAG_ERROR_CODES.DOCUMENT_ACCESS_FORBIDDEN,
+		message: RAG_MESSAGES.DOCUMENT_ACCESS_FORBIDDEN,
+	});
 }
 
 /** Map knowledge errors to API errors; anything else is rethrown unchanged. */
@@ -576,7 +668,7 @@ function fileRejectedError(status: Exclude<FileExtraction["status"], "extracted"
 
 /** Who and how much to retrieve for one answer run. */
 type AnswerScope = {
-	ownerId: string;
+	reader: RagReader;
 	requestId: string | null;
 	actorId?: string;
 	topK?: number;

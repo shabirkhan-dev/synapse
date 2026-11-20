@@ -35,7 +35,7 @@ Who you are and what you may do: authentication, authorization, tenancy, permiss
 | `createAccessTokens({ secret, ttlSeconds })` → `{ issue, verify }` | HS256 JWTs with `sub` (user) + `sid` (session) + optional `org` (active organization, absent = personal); `verify` pins the algorithm and throws `SynapseError` `AUTH_ACCESS_TOKEN_INVALID` |
 | `createSecretToken()`, `hashSecretToken(token)` | 256-bit random base64url token (refresh tokens, emailed links); SHA-256 hex for storage |
 | `redactPii(text)`, `redactPiiDeep(value)` | Replace emails, phone and card numbers, JWTs, bearer tokens and provider keys (`sk-`, `pk-lf-`, `re_`, `dp.st.`, `ghp_`, `AKIA`) with `[email]` / `[phone]` / `[card]` / `[secret]`; `Deep` walks objects and arrays (used before audit writes) |
-| `ORGANIZATION_ROLES`, `OrganizationRole`, `PERMISSIONS`, `can(role, permission)`, `isOrganizationRole` | `owner` ⊇ `admin` ⊇ `member`: members `documents.read/write`, `actions.request`; admins `approvals.decide`, `audit.read_all`, `members.manage`; owners `members.manage_admins` |
+| `ORGANIZATION_ROLES`, `OrganizationRole`, `PERMISSIONS`, `can(role, permission)`, `isOrganizationRole` | `owner` ⊇ `admin` ⊇ `member`: members `documents.read/write`, `actions.request`; admins `documents.read_all` (restricted documents, ADR-0008), `approvals.decide`, `audit.read_all`, `members.manage`; owners `members.manage_admins` |
 | `SECURITY_ERROR_CODES` | Error codes thrown by the package |
 
 ## How the API uses it

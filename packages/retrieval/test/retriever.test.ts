@@ -77,6 +77,23 @@ describe("retriever", () => {
 		expect((await scopedCalls("hybrid", [])).every((call) => !("documentIds" in call))).toBe(true);
 	});
 
+	test("the reader reaches both searches in every mode (they filter by it before ranking)", async () => {
+		const reader = { userId: "member-1", readsAll: false };
+		for (const mode of ["vector", "keyword", "hybrid"] as const) {
+			const { value, calls } = ports([m("a")], [m("a")]);
+			// oxlint-disable-next-line no-await-in-loop -- one mode at a time
+			await createRetriever(value, { mode, embeddingModel: "test:e" }).retrieve({
+				ownerId: "org-1",
+				query: "q",
+				topK: 1,
+				reader,
+			});
+			const requests = [...calls.vector, ...calls.keyword] as Array<{ reader?: unknown }>;
+			expect(requests.length).toBeGreaterThan(0);
+			expect(requests.every((request) => request.reader === reader)).toBe(true);
+		}
+	});
+
 	test("keyword mode runs full-text search only and embeds nothing", async () => {
 		const { value, calls } = ports([m("a")], [m("k1", 0.3), m("k2", 0.1)]);
 		let embedded = 0;

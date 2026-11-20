@@ -47,6 +47,13 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   process's only, and an "open" circuit only turns half-open on its next call. Job counts read
   `pgboss.job` directly (`null` until the worker first starts); checkpoints and chunk counts come
   from our tables. Members see a note, not the data; the sidebar shows System to everyone.
+- **Document access** (syn-081, ADR-0008): restricted documents are read by their adder, the members
+  they are shared with, owners and admins only; members get `404` for them everywhere (list, detail,
+  search, chat tool, evaluations). Code that reads documents must pass a reader (`readerOf(user)`);
+  repositories treat a missing reader as open documents only. No groups, no per-chunk rules, and
+  sharing applies to teams only (a personal organization has one user). Documents from before have
+  `created_by = null`: only owners and admins manage those. The console's member list for sharing is
+  the team's members; the Documents list is cached in the page, so a new share shows after a reload.
 - **Dedup is per owner, by normalized content only** (title/source/metadata ignored). Rows ingested
   before migration `0001_document_content_hash` have `content_hash = null` and are never matched.
 - **drizzle-kit runs under Node:** code it imports must not use Bun-only APIs (`import.meta.dir`);

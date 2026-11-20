@@ -1,6 +1,13 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 
-import { type Database, organizationMembers, organizations, users } from "@synapse/database";
+import {
+	type Database,
+	organizationMembers,
+	organizations,
+	ragDocumentMembers,
+	ragDocuments,
+	users,
+} from "@synapse/database";
 import type { OrganizationRole } from "@synapse/security";
 
 import { toOrganization } from "../mappers/organizations.mapper";
@@ -93,16 +100,34 @@ export class DrizzleOrganizationRepository implements OrganizationStore {
 	}
 
 	async removeMember(organizationId: string, userId: string): Promise<boolean> {
-		const rows = await this.db
-			.delete(organizationMembers)
-			.where(
-				and(
-					eq(organizationMembers.organizationId, organizationId),
-					eq(organizationMembers.userId, userId),
-				),
-			)
-			.returning({ userId: organizationMembers.userId });
-		return rows.length > 0;
+		return this.db.transaction(async (tx) => {
+			const rows = await tx
+				.delete(organizationMembers)
+				.where(
+					and(
+						eq(organizationMembers.organizationId, organizationId),
+						eq(organizationMembers.userId, userId),
+					),
+				)
+				.returning({ userId: organizationMembers.userId });
+			// Shares on this organization's restricted documents end with the membership (ADR-0008),
+			// so rejoining later does not bring them back.
+			await tx
+				.delete(ragDocumentMembers)
+				.where(
+					and(
+						eq(ragDocumentMembers.userId, userId),
+						inArray(
+							ragDocumentMembers.documentId,
+							tx
+								.select({ id: ragDocuments.id })
+								.from(ragDocuments)
+								.where(eq(ragDocuments.ownerId, organizationId)),
+						),
+					),
+				);
+			return rows.length > 0;
+		});
 	}
 
 	async countOwners(organizationId: string): Promise<number> {

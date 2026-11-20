@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 
+import { readerOf } from "@/modules/rag";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { errorResponses } from "@/shared/responses/error-response";
 import { apiErrorSchema, successEnvelope } from "@/shared/responses/response.types";
@@ -102,6 +103,7 @@ const getRunRoute = createRoute({
 const scope = (c: Context<AppBindings>) => ({
 	ownerId: c.get("user").orgId,
 	actorId: c.get("user").sub,
+	reader: readerOf(c.get("user")),
 	context: { requestId: c.get("requestId"), actorId: c.get("user").sub },
 });
 

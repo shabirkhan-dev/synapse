@@ -63,5 +63,6 @@ export const endpoints = {
 		upload: "/rag/documents/upload",
 		url: "/rag/documents/url",
 		detail: (id: string) => `/rag/documents/${encodeURIComponent(id)}`,
+		access: (id: string) => `/rag/documents/${encodeURIComponent(id)}/access`,
 	},
 } as const;

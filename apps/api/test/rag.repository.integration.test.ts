@@ -15,6 +15,9 @@ import { DrizzleRagRepository } from "@/modules/rag";
 
 import { fakeEmbedding } from "./helpers";
 
+/** A reader that sees every document of the owner (as scripts and approved actions do). */
+const everything = (ownerId: string) => ({ ownerId, userId: null, readsAll: true }) as const;
+
 const MODEL = "test:embed-1";
 const withStartupParameter = (databaseUrl: string, parameter: string) =>
 	`${databaseUrl}${databaseUrl.includes("?") ? "&" : "?"}${parameter}`;
@@ -70,8 +73,12 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 				embeddingModel: chunkIndex === 2 ? "old:model" : MODEL,
 			})),
 		);
-		expect(await repository.findDocument(paged, document.id)).toMatchObject({ title: "Paged" });
-		expect(await repository.findDocument(`it-${crypto.randomUUID()}`, document.id)).toBeNull();
+		expect(await repository.findDocument(everything(paged), document.id)).toMatchObject({
+			title: "Paged",
+		});
+		expect(
+			await repository.findDocument(everything(`it-${crypto.randomUUID()}`), document.id),
+		).toBeNull();
 		const page = (offset: number, limit: number) =>
 			repository.listChunks({ ownerId: paged, documentId: document.id, offset, limit });
 		expect((await page(0, 10)).map((chunk) => chunk.content)).toEqual([
@@ -121,9 +128,11 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		expect(await repository.searchChunks(vector("someone-else", fakeEmbedding("cat"), 5))).toEqual(
 			[],
 		);
-		expect((await repository.listDocuments(owner, 10)).map((d) => d.id)).toEqual([document.id]);
+		expect((await repository.listDocuments(everything(owner), 10)).map((d) => d.id)).toEqual([
+			document.id,
+		]);
 
-		expect(await repository.deleteDocument(owner, document.id)).toBe(true);
+		expect(await repository.deleteDocument(everything(owner), document.id)).toBe(true);
 		expect(await repository.searchChunks(vector(owner, fakeEmbedding("cat"), 5))).toEqual([]);
 		await repository.ping();
 	});
@@ -147,7 +156,7 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		expect(second.id).toBe(first.id);
 		expect((await repository.searchChunks(vector(owner, chunk.embedding, 10))).length).toBe(1);
 
-		await repository.deleteDocument(owner, first.id);
+		await repository.deleteDocument(everything(owner), first.id);
 	});
 
 	test("keyword search ranks full-text matches and uses the GIN index", async () => {
@@ -175,7 +184,7 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		);
 		await database.db.execute(sql`reset enable_seqscan`);
 		expect(JSON.stringify([...plan])).toContain("rag_chunks_search_idx");
-		await repository.deleteDocument(owner, document.id);
+		await repository.deleteDocument(everything(owner), document.id);
 	});
 
 	test("a chunk is found by words that are only in its context (title › headings), and returns it", async () => {
@@ -206,7 +215,7 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 			limit: 5,
 		});
 		expect(chunk?.context).toBe("Lumen warranty › Hardware");
-		await repository.deleteDocument(contextOwner, document.id);
+		await repository.deleteDocument(everything(contextOwner), document.id);
 	});
 
 	test("keyword search matches any term, ranks fuller matches first and honours exclusions", async () => {
@@ -233,7 +242,7 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		expect(await search("parcel -tracking")).toEqual([0]);
 		expect(await search('"courier point" or cat')).toEqual([0, 2]);
 
-		await repository.deleteDocument(owner, document.id);
+		await repository.deleteDocument(everything(owner), document.id);
 	});
 
 	test("vector search stays complete when other tenants crowd the HNSW index", async () => {
@@ -272,7 +281,7 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		expect(matches.map((m) => m.content).toSorted()).toEqual(["mine 0", "mine 1", "mine 2"]);
 		expect(matches.every((m) => m.documentId === mine.id)).toBe(true);
 
-		await repository.deleteDocument(tenant, mine.id);
+		await repository.deleteDocument(everything(tenant), mine.id);
 		await database.db.execute(sql`delete from rag_documents where id = ${crowd.id}`);
 	}, 20_000);
 
@@ -347,9 +356,9 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 			}),
 		).toEqual([]);
 
-		await repository.deleteDocument(tenant, crowd.id);
-		await repository.deleteDocument(tenant, chosen.id);
-		await repository.deleteDocument(other, theirs.id);
+		await repository.deleteDocument(everything(tenant), crowd.id);
+		await repository.deleteDocument(everything(tenant), chosen.id);
+		await repository.deleteDocument(everything(other), theirs.id);
 	}, 20_000);
 
 	test("vector search ignores chunks embedded with another model", async () => {
@@ -361,6 +370,6 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		]);
 		const matches = await repository.searchChunks(vector(owner, embedding, 10));
 		expect(matches.map((m) => m.content).toSorted()).toEqual(["current", "legacy"]);
-		await repository.deleteDocument(owner, document.id);
+		await repository.deleteDocument(everything(owner), document.id);
 	});
 });

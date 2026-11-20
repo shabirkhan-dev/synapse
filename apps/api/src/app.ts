@@ -49,7 +49,7 @@ export function createApp({ logger, ...dependencies }: AppDependencies) {
 			origin: corsOrigins,
 			allowHeaders: ["authorization", "content-type", "x-request-id"],
 			exposeHeaders: ["x-request-id", "x-conversation-id"],
-			allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+			allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 			// The console's refresh-token cookie (ADR-0007); origins stay an explicit allow-list.
 			credentials: true,
 			maxAge: 600,

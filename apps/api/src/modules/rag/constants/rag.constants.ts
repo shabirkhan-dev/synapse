@@ -13,6 +13,8 @@ export const RAG_ERROR_CODES = {
 	URL_TOO_LARGE: "RAG_URL_TOO_LARGE",
 	URL_UNSUPPORTED: "RAG_URL_UNSUPPORTED",
 	URL_HAS_NO_TEXT: "RAG_URL_HAS_NO_TEXT",
+	DOCUMENT_ACCESS_FORBIDDEN: "RAG_DOCUMENT_ACCESS_FORBIDDEN",
+	DUPLICATE_OF_RESTRICTED: "RAG_DUPLICATE_OF_RESTRICTED",
 } as const;
 
 export const RAG_MESSAGES = {
@@ -27,6 +29,11 @@ export const RAG_MESSAGES = {
 	MATCHES_FOUND: "Matching passages retrieved",
 	EMPTY_DOCUMENT: "Document content is empty",
 	DOCUMENT_NOT_FOUND: "Document not found",
+	DOCUMENT_ACCESS_UPDATED: "Document access updated",
+	DOCUMENT_ACCESS_FORBIDDEN:
+		"Only the person who added this document, owners and admins can change who sees it or delete it",
+	DUPLICATE_OF_RESTRICTED:
+		"This text is already in the organization, in a document you have not been given access to",
 	UNSUPPORTED_FILE: "Upload a .txt, .md or .pdf file",
 	FILE_HAS_NO_TEXT:
 		"This file has no text to search. A scanned PDF needs text recognition (OCR) first",
@@ -60,6 +67,9 @@ export const RAG_DEFAULT_LIST_LIMIT = 50;
 
 /** Most documents one question can be narrowed to (`documentIds`). */
 export const RAG_MAX_SCOPE_DOCUMENTS = 20;
+
+/** Users one restricted document can be shared with (ADR-0008); more means "the organization". */
+export const RAG_MAX_SHARED_USERS = 100;
 
 /** Chunks per page on a document's detail. */
 export const RAG_DEFAULT_CHUNK_PAGE = 50;

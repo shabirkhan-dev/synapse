@@ -2,12 +2,17 @@ import { z } from "zod";
 
 import { DOCUMENT_LIMITS, UPLOAD_LIMITS } from "../constants/documents.constants";
 
+/** Who may read a document inside a team (ADR-0008). */
+export const documentAccessSchema = z.enum(["organization", "restricted"]);
+
 /** A document as `GET /rag/documents` returns it (only the fields the console shows). */
 export const documentSchema = z.object({
 	id: z.string(),
 	title: z.string(),
 	source: z.string().nullable(),
 	chunkCount: z.number().int(),
+	access: documentAccessSchema.default("organization"),
+	createdBy: z.string().nullable().default(null),
 	createdAt: z.string(),
 });
 
@@ -28,6 +33,16 @@ export const documentDetailSchema = documentSchema.extend({
 	chunks: z.array(chunkSchema),
 	page: z.object({ offset: z.number().int(), limit: z.number().int(), total: z.number().int() }),
 	current: z.object({ chunkerVersion: z.string(), embeddingModel: z.string() }),
+	/** Members a restricted document is shared with (besides its adder, owners and admins). */
+	sharedWith: z.array(z.string()).default([]),
+	/** Whether you may change who reads it. */
+	canManageAccess: z.boolean().default(false),
+});
+
+/** `PUT /rag/documents/{id}/access`: the access now in force. */
+export const documentAccessResultSchema = z.object({
+	access: documentAccessSchema,
+	sharedWith: z.array(z.string()),
 });
 
 export const ingestDocumentFormSchema = z.object({

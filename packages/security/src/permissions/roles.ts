@@ -7,6 +7,8 @@ export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
 export const PERMISSIONS = {
 	"documents.read": "member",
 	"documents.write": "member",
+	/** Read restricted documents without being given access (ADR-0008). */
+	"documents.read_all": "admin",
 	"actions.request": "member",
 	"approvals.decide": "admin",
 	"audit.read_all": "admin",
