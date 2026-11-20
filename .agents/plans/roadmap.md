@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-19. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-20. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -77,7 +77,7 @@ Every Phase 2 step is done (syn-021 … syn-036).
 | `tests/` — Playwright e2e for console + API in CI | ✅ | syn-039 |
 | `tests/` — load, chaos, security suites | ✅ | syn-051 |
 | `deploy/` — production compose, Caddy TLS, backups, restore, runbooks | ✅ | syn-041 |
-| Real CD deploy (registry images, deploy to the host on tag) — parked: needs the host, registry and SSH key | ⬜ | syn-052 |
+| Real CD deploy (registry images, deploy to the host on tag) — done in Phase 6 | ✅ | syn-052 |
 
 ## Phase 4 — Hardening (gap review 2026-11-14)
 
@@ -117,5 +117,22 @@ contextual retrieval and Ragas.
 | Console UI/UX pass 2: Inter, flat #1C1C1C, 14px controls, breadcrumb shell (the human's spec) | ✅ | syn-078 |
 | Console detail polish: tabs for adding documents, mono font, aligned tables, one citation look | ✅ | syn-079 |
 | Check the answer judge against its labelled cases with a real model (needs a chat key) | ⬜ | — |
+
+## Phase 6 — Production readiness (the human's pick from the 2026-11-19 review: items 2, 5, 7)
+
+| Step | Status | Card |
+| --- | --- | --- |
+| Images built and pushed to GHCR on a tag; SSH deploy once the host secrets exist | ✅ | syn-052 |
+| Off-site backup copies (S3-compatible, optional) | 🔄 | syn-080 |
+| Document permissions inside an organization (ADR-0008) | ⏭️ | syn-081 |
+| Invite people by email | ⬜ | syn-082 |
+| Personal API keys | ⬜ | syn-083 |
+| Two-step sign-in (TOTP) | ⬜ | syn-084 |
+| Secrets removed from chat tool results | ⬜ | syn-085 |
+| Chat: rename, keep stopped answers, versions on regenerate | ⬜ | syn-086 |
+| Palette searches everything; shell shows while the session loads | ⬜ | syn-087 |
+| First-run onboarding with sample documents | ⬜ | syn-088 |
+| Automated accessibility checks (axe) on every page | ⬜ | syn-089 |
+| Company SSO (SAML/OIDC) — parked: needs an identity provider to test against | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

@@ -145,7 +145,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Production is one host** (`deploy/compose.yml`, syn-041): Caddy TLS, daily `pg_dump` kept 14 days
   on the same disk (off-site copy is the operator's job). Restores go into an empty database only:
   pg-boss partitioned tables break `pg_restore --clean`. Let's Encrypt issuance is untested.
-  **CD deploy steps are placeholders** (`.github/workflows/cd.yml`, syn-052).
+  **CD** (syn-052): images go to `ghcr.io/<owner>/synapse/*` on every main push and `v*` tag; the
+  console image needs the repository variable `API_HOST` (main skips it, a release fails); the SSH
+  deploy skips until each GitHub environment has `DEPLOY_HOST` + `DEPLOY_SSH_KEY` + `DEPLOY_KNOWN_HOSTS`
+  (`deploy/remote-deploy.sh` was run against a local registry, never a real host yet).
 - **Console** (syn-018, syn-037, syn-038, syn-040, syn-043, syn-044, syn-045, syn-046, syn-047, syn-048, syn-049, syn-050): auth pages, documents (list +
   add, delete-all request; a document page `/documents/[id]` with chunks, version notes and
   immediate delete — syn-046; out-of-date counts are per page, not per document), the playground (non-streaming `/rag/query`, no history), usage (`/usage`, syn-049/050: RAG and chat

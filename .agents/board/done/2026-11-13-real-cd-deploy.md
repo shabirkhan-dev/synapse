@@ -5,8 +5,8 @@ type: feature
 from: pm
 to: backend
 priority: normal
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-041]
@@ -15,7 +15,7 @@ worktree: none
 scope: [.github/workflows/cd.yml, deploy, docs/runbooks/deployment.md]
 allowed_shared: []
 created: 2026-11-13
-updated: 2026-11-13
+updated: 2026-11-20
 ---
 
 ## What
@@ -43,4 +43,15 @@ Images tagged by version on GHCR; `deploy/compose.yml` takes `image:` from `IMAG
 
 ## Resolution
 
-_Open._
+`cd.yml` builds api, worker and console with `docker buildx` and pushes them to
+`ghcr.io/<owner>/synapse/*` using the job's `GITHUB_TOKEN` (main: `sha-<12>` + `main`; tag `v1.2.3`:
+`1.2.3` + `latest`), with a registry build cache. The console needs the repository variable
+`API_HOST` (main skips it with a notice; a release fails). Deploy jobs run `deploy/ci-deploy.sh`:
+skipped with a summary note until the environment has `DEPLOY_HOST`, `DEPLOY_SSH_KEY` and
+`DEPLOY_KNOWN_HOSTS`; then SSH (known_hosts checked) → per-job GHCR login → `deploy/remote-deploy.sh`
+(checkout, `compose pull`, `up -d --no-build --wait`) → logout → HTTPS readiness poll.
+
+Validation: `remote-deploy.sh` run against a fresh clone and a local registry: pulled, all
+services healthy, readiness 200 through Caddy; a second deploy (rollback path) swapped the images.
+`ci-deploy.sh` skip path run; shellcheck clean (now in `scripts:lint`). Not run: the SSH hop and the
+GitHub-hosted build (first real run is the next push to main). Runbook: `docs/runbooks/deployment.md`.

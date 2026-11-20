@@ -1,4 +1,9 @@
-# CD: staged release workflow with overridable deploy hooks.
+# CD: build the api, worker and console images, push them to GitHub Container Registry, and deploy
+# them to the host over SSH (docs/runbooks/deployment.md).
+#   - push to main  → images tagged `main` and `sha-<commit>`; deployed to `staging` if configured
+#   - tag v1.2.3    → images tagged `1.2.3` and `latest`;       deployed to `production` if configured
+# A deploy runs only when its GitHub environment has the variable DEPLOY_HOST and the secrets
+# DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS; until then the job says so in its summary and does nothing.
 name: CD
 
 on:
@@ -7,6 +12,13 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   quality-gate:
@@ -28,34 +40,145 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
 
-  deploy-staging:
-    if: github.ref == 'refs/heads/main'
+  images:
     needs: quality-gate
     runs-on: ubuntu-latest
-    environment: staging
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        app: [api, worker, console]
+    outputs:
+      prefix: ${{ steps.names.outputs.prefix }}
+      tag: ${{ steps.names.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
-      - name: Deploy to staging
+
+      - name: Image names and tags
+        id: names
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          SHA: ${{ github.sha }}
         run: |
-          echo "Replace with your staging deploy command."
-          echo "Example: bun run deploy:staging"
-      - name: Staging health check
+          prefix="ghcr.io/${OWNER,,}/synapse"
+          if [ "$REF_TYPE" = tag ]; then
+            tag="${REF_NAME#v}"; extra="latest"
+          else
+            tag="sha-${SHA::12}"; extra="main"
+          fi
+          {
+            echo "prefix=$prefix"
+            echo "tag=$tag"
+            echo "extra=$extra"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Console settings
+        id: console
+        if: matrix.app == 'console'
+        env:
+          API_HOST: ${{ vars.API_HOST }}
+          REF_TYPE: ${{ github.ref_type }}
+        # The console inlines the API URL at build time; a wrong one ships a broken console. A
+        # release fails without it; main skips the console with a note until it is set.
         run: |
-          echo "Replace with staging health check."
-          echo "Example: curl --fail $STAGING_HEALTHCHECK_URL"
+          if [ -z "$API_HOST" ]; then
+            if [ "$REF_TYPE" = tag ]; then
+              echo "::error::Set the repository variable API_HOST (e.g. api.example.com) before releasing."
+              exit 1
+            fi
+            echo "::notice::Console image skipped: set the repository variable API_HOST to build it."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "NEXT_PUBLIC_API_URL=https://$API_HOST/api/v1" >> "$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        if: steps.console.outputs.skip != 'true'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: Build and push
+        if: steps.console.outputs.skip != 'true'
+        env:
+          APP: ${{ matrix.app }}
+          PREFIX: ${{ steps.names.outputs.prefix }}
+          TAG: ${{ steps.names.outputs.tag }}
+          EXTRA: ${{ steps.names.outputs.extra }}
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          docker buildx create --use --name synapse-builder
+          image="$PREFIX/$APP"
+          args=()
+          if [ "$APP" = console ]; then
+            args+=(--build-arg "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL")
+          fi
+          docker buildx build . \
+            --file "apps/$APP/Dockerfile" \
+            "${args[@]}" \
+            --tag "$image:$TAG" --tag "$image:$EXTRA" \
+            --label "org.opencontainers.image.source=$SOURCE" \
+            --label "org.opencontainers.image.revision=$REVISION" \
+            --cache-from "type=registry,ref=$image:buildcache" \
+            --cache-to "type=registry,ref=$image:buildcache,mode=max" \
+            --push
+          echo "Pushed \`$image:$TAG\` and \`$image:$EXTRA\`" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          API_HOST: ${{ vars.API_HOST }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          REF: ${{ github.sha }}
+          PREFIX: ${{ needs.images.outputs.prefix }}
+          TAG: ${{ needs.images.outputs.tag }}
+        run: bash deploy/ci-deploy.sh
 
   deploy-production:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: quality-gate
+    needs: images
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: production
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v7
-      - name: Deploy to production
-        run: |
-          echo "Replace with your production deploy command."
-          echo "Example: bun run deploy:production"
-      - name: Production health check
-        run: |
-          echo "Replace with production health check."
-          echo "Example: curl --fail $PROD_HEALTHCHECK_URL"
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          API_HOST: ${{ vars.API_HOST }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          REF: ${{ github.ref_name }}
+          PREFIX: ${{ needs.images.outputs.prefix }}
+          TAG: ${{ needs.images.outputs.tag }}
+        run: bash deploy/ci-deploy.sh
