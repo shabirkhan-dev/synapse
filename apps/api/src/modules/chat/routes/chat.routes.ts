@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { consumeStream } from "ai";
 
 import { readerOf } from "@/modules/rag";
 import { errorResponses } from "@/shared/responses/error-response";
@@ -41,6 +42,8 @@ export function createChatRoutes(chat: ChatService) {
 		});
 		return result.toUIMessageStreamResponse({
 			...stream,
+			// Read the stream to its end on the server, so a stopped reply is still saved.
+			consumeSseStream: consumeStream,
 			headers: {
 				"x-request-id": c.get("requestId"),
 				...(conversationId ? { [CONVERSATION_ID_HEADER]: conversationId } : {}),

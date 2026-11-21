@@ -138,6 +138,54 @@ describe.skipIf(!url)("memory (postgres)", () => {
 		expect(turn.history.map((m) => m.id)).toEqual(["b4", "c5", "d6"]);
 	});
 
+	test("regenerated replies are kept as versions; one can be put back; rename is per owner", async () => {
+		const repository = new DrizzleConversationRepository(database.db);
+		const conversation = await repository.create(ordering, "Versions");
+		const reply = (id: string, text: string) => ({
+			id,
+			role: "assistant" as const,
+			message: { id, role: "assistant", parts: [{ type: "text", text }] },
+		});
+		await repository.append(ordering, conversation.id, [userMessage("q1", "question")]);
+		await repository.append(ordering, conversation.id, [reply("r1", "first")]);
+		expect(await repository.replyVersions(ordering, conversation.id)).toEqual({
+			current: 1,
+			total: 1,
+		});
+
+		expect(await repository.archiveReply(ordering, conversation.id)).toBe(1);
+		expect((await repository.messages(ordering, conversation.id)).map((m) => m.id)).toEqual(["q1"]);
+		await repository.append(ordering, conversation.id, [reply("r2a", "second"), reply("r2b", "+")]);
+		expect(await repository.replyVersions(ordering, conversation.id)).toEqual({
+			current: 2,
+			total: 2,
+		});
+
+		// Another owner cannot switch it; this one can, both ways.
+		expect(await repository.selectReplyVersion(other, conversation.id, 1)).toBe(false);
+		expect(await repository.selectReplyVersion(ordering, conversation.id, 1)).toBe(true);
+		const ids = async () => (await repository.messages(ordering, conversation.id)).map((m) => m.id);
+		expect(await ids()).toEqual(["q1", "r1"]);
+		expect(await repository.replyVersions(ordering, conversation.id)).toEqual({
+			current: 1,
+			total: 2,
+		});
+		expect(await repository.selectReplyVersion(ordering, conversation.id, 2)).toBe(true);
+		expect(await ids()).toEqual(["q1", "r2a", "r2b"]);
+		expect(await repository.selectReplyVersion(ordering, conversation.id, 3)).toBe(false);
+
+		// A new question: the earlier turn's versions no longer count.
+		await repository.append(ordering, conversation.id, [userMessage("q2", "next")]);
+		expect(await repository.replyVersions(ordering, conversation.id)).toEqual({
+			current: 0,
+			total: 0,
+		});
+		expect(await ids()).toEqual(["q1", "r2a", "r2b", "q2"]);
+
+		expect(await repository.rename(other, conversation.id, "Taken")).toBeNull();
+		expect((await repository.rename(ordering, conversation.id, "Renamed"))?.title).toBe("Renamed");
+	});
+
 	test("facts are recalled by similarity per owner, deduplicated, and forgotten", async () => {
 		const service = startService();
 		await service.rememberFact(owner, "prefers metric units for distances");

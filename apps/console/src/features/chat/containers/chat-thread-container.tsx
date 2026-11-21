@@ -11,12 +11,14 @@ import { FollowUpsContainer } from "@/features/follow-ups";
 import { ChatComposer } from "../components/chat-composer";
 import { ChatEmptyState } from "../components/chat-empty-state";
 import { MessageList } from "../components/message-list";
+import { ReplyVersions } from "../components/reply-versions";
 import { useChatThread } from "../hooks/use-chat-thread";
-import type { ChatMessage } from "../types/chat.types";
+import type { ChatMessage, ReplyVersions as Versions } from "../types/chat.types";
 
 export type ChatThreadContainerProps = {
 	conversationId: string | null;
 	initialMessages: ChatMessage[];
+	initialVersions?: Versions;
 	onStarted: (id: string) => void;
 };
 
@@ -24,14 +26,26 @@ export type ChatThreadContainerProps = {
 export function ChatThreadContainer({
 	conversationId,
 	initialMessages,
+	initialVersions,
 	onStarted,
 }: ChatThreadContainerProps) {
 	// Which documents this conversation's turns search; kept while the page is open.
 	const [scope, setScope] = useState<string[]>([]);
 	const documents = useDocumentsQuery();
-	const { messages, status, send, regenerate, canRegenerate, stop } = useChatThread({
+	const {
+		messages,
+		status,
+		send,
+		regenerate,
+		canRegenerate,
+		stop,
+		versions,
+		selectVersion,
+		switching,
+	} = useChatThread({
 		conversationId,
 		initialMessages,
+		...(initialVersions ? { initialVersions } : {}),
 		documentIds: scope,
 		onStarted,
 	});
@@ -44,6 +58,15 @@ export function ChatThreadContainer({
 			? { question: textOf(question), answer: textOf(last) }
 			: null;
 	const end = useRef<HTMLDivElement>(null);
+	// Earlier replies to step through; with none in use (regenerate failed) it shows on its own.
+	const switcher =
+		versions.total > 1 || (versions.current === 0 && versions.total > 0) ? (
+			<ReplyVersions
+				versions={versions}
+				disabled={switching || streaming}
+				onSelect={(version) => void selectVersion(version)}
+			/>
+		) : null;
 
 	// Follow the answer as it grows, unless the reader has scrolled up to read something else.
 	useEffect(() => {
@@ -63,8 +86,15 @@ export function ChatThreadContainer({
 					messages={messages}
 					streaming={streaming}
 					{...(canRegenerate ? { onRegenerate: () => void regenerate() } : {})}
+					lastReplyActions={last?.role === "assistant" ? switcher : null}
 				/>
 			)}
+			{last?.role !== "assistant" && !streaming && switcher ? (
+				<div className="-ms-3 flex items-center gap-2 text-sm text-muted-foreground">
+					{switcher}
+					Show an earlier reply
+				</div>
+			) : null}
 			{answered && answered.answer ? (
 				<FollowUpsContainer answered={answered} onPick={(next) => void send(next)} />
 			) : null}

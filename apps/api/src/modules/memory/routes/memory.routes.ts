@@ -14,6 +14,9 @@ import {
 	memoryFactSchema,
 	memoryIdParamsSchema,
 	rememberBodySchema,
+	renameConversationBodySchema,
+	replyVersionsSchema,
+	selectReplyVersionBodySchema,
 } from "../schemas/memory.schemas";
 import type { MemoryService } from "../services/memory.service";
 
@@ -62,6 +65,36 @@ const deleteConversationRoute = createRoute({
 	security,
 	request: { params: memoryIdParamsSchema },
 	responses: { 200: json(z.object({ id: z.uuid() }), "Deleted"), ...notFound, ...errorResponses },
+});
+
+const renameConversationRoute = createRoute({
+	method: "patch",
+	path: "/conversations/{id}",
+	tags,
+	summary: "Rename a conversation",
+	security,
+	request: {
+		params: memoryIdParamsSchema,
+		body: { content: { "application/json": { schema: renameConversationBodySchema } } },
+	},
+	responses: { 200: json(conversationSchema, "Renamed"), ...notFound, ...errorResponses },
+});
+
+const selectReplyVersionRoute = createRoute({
+	method: "put",
+	path: "/conversations/{id}/reply-version",
+	tags,
+	summary: "Use another version of the last reply (the next turn builds on it)",
+	security,
+	request: {
+		params: memoryIdParamsSchema,
+		body: { content: { "application/json": { schema: selectReplyVersionBodySchema } } },
+	},
+	responses: {
+		200: json(replyVersionsSchema, "The versions, with the chosen one in use"),
+		...notFound,
+		...errorResponses,
+	},
 });
 
 const listFactsRoute = createRoute({
@@ -121,6 +154,24 @@ export function createMemoryRoutes(memory: MemoryService) {
 		const { id } = c.req.valid("param");
 		await memory.deleteConversation(c.get("user").sub, id, ctx(c.get("requestId")));
 		return success(c, { id }, MEMORY_MESSAGES.CONVERSATION_DELETED);
+	});
+
+	app.openapi(renameConversationRoute, async (c) => {
+		const renamed = await memory.renameConversation(
+			c.get("user").sub,
+			c.req.valid("param").id,
+			c.req.valid("json").title,
+		);
+		return success(c, renamed, MEMORY_MESSAGES.CONVERSATION_RENAMED);
+	});
+
+	app.openapi(selectReplyVersionRoute, async (c) => {
+		const versions = await memory.selectReplyVersion(
+			c.get("user").sub,
+			c.req.valid("param").id,
+			c.req.valid("json").version,
+		);
+		return success(c, versions, MEMORY_MESSAGES.REPLY_VERSION_SELECTED);
 	});
 
 	app.openapi(listFactsRoute, async (c) => {

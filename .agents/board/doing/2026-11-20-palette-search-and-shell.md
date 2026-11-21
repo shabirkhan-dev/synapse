@@ -5,8 +5,8 @@ type: feature
 from: human
 to: all
 priority: normal
-status: open
-assignee: none
+status: doing
+assignee: claude
 reviewer: none
 parent: syn-roadmap
 depends_on: []
@@ -15,7 +15,7 @@ worktree: none
 scope: [apps/api rag/chat, apps/console command-palette, app shell, session gate]
 allowed_shared: []
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-21
 ---
 
 ## What

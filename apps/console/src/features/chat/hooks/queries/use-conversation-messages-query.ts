@@ -8,7 +8,7 @@ import { chatService } from "../../services/chat.service";
 export function useConversationMessagesQuery(id: string | null) {
 	return useQuery({
 		queryKey: queryKeys.conversations.detail(id ?? ""),
-		queryFn: () => chatService.messages(id ?? ""),
+		queryFn: () => chatService.conversation(id ?? ""),
 		enabled: id !== null,
 		// The thread owns the live messages once it is open; a refetch would only rewind them.
 		staleTime: Number.POSITIVE_INFINITY,

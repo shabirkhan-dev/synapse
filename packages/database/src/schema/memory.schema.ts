@@ -39,6 +39,8 @@ export const chatMessages = pgTable(
 		message: jsonb("message").$type<Record<string, unknown>>().notNull(),
 		/** Insertion order: messages stored in one insert share `created_at`, not their ordinal. */
 		ordinal: bigint("ordinal", { mode: "number" }).generatedAlwaysAsIdentity(),
+		/** An earlier version of the last reply (one id per version); null for the messages in use. */
+		archivedVersion: uuid("archived_version"),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => [

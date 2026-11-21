@@ -1077,7 +1077,7 @@ export class InMemoryConversationStore implements ConversationStore {
 	async messages(ownerId: string, conversationId: string, options: { latest?: number } = {}) {
 		this.messageReads.push(options);
 		const all = this.stored.filter(
-			(m) => m.ownerId === ownerId && m.conversationId === conversationId,
+			(m) => m.ownerId === ownerId && m.conversationId === conversationId && !this.archived.has(m),
 		);
 		return options.latest === undefined ? all : all.slice(-options.latest);
 	}
@@ -1095,15 +1095,55 @@ export class InMemoryConversationStore implements ConversationStore {
 		}
 	}
 
-	async removeAfterLastUserMessage(ownerId: string, conversationId: string) {
+	/** Earlier versions of the last reply, by message: `archivedVersion` as in the database. */
+	archived = new Map<
+		StoredMessage<Record<string, unknown>> & { ownerId: string; conversationId: string },
+		string
+	>();
+
+	private lastReply(ownerId: string, conversationId: string) {
 		const mine = this.stored.filter(
 			(m) => m.ownerId === ownerId && m.conversationId === conversationId,
 		);
 		const lastUser = mine.findLastIndex((m) => m.role === "user");
-		if (lastUser === -1) return 0;
-		const drop = new Set(mine.slice(lastUser + 1));
-		this.stored = this.stored.filter((m) => !drop.has(m));
-		return drop.size;
+		return lastUser === -1 ? [] : mine.slice(lastUser + 1);
+	}
+
+	private versions(ownerId: string, conversationId: string) {
+		const keys: Array<string | null> = [];
+		for (const message of this.lastReply(ownerId, conversationId)) {
+			const key = this.archived.get(message) ?? null;
+			if (!keys.includes(key)) keys.push(key);
+		}
+		return keys;
+	}
+
+	async archiveReply(ownerId: string, conversationId: string) {
+		const version = crypto.randomUUID();
+		const reply = this.lastReply(ownerId, conversationId).filter((m) => !this.archived.has(m));
+		for (const message of reply) this.archived.set(message, version);
+		return reply.length;
+	}
+
+	async replyVersions(ownerId: string, conversationId: string) {
+		const keys = this.versions(ownerId, conversationId);
+		return { current: keys.indexOf(null) + 1, total: keys.length };
+	}
+
+	async selectReplyVersion(ownerId: string, conversationId: string, version: number) {
+		const target = this.versions(ownerId, conversationId)[version - 1];
+		if (target === undefined) return false;
+		if (target === null) return true;
+		await this.archiveReply(ownerId, conversationId);
+		for (const [message, key] of this.archived) if (key === target) this.archived.delete(message);
+		return true;
+	}
+
+	async rename(ownerId: string, id: string, title: string) {
+		const conversation = await this.find(ownerId, id);
+		if (!conversation) return null;
+		conversation.title = title;
+		return conversation;
 	}
 
 	async remove(ownerId: string, id: string) {

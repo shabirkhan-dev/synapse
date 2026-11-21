@@ -8,8 +8,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ConversationList } from "../components/conversation-list";
+import { ConversationTitle } from "../components/conversation-title";
 import { CHAT_ROUTE, CONVERSATION_PARAM } from "../constants/chat.constants";
 import { useDeleteConversationMutation } from "../hooks/mutations/use-delete-conversation-mutation";
+import { useRenameConversationMutation } from "../hooks/mutations/use-rename-conversation-mutation";
 import { useConversationMessagesQuery } from "../hooks/queries/use-conversation-messages-query";
 import { useConversationsQuery } from "../hooks/queries/use-conversations-query";
 import { ChatThreadContainer } from "./chat-thread-container";
@@ -27,6 +29,7 @@ export function ChatContainer() {
 	const [listOpen, setListOpen] = useState(false);
 	const conversations = useConversationsQuery();
 	const remove = useDeleteConversationMutation();
+	const rename = useRenameConversationMutation();
 
 	// Opening another conversation forgets the one started here (it is loaded like any other).
 	useEffect(() => {
@@ -104,9 +107,15 @@ export function ChatContainer() {
 				aria-labelledby="chat-title"
 				className="flex min-h-[calc(100dvh-11rem)] min-w-0 flex-col gap-4"
 			>
-				<h1 id="chat-title" className="text-xl font-semibold tracking-tight text-balance">
-					{title}
-				</h1>
+				<ConversationTitle
+					// A fresh form per conversation (and after its name changes).
+					key={`${opened ?? "new"}:${title}`}
+					title={title}
+					pending={rename.isPending}
+					{...(opened
+						? { onRename: (next: string) => rename.mutateAsync({ id: opened, title: next }) }
+						: {})}
+				/>
 				{remove.isError ? (
 					<Alert variant="destructive">
 						<AlertTitle>The conversation was not deleted</AlertTitle>
@@ -128,7 +137,8 @@ export function ChatContainer() {
 					<ChatThreadContainer
 						key={stored ?? `draft-${draftRound}`}
 						conversationId={stored ?? startedHere}
-						initialMessages={history.data ?? []}
+						initialMessages={history.data?.messages ?? []}
+						{...(history.data ? { initialVersions: history.data.replyVersions } : {})}
 						onStarted={onStarted}
 					/>
 				)}

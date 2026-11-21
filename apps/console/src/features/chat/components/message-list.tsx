@@ -2,6 +2,7 @@ import { AiNetworkIcon, RepeatIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@synapse/ui/components/button";
 import { isTextUIPart, isToolUIPart } from "ai";
+import type { ReactNode } from "react";
 
 import { CitationPopover } from "@/components/shared/citation-popover";
 import { CopyButton } from "@/components/shared/copy-button";
@@ -18,12 +19,19 @@ export type MessageListProps = {
 	streaming: boolean;
 	/** Answer the last question again; offered on the last reply when given. */
 	onRegenerate?: () => void;
+	/** Shown beside the last reply's actions (its versions). */
+	lastReplyActions?: ReactNode;
 };
 
 const visible = (part: ChatPart) => isTextUIPart(part) || isToolUIPart(part);
 
 /** The conversation, oldest first: your messages on the trailing side, Synapse's on the leading. */
-export function MessageList({ messages, streaming, onRegenerate }: MessageListProps) {
+export function MessageList({
+	messages,
+	streaming,
+	onRegenerate,
+	lastReplyActions,
+}: MessageListProps) {
 	const shown = messages.filter(
 		(message) =>
 			message.role === "user" || (message.role === "assistant" && message.parts.some(visible)),
@@ -45,8 +53,8 @@ export function MessageList({ messages, streaming, onRegenerate }: MessageListPr
 						key={message.id}
 						message={message}
 						done={!(streaming && position === shown.length - 1)}
-						{...(onRegenerate && !streaming && position === shown.length - 1
-							? { onRegenerate }
+						{...(!streaming && position === shown.length - 1
+							? { ...(onRegenerate ? { onRegenerate } : {}), extraActions: lastReplyActions }
 							: {})}
 					/>
 				),
@@ -66,11 +74,13 @@ function AssistantMessage({
 	message,
 	done,
 	onRegenerate,
+	extraActions,
 }: {
 	message: ChatMessage;
 	/** Fully arrived: its actions can show. */
 	done: boolean;
 	onRegenerate?: () => void;
+	extraActions?: ReactNode;
 }) {
 	const passages = passagesOf(message);
 	const known = new Set(passages.keys());
@@ -115,6 +125,7 @@ function AssistantMessage({
 							Regenerate
 						</Button>
 					) : null}
+					{extraActions}
 				</div>
 			) : null}
 		</li>

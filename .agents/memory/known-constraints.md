@@ -169,9 +169,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   immediate delete — syn-046; out-of-date counts are per page, not per document), the playground (non-streaming `/rag/query`, no history), usage (`/usage`, syn-049/050: RAG and chat
   answers by source, UTC days, cost only for models in `AI_MODEL_PRICES`), a retrieval inspector (`/retrieval`,
   syn-048: three `answer: false` requests, one per mode; reranking still applies when configured), chat (streaming
-  `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; no
-  rename; answers render Markdown safely since syn-066, raw HTML shown as text; since syn-067 chat cites
-  numbered passages `[n]` that open a preview, numbers restart in every reply; a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
+  `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; rename
+  from the heading (syn-086); answers render Markdown safely since syn-066, raw HTML shown as text; since syn-067 chat cites
+  numbered passages `[n]` that open a preview, numbers restart in every reply; a stopped answer is saved with what arrived, since syn-086), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
   are added by email; people without an account are invited). The active organization is per session, so every tab of a
   browser shares it: a tab that did not switch keeps acting in the old organization until its access
   token is refreshed (≤ 15 min), then follows the session, and its labels update on the next load. A
@@ -199,8 +199,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
 - **Answer flow** (syn-075): follow-ups are one extra chat call per finished answer (Playground and
   chat), on the questions budget (so an answer costs two of the 20/min); they are not audited or in
   Usage (the response names the model and prompt version). Regenerate needs a stored conversation and
-  replaces only the last reply (no history of earlier versions); if it fails, the old reply is already
-  gone. The palette lists the 8 latest conversations and documents (typing filters those, it does not
+  applies to the last reply only; since syn-086 the old reply is kept as a version (`‹ 1 / 2 ›` on the
+  reply; after a failed regenerate the switcher shows on its own), and only the last reply's versions
+  are offered: a new question leaves the earlier ones stored but unreachable (deleted with the
+  conversation). Versions are not capped (regenerate is on the questions budget). The palette lists the 8 latest conversations and documents (typing filters those, it does not
   search the server). Copy needs the clipboard permission (secure context).
 - **e2e** (`tests/e2e`): Playwright's `getByLabel` matches substrings, so use `{ exact: true }`
   for "Title" (the upload form has "Title (optional)"). Wait for a page by its heading role, not `getByText`: Next's route

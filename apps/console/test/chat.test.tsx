@@ -3,12 +3,13 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ConversationList } from "@/features/chat/components/conversation-list";
+import { ConversationTitle } from "@/features/chat/components/conversation-title";
 import { MessageList } from "@/features/chat/components/message-list";
 import { ChatThreadContainer } from "@/features/chat/containers/chat-thread-container";
 import type { ChatMessage } from "@/features/chat/types/chat.types";
 import { setAccessToken } from "@/lib/api/session";
 
-import { failure, mockFetch, renderWithQuery, signedIn } from "./helpers";
+import { failure, mockFetch, ok, renderWithQuery, signedIn } from "./helpers";
 
 afterEach(() => {
 	cleanup();
@@ -397,5 +398,86 @@ describe("Copy, regenerate and follow-ups", () => {
 		expect((posts[0] as { message: { parts: { text: string }[] } }).message.parts[0]?.text).toBe(
 			"Ship to Oslo?",
 		);
+	});
+});
+
+describe("reply versions and renaming", () => {
+	test("regenerating keeps the old reply as a version; stepping back shows it and puts it in use", async () => {
+		signedIn();
+		const old: ChatMessage = {
+			id: "a1",
+			role: "assistant",
+			parts: [{ type: "text", text: "Within 30 days." }],
+		};
+		const calls = mockFetch((call) => {
+			if (call.url.endsWith("/reply-version")) return ok({ current: 1, total: 2 });
+			if (call.url.endsWith("/memory/conversations/c1")) {
+				return ok({
+					id: "c1",
+					title: "Refunds",
+					createdAt: "2026-11-21T10:00:00Z",
+					updatedAt: "2026-11-21T10:00:00Z",
+					messages: [user("u1", "How long for refunds?"), old].map((message) => ({
+						id: message.id,
+						message,
+					})),
+					replyVersions: { current: 1, total: 2 },
+				});
+			}
+			if (call.method === "GET") return ok([]);
+			return sse([
+				{ type: "start", messageId: "a2" },
+				{ type: "text-start", id: "t2" },
+				{ type: "text-delta", id: "t2", delta: "Thirty days, again." },
+				{ type: "text-end", id: "t2" },
+				{ type: "finish" },
+			]);
+		});
+		renderWithQuery(
+			<ChatThreadContainer
+				conversationId="c1"
+				initialMessages={[user("u1", "How long for refunds?"), old]}
+				onStarted={() => {}}
+			/>,
+		);
+		// One reply: nothing to switch between.
+		expect(screen.queryByRole("group", { name: "Reply versions" })).toBeNull();
+
+		fireEvent.click(screen.getByRole("button", { name: "Regenerate" }));
+		await screen.findByText("Thirty days, again.");
+		await screen.findByText("Version 2 of 2");
+		expect(
+			(screen.getByRole("button", { name: "Next version" }) as HTMLButtonElement).disabled,
+		).toBe(true);
+
+		fireEvent.click(screen.getByRole("button", { name: "Previous version" }));
+		await screen.findByText("Within 30 days.");
+		expect(screen.queryByText("Thirty days, again.")).toBeNull();
+		await screen.findByText("Version 1 of 2");
+		expect(calls.find((call) => call.url.endsWith("/reply-version"))).toMatchObject({
+			method: "PUT",
+			body: { version: 1 },
+		});
+	});
+
+	test("a stored conversation can be renamed in place; an empty name is refused", async () => {
+		const onRename = mock(async () => {});
+		render(<ConversationTitle title="How long for refunds?" pending={false} onRename={onRename} />);
+		fireEvent.click(screen.getByRole("button", { name: "Rename conversation" }));
+		const field = screen.getByLabelText("Conversation name");
+		fireEvent.change(field, { target: { value: "   " } });
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await screen.findByText("Give the conversation a name.");
+		expect(onRename).not.toHaveBeenCalled();
+
+		fireEvent.change(field, { target: { value: "  Refunds  " } });
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await waitFor(() => expect(onRename).toHaveBeenCalledWith("Refunds"));
+		await screen.findByRole("heading", { name: "How long for refunds?" });
+	});
+
+	test("a new chat has no rename button", () => {
+		render(<ConversationTitle title="New chat" pending={false} />);
+		expect(screen.queryByRole("button", { name: "Rename conversation" })).toBeNull();
 	});
 });

@@ -10,8 +10,18 @@ import { api, apiStream } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 
 import { CONVERSATION_ID_HEADER } from "../constants/chat.constants";
-import { conversationListSchema, conversationWithMessagesSchema } from "../schemas/chat.schema";
-import type { ChatMessage, Conversation } from "../types/chat.types";
+import {
+	conversationListSchema,
+	conversationSchema,
+	conversationWithMessagesSchema,
+	replyVersionsSchema,
+} from "../schemas/chat.schema";
+import type {
+	ChatMessage,
+	Conversation,
+	ReplyVersions,
+	StoredConversation,
+} from "../types/chat.types";
 
 type Parsed =
 	ReturnType<typeof parseJsonEventStream<UIMessageChunk>> extends ReadableStream<infer T>
@@ -39,13 +49,31 @@ export const chatService = {
 	list: (): Promise<Conversation[]> =>
 		api(endpoints.memory.conversations, { schema: conversationListSchema }),
 
-	/** A stored conversation's messages, oldest first. */
-	async messages(id: string): Promise<ChatMessage[]> {
+	/** A stored conversation's messages, oldest first, and the versions of its last reply. */
+	async conversation(id: string): Promise<StoredConversation> {
 		const conversation = await api(endpoints.memory.conversation(id), {
 			schema: conversationWithMessagesSchema,
 		});
-		return conversation.messages.map((stored) => stored.message as unknown as ChatMessage);
+		return {
+			messages: conversation.messages.map((stored) => stored.message as unknown as ChatMessage),
+			replyVersions: conversation.replyVersions,
+		};
 	},
+
+	rename: ({ id, title }: { id: string; title: string }): Promise<Conversation> =>
+		api(endpoints.memory.conversation(id), {
+			method: "PATCH",
+			body: { title },
+			schema: conversationSchema,
+		}),
+
+	/** Put another version of the last reply in use; the next turn builds on it. */
+	selectReplyVersion: ({ id, version }: { id: string; version: number }): Promise<ReplyVersions> =>
+		api(endpoints.memory.replyVersion(id), {
+			method: "PUT",
+			body: { version },
+			schema: replyVersionsSchema,
+		}),
 
 	remove: (id: string): Promise<unknown> =>
 		api(endpoints.memory.conversation(id), { method: "DELETE", schema: z.unknown() }),
@@ -76,7 +104,7 @@ export const chatService = {
 		);
 	},
 
-	/** Answer the conversation's last question again; the API replaces the reply after it. */
+	/** Answer the conversation's last question again; the API keeps the old reply as a version. */
 	regenerate({
 		conversationId,
 		documentIds = [],

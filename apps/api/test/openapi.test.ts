@@ -47,6 +47,7 @@ describe("openapi", () => {
 			"/api/v1/memory",
 			"/api/v1/memory/conversations",
 			"/api/v1/memory/conversations/{id}",
+			"/api/v1/memory/conversations/{id}/reply-version",
 			"/api/v1/memory/facts",
 			"/api/v1/memory/facts/{id}",
 			"/api/v1/organizations",

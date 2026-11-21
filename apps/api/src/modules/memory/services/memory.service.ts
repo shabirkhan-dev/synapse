@@ -19,7 +19,12 @@ import {
 	MEMORY_LIST_LIMIT,
 	MEMORY_MESSAGES,
 } from "../constants/memory.constants";
-import type { Conversation, ConversationStore, NewMessage } from "../types/memory.types";
+import type {
+	Conversation,
+	ConversationStore,
+	NewMessage,
+	ReplyVersions,
+} from "../types/memory.types";
 
 /** A UI message as the chat route receives it (validated by the chat service). */
 export type ChatMessage = NewMessage;
@@ -66,15 +71,15 @@ export class MemoryService {
 	}
 
 	/**
-	 * Regenerate the last reply: drop what came after the last user message and return the history
-	 * ending with that message, ready to be answered again.
+	 * Regenerate the last reply: keep what came after the last user message as an earlier version
+	 * and return the history ending with that message, ready to be answered again.
 	 */
 	async regenerate(
 		ownerId: string,
 		conversationId: string,
 	): Promise<{ conversationId: string; history: Array<Record<string, unknown>> }> {
 		await this.conversation(ownerId, conversationId);
-		await this.options.conversations.removeAfterLastUserMessage(ownerId, conversationId);
+		await this.options.conversations.archiveReply(ownerId, conversationId);
 		const stored = await this.options.conversations.messages(ownerId, conversationId, {
 			latest: this.options.history.maxMessages,
 		});
@@ -103,9 +108,41 @@ export class MemoryService {
 	async getConversation(
 		ownerId: string,
 		id: string,
-	): Promise<Conversation & { messages: Array<StoredMessage<Record<string, unknown>>> }> {
+	): Promise<
+		Conversation & {
+			messages: Array<StoredMessage<Record<string, unknown>>>;
+			replyVersions: ReplyVersions;
+		}
+	> {
 		const conversation = await this.conversation(ownerId, id);
-		return { ...conversation, messages: await this.options.conversations.messages(ownerId, id) };
+		const [messages, replyVersions] = await Promise.all([
+			this.options.conversations.messages(ownerId, id),
+			this.options.conversations.replyVersions(ownerId, id),
+		]);
+		return { ...conversation, messages, replyVersions };
+	}
+
+	async renameConversation(ownerId: string, id: string, title: string): Promise<Conversation> {
+		const renamed = await this.options.conversations.rename(ownerId, id, title.trim());
+		if (!renamed) {
+			throw notFound(
+				MEMORY_ERROR_CODES.CONVERSATION_NOT_FOUND,
+				MEMORY_MESSAGES.CONVERSATION_NOT_FOUND,
+			);
+		}
+		return renamed;
+	}
+
+	/** Put an earlier (or later) version of the last reply back in use; the next turn builds on it. */
+	async selectReplyVersion(ownerId: string, id: string, version: number): Promise<ReplyVersions> {
+		await this.conversation(ownerId, id);
+		if (!(await this.options.conversations.selectReplyVersion(ownerId, id, version))) {
+			throw notFound(
+				MEMORY_ERROR_CODES.REPLY_VERSION_NOT_FOUND,
+				MEMORY_MESSAGES.REPLY_VERSION_NOT_FOUND,
+			);
+		}
+		return this.options.conversations.replyVersions(ownerId, id);
 	}
 
 	async deleteConversation(ownerId: string, id: string, context = NO_REQUEST): Promise<void> {

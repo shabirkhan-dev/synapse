@@ -177,13 +177,21 @@ export class ChatService {
 				generateMessageId: generateId,
 				...(storedIn
 					? {
-							onFinish: async ({ messages: finished }: { messages: UIMessage[] }) => {
+							// Also when the user stops the answer: what was written so far is kept.
+							onEnd: async ({
+								messages: finished,
+								isAborted,
+							}: {
+								messages: UIMessage[];
+								isAborted: boolean;
+							}) => {
+								const kept = isAborted ? finished.flatMap(keepFinishedParts) : finished;
 								// The stream is already sent: a failed save is logged, not thrown.
 								await memory
 									.saveMessages(
 										ownerId,
 										storedIn,
-										finished.map((message) => ({
+										kept.map((message) => ({
 											id: message.id,
 											role: message.role,
 											message: { ...message },
@@ -303,4 +311,23 @@ function lastUserText(messages: UIMessage[]): string {
 		.map((part) => (part.type === "text" ? part.text : ""))
 		.join(" ")
 		.trim();
+}
+
+/**
+ * A stopped reply keeps its text, and the tool calls that returned: a call cut off before its
+ * result cannot be replayed to the model on the next turn. A reply left empty is dropped.
+ */
+function keepFinishedParts(message: UIMessage): UIMessage[] {
+	if (message.role !== "assistant") return [message];
+	const parts = message.parts.flatMap((part): UIMessage["parts"] => {
+		const isTool = part.type === "dynamic-tool" || part.type.startsWith("tool-");
+		if (!isTool) {
+			// Text cut off mid-sentence is still what the user saw.
+			return "state" in part && part.state === "streaming" ? [{ ...part, state: "done" }] : [part];
+		}
+		return "state" in part && (part.state === "output-available" || part.state === "output-error")
+			? [part]
+			: [];
+	});
+	return parts.some((part) => part.type !== "step-start") ? [{ ...message, parts }] : [];
 }

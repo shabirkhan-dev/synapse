@@ -43,6 +43,7 @@ export const endpoints = {
 	memory: {
 		conversations: "/memory/conversations",
 		conversation: (id: string) => `/memory/conversations/${encodeURIComponent(id)}`,
+		replyVersion: (id: string) => `/memory/conversations/${encodeURIComponent(id)}/reply-version`,
 	},
 	oversight: {
 		feedback: "/oversight/feedback",

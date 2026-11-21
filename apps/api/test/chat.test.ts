@@ -229,7 +229,7 @@ describe("chat", () => {
 		});
 	});
 
-	test("regenerate answers the last question again, replacing the old reply, and is audited as such", async () => {
+	test("regenerate answers the last question again, keeping the old reply as a version, and is audited as such", async () => {
 		const chatModel = new MockLanguageModelV4({
 			doStream: async () =>
 				streamResult(textStreamParts(`Reply ${chatModel.doStreamCalls.length}`)),
@@ -254,9 +254,14 @@ describe("chat", () => {
 		await waitFor(() =>
 			conversations.stored.some((m) => JSON.stringify(m.message).includes("Reply 2")),
 		);
-		const stored = conversations.stored.filter((m) => m.conversationId === conversationId);
+		const stored = await conversations.messages("user-1", conversationId);
 		expect(stored.map((m) => m.role)).toEqual(["user", "assistant"]);
 		expect(JSON.stringify(stored[1]?.message)).toContain("Reply 2");
+		// The old reply is kept as the first version.
+		expect(await conversations.replyVersions("user-1", conversationId)).toEqual({
+			current: 2,
+			total: 2,
+		});
 		// The model saw the question again, not the old reply.
 		const prompt = JSON.stringify(chatModel.doStreamCalls[1]?.prompt);
 		expect(prompt).toContain("What is the refund window?");
@@ -269,6 +274,126 @@ describe("chat", () => {
 		).toMatchObject({
 			regenerated: true,
 		});
+	});
+
+	test("an earlier version of the reply can be put back, and the next turn builds on it", async () => {
+		const chatModel = new MockLanguageModelV4({
+			doStream: async () =>
+				streamResult(textStreamParts(`Reply ${chatModel.doStreamCalls.length}`)),
+		});
+		const { app, conversations } = buildTestApp({ chatModel });
+		const headers = await authHeaders();
+		const send = async (body: unknown) => {
+			const response = await app.request("/api/v1/chat", {
+				method: "POST",
+				headers,
+				body: JSON.stringify(body),
+			});
+			await readStream(response);
+			return response;
+		};
+		const conversationId =
+			(await send({ message: userMessage("Refund window?") })).headers.get("x-conversation-id") ??
+			"";
+		await waitFor(() => conversations.stored.length === 1 + 1);
+		await send({ conversationId, regenerate: true });
+		await waitFor(() => conversations.stored.length === 3);
+		const restore = (version: number) =>
+			app.request(`/api/v1/memory/conversations/${conversationId}/reply-version`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({ version }),
+			});
+		const get = async () =>
+			(
+				await (
+					await app.request(`/api/v1/memory/conversations/${conversationId}`, { headers })
+				).json()
+			).data;
+
+		expect((await get()).replyVersions).toEqual({ current: 2, total: 2 });
+		const first = await restore(1);
+		expect(first.status).toBe(200);
+		expect((await first.json()).data).toEqual({ current: 1, total: 2 });
+		const shown = await get();
+		expect(shown.messages).toHaveLength(2);
+		expect(JSON.stringify(shown.messages[1].message)).toContain("Reply 1");
+		expect((await restore(3)).status).toBe(404);
+
+		await send({ conversationId, message: userMessage("And for sale items?") });
+		const prompt = JSON.stringify(chatModel.doStreamCalls[2]?.prompt);
+		expect(prompt).toContain("Reply 1");
+		expect(prompt).not.toContain("Reply 2");
+		// A new question starts a new last reply: no versions to switch between yet.
+		await waitFor(() => conversations.stored.length === 5);
+		expect((await get()).replyVersions).toEqual({ current: 1, total: 1 });
+	});
+
+	test("a stopped answer is saved with what was written so far", async () => {
+		let release: () => void = () => {};
+		const held = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const chatModel = new MockLanguageModelV4({
+			doStream: async ({ abortSignal }) => ({
+				stream: new ReadableStream({
+					async start(controller) {
+						controller.enqueue({ type: "stream-start", warnings: [] });
+						controller.enqueue({ type: "text-start", id: "t" });
+						controller.enqueue({ type: "text-delta", id: "t", delta: "The refund window is " });
+						release();
+						// The model keeps going until the user stops it.
+						await new Promise((resolve) => abortSignal?.addEventListener("abort", resolve));
+						controller.error(abortSignal?.reason);
+					},
+				}),
+			}),
+		});
+		const { app, conversations } = buildTestApp({ chatModel });
+		const stop = new AbortController();
+		const response = await app.request("/api/v1/chat", {
+			method: "POST",
+			headers: await authHeaders(),
+			body: JSON.stringify({ message: userMessage("Refund window?") }),
+			signal: stop.signal,
+		});
+		const conversationId = response.headers.get("x-conversation-id") ?? "";
+		const reader = response.body?.getReader();
+		await held;
+		// Stop once the browser has the first words, as a person pressing Stop would.
+		const decoder = new TextDecoder();
+		let received = "";
+		while (reader && !received.includes("The refund window is")) {
+			// oxlint-disable-next-line no-await-in-loop -- read until the text arrives
+			const chunk = await reader.read();
+			if (chunk.done) break;
+			received += decoder.decode(chunk.value);
+		}
+		stop.abort();
+		await reader?.cancel().catch(() => {});
+
+		await waitFor(() => conversations.stored.length === 2);
+		const [, reply] = await conversations.messages("user-1", conversationId);
+		expect(reply?.role).toBe("assistant");
+		expect(JSON.stringify(reply?.message)).toContain("The refund window is");
+	});
+
+	test("a conversation can be renamed by its owner only", async () => {
+		const { app, conversations } = buildTestApp();
+		const mine = await conversations.create("user-1", "Refund window?");
+		const theirs = await conversations.create("user-2", "Theirs");
+		const rename = async (id: string, title: unknown) =>
+			app.request(`/api/v1/memory/conversations/${id}`, {
+				method: "PATCH",
+				headers: await authHeaders(),
+				body: JSON.stringify({ title }),
+			});
+		const renamed = await rename(mine.id, "  Refunds  ");
+		expect(renamed.status).toBe(200);
+		expect((await renamed.json()).data.title).toBe("Refunds");
+		expect((await rename(mine.id, "   ")).status).toBe(422);
+		expect((await rename(theirs.id, "Mine now")).status).toBe(404);
+		expect(theirs.title).toBe("Theirs");
 	});
 
 	test("regenerate needs a conversation of yours with a question in it", async () => {
