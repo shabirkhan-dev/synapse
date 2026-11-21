@@ -1,6 +1,10 @@
 export { AUTH_ERROR_CODES } from "./constants/auth.constants";
 export { createAuthMiddleware, createSessionOnlyMiddleware } from "./middleware/auth.middleware";
 export { DrizzleApiKeyRepository } from "./repositories/api-key.repository";
+export { DrizzleMfaRepository } from "./repositories/mfa.repository";
+export { createMfaRoutes } from "./routes/mfa.routes";
+export { MfaService } from "./services/mfa.service";
+export type { MfaState, MfaStore } from "./types/mfa.types";
 export { createApiKeyRoutes } from "./routes/api-keys.routes";
 export { ApiKeysService } from "./services/api-keys.service";
 export type { ApiKey, ApiKeyStore } from "./types/api-key.types";

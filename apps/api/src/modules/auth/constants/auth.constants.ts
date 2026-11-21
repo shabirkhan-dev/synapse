@@ -15,6 +15,11 @@ export const AUTH_ERROR_CODES = {
 	API_KEY_NOT_FOUND: "AUTH_API_KEY_NOT_FOUND",
 	TOO_MANY_API_KEYS: "AUTH_TOO_MANY_API_KEYS",
 	SESSION_REQUIRED: "AUTH_SESSION_REQUIRED",
+	MFA_CODE_INVALID: "AUTH_MFA_CODE_INVALID",
+	MFA_CHALLENGE_INVALID: "AUTH_MFA_CHALLENGE_INVALID",
+	MFA_NOT_SET_UP: "AUTH_MFA_NOT_SET_UP",
+	MFA_ALREADY_ENABLED: "AUTH_MFA_ALREADY_ENABLED",
+	MFA_NOT_ENABLED: "AUTH_MFA_NOT_ENABLED",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -49,6 +54,16 @@ export const AUTH_MESSAGES = {
 	API_KEY_CREATED: "API key created; copy it now, it is not shown again",
 	API_KEYS_FETCHED: "API keys retrieved",
 	API_KEY_REVOKED: "API key revoked",
+	MFA_REQUIRED: "Enter the code from your authenticator app",
+	MFA_CODE_INVALID: "That code is not right, or was already used; try the newest one",
+	MFA_CHALLENGE_INVALID: "This sign-in took too long; enter your password again",
+	MFA_NOT_SET_UP: "Start setting up two-step sign-in first",
+	MFA_ALREADY_ENABLED: "Two-step sign-in is already on; turn it off first to set it up again",
+	MFA_NOT_ENABLED: "Two-step sign-in is not on",
+	MFA_STATUS: "Two-step sign-in status",
+	MFA_SETUP_STARTED: "Scan the code with your authenticator app, then confirm with a code",
+	MFA_ENABLED: "Two-step sign-in is on; keep the recovery codes somewhere safe",
+	MFA_DISABLED: "Two-step sign-in is off",
 	ORGANIZATION_SWITCHED: "Organization switched",
 	SESSIONS_FETCHED: "Sessions retrieved",
 	SESSION_REVOKED: "Session signed out",
@@ -70,7 +85,12 @@ export const AUTH_RATE_LIMITS = {
 	RESET_REQUEST_PER_EMAIL: { limit: 5, windowSeconds: HOUR },
 	RESET_REQUEST_PER_IP: { limit: 20, windowSeconds: HOUR },
 	VERIFICATION_EMAIL_PER_USER: { limit: 5, windowSeconds: HOUR },
+	/** Second-step codes: six digits are guessable without a tight limit. */
+	MFA_CODE_PER_USER: { limit: 5, windowSeconds: 5 * MINUTE },
 } as const;
+
+/** The name authenticator apps show next to the account. */
+export const MFA_ISSUER = "Synapse";
 
 /** How long emailed links stay valid. */
 export const AUTH_LINK_TTL_SECONDS = {

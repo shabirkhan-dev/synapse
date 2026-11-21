@@ -2,6 +2,11 @@
 export const endpoints = {
 	auth: {
 		signIn: "/auth/sign-in",
+		signInMfa: "/auth/sign-in/mfa",
+		mfa: "/auth/mfa",
+		mfaSetup: "/auth/mfa/setup",
+		mfaEnable: "/auth/mfa/enable",
+		mfaDisable: "/auth/mfa/disable",
 		signUp: "/auth/sign-up",
 		refresh: "/auth/refresh",
 		signOut: "/auth/sign-out",

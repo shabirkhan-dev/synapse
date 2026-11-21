@@ -64,6 +64,7 @@ describe("ai config", () => {
 			loadConfiguration({
 				NODE_ENV: "production",
 				JWT_SECRET: "x".repeat(40),
+				AUTH_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
 				RESEND_API_KEY: "re_test_not_real",
 				AI_API_KEY: "or",
 				AI_RERANK_PROVIDER: "cohere",
@@ -75,6 +76,7 @@ describe("ai config", () => {
 		const production = {
 			NODE_ENV: "production",
 			JWT_SECRET: "x".repeat(40),
+			AUTH_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
 			RESEND_API_KEY: "re_test_not_real",
 			AI_API_KEY: "or",
 		};

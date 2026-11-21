@@ -5,8 +5,8 @@ type: fix
 from: human
 to: all
 priority: normal
-status: open
-assignee: none
+status: doing
+assignee: claude
 reviewer: none
 parent: syn-roadmap
 depends_on: []

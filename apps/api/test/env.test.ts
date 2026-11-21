@@ -25,10 +25,20 @@ describe("env", () => {
 		);
 	});
 
+	test("production refuses the development encryption key; a key must be 32 bytes", () => {
+		expect(() => parseEnv({ NODE_ENV: "production" })).toThrow(
+			/AUTH_ENCRYPTION_KEY must be set in production/,
+		);
+		expect(() => parseEnv({ AUTH_ENCRYPTION_KEY: Buffer.alloc(16).toString("base64") })).toThrow(
+			/AUTH_ENCRYPTION_KEY must be 32 bytes/,
+		);
+	});
+
 	test("accepts a complete production config", () => {
 		const env = parseEnv({
 			NODE_ENV: "production",
 			JWT_SECRET: "x".repeat(40),
+			AUTH_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
 			AI_API_KEY: "test-key-not-real",
 			RESEND_API_KEY: "re_test_not_real",
 		});
@@ -39,6 +49,7 @@ describe("env", () => {
 		const production = {
 			NODE_ENV: "production",
 			JWT_SECRET: "x".repeat(40),
+			AUTH_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
 			AI_API_KEY: "test-key-not-real",
 			RESEND_API_KEY: "re_test_not_real",
 		};
@@ -55,6 +66,7 @@ describe("env", () => {
 		const base = {
 			NODE_ENV: "production",
 			JWT_SECRET: "x".repeat(40),
+			AUTH_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString("base64"),
 			RESEND_API_KEY: "re_test_not_real",
 			AI_CHAT_PROVIDER: "anthropic",
 			AI_EMBEDDING_PROVIDER: "cohere",

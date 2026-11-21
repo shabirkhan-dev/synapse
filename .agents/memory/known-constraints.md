@@ -6,7 +6,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   checked against their session on every request (syn-057): sign-out and revocation end them at
   once (`401 AUTH_SESSION_ENDED`). In-memory test stores treat minted, unknown sessions as active.
   Rate limits, email verification and password reset exist (syn-026); sessions can be listed and
-  revoked (syn-045, `User-Agent` stored per session, no IP); **no MFA**. Personal API keys (syn-083,
+  revoked (syn-045, `User-Agent` stored per session, no IP). Two-step sign-in (syn-084) is optional
+  TOTP per user (no SMS, no WebAuthn/passkeys, no admin-enforced policy); its secrets are sealed with
+  `AUTH_ENCRYPTION_KEY` (changing the key breaks them); password reset does not turn it off (a user who
+  lost phone and recovery codes needs an operator). Personal API keys (syn-083,
   `api_keys`, `syn_…` stored as SHA-256) act as their user in one organization with the live role; they
   cannot manage keys or sessions; `last_used_at` is written at most once a minute; no scopes (a key can do
   whatever its user can there).

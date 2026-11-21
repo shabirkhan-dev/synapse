@@ -11,6 +11,10 @@ import {
 
 /** Development-only default; production rejects it. */
 export const developmentJwtSecret = "development-only-jwt-secret-change-me";
+/** 32 bytes (base64) for development only; production must set its own `AUTH_ENCRYPTION_KEY`. */
+export const developmentEncryptionKey = Buffer.from("development-only-encryption-key!").toString(
+	"base64",
+);
 
 const modelPricesSchema = z.record(
 	z.string(),
@@ -64,6 +68,16 @@ export const envSchema = z
 		DATABASE_SSL: z.enum(["true", "false"]).optional(),
 		/** Access tokens are HS256 JWTs signed with this secret. */
 		JWT_SECRET: z.string().min(32).default(developmentJwtSecret),
+		/**
+		 * 32 random bytes, base64 (`openssl rand -base64 32`): encrypts secrets kept at rest (two-step
+		 * sign-in secrets). Changing it makes existing ones unreadable (their users must set up again).
+		 */
+		AUTH_ENCRYPTION_KEY: z
+			.string()
+			.default(developmentEncryptionKey)
+			.refine((value) => Buffer.from(value, "base64").length === 32, {
+				message: "AUTH_ENCRYPTION_KEY must be 32 bytes, base64-encoded (openssl rand -base64 32)",
+			}),
 		/** Access-token lifetime. Short: access tokens are not checked against the session. */
 		AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
 		/** Refresh-token (session) lifetime from sign-in; refreshing rotates the token, not the expiry. */
@@ -199,6 +213,13 @@ export const envSchema = z
 				path: ["RAG_WEB_ALLOW_PRIVATE_NETWORKS"],
 				message:
 					"RAG_WEB_ALLOW_PRIVATE_NETWORKS must be false in production (server-side request forgery)",
+			});
+		}
+		if (env.AUTH_ENCRYPTION_KEY === developmentEncryptionKey) {
+			context.addIssue({
+				code: "custom",
+				path: ["AUTH_ENCRYPTION_KEY"],
+				message: "AUTH_ENCRYPTION_KEY must be set in production",
 			});
 		}
 		if (env.JWT_SECRET === developmentJwtSecret) {

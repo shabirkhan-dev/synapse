@@ -78,6 +78,7 @@ services:
       APP_URL: https://${CONSOLE_HOST}
       CORS_ORIGIN: https://${CONSOLE_HOST}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (32+ random characters)}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?Set AUTH_ENCRYPTION_KEY (openssl rand -base64 32)}
       RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY (production sends real emails)}
       EMAIL_FROM: ${EMAIL_FROM:-Synapse <synapse@rabtx.dev>}
       AI_CHAT_PROVIDER: ${AI_CHAT_PROVIDER:-openai-compatible}

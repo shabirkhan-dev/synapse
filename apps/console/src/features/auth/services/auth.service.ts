@@ -4,12 +4,18 @@ import { api } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import { setAccessToken } from "@/lib/api/session";
 
-import { currentUserSchema, signedInSchema, verifiedUserSchema } from "../schemas/auth.schema";
+import {
+	currentUserSchema,
+	signedInSchema,
+	signInResultSchema,
+	verifiedUserSchema,
+} from "../schemas/auth.schema";
 import type {
 	ForgotPasswordInput,
 	ResetPasswordInput,
 	SignedIn,
 	SignInInput,
+	SignInOutcome,
 	SignUpInput,
 } from "../types/auth.types";
 
@@ -26,8 +32,22 @@ async function startSession(path: string, body: Record<string, unknown>): Promis
 }
 
 export const authService = {
-	signIn: ({ email, password }: SignInInput) =>
-		startSession(endpoints.auth.signIn, { email, password }),
+	/** With two-step sign-in on, the API answers with a challenge instead of tokens. */
+	async signIn({ email, password }: SignInInput): Promise<SignInOutcome> {
+		const result = await api(endpoints.auth.signIn, {
+			method: "POST",
+			body: { email, password, session: "cookie" },
+			auth: false,
+			schema: signInResultSchema,
+		});
+		if ("challenge" in result) return { kind: "mfa", challenge: result.challenge };
+		setAccessToken(result.tokens.accessToken);
+		return { kind: "signed-in", signedIn: result };
+	},
+
+	/** The second step: the challenge plus an authenticator or recovery code. */
+	completeSignIn: ({ challenge, code }: { challenge: string; code: string }) =>
+		startSession(endpoints.auth.signInMfa, { challenge, code }),
 
 	/** Creates the account and signs in; the API emails a verification link. */
 	signUp: ({ email, password }: SignUpInput) =>

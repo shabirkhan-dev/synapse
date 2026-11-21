@@ -6,6 +6,8 @@ const REFRESH_COOKIE_NAME = "synapse_refresh";
 export type AuthConfig = {
 	/** HS256 secret for access tokens. */
 	jwtSecret: string;
+	/** AES-256-GCM key (32 bytes) for secrets at rest: two-step sign-in secrets. */
+	encryptionKey: Uint8Array;
 	accessTokenTtlSeconds: number;
 	/** How long a session (and its refresh tokens) lives after sign-in. */
 	sessionTtlSeconds: number;
@@ -22,6 +24,7 @@ export type AuthConfig = {
 export function createAuthConfig(env: Env): AuthConfig {
 	return {
 		jwtSecret: env.JWT_SECRET,
+		encryptionKey: new Uint8Array(Buffer.from(env.AUTH_ENCRYPTION_KEY, "base64")),
 		accessTokenTtlSeconds: env.AUTH_ACCESS_TOKEN_TTL_SECONDS,
 		sessionTtlSeconds: env.AUTH_SESSION_TTL_DAYS * SECONDS_PER_DAY,
 		refreshReuseGraceSeconds: env.AUTH_REFRESH_REUSE_GRACE_SECONDS,

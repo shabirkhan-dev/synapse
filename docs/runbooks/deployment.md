@@ -15,7 +15,8 @@ API, worker, console, Postgres (pgvector) and a daily `pg_dump`.
 3. **Code:** `git clone` the repo (or check out a release tag `v*`).
 4. **Settings:** `deploy/.env` from Doppler `synapse/prd`
    (`doppler secrets download --config prd --no-file --format env > deploy/.env`) or from
-   `deploy/.env.example`. Required: hosts, `ACME_EMAIL`, `POSTGRES_PASSWORD`, `JWT_SECRET`
+   `deploy/.env.example`. Required: hosts, `ACME_EMAIL`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `AUTH_ENCRYPTION_KEY`
+   (`openssl rand -base64 32`; changing it later resets everyone's two-step sign-in)
    (`openssl rand -base64 48`), `RESEND_API_KEY` (sender domain verified in Resend), a model key.
 5. **Start:** `docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build`
 6. **Check:** `docker compose -f deploy/compose.yml --env-file deploy/.env ps` shows `api`,

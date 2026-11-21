@@ -10,6 +10,14 @@ export const users = pgTable(
 		passwordHash: text("password_hash").notNull(),
 		/** Set when the user opens a verification link (or resets their password by email). */
 		emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+		/** Two-step sign-in (syn-084): the TOTP secret, sealed with `AUTH_ENCRYPTION_KEY`. */
+		mfaSecret: text("mfa_secret"),
+		/** A secret being set up, until its first code is confirmed. */
+		mfaPendingSecret: text("mfa_pending_secret"),
+		/** Set while two-step sign-in is on. */
+		mfaEnabledAt: timestamp("mfa_enabled_at", { withTimezone: true }),
+		/** The last TOTP counter accepted, so a code works once. */
+		mfaLastCounter: integer("mfa_last_counter"),
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	},
@@ -97,6 +105,21 @@ export const apiKeys = pgTable(
 );
 
 export type ApiKeyRow = typeof apiKeys.$inferSelect;
+
+/** One-time recovery codes for two-step sign-in (SHA-256 of the normalized code). */
+export const mfaRecoveryCodes = pgTable(
+	"mfa_recovery_codes",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		codeHash: text("code_hash").notNull(),
+		usedAt: timestamp("used_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(table) => [uniqueIndex("mfa_recovery_codes_user_hash_unique").on(table.userId, table.codeHash)],
+);
 
 /** Fixed-window attempt counters, shared by every API instance. `key` is a SHA-256, never raw PII. */
 export const authRateLimits = pgTable("auth_rate_limits", {

@@ -78,6 +78,48 @@ export const signedInSchema = z
 	.object({ user: userSchema, tokens: authTokensSchema })
 	.openapi("SignedIn");
 
+/** A password sign-in: a session, or (two-step sign-in on) a challenge for `/sign-in/mfa`. */
+export const signInResultSchema = z
+	.union([
+		signedInSchema.extend({ mfaRequired: z.literal(false) }),
+		z.object({
+			mfaRequired: z.literal(true),
+			/** Valid 5 minutes; send it with a code to `POST /auth/sign-in/mfa`. */
+			challenge: z.string(),
+		}),
+	])
+	.openapi("SignInResult");
+
+export const signInMfaBodySchema = z
+	.object({
+		challenge: z.string().min(1).max(2048),
+		/** Six digits from the authenticator app, or a recovery code (`xxxxx-xxxxx`). */
+		code: z.string().trim().min(6).max(32),
+		session: sessionTransport,
+	})
+	.openapi("SignInMfaBody");
+
+export const mfaCodeBodySchema = z
+	.object({ code: z.string().trim().min(6).max(32) })
+	.openapi("MfaCodeBody");
+
+export const mfaStatusSchema = z
+	.object({ enabled: z.boolean(), recoveryCodesLeft: z.number().int() })
+	.openapi("MfaStatus");
+
+export const mfaSetupSchema = z
+	.object({
+		/** Base32 secret for typing into an authenticator app. */
+		secret: z.string(),
+		/** `otpauth://` link, the content of the QR code. */
+		uri: z.string(),
+	})
+	.openapi("MfaSetup");
+
+export const mfaRecoveryCodesSchema = z
+	.object({ recoveryCodes: z.array(z.string()) })
+	.openapi("MfaRecoveryCodes");
+
 export const switchOrganizationBodySchema = z
 	.object({ organizationId: z.uuid() })
 	.openapi("SwitchOrganizationBody");

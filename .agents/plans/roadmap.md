@@ -127,9 +127,9 @@ contextual retrieval and Ragas.
 | Document permissions inside an organization (ADR-0008) | ✅ | syn-081 |
 | Invite people by email | ✅ | syn-082 |
 | Personal API keys | ✅ | syn-083 |
-| Two-step sign-in (TOTP) | 🔄 | syn-084 |
-| Secrets removed from chat tool results | ⏭️ | syn-085 |
-| Chat: rename, keep stopped answers, versions on regenerate | ⬜ | syn-086 |
+| Two-step sign-in (TOTP) | ✅ | syn-084 |
+| Secrets removed from chat tool results | 🔄 | syn-085 |
+| Chat: rename, keep stopped answers, versions on regenerate | ⏭️ | syn-086 |
 | Palette searches everything; shell shows while the session loads | ⬜ | syn-087 |
 | First-run onboarding with sample documents | ⬜ | syn-088 |
 | Automated accessibility checks (axe) on every page | ⬜ | syn-089 |

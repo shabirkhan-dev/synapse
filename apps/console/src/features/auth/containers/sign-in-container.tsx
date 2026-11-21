@@ -1,18 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { SignInCodeForm } from "../components/sign-in-code-form";
 import { SignInForm } from "../components/sign-in-form";
 import { AUTH_ROUTES } from "../constants/auth.constants";
 import { useSessionStatus } from "../hooks/use-session";
+import { useCompleteSignInMutation } from "../hooks/mutations/use-complete-sign-in-mutation";
 import { useSignInMutation } from "../hooks/mutations/use-sign-in-mutation";
 
-/** Sign-in page: on success (or when already signed in) go to the documents. */
+/**
+ * Sign-in page: email and password, then (with two-step sign-in on) a code. On success, or when
+ * already signed in, go to the documents.
+ */
 export function SignInContainer({ invite = null }: { invite?: string | null } = {}) {
 	const router = useRouter();
 	const status = useSessionStatus();
 	const signIn = useSignInMutation();
+	const complete = useCompleteSignInMutation();
+	const [challenge, setChallenge] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (status !== "signed-in") return;
@@ -22,11 +29,31 @@ export function SignInContainer({ invite = null }: { invite?: string | null } = 
 		);
 	}, [status, router, invite]);
 
+	if (challenge) {
+		return (
+			<SignInCodeForm
+				pending={complete.isPending}
+				error={complete.error ? complete.error.message : null}
+				onSubmit={(code) => complete.mutate({ challenge, code })}
+				onStartOver={() => {
+					complete.reset();
+					signIn.reset();
+					setChallenge(null);
+				}}
+			/>
+		);
+	}
 	return (
 		<SignInForm
 			pending={signIn.isPending}
 			error={signIn.error ? signIn.error.message : null}
-			onSubmit={(input) => signIn.mutate(input)}
+			onSubmit={(input) =>
+				signIn.mutate(input, {
+					onSuccess: (outcome) => {
+						if (outcome.kind === "mfa") setChallenge(outcome.challenge);
+					},
+				})
+			}
 		/>
 	);
 }

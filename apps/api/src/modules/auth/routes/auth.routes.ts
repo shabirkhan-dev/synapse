@@ -20,6 +20,8 @@ import {
 	sessionIdParamsSchema,
 	sessionSchema,
 	signedInSchema,
+	signInMfaBodySchema,
+	signInResultSchema,
 	signInBodySchema,
 	signUpBodySchema,
 	switchedOrganizationSchema,
@@ -91,8 +93,29 @@ const signInRoute = createRoute({
 	path: "/sign-in",
 	tags,
 	summary: "Sign in with email and password",
+	description:
+		"With two-step sign-in on, the answer is `{ mfaRequired: true, challenge }` instead of tokens: finish with `POST /auth/sign-in/mfa`.",
 	middleware: [smallBody] as const,
 	request: { body: jsonBody(signInBodySchema) },
+	responses: {
+		200: {
+			description: "Tokens for a new session, or a challenge for the second step",
+			content: { "application/json": { schema: successEnvelope(signInResultSchema) } },
+		},
+		...rateLimited,
+		...errorResponses,
+	},
+});
+
+const signInMfaRoute = createRoute({
+	method: "post",
+	path: "/sign-in/mfa",
+	tags,
+	summary: "Second sign-in step: the challenge plus an authenticator or recovery code",
+	description:
+		"A code works once; recovery codes are spent when used. At most 5 codes per user per 5 minutes (`429`).",
+	middleware: [smallBody] as const,
+	request: { body: jsonBody(signInMfaBodySchema) },
 	responses: {
 		200: {
 			description: "Tokens for a new session",
@@ -308,14 +331,29 @@ export function createAuthRoutes(
 
 	app.openapi(signInRoute, async (c) => {
 		const { session, ...input } = c.req.valid("json");
-		const signedIn = await auth.signIn(input, clientInfo(c, trustProxy), {
+		const result = await auth.signIn(input, clientInfo(c, trustProxy), {
+			requestId: c.get("requestId"),
+		});
+		if (result.mfaRequired) {
+			return success(c, result, AUTH_MESSAGES.MFA_REQUIRED, HTTP_STATUS.OK);
+		}
+		const body =
+			session === "cookie"
+				? { ...result, tokens: moveRefreshTokenToCookie(c, result.tokens, cookie) }
+				: result;
+		return success(c, body, AUTH_MESSAGES.SIGNED_IN, HTTP_STATUS.OK);
+	});
+
+	app.openapi(signInMfaRoute, async (c) => {
+		const { session, ...input } = c.req.valid("json");
+		const signedIn = await auth.completeSignIn(input, clientInfo(c, trustProxy), {
 			requestId: c.get("requestId"),
 		});
 		const body =
 			session === "cookie"
 				? { ...signedIn, tokens: moveRefreshTokenToCookie(c, signedIn.tokens, cookie) }
 				: signedIn;
-		return success(c, body, AUTH_MESSAGES.SIGNED_IN);
+		return success(c, body, AUTH_MESSAGES.SIGNED_IN, HTTP_STATUS.OK);
 	});
 
 	// A body token wins; otherwise the cookie. The JSON body is required (the route validates its

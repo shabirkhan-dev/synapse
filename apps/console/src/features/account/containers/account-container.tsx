@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/shared/page-header";
 
 import { EmailStatus } from "../components/email-status";
 import { ApiKeysContainer } from "./api-keys-container";
+import { TwoStepContainer } from "./two-step-container";
 import { SessionsList } from "../components/sessions-list";
 import { useResendVerificationMutation } from "../hooks/mutations/use-resend-verification-mutation";
 import { useRevokeOtherSessionsMutation } from "../hooks/mutations/use-revoke-other-sessions-mutation";
@@ -36,7 +37,7 @@ export function AccountContainer() {
 	return (
 		<div className="flex flex-col gap-6">
 			<PageHeader title="Account">
-				Your email, where you are signed in, and your API keys.
+				Your email, how you sign in, where you are signed in, and your API keys.
 			</PageHeader>
 
 			<Card>
@@ -113,6 +114,7 @@ export function AccountContainer() {
 					)}
 				</CardContent>
 			</Card>
+			<TwoStepContainer />
 			<ApiKeysContainer />
 		</div>
 	);

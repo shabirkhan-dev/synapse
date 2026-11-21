@@ -48,6 +48,9 @@ import {
 	type ApiKeyStore,
 	type AuthRepository,
 	AuthService,
+	MfaService,
+	type MfaState,
+	type MfaStore,
 	type AuthSession,
 	type AuthTokenPurpose,
 	type RateLimiter,
@@ -733,6 +736,71 @@ export class InMemoryFeedbackStore implements FeedbackStore {
 	}
 }
 
+export class InMemoryMfaStore implements MfaStore {
+	states = new Map<string, MfaState>();
+	recoveryCodes = new Map<string, Array<{ hash: string; used: boolean }>>();
+
+	private state(userId: string): MfaState {
+		return (
+			this.states.get(userId) ?? {
+				secret: null,
+				pendingSecret: null,
+				enabledAt: null,
+				lastCounter: null,
+			}
+		);
+	}
+
+	async get(userId: string) {
+		return this.state(userId);
+	}
+
+	async setPending(userId: string, sealedSecret: string) {
+		this.states.set(userId, { ...this.state(userId), pendingSecret: sealedSecret });
+	}
+
+	async enable(
+		userId: string,
+		input: { sealedSecret: string; counter: number; recoveryCodeHashes: string[] },
+	) {
+		this.states.set(userId, {
+			secret: input.sealedSecret,
+			pendingSecret: null,
+			enabledAt: new Date().toISOString(),
+			lastCounter: input.counter,
+		});
+		this.recoveryCodes.set(
+			userId,
+			input.recoveryCodeHashes.map((hash) => ({ hash, used: false })),
+		);
+	}
+
+	async disable(userId: string) {
+		this.states.delete(userId);
+		this.recoveryCodes.delete(userId);
+	}
+
+	async acceptCounter(userId: string, counter: number) {
+		const state = this.state(userId);
+		if (state.lastCounter !== null && state.lastCounter >= counter) return false;
+		this.states.set(userId, { ...state, lastCounter: counter });
+		return true;
+	}
+
+	async useRecoveryCode(userId: string, codeHash: string) {
+		const code = this.recoveryCodes
+			.get(userId)
+			?.find((item) => item.hash === codeHash && !item.used);
+		if (!code) return false;
+		code.used = true;
+		return true;
+	}
+
+	async countRecoveryCodes(userId: string) {
+		return (this.recoveryCodes.get(userId) ?? []).filter((item) => !item.used).length;
+	}
+}
+
 export class InMemoryApiKeyStore implements ApiKeyStore {
 	keys: Array<ApiKey & { userId: string; keyHash: string }> = [];
 
@@ -1372,7 +1440,16 @@ export function buildTestApp({
 		appUrl: testConfig.auth.appUrl,
 		audit,
 	});
+	const mfaStore = new InMemoryMfaStore();
+	const mfa = new MfaService({
+		store: mfaStore,
+		rateLimiter: new InMemoryRateLimiter(),
+		encryptionKey: testConfig.auth.encryptionKey,
+		emailOf: async (userId) => (await authRepository.findUserById(userId))?.email ?? null,
+		audit,
+	});
 	const auth = new AuthService({
+		mfa,
 		repository: authRepository,
 		rateLimiter: new InMemoryRateLimiter(),
 		email,
@@ -1403,6 +1480,7 @@ export function buildTestApp({
 		logger,
 		auth,
 		apiKeys,
+		mfa,
 		rag,
 		oversight,
 		audit,
@@ -1433,6 +1511,7 @@ export function buildTestApp({
 		organizations,
 		organizationStore,
 		apiKeyStore,
+		mfaStore,
 		chatModel,
 		embeddingModel,
 	};

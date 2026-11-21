@@ -4,8 +4,10 @@ import { api } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 
 import { apiKeyListSchema, createdApiKeySchema } from "../schemas/api-key.schema";
+import { mfaRecoveryCodesSchema, mfaSetupSchema, mfaStatusSchema } from "../schemas/mfa.schema";
 import { revokedSessionsSchema, sessionListSchema } from "../schemas/session.schema";
 import type { ApiKey, CreatedApiKey } from "../types/api-key.types";
+import type { MfaSetup, MfaStatus } from "../types/mfa.types";
 import type { Session } from "../types/session.types";
 
 export const accountService = {
@@ -18,6 +20,25 @@ export const accountService = {
 
 	revokeOtherSessions: (): Promise<{ revoked: number }> =>
 		api(endpoints.auth.revokeOtherSessions, { method: "POST", schema: revokedSessionsSchema }),
+
+	mfaStatus: (): Promise<MfaStatus> => api(endpoints.auth.mfa, { schema: mfaStatusSchema }),
+
+	/** A new secret to scan; two-step sign-in is on only after `enableMfa` confirms a code. */
+	setupMfa: (): Promise<MfaSetup> =>
+		api(endpoints.auth.mfaSetup, { method: "POST", body: {}, schema: mfaSetupSchema }),
+
+	/** Turns it on; returns ten one-time recovery codes (shown once). */
+	enableMfa: async (code: string): Promise<string[]> =>
+		(
+			await api(endpoints.auth.mfaEnable, {
+				method: "POST",
+				body: { code },
+				schema: mfaRecoveryCodesSchema,
+			})
+		).recoveryCodes,
+
+	disableMfa: (code: string): Promise<MfaStatus> =>
+		api(endpoints.auth.mfaDisable, { method: "POST", body: { code }, schema: mfaStatusSchema }),
 
 	/** Your API keys (never the keys themselves). */
 	apiKeys: (): Promise<ApiKey[]> => api(endpoints.auth.apiKeys, { schema: apiKeyListSchema }),

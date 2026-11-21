@@ -5,6 +5,8 @@ import type { Logger } from "@synapse/observability";
 import {
 	type AccessTokens,
 	createAccessTokens,
+	createMfaChallenges,
+	type MfaChallenges,
 	createSecretToken,
 	hashPassword,
 	hashSecretToken,
@@ -20,6 +22,7 @@ import { AppError } from "@/shared/errors/app-error";
 import type { AuthUser, RequestContext } from "@/shared/types/app-types";
 
 import { passwordResetEmail, verificationEmail } from "../constants/auth-emails";
+import type { MfaService } from "./mfa.service";
 import {
 	AUTH_ERROR_CODES,
 	AUTH_LINK_PATHS,
@@ -56,7 +59,14 @@ export type AuthServiceDependencies = {
 	audit: AuditLog;
 	/** The user's role in an organization (organizations module), `null` if not a member. */
 	roleOf: (organizationId: string, userId: string) => Promise<OrganizationRole | null>;
+	/** Two-step sign-in: whether a user has it on, and checking a second-step code. */
+	mfa: Pick<MfaService, "isEnabled" | "verify">;
 };
+
+/** A password sign-in either starts a session or, with two-step sign-in on, asks for a code. */
+export type SignInResult =
+	| ({ mfaRequired: false } & SignedIn)
+	| { mfaRequired: true; challenge: string };
 
 const NO_REQUEST: RequestContext = { requestId: null };
 
@@ -74,6 +84,8 @@ export class AuthService {
 	private readonly config: AuthConfig;
 	private readonly audit: AuditLog;
 	private readonly accessTokens: AccessTokens;
+	private readonly mfaChallenges: MfaChallenges;
+	private readonly mfa: AuthServiceDependencies["mfa"];
 
 	private readonly roleOf: AuthServiceDependencies["roleOf"];
 
@@ -85,7 +97,10 @@ export class AuthService {
 		config,
 		audit,
 		roleOf,
+		mfa,
 	}: AuthServiceDependencies) {
+		this.mfa = mfa;
+		this.mfaChallenges = createMfaChallenges(config.jwtSecret);
 		this.audit = audit;
 		this.roleOf = roleOf;
 		this.repository = repository;
@@ -126,7 +141,7 @@ export class AuthService {
 		{ email, password }: Credentials,
 		{ ip, userAgent }: ClientInfo,
 		context: RequestContext = NO_REQUEST,
-	): Promise<SignedIn> {
+	): Promise<SignInResult> {
 		const normalized = normalizeEmail(email);
 		await this.limit(`sign-in:ip:${ip}`, AUTH_RATE_LIMITS.SIGN_IN_PER_IP);
 		await this.limit(`sign-in:email:${normalized}`, AUTH_RATE_LIMITS.SIGN_IN_PER_EMAIL);
@@ -138,8 +153,41 @@ export class AuthService {
 			throw unauthorized(AUTH_ERROR_CODES.INVALID_CREDENTIALS, AUTH_MESSAGES.INVALID_CREDENTIALS);
 		}
 		const { passwordHash: _passwordHash, ...user } = account;
+		// Two-step sign-in: the password alone only earns a short-lived challenge for the code step.
+		if (await this.mfa.isEnabled(user.id)) {
+			return { mfaRequired: true, challenge: await this.mfaChallenges.issue(user.id) };
+		}
 		const tokens = await this.startSession(user.id, userAgent);
 		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_IN, user.id, context);
+		return { mfaRequired: false, user, tokens };
+	}
+
+	/** The second step: the challenge from `signIn` plus an authenticator or recovery code. */
+	async completeSignIn(
+		{ challenge, code }: { challenge: string; code: string },
+		{ userAgent }: ClientInfo,
+		context: RequestContext = NO_REQUEST,
+	): Promise<SignedIn> {
+		let userId: string;
+		try {
+			userId = await this.mfaChallenges.verify(challenge);
+		} catch {
+			throw unauthorized(
+				AUTH_ERROR_CODES.MFA_CHALLENGE_INVALID,
+				AUTH_MESSAGES.MFA_CHALLENGE_INVALID,
+			);
+		}
+		if (!(await this.mfa.verify(userId, code, context))) {
+			throw unauthorized(AUTH_ERROR_CODES.MFA_CODE_INVALID, AUTH_MESSAGES.MFA_CODE_INVALID);
+		}
+		const user = await this.repository.findUserById(userId);
+		if (!user)
+			throw unauthorized(
+				AUTH_ERROR_CODES.MFA_CHALLENGE_INVALID,
+				AUTH_MESSAGES.MFA_CHALLENGE_INVALID,
+			);
+		const tokens = await this.startSession(user.id, userAgent);
+		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_IN, user.id, context, { mfa: true });
 		return { user, tokens };
 	}
 

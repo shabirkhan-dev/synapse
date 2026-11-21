@@ -3,7 +3,12 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createDatabase, runMigrations, sourceMigrationsFolder } from "@synapse/database";
 import { sql } from "drizzle-orm";
 
-import { DrizzleApiKeyRepository, DrizzleAuthRepository, DrizzleRateLimiter } from "@/modules/auth";
+import {
+	DrizzleApiKeyRepository,
+	DrizzleAuthRepository,
+	DrizzleMfaRepository,
+	DrizzleRateLimiter,
+} from "@/modules/auth";
 
 /** Real Postgres. Opt-in: set API_TEST_DATABASE_URL to a throwaway database. */
 const url = process.env.API_TEST_DATABASE_URL;
@@ -239,5 +244,35 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 		expect(await keys.remove(other?.id ?? "", first.id)).toBe(false);
 		expect(await keys.remove(userId, first.id)).toBe(true);
 		expect(await keys.findByHash(hash)).toBeNull();
+	});
+
+	test("two-step state: pending then on, counters only move forward, recovery codes work once", async () => {
+		const mfa = new DrizzleMfaRepository(database.db);
+		const user = await repository.createUser({ email: email("mfa"), passwordHash: "$argon2id$x" });
+		const userId = user?.id ?? "";
+		expect(await mfa.get(userId)).toEqual({
+			secret: null,
+			pendingSecret: null,
+			enabledAt: null,
+			lastCounter: null,
+		});
+		await mfa.setPending(userId, "v1.sealed");
+		await mfa.enable(userId, {
+			sealedSecret: "v1.sealed",
+			counter: 100,
+			recoveryCodeHashes: ["h1", "h2"],
+		});
+		const on = await mfa.get(userId);
+		expect(on).toMatchObject({ secret: "v1.sealed", pendingSecret: null, lastCounter: 100 });
+		expect(on?.enabledAt).not.toBeNull();
+		expect(await mfa.acceptCounter(userId, 100)).toBe(false);
+		expect(await mfa.acceptCounter(userId, 99)).toBe(false);
+		expect(await mfa.acceptCounter(userId, 101)).toBe(true);
+		expect(await mfa.useRecoveryCode(userId, "h1")).toBe(true);
+		expect(await mfa.useRecoveryCode(userId, "h1")).toBe(false);
+		expect(await mfa.countRecoveryCodes(userId)).toBe(1);
+		await mfa.disable(userId);
+		expect((await mfa.get(userId))?.enabledAt).toBeNull();
+		expect(await mfa.countRecoveryCodes(userId)).toBe(0);
 	});
 });

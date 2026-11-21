@@ -20,7 +20,9 @@ import {
 	AuthService,
 	DrizzleApiKeyRepository,
 	DrizzleAuthRepository,
+	DrizzleMfaRepository,
 	DrizzleRateLimiter,
+	MfaService,
 } from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { DrizzleEvaluationRepository, EvaluationsService } from "./modules/evaluations";
@@ -94,7 +96,15 @@ const organizations = new OrganizationsService({
 	appUrl: config.auth.appUrl,
 	audit,
 });
+const mfa = new MfaService({
+	store: new DrizzleMfaRepository(database.db),
+	rateLimiter,
+	encryptionKey: config.auth.encryptionKey,
+	emailOf: async (userId) => (await authRepository.findUserById(userId))?.email ?? null,
+	audit,
+});
 const auth = new AuthService({
+	mfa,
 	repository: authRepository,
 	rateLimiter,
 	email,
@@ -188,6 +198,7 @@ const app = createApp({
 	logger,
 	auth,
 	apiKeys,
+	mfa,
 	rag,
 	oversight,
 	audit,

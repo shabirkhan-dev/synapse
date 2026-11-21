@@ -8,8 +8,10 @@ import { createAuditRoutes, UsageService } from "@/modules/audit";
 import {
 	type ApiKeysService,
 	type AuthService,
+	type MfaService,
 	createApiKeyRoutes,
 	createAuthMiddleware,
+	createMfaRoutes,
 	createAuthRoutes,
 	createSessionOnlyMiddleware,
 } from "@/modules/auth";
@@ -29,6 +31,8 @@ export type RouteDependencies = {
 	auth: AuthService;
 	/** Personal API keys, accepted as bearer tokens next to access tokens. */
 	apiKeys: ApiKeysService;
+	/** Two-step sign-in management (`/auth/mfa`). */
+	mfa: MfaService;
 	rag: RagService;
 	oversight: OversightService;
 	audit: AuditLog;
@@ -49,6 +53,7 @@ export function registerRoutes(
 		config,
 		auth,
 		apiKeys,
+		mfa,
 		rag,
 		oversight,
 		audit,
@@ -73,6 +78,8 @@ export function registerRoutes(
 	app.use(`${basePath}/auth/switch-organization`, authenticate);
 	app.use(`${basePath}/auth/api-keys`, authenticate);
 	app.use(`${basePath}/auth/api-keys/*`, authenticate);
+	app.use(`${basePath}/auth/mfa`, authenticate);
+	app.use(`${basePath}/auth/mfa/*`, authenticate);
 	// A leaked key must not mint keys, end sessions or switch organizations.
 	for (const path of [
 		"auth/sign-out",
@@ -81,6 +88,8 @@ export function registerRoutes(
 		"auth/switch-organization",
 		"auth/api-keys",
 		"auth/api-keys/*",
+		"auth/mfa",
+		"auth/mfa/*",
 	]) {
 		app.use(`${basePath}/${path}`, sessionOnly);
 	}
@@ -122,6 +131,7 @@ export function registerRoutes(
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth/api-keys`, createApiKeyRoutes(apiKeys));
+	app.route(`${basePath}/auth/mfa`, createMfaRoutes(mfa));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
 	app.route(`${basePath}/rag`, createRagRoutes(rag, oversight));
 	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));

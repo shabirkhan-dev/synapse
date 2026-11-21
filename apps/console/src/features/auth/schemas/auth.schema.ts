@@ -39,6 +39,21 @@ const user = z.object({
 /** `data` of sign-in / sign-up with `session: "cookie"`: the refresh token is in the cookie. */
 export const signedInSchema = z.object({ user, tokens: z.object({ accessToken: z.string() }) });
 
+/** `POST /auth/sign-in`: a session, or (two-step sign-in on) a challenge for the code step. */
+export const signInResultSchema = z.union([
+	z.object({ mfaRequired: z.literal(true), challenge: z.string() }),
+	signedInSchema,
+]);
+
+/** The second step: six digits, or a recovery code (`xxxxx-xxxxx`). */
+export const signInCodeFormSchema = z.object({
+	code: z
+		.string()
+		.trim()
+		.min(6, "Enter the 6-digit code, or a recovery code")
+		.max(32, "That is longer than any code"),
+});
+
 /** `data` of `POST /auth/verify-email`. */
 export const verifiedUserSchema = user;
 

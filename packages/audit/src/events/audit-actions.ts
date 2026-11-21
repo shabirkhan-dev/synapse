@@ -31,6 +31,9 @@ export const AUDIT_ACTIONS = {
 	AUTH_ORGANIZATION_SWITCHED: "auth.session.organization_switched",
 	AUTH_API_KEY_CREATED: "auth.api_key.created",
 	AUTH_API_KEY_REVOKED: "auth.api_key.revoked",
+	AUTH_MFA_ENABLED: "auth.mfa.enabled",
+	AUTH_MFA_DISABLED: "auth.mfa.disabled",
+	AUTH_MFA_RECOVERY_CODE_USED: "auth.mfa.recovery_code_used",
 } as const;
 
 /** Actor for work no user did directly (approved actions, jobs). */
