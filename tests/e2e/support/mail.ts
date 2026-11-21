@@ -10,7 +10,7 @@ import { E2E } from "./env";
  */
 export async function emailedToken(
 	email: string,
-	path: "/verify-email" | "/reset-password",
+	path: "/verify-email" | "/reset-password" | "/invite",
 ): Promise<string> {
 	const pattern = new RegExp(`${path}\\?token=([A-Za-z0-9_-]+)`);
 	let token: string | undefined;

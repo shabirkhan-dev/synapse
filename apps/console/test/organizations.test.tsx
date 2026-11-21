@@ -110,15 +110,16 @@ describe("TeamContainer (mocked API)", () => {
 		expect(membersCall?.headers.get("authorization")).toBe("Bearer team-token");
 	});
 
-	test("an admin adds a member by email; the API's refusal is shown", async () => {
+	test("an admin adds a member by email; an address without an account is invited instead", async () => {
 		signedIn();
 		let members = MEMBERS.slice(0, 1);
+		let invitations: Array<Record<string, string>> = [];
 		const calls = mockFetch((call) => {
 			if (call.url.endsWith("/auth/me")) return ok(me("t1", "admin"));
 			if (is(call, "GET", "/organizations")) return ok([personal, team("admin")]);
 			if (is(call, "POST", "/organizations/t1/members")) {
 				const { email } = call.body as { email: string };
-				if (email === "nobody@example.com")
+				if (email !== "bob@example.com")
 					return failure(
 						404,
 						"ORGANIZATION_USER_NOT_FOUND",
@@ -127,16 +128,54 @@ describe("TeamContainer (mocked API)", () => {
 				members = [...members, member("u2", email, "member")];
 				return ok(members);
 			}
+			if (is(call, "POST", "/organizations/t1/invitations")) {
+				const { email } = call.body as { email: string };
+				if (email === "full@example.com")
+					return failure(
+						409,
+						"ORGANIZATION_TOO_MANY_INVITATIONS",
+						"This team has too many pending invitations; withdraw some first",
+					);
+				const invitation = {
+					id: `i-${invitations.length + 1}`,
+					email,
+					role: "member",
+					expiresAt: "2026-11-28T10:00:00Z",
+					createdAt: "2026-11-21T10:00:00Z",
+				};
+				invitations = [invitation, ...invitations];
+				return ok(invitation, 201);
+			}
+			if (is(call, "GET", "/organizations/t1/invitations")) return ok(invitations);
+			if (call.method === "DELETE" && call.url.includes("/invitations/")) {
+				invitations = [];
+				return ok({ id: "i-1" });
+			}
 			return ok(members);
 		});
 		renderWithQuery(<TeamContainer />);
-		await screen.findByText("Add people who already have a Synapse account.", { exact: false });
+		await screen.findByText("anyone without an account yet gets an invitation", { exact: false });
 
-		fireEvent.change(screen.getByLabelText("Email"), { target: { value: "nobody@example.com" } });
+		// No account: the console sends an invitation instead and lists it.
+		fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
 		fireEvent.click(screen.getByRole("button", { name: "Add member" }));
-		await screen.findByText("No account with this email; ask them to sign up first");
-		expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("nobody@example.com");
+		await screen.findByText("Invited new@example.com.", { exact: false });
+		const pending = (await screen.findByText("Invited, not joined yet")).closest("section");
+		expect(within(pending as HTMLElement).getByText("new@example.com")).toBeDefined();
+		const invited = calls.findLast((call) => is(call, "POST", "/organizations/t1/invitations"));
+		expect(invited?.body).toEqual({ email: "new@example.com", role: "member" });
 
+		// Withdrawing it removes it from the list.
+		fireEvent.click(screen.getByLabelText("Withdraw the invitation to new@example.com"));
+		await waitFor(() => expect(screen.queryByText("Invited, not joined yet")).toBeNull());
+
+		// An invitation the API refuses shows why and keeps the address.
+		fireEvent.change(screen.getByLabelText("Email"), { target: { value: "full@example.com" } });
+		fireEvent.click(screen.getByRole("button", { name: "Add member" }));
+		await screen.findByText("This team has too many pending invitations; withdraw some first");
+		expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("full@example.com");
+
+		// An existing account is added directly.
 		fireEvent.change(screen.getByLabelText("Email"), { target: { value: "bob@example.com" } });
 		fireEvent.click(screen.getByRole("button", { name: "Add member" }));
 		const table = await screen.findByRole("table");
@@ -146,7 +185,7 @@ describe("TeamContainer (mocked API)", () => {
 		);
 		const added = calls.findLast((call) => is(call, "POST", "/organizations/t1/members"));
 		expect(added?.body).toEqual({ email: "bob@example.com", role: "member" });
-	});
+	}, 20_000);
 
 	test("a member sees the team but cannot change it", async () => {
 		signedIn();

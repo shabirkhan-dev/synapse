@@ -79,15 +79,19 @@ const circuits = createCircuitStatus([
 const authRepository = new DrizzleAuthRepository(database.db);
 // One limiter for the auth limits and the per-user budgets on model-calling routes.
 const rateLimiter = new DrizzleRateLimiter(database.db);
+const email = createEmailSender(config.email, config.reliability, logger, circuits);
 const organizations = new OrganizationsService({
 	store: new DrizzleOrganizationRepository(database.db),
-	findUserIdByEmail: async (email) => (await authRepository.findUserByEmail(email))?.id ?? null,
+	findUserIdByEmail: async (address) => (await authRepository.findUserByEmail(address))?.id ?? null,
+	emailOf: async (userId) => (await authRepository.findUserById(userId))?.email ?? null,
+	email,
+	appUrl: config.auth.appUrl,
 	audit,
 });
 const auth = new AuthService({
 	repository: authRepository,
 	rateLimiter,
-	email: createEmailSender(config.email, config.reliability, logger, circuits),
+	email,
 	logger,
 	config: config.auth,
 	audit,

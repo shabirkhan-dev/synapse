@@ -1,7 +1,9 @@
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 
 import {
 	type Database,
+	type OrganizationInvitationRow,
+	organizationInvitations,
 	organizationMembers,
 	organizations,
 	ragDocumentMembers,
@@ -12,6 +14,8 @@ import type { OrganizationRole } from "@synapse/security";
 
 import { toOrganization } from "../mappers/organizations.mapper";
 import type {
+	Invitation,
+	InvitationByToken,
 	Member,
 	Membership,
 	Organization,
@@ -142,4 +146,106 @@ export class DrizzleOrganizationRepository implements OrganizationStore {
 			);
 		return Number(row?.owners ?? 0);
 	}
+
+	async saveInvitation(input: {
+		organizationId: string;
+		email: string;
+		role: OrganizationRole;
+		tokenHash: string;
+		invitedBy: string;
+		expiresAt: Date;
+	}): Promise<Invitation> {
+		return this.db.transaction(async (tx) => {
+			// One pending invitation per address: a new one voids the old link.
+			await tx
+				.delete(organizationInvitations)
+				.where(
+					and(
+						eq(organizationInvitations.organizationId, input.organizationId),
+						eq(organizationInvitations.email, input.email),
+						isNull(organizationInvitations.acceptedAt),
+					),
+				);
+			const [row] = await tx.insert(organizationInvitations).values(input).returning();
+			if (!row) throw new Error("Failed to insert invitation");
+			return toInvitation(row);
+		});
+	}
+
+	async listInvitations(organizationId: string, now: Date): Promise<Invitation[]> {
+		const rows = await this.db
+			.select()
+			.from(organizationInvitations)
+			.where(
+				and(
+					eq(organizationInvitations.organizationId, organizationId),
+					isNull(organizationInvitations.acceptedAt),
+					gt(organizationInvitations.expiresAt, now),
+				),
+			)
+			.orderBy(desc(organizationInvitations.createdAt));
+		return rows.map(toInvitation);
+	}
+
+	async revokeInvitation(organizationId: string, invitationId: string): Promise<boolean> {
+		const rows = await this.db
+			.delete(organizationInvitations)
+			.where(
+				and(
+					eq(organizationInvitations.id, invitationId),
+					eq(organizationInvitations.organizationId, organizationId),
+					isNull(organizationInvitations.acceptedAt),
+				),
+			)
+			.returning({ id: organizationInvitations.id });
+		return rows.length > 0;
+	}
+
+	async findInvitation(tokenHash: string): Promise<InvitationByToken | null> {
+		const [row] = await this.db
+			.select()
+			.from(organizationInvitations)
+			.where(eq(organizationInvitations.tokenHash, tokenHash))
+			.limit(1);
+		return row
+			? {
+					...toInvitation(row),
+					organizationId: row.organizationId,
+					acceptedAt: row.acceptedAt?.toISOString() ?? null,
+				}
+			: null;
+	}
+
+	async acceptInvitation(invitationId: string, userId: string, now: Date): Promise<boolean> {
+		return this.db.transaction(async (tx) => {
+			const [accepted] = await tx
+				.update(organizationInvitations)
+				.set({ acceptedAt: now })
+				.where(
+					and(
+						eq(organizationInvitations.id, invitationId),
+						isNull(organizationInvitations.acceptedAt),
+						gt(organizationInvitations.expiresAt, now),
+					),
+				)
+				.returning();
+			if (!accepted) return false;
+			// Someone already in the team keeps their role (an invitation never demotes).
+			await tx
+				.insert(organizationMembers)
+				.values({ organizationId: accepted.organizationId, userId, role: accepted.role })
+				.onConflictDoNothing();
+			return true;
+		});
+	}
+}
+
+function toInvitation(row: OrganizationInvitationRow): Invitation {
+	return {
+		id: row.id,
+		email: row.email,
+		role: row.role as OrganizationRole,
+		expiresAt: row.expiresAt.toISOString(),
+		createdAt: row.createdAt.toISOString(),
+	};
 }

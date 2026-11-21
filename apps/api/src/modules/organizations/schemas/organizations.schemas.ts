@@ -41,3 +41,28 @@ export const memberSchema = z
 		createdAt: z.string(),
 	})
 	.openapi("Member");
+
+export const invitationParamsSchema = organizationIdParamsSchema.extend({
+	invitationId: z.uuid().openapi({ param: { name: "invitationId", in: "path" } }),
+});
+
+export const inviteBodySchema = z
+	.object({
+		email: z.email().max(254).openapi({ example: "newcomer@example.com" }),
+		role: z.enum(ORGANIZATION_ROLES).default("member"),
+	})
+	.openapi("InviteBody");
+
+export const invitationSchema = z
+	.object({
+		id: z.uuid(),
+		email: z.string(),
+		role: z.enum(ORGANIZATION_ROLES),
+		expiresAt: z.string(),
+		createdAt: z.string(),
+	})
+	.openapi("Invitation");
+
+export const acceptInvitationBodySchema = z
+	.object({ token: z.string().min(16).max(256) })
+	.openapi("AcceptInvitationBody");

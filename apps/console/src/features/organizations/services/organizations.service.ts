@@ -1,19 +1,26 @@
+import { z } from "zod";
+
 import { api } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import { setAccessToken } from "@/lib/api/session";
 
 import {
+	invitationListSchema,
+	invitationSchema,
 	memberListSchema,
 	membershipListSchema,
+	membershipSchema,
 	organizationSchema,
 	removedMemberSchema,
 	switchedOrganizationSchema,
 } from "../schemas/organization.schema";
 import type {
+	Invitation,
 	Member,
 	Membership,
 	Organization,
 	RemoveMemberInput,
+	RevokeInvitationInput,
 	SaveMemberInput,
 	SwitchedOrganization,
 } from "../types/organization.types";
@@ -57,6 +64,34 @@ export const organizationsService = {
 			body: { email, role },
 			schema: memberListSchema,
 		}),
+
+	/** Emails a link to join to someone without an account (the API refuses existing accounts). */
+	invite: ({ organizationId, email, role }: SaveMemberInput): Promise<Invitation> =>
+		api(endpoints.organizations.invitations(organizationId), {
+			method: "POST",
+			body: { email, role },
+			schema: invitationSchema,
+		}),
+
+	invitations: (organizationId: string): Promise<Invitation[]> =>
+		api(endpoints.organizations.invitations(organizationId), { schema: invitationListSchema }),
+
+	revokeInvitation: ({ organizationId, invitationId }: RevokeInvitationInput): Promise<unknown> =>
+		api(endpoints.organizations.invitation(organizationId, invitationId), {
+			method: "DELETE",
+			schema: z.unknown(),
+		}),
+
+	/** Joins the team the emailed link is for, then acts in it. */
+	async acceptInvitation(token: string): Promise<Membership> {
+		const membership = await api(endpoints.organizations.acceptInvitation, {
+			method: "POST",
+			body: { token },
+			schema: membershipSchema,
+		});
+		await switchTo(membership.id);
+		return membership;
+	},
 
 	removeMember: ({ organizationId, userId }: RemoveMemberInput): Promise<{ userId: string }> =>
 		api(endpoints.organizations.member(organizationId, userId), {

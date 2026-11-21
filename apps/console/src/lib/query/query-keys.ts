@@ -15,6 +15,8 @@ export const queryKeys = {
 	organizations: {
 		all: ["organizations"] as const,
 		members: (organizationId: string) => ["organizations", organizationId, "members"] as const,
+		invitations: (organizationId: string) =>
+			["organizations", organizationId, "invitations"] as const,
 	},
 	approvals: {
 		pending: ["approvals", "pending"] as const,

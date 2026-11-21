@@ -1,16 +1,28 @@
 import { AUDIT_ACTIONS, type AuditLog } from "@synapse/audit";
-import { can, type OrganizationRole, type Permission } from "@synapse/security";
+import type { EmailSender } from "@synapse/core/contracts";
+import {
+	can,
+	createSecretToken,
+	hashSecretToken,
+	type OrganizationRole,
+	type Permission,
+} from "@synapse/security";
 
 import { HTTP_STATUS } from "@/shared/constants/http-status";
 import { AppError } from "@/shared/errors/app-error";
 import type { AuthUser, RequestContext } from "@/shared/types/app-types";
 
+import { invitationEmail } from "../constants/organization-emails";
 import {
+	INVITATION_LINK_PATH,
+	INVITATION_TTL_DAYS,
+	MAX_PENDING_INVITATIONS,
 	ORGANIZATION_ERROR_CODES,
 	ORGANIZATION_MESSAGES,
 	PERSONAL_ORGANIZATION_NAME,
 } from "../constants/organizations.constants";
 import type {
+	Invitation,
 	Member,
 	Membership,
 	Organization,
@@ -21,7 +33,13 @@ export type OrganizationsServiceOptions = {
 	store: OrganizationStore;
 	/** Account lookup for invitations (the auth module owns users). */
 	findUserIdByEmail: (email: string) => Promise<string | null>;
+	/** A user's email, to check who accepts an invitation. */
+	emailOf: (userId: string) => Promise<string | null>;
+	/** Sends invitation emails; `appUrl` is the console the link opens. */
+	email: EmailSender;
+	appUrl: string;
 	audit: AuditLog;
+	now?: () => Date;
 };
 
 /**
@@ -120,6 +138,140 @@ export class OrganizationsService {
 		return this.options.store.members(organizationId);
 	}
 
+	/**
+	 * Email an invitation to someone without an account yet (admins; owners for admin/owner roles).
+	 * A new invitation to the same address replaces the pending one. If the email cannot be sent,
+	 * nothing is kept and the error is returned.
+	 */
+	async invite(
+		user: AuthUser,
+		organizationId: string,
+		{ email, role }: { email: string; role: OrganizationRole },
+		context: RequestContext,
+	): Promise<Invitation> {
+		const callerRole = await this.requireRole(user.sub, organizationId, "members.manage");
+		const organization = await this.assertTeam(organizationId);
+		if (role !== "member" && !can(callerRole, "members.manage_admins")) {
+			throw forbidden();
+		}
+		const address = email.trim().toLowerCase();
+		if (await this.options.findUserIdByEmail(address)) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.CONFLICT,
+				code: ORGANIZATION_ERROR_CODES.USER_EXISTS,
+				message: ORGANIZATION_MESSAGES.USER_EXISTS,
+			});
+		}
+		const pending = await this.options.store.listInvitations(organizationId, this.now());
+		const replacing = pending.some((invitation) => invitation.email === address);
+		if (!replacing && pending.length >= MAX_PENDING_INVITATIONS) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.CONFLICT,
+				code: ORGANIZATION_ERROR_CODES.TOO_MANY_INVITATIONS,
+				message: ORGANIZATION_MESSAGES.TOO_MANY_INVITATIONS,
+			});
+		}
+		const token = createSecretToken();
+		const invitation = await this.options.store.saveInvitation({
+			organizationId,
+			email: address,
+			role,
+			tokenHash: hashSecretToken(token),
+			invitedBy: user.sub,
+			expiresAt: new Date(this.now().getTime() + INVITATION_TTL_DAYS * 86_400_000),
+		});
+		const link = `${this.options.appUrl}${INVITATION_LINK_PATH}?token=${token}`;
+		try {
+			await this.options.email.send(invitationEmail(address, organization.name, link));
+		} catch (error) {
+			await this.options.store.revokeInvitation(organizationId, invitation.id);
+			throw error;
+		}
+		await this.record(
+			organizationId,
+			user.sub,
+			AUDIT_ACTIONS.ORGANIZATION_MEMBER_INVITED,
+			invitation.id,
+			context,
+			{ email: address, role },
+		);
+		return invitation;
+	}
+
+	/** Pending invitations of a team (admins and owners). */
+	async invitations(user: AuthUser, organizationId: string): Promise<Invitation[]> {
+		await this.requireRole(user.sub, organizationId, "members.manage");
+		return this.options.store.listInvitations(organizationId, this.now());
+	}
+
+	async revokeInvitation(
+		user: AuthUser,
+		organizationId: string,
+		invitationId: string,
+		context: RequestContext,
+	): Promise<void> {
+		await this.requireRole(user.sub, organizationId, "members.manage");
+		if (!(await this.options.store.revokeInvitation(organizationId, invitationId))) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.NOT_FOUND,
+				code: ORGANIZATION_ERROR_CODES.INVITATION_NOT_FOUND,
+				message: ORGANIZATION_MESSAGES.INVITATION_NOT_FOUND,
+			});
+		}
+		await this.record(
+			organizationId,
+			user.sub,
+			AUDIT_ACTIONS.ORGANIZATION_INVITATION_REVOKED,
+			invitationId,
+			context,
+			{},
+		);
+	}
+
+	/**
+	 * Join the team an emailed link invites to. The signed-in account must have the invited email
+	 * (the link proves the inbox; the account proves who is joining). Single use.
+	 */
+	async acceptInvitation(
+		user: AuthUser,
+		token: string,
+		context: RequestContext,
+	): Promise<Membership> {
+		const now = this.now();
+		const invitation = await this.options.store.findInvitation(hashSecretToken(token));
+		if (!invitation || invitation.acceptedAt || new Date(invitation.expiresAt) <= now) {
+			throw invitationInvalid();
+		}
+		const email = (await this.options.emailOf(user.sub))?.toLowerCase();
+		if (email !== invitation.email) {
+			throw new AppError({
+				statusCode: HTTP_STATUS.FORBIDDEN,
+				code: ORGANIZATION_ERROR_CODES.INVITATION_OTHER_EMAIL,
+				message: ORGANIZATION_MESSAGES.INVITATION_OTHER_EMAIL,
+			});
+		}
+		if (!(await this.options.store.acceptInvitation(invitation.id, user.sub, now))) {
+			throw invitationInvalid();
+		}
+		await this.record(
+			invitation.organizationId,
+			user.sub,
+			AUDIT_ACTIONS.ORGANIZATION_INVITATION_ACCEPTED,
+			invitation.id,
+			context,
+			{ role: invitation.role },
+		);
+		const membership = (await this.options.store.listForUser(user.sub)).find(
+			(entry) => entry.id === invitation.organizationId,
+		);
+		if (!membership) throw invitationInvalid();
+		return membership;
+	}
+
+	private now(): Date {
+		return this.options.now?.() ?? new Date();
+	}
+
 	async removeMember(
 		user: AuthUser,
 		organizationId: string,
@@ -172,7 +324,7 @@ export class OrganizationsService {
 		return role;
 	}
 
-	private async assertTeam(organizationId: string): Promise<void> {
+	private async assertTeam(organizationId: string): Promise<Organization> {
 		const organization = await this.options.store.find(organizationId);
 		if (!organization || organization.kind === "personal") {
 			throw new AppError({
@@ -181,6 +333,7 @@ export class OrganizationsService {
 				message: ORGANIZATION_MESSAGES.PERSONAL,
 			});
 		}
+		return organization;
 	}
 
 	/** Only owners may demote or remove an owner, and never the last one. */
@@ -226,5 +379,13 @@ function forbidden(): AppError {
 		statusCode: HTTP_STATUS.FORBIDDEN,
 		code: ORGANIZATION_ERROR_CODES.FORBIDDEN,
 		message: ORGANIZATION_MESSAGES.FORBIDDEN,
+	});
+}
+
+function invitationInvalid(): AppError {
+	return new AppError({
+		statusCode: HTTP_STATUS.BAD_REQUEST,
+		code: ORGANIZATION_ERROR_CODES.INVITATION_INVALID,
+		message: ORGANIZATION_MESSAGES.INVITATION_INVALID,
 	});
 }

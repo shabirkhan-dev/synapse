@@ -6,3 +6,5 @@ export { SignInContainer } from "./containers/sign-in-container";
 export { SignUpContainer } from "./containers/sign-up-container";
 export { VerifyEmailContainer } from "./containers/verify-email-container";
 export { useCurrentUserQuery } from "./hooks/queries/use-current-user-query";
+export { useLinkToken } from "./hooks/use-link-token";
+export { useSessionStatus } from "./hooks/use-session";

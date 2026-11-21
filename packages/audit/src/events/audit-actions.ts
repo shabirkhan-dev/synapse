@@ -25,6 +25,9 @@ export const AUDIT_ACTIONS = {
 	ORGANIZATION_CREATED: "organization.created",
 	ORGANIZATION_MEMBER_SAVED: "organization.member.saved",
 	ORGANIZATION_MEMBER_REMOVED: "organization.member.removed",
+	ORGANIZATION_MEMBER_INVITED: "organization.member.invited",
+	ORGANIZATION_INVITATION_REVOKED: "organization.invitation.revoked",
+	ORGANIZATION_INVITATION_ACCEPTED: "organization.invitation.accepted",
 	AUTH_ORGANIZATION_SWITCHED: "auth.session.organization_switched",
 } as const;
 

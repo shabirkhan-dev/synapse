@@ -9,14 +9,18 @@ import { useSessionStatus } from "../hooks/use-session";
 import { useSignInMutation } from "../hooks/mutations/use-sign-in-mutation";
 
 /** Sign-in page: on success (or when already signed in) go to the documents. */
-export function SignInContainer() {
+export function SignInContainer({ invite = null }: { invite?: string | null } = {}) {
 	const router = useRouter();
 	const status = useSessionStatus();
 	const signIn = useSignInMutation();
 
 	useEffect(() => {
-		if (status === "signed-in") router.replace(AUTH_ROUTES.HOME);
-	}, [status, router]);
+		if (status !== "signed-in") return;
+		// Arrived from an invitation: go back to accept it.
+		router.replace(
+			invite ? `${AUTH_ROUTES.INVITE}?token=${encodeURIComponent(invite)}` : AUTH_ROUTES.HOME,
+		);
+	}, [status, router, invite]);
 
 	return (
 		<SignInForm

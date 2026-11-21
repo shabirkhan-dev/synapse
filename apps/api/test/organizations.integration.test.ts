@@ -169,4 +169,55 @@ describe.skipIf(!url)("organizations (postgres)", () => {
 		await rag.deleteDocument(as(ada, true), secret.id);
 		await rag.deleteDocument(as(ada, true), open.id);
 	});
+
+	test("invitations: one pending per address, accepted once before expiry, never demote (postgres)", async () => {
+		const ada = (await auth.createUser({ email: email("ada"), passwordHash: "h" }))?.id ?? "";
+		const team = await organizations.create("Invites", ada);
+		const address = email("new");
+		const save = (tokenHash: string, expiresAt: Date) =>
+			organizations.saveInvitation({
+				organizationId: team.id,
+				email: address,
+				role: "admin",
+				tokenHash,
+				invitedBy: ada,
+				expiresAt,
+			});
+		const now = new Date();
+		const later = new Date(now.getTime() + 86_400_000);
+		const first = await save(`hash-${crypto.randomUUID()}`, later);
+		const secondHash = `hash-${crypto.randomUUID()}`;
+		const second = await save(secondHash, later);
+		// The second replaced the first.
+		expect((await organizations.listInvitations(team.id, now)).map((i) => i.id)).toEqual([
+			second.id,
+		]);
+		expect(first.id).not.toBe(second.id);
+
+		const found = await organizations.findInvitation(secondHash);
+		expect(found).toMatchObject({ organizationId: team.id, email: address, acceptedAt: null });
+		const newcomer = (await auth.createUser({ email: address, passwordHash: "h" }))?.id ?? "";
+		// Not after it expires.
+		expect(
+			await organizations.acceptInvitation(second.id, newcomer, new Date(later.getTime() + 1)),
+		).toBe(false);
+		expect(await organizations.acceptInvitation(second.id, newcomer, now)).toBe(true);
+		expect(await organizations.role(team.id, newcomer)).toBe("admin");
+		// Once only.
+		expect(await organizations.acceptInvitation(second.id, newcomer, now)).toBe(false);
+		expect(await organizations.listInvitations(team.id, now)).toEqual([]);
+
+		// An existing owner accepting a member invitation stays owner.
+		const ownerInvite = await organizations.saveInvitation({
+			organizationId: team.id,
+			email: email("ada-again"),
+			role: "member",
+			tokenHash: `hash-${crypto.randomUUID()}`,
+			invitedBy: ada,
+			expiresAt: later,
+		});
+		expect(await organizations.acceptInvitation(ownerInvite.id, ada, now)).toBe(true);
+		expect(await organizations.role(team.id, ada)).toBe("owner");
+		expect(await organizations.revokeInvitation(team.id, ownerInvite.id)).toBe(false);
+	});
 });

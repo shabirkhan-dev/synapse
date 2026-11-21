@@ -739,7 +739,96 @@ export class InMemoryOrganizationStore implements OrganizationStore {
 		createdAt: string;
 	}> = [];
 
+	invitations: Array<{
+		id: string;
+		organizationId: string;
+		email: string;
+		role: OrganizationRole;
+		tokenHash: string;
+		expiresAt: Date;
+		acceptedAt: Date | null;
+		createdAt: Date;
+	}> = [];
+
 	constructor(private readonly users: () => UserCredentials[]) {}
+
+	async saveInvitation(input: {
+		organizationId: string;
+		email: string;
+		role: OrganizationRole;
+		tokenHash: string;
+		invitedBy: string;
+		expiresAt: Date;
+	}) {
+		this.invitations = this.invitations.filter(
+			(i) =>
+				!(i.organizationId === input.organizationId && i.email === input.email && !i.acceptedAt),
+		);
+		const stored = {
+			id: crypto.randomUUID(),
+			organizationId: input.organizationId,
+			email: input.email,
+			role: input.role,
+			tokenHash: input.tokenHash,
+			expiresAt: input.expiresAt,
+			acceptedAt: null,
+			createdAt: new Date(),
+		};
+		this.invitations.push(stored);
+		return InMemoryOrganizationStore.toInvitation(stored);
+	}
+
+	async listInvitations(organizationId: string, now: Date) {
+		return this.invitations
+			.filter((i) => i.organizationId === organizationId && !i.acceptedAt && i.expiresAt > now)
+			.toReversed()
+			.map(InMemoryOrganizationStore.toInvitation);
+	}
+
+	async revokeInvitation(organizationId: string, invitationId: string) {
+		const before = this.invitations.length;
+		this.invitations = this.invitations.filter(
+			(i) => !(i.id === invitationId && i.organizationId === organizationId && !i.acceptedAt),
+		);
+		return this.invitations.length < before;
+	}
+
+	async findInvitation(tokenHash: string) {
+		const found = this.invitations.find((i) => i.tokenHash === tokenHash);
+		return found
+			? {
+					...InMemoryOrganizationStore.toInvitation(found),
+					organizationId: found.organizationId,
+					acceptedAt: found.acceptedAt?.toISOString() ?? null,
+				}
+			: null;
+	}
+
+	async acceptInvitation(invitationId: string, userId: string, now: Date) {
+		const found = this.invitations.find((i) => i.id === invitationId);
+		if (!found || found.acceptedAt || found.expiresAt <= now) return false;
+		found.acceptedAt = now;
+		if (!(await this.role(found.organizationId, userId))) {
+			await this.saveMember(found.organizationId, userId, found.role);
+		}
+		return true;
+	}
+
+	private static toInvitation(i: {
+		id: string;
+		email: string;
+		role: OrganizationRole;
+		expiresAt: Date;
+		createdAt: Date;
+	}) {
+		return {
+			id: i.id,
+			email: i.email,
+			role: i.role,
+			expiresAt: i.expiresAt.toISOString(),
+			createdAt: i.createdAt.toISOString(),
+		};
+	}
 
 	async create(name: string, ownerId: string) {
 		const organization = {
@@ -1210,6 +1299,9 @@ export function buildTestApp({
 		store: organizationStore,
 		findUserIdByEmail: async (address) =>
 			(await authRepository.findUserByEmail(address))?.id ?? null,
+		emailOf: async (userId) => (await authRepository.findUserById(userId))?.email ?? null,
+		email,
+		appUrl: testConfig.auth.appUrl,
 		audit,
 	});
 	const auth = new AuthService({

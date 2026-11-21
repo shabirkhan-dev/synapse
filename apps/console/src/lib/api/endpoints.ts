@@ -19,6 +19,10 @@ export const endpoints = {
 		list: "/organizations",
 		create: "/organizations",
 		members: (id: string) => `/organizations/${encodeURIComponent(id)}/members`,
+		invitations: (id: string) => `/organizations/${encodeURIComponent(id)}/invitations`,
+		invitation: (id: string, invitationId: string) =>
+			`/organizations/${encodeURIComponent(id)}/invitations/${encodeURIComponent(invitationId)}`,
+		acceptInvitation: "/organizations/invitations/accept",
 		member: (id: string, userId: string) =>
 			`/organizations/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
 	},

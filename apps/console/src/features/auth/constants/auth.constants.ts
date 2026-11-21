@@ -9,4 +9,6 @@ export const AUTH_ROUTES = {
 	RESET_PASSWORD: "/reset-password",
 	VERIFY_EMAIL: "/verify-email",
 	HOME: "/documents",
+	/** Accepting a team invitation (`?token=`), where sign-in and sign-up return to. */
+	INVITE: "/invite",
 } as const;

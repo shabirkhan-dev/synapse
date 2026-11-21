@@ -40,3 +40,13 @@ export const addMemberFormSchema = z.object({
 	email: z.email("Enter a valid email address").trim(),
 	role,
 });
+
+/** A pending emailed invitation (the token is only ever in the email). */
+export const invitationSchema = z.object({
+	id: z.string(),
+	email: z.string(),
+	role,
+	expiresAt: z.string(),
+	createdAt: z.string(),
+});
+export const invitationListSchema = z.array(invitationSchema);

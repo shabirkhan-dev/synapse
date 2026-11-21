@@ -11,17 +11,24 @@ import {
 	CardTitle,
 } from "@synapse/ui/components/card";
 
+import { useState } from "react";
+
 import { PageHeader } from "@/components/shared/page-header";
 import { useCurrentUserQuery } from "@/features/auth";
+import { ApiError } from "@/lib/api/api-error";
 import { can, ORGANIZATION_ROLES, type OrganizationRole } from "@/lib/permissions";
 
 import { AddMemberForm } from "../components/add-member-form";
 import { CreateTeamForm } from "../components/create-team-form";
+import { InvitationsList } from "../components/invitations-list";
 import { MembersTable } from "../components/members-table";
 import { ROLE_LABELS } from "../constants/organizations.constants";
 import { useCreateTeamMutation } from "../hooks/mutations/use-create-team-mutation";
+import { useInviteMutation } from "../hooks/mutations/use-invite-mutation";
+import { useRevokeInvitationMutation } from "../hooks/mutations/use-revoke-invitation-mutation";
 import { useRemoveMemberMutation } from "../hooks/mutations/use-remove-member-mutation";
 import { useSaveMemberMutation } from "../hooks/mutations/use-save-member-mutation";
+import { useInvitationsQuery } from "../hooks/queries/use-invitations-query";
 import { useMembersQuery } from "../hooks/queries/use-members-query";
 import { useOrganizationsQuery } from "../hooks/queries/use-organizations-query";
 
@@ -40,6 +47,14 @@ export function TeamContainer() {
 	const save = useSaveMemberMutation();
 	const remove = useRemoveMemberMutation();
 	const create = useCreateTeamMutation();
+	const invite = useInviteMutation();
+	const revoke = useRevokeInvitationMutation();
+	const [invited, setInvited] = useState<string | null>(null);
+	const manages =
+		active?.kind === "team" &&
+		me.data !== undefined &&
+		can(me.data.organization.role, "members.manage");
+	const invitations = useInvitationsQuery(manages && active ? active.id : null);
 
 	if (me.isError || organizations.isError) {
 		return (
@@ -68,7 +83,7 @@ export function TeamContainer() {
 
 	const role = me.data.organization.role;
 	const roles = assignableRoles(role);
-	const failure = save.error ?? remove.error;
+	const failure = save.error ?? remove.error ?? invite.error ?? revoke.error;
 	const busyUserId = save.isPending
 		? (members.data?.find((member) => member.email === save.variables?.email)?.userId ?? null)
 		: remove.isPending
@@ -93,7 +108,7 @@ export function TeamContainer() {
 						<CardTitle>Members</CardTitle>
 						<CardDescription>
 							{roles.length > 0
-								? "Add people who already have a Synapse account. Members ask; admins and owners decide."
+								? "Add people by email; anyone without an account yet gets an invitation. Members ask; admins and owners decide."
 								: "Only admins and owners add people or change roles."}
 						</CardDescription>
 					</CardHeader>
@@ -132,11 +147,40 @@ export function TeamContainer() {
 						{roles.length > 0 ? (
 							<AddMemberForm
 								roles={roles}
-								pending={save.isPending}
-								onAdd={(input) => {
+								pending={save.isPending || invite.isPending}
+								onAdd={async (input) => {
 									remove.reset();
-									return save.mutateAsync({ organizationId: active.id, ...input });
+									invite.reset();
+									setInvited(null);
+									const change = { organizationId: active.id, ...input };
+									try {
+										await save.mutateAsync(change);
+									} catch (error) {
+										// No account yet: email them an invitation instead.
+										if (
+											!(error instanceof ApiError && error.code === "ORGANIZATION_USER_NOT_FOUND")
+										) {
+											throw error;
+										}
+										save.reset();
+										await invite.mutateAsync(change);
+										setInvited(input.email);
+									}
 								}}
+							/>
+						) : null}
+						{invited ? (
+							<p role="status" className="text-sm text-muted-foreground">
+								Invited {invited}. They join when they open the emailed link (valid for 7 days).
+							</p>
+						) : null}
+						{manages && invitations.data ? (
+							<InvitationsList
+								invitations={invitations.data}
+								busyId={revoke.isPending ? (revoke.variables?.invitationId ?? null) : null}
+								onRevoke={(invitation) =>
+									revoke.mutate({ organizationId: active.id, invitationId: invitation.id })
+								}
 							/>
 						) : null}
 					</CardContent>

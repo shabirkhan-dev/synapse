@@ -1,4 +1,12 @@
-import { index, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+	index,
+	pgTable,
+	primaryKey,
+	text,
+	timestamp,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 
 import { users } from "./auth.schema";
 
@@ -34,5 +42,33 @@ export const organizationMembers = pgTable(
 	],
 );
 
+/**
+ * An emailed invitation to join a team, for someone who may not have an account yet. The link holds
+ * a single-use token; only its SHA-256 is stored. Accepting needs an account with this email.
+ */
+export const organizationInvitations = pgTable(
+	"organization_invitations",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		/** Trimmed and lowercased. */
+		email: text("email").notNull(),
+		/** Role given on joining (`@synapse/security` roles). */
+		role: text("role").notNull(),
+		tokenHash: text("token_hash").notNull(),
+		invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "set null" }),
+		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+		acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(table) => [
+		uniqueIndex("organization_invitations_token_hash_unique").on(table.tokenHash),
+		index("organization_invitations_organization_email_idx").on(table.organizationId, table.email),
+	],
+);
+
 export type OrganizationRow = typeof organizations.$inferSelect;
+export type OrganizationInvitationRow = typeof organizationInvitations.$inferSelect;
 export type OrganizationMemberRow = typeof organizationMembers.$inferSelect;

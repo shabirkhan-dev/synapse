@@ -8,7 +8,11 @@ import type { AppBindings } from "@/shared/types/app-types";
 
 import { ORGANIZATION_MESSAGES } from "../constants/organizations.constants";
 import {
+	acceptInvitationBodySchema,
 	createOrganizationBodySchema,
+	invitationParamsSchema,
+	invitationSchema,
+	inviteBodySchema,
 	memberParamsSchema,
 	memberSchema,
 	membershipSchema,
@@ -97,6 +101,83 @@ const removeMemberRoute = createRoute({
 	responses: { 200: json(z.object({ userId: z.uuid() }), "Removed"), ...errors, ...errorResponses },
 });
 
+const inviteRoute = createRoute({
+	method: "post",
+	path: "/{id}/invitations",
+	tags,
+	summary:
+		"Email an invitation to someone without an account (admins; owners for admin/owner roles)",
+	description:
+		"The link is valid for 7 days and works once. A new invitation to the same address replaces the pending one. `409 ORGANIZATION_USER_EXISTS` when they already have an account (add them as a member).",
+	security,
+	request: {
+		params: organizationIdParamsSchema,
+		body: { required: true, content: { "application/json": { schema: inviteBodySchema } } },
+	},
+	responses: {
+		201: json(invitationSchema, "Invitation sent"),
+		409: {
+			description: "They already have an account, or too many pending invitations",
+			content: { "application/json": { schema: apiErrorSchema } },
+		},
+		...errors,
+		...errorResponses,
+	},
+});
+
+const invitationsRoute = createRoute({
+	method: "get",
+	path: "/{id}/invitations",
+	tags,
+	summary: "Pending invitations (admins and owners)",
+	security,
+	request: { params: organizationIdParamsSchema },
+	responses: {
+		200: json(z.array(invitationSchema), "Pending, newest first"),
+		...errors,
+		...errorResponses,
+	},
+});
+
+const revokeInvitationRoute = createRoute({
+	method: "delete",
+	path: "/{id}/invitations/{invitationId}",
+	tags,
+	summary: "Withdraw a pending invitation (its link stops working)",
+	security,
+	request: { params: invitationParamsSchema },
+	responses: {
+		200: json(z.object({ id: z.uuid() }), "Withdrawn"),
+		...errors,
+		...errorResponses,
+	},
+});
+
+const acceptInvitationRoute = createRoute({
+	method: "post",
+	path: "/invitations/accept",
+	tags,
+	summary: "Join the team an emailed invitation link is for",
+	description:
+		"The signed-in account must have the invited email address (`403 ORGANIZATION_INVITATION_OTHER_EMAIL`). `400 ORGANIZATION_INVITATION_INVALID` for unknown, used or expired links.",
+	security,
+	request: {
+		body: {
+			required: true,
+			content: { "application/json": { schema: acceptInvitationBodySchema } },
+		},
+	},
+	responses: {
+		200: json(membershipSchema, "The team you joined, with your role"),
+		400: {
+			description: "Invalid, used or expired link",
+			content: { "application/json": { schema: apiErrorSchema } },
+		},
+		...errors,
+		...errorResponses,
+	},
+});
+
 const ctx = (requestId: string) => ({ requestId });
 
 export function createOrganizationRoutes(organizations: OrganizationsService) {
@@ -126,6 +207,41 @@ export function createOrganizationRoutes(organizations: OrganizationsService) {
 			ctx(c.get("requestId")),
 		);
 		return success(c, members, ORGANIZATION_MESSAGES.MEMBER_SAVED);
+	});
+
+	app.openapi(acceptInvitationRoute, async (c) => {
+		const membership = await organizations.acceptInvitation(
+			c.get("user"),
+			c.req.valid("json").token,
+			ctx(c.get("requestId")),
+		);
+		return success(c, membership, ORGANIZATION_MESSAGES.INVITATION_ACCEPTED, HTTP_STATUS.OK);
+	});
+
+	app.openapi(inviteRoute, async (c) => {
+		const invitation = await organizations.invite(
+			c.get("user"),
+			c.req.valid("param").id,
+			c.req.valid("json"),
+			ctx(c.get("requestId")),
+		);
+		return success(c, invitation, ORGANIZATION_MESSAGES.INVITED, HTTP_STATUS.CREATED);
+	});
+
+	app.openapi(invitationsRoute, async (c) => {
+		const invitations = await organizations.invitations(c.get("user"), c.req.valid("param").id);
+		return success(c, invitations, ORGANIZATION_MESSAGES.INVITATIONS_FETCHED, HTTP_STATUS.OK);
+	});
+
+	app.openapi(revokeInvitationRoute, async (c) => {
+		const { id, invitationId } = c.req.valid("param");
+		await organizations.revokeInvitation(c.get("user"), id, invitationId, ctx(c.get("requestId")));
+		return success(
+			c,
+			{ id: invitationId },
+			ORGANIZATION_MESSAGES.INVITATION_REVOKED,
+			HTTP_STATUS.OK,
+		);
 	});
 
 	app.openapi(removeMemberRoute, async (c) => {

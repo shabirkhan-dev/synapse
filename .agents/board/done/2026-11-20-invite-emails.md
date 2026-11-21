@@ -5,7 +5,7 @@ type: feature
 from: human
 to: all
 priority: normal
-status: doing
+status: done
 assignee: claude
 reviewer: none
 parent: syn-roadmap
@@ -40,4 +40,15 @@ Single-use hashed invite tokens (like `auth_tokens`), expiry, revoke; pending in
 
 ## Resolution
 
-_Open._
+Migration 0020 `organization_invitations` (token stored as SHA-256). API: invite (admins; owners for
+admin/owner; teams only; refuses existing accounts with `409 ORGANIZATION_USER_EXISTS`; one pending
+per address, ≤ 50 per team; the invitation is dropped if the email fails), list, withdraw, accept
+(signed-in account must have the invited email; single use, before expiry; never demotes). Emails
+link to `APP_URL/invite?token=…` (7 days). Console: "Add member" invites addresses without an account
+and lists pending invitations with Withdraw; `/invite` joins when signed in, or sends you through
+sign-up / sign-in (`?invite=`) and back.
+
+Validation: API 4 new tests (invite → sign up → accept once; other email refused; replaced and
+withdrawn links die; existing account, member, personal workspace refused; email failure keeps
+nothing) + Postgres integration (replace, expiry, single use, no demotion); e2e invitations spec
+(invite from the Team page, link from the API log, sign up from it, join, owner sees the member).

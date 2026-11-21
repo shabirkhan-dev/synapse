@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type {
 	addMemberFormSchema,
+	invitationSchema,
 	memberSchema,
 	membershipSchema,
 	organizationSchema,
@@ -15,3 +16,5 @@ export type SwitchedOrganization = z.infer<typeof switchedOrganizationSchema>;
 export type AddMemberInput = z.infer<typeof addMemberFormSchema>;
 export type SaveMemberInput = AddMemberInput & { organizationId: string };
 export type RemoveMemberInput = { organizationId: string; userId: string };
+export type Invitation = z.infer<typeof invitationSchema>;
+export type RevokeInvitationInput = { organizationId: string; invitationId: string };

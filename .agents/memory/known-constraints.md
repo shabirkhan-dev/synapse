@@ -9,7 +9,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   revoked (syn-045, `User-Agent` stored per session, no IP); **no MFA**.
   **Tenancy (ADR-0006):** shared data (documents, approvals, their audit) uses `owner_id` = the
   active organization (token `org`, else personal = user id); memory, feedback and account events use
-  the user id. Members are added by existing email only (no invite emails). Unverified users can sign in
+  the user id. Members are added by email: an existing account directly, anyone else by an emailed invitation (syn-082: `organization_invitations`, hashed single-use token, 7 days, accept needs an account with that email; the console's `/invite` page sends signed-out visitors through sign-up or sign-in and back). Invitations are not pruned yet. Unverified users can sign in
   (`emailVerifiedAt: null`). Emails are sent from `synapse@rabtx.dev` (rabtx.dev is verified in
   Resend; `synapse.rabtx.dev` is not, and the current key cannot send from it). Without `RESEND_API_KEY` emails go to the API log (development only;
   production requires the key). Old auth rows are pruned daily by the worker. The console has sign-in, sign-up, verify-email,
@@ -166,7 +166,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `/chat` with stored conversations at `/chat?c=<id>`, tool rows for search/remember/time; no
   rename; answers render Markdown safely since syn-066, raw HTML shown as text; since syn-067 chat cites
   numbered passages `[n]` that open a preview, numbers restart in every reply; a stopped answer may not be saved by the API), approvals, activity and teams (syn-043: switcher, create team, members and roles; members
-  are added by existing email only). The active organization is per session, so every tab of a
+  are added by email; people without an account are invited). The active organization is per session, so every tab of a
   browser shares it: a tab that did not switch keeps acting in the old organization until its access
   token is refreshed (≤ 15 min), then follows the session, and its labels update on the next load. A
   removed member's next request refreshes into their personal organization, but the switcher shows
