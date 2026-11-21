@@ -43,6 +43,9 @@ import { createApp } from "@/app";
 import { loadConfiguration } from "@/config";
 import { developmentJwtSecret } from "@/config/env";
 import {
+	type ApiKey,
+	ApiKeysService,
+	type ApiKeyStore,
 	type AuthRepository,
 	AuthService,
 	type AuthSession,
@@ -730,6 +733,71 @@ export class InMemoryFeedbackStore implements FeedbackStore {
 	}
 }
 
+export class InMemoryApiKeyStore implements ApiKeyStore {
+	keys: Array<ApiKey & { userId: string; keyHash: string }> = [];
+
+	async create(input: {
+		userId: string;
+		organizationId: string;
+		name: string;
+		prefix: string;
+		keyHash: string;
+		expiresAt: Date | null;
+	}) {
+		const stored = {
+			id: crypto.randomUUID(),
+			userId: input.userId,
+			organizationId: input.organizationId,
+			name: input.name,
+			prefix: input.prefix,
+			keyHash: input.keyHash,
+			expiresAt: input.expiresAt?.toISOString() ?? null,
+			lastUsedAt: null,
+			createdAt: new Date().toISOString(),
+		};
+		this.keys.push(stored);
+		return InMemoryApiKeyStore.public(stored);
+	}
+
+	async list(userId: string) {
+		return this.keys
+			.filter((key) => key.userId === userId)
+			.toReversed()
+			.map(InMemoryApiKeyStore.public);
+	}
+
+	async count(userId: string) {
+		return this.keys.filter((key) => key.userId === userId).length;
+	}
+
+	async remove(userId: string, id: string) {
+		const before = this.keys.length;
+		this.keys = this.keys.filter((key) => !(key.id === id && key.userId === userId));
+		return this.keys.length < before;
+	}
+
+	async findByHash(keyHash: string) {
+		const found = this.keys.find((key) => key.keyHash === keyHash);
+		return found ? { ...InMemoryApiKeyStore.public(found), userId: found.userId } : null;
+	}
+
+	async touch(id: string, at: Date) {
+		const found = this.keys.find((key) => key.id === id);
+		if (found) found.lastUsedAt = at.toISOString();
+	}
+
+	private static public({
+		keyHash: _hash,
+		userId: _user,
+		...key
+	}: ApiKey & {
+		userId: string;
+		keyHash: string;
+	}): ApiKey {
+		return key;
+	}
+}
+
 export class InMemoryOrganizationStore implements OrganizationStore {
 	organizations: Array<Organization> = [];
 	memberships: Array<{
@@ -1324,10 +1392,17 @@ export function buildTestApp({
 	);
 	registerRagActions(oversight, rag);
 	const usageLimiter = new InMemoryRateLimiter();
+	const apiKeyStore = new InMemoryApiKeyStore();
+	const apiKeys = new ApiKeysService({
+		store: apiKeyStore,
+		roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
+		audit,
+	});
 	const app = createApp({
 		config: { ...testConfig, limits },
 		logger,
 		auth,
+		apiKeys,
 		rag,
 		oversight,
 		audit,
@@ -1357,6 +1432,7 @@ export function buildTestApp({
 		guardrails,
 		organizations,
 		organizationStore,
+		apiKeyStore,
 		chatModel,
 		embeddingModel,
 	};

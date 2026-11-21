@@ -6,7 +6,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   checked against their session on every request (syn-057): sign-out and revocation end them at
   once (`401 AUTH_SESSION_ENDED`). In-memory test stores treat minted, unknown sessions as active.
   Rate limits, email verification and password reset exist (syn-026); sessions can be listed and
-  revoked (syn-045, `User-Agent` stored per session, no IP); **no MFA**.
+  revoked (syn-045, `User-Agent` stored per session, no IP); **no MFA**. Personal API keys (syn-083,
+  `api_keys`, `syn_…` stored as SHA-256) act as their user in one organization with the live role; they
+  cannot manage keys or sessions; `last_used_at` is written at most once a minute; no scopes (a key can do
+  whatever its user can there).
   **Tenancy (ADR-0006):** shared data (documents, approvals, their audit) uses `owner_id` = the
   active organization (token `org`, else personal = user id); memory, feedback and account events use
   the user id. Members are added by email: an existing account directly, anyone else by an emailed invitation (syn-082: `organization_invitations`, hashed single-use token, 7 days, accept needs an account with that email; the console's `/invite` page sends signed-out visitors through sign-up or sign-in and back). Invitations are not pruned yet. Unverified users can sign in

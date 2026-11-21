@@ -43,7 +43,7 @@ describe("UsageService", () => {
 				group("2026-11-12", "local:llama", 3, 300, 30),
 			],
 			calls,
-		).summarize({ sub: "u1", sid: "s", orgId: "org-1", role: "admin" }, 3);
+		).summarize({ sub: "u1", sid: "s", orgId: "org-1", role: "admin", via: "session" }, 3);
 
 		expect(usage.scope).toBe("organization");
 		expect(usage.since).toBe("2026-11-10T00:00:00.000Z");
@@ -70,7 +70,7 @@ describe("UsageService", () => {
 	test("a member sees only their own answers; no priced model means no cost", async () => {
 		const calls: unknown[] = [];
 		const usage = await service([group("2026-11-12", "local:llama", 1, 5, 5)], calls).summarize(
-			{ sub: "u2", sid: "s", orgId: "org-1", role: "member" },
+			{ sub: "u2", sid: "s", orgId: "org-1", role: "member", via: "session" },
 			1,
 		);
 		expect(usage.scope).toBe("you");

@@ -376,7 +376,7 @@ export class AuthService {
 		if (!role) {
 			throw unauthorized(AUTH_ERROR_CODES.NOT_A_MEMBER, AUTH_MESSAGES.NOT_A_MEMBER);
 		}
-		return { sub: verified.sub, sid: verified.sid, orgId, role };
+		return { sub: verified.sub, sid: verified.sid, orgId, role, via: "session" };
 	}
 
 	/** Account events: owner, actor and subject are the user. */

@@ -14,6 +14,8 @@ export const endpoints = {
 		sessions: "/auth/sessions",
 		session: (id: string) => `/auth/sessions/${encodeURIComponent(id)}`,
 		revokeOtherSessions: "/auth/sessions/revoke-others",
+		apiKeys: "/auth/api-keys",
+		apiKey: (id: string) => `/auth/api-keys/${encodeURIComponent(id)}`,
 	},
 	organizations: {
 		list: "/organizations",

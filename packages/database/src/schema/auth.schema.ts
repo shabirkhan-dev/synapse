@@ -70,6 +70,34 @@ export const authTokens = pgTable(
 	],
 );
 
+/**
+ * Personal API keys (syn-083): act as their user in one organization, with the user's current role
+ * there. Only the SHA-256 of the key is stored; `prefix` (the first characters) helps tell keys apart.
+ */
+export const apiKeys = pgTable(
+	"api_keys",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		/** The organization the key acts in (the personal one = the user id). */
+		organizationId: text("organization_id").notNull(),
+		name: text("name").notNull(),
+		prefix: text("prefix").notNull(),
+		keyHash: text("key_hash").notNull(),
+		expiresAt: timestamp("expires_at", { withTimezone: true }),
+		lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(table) => [
+		uniqueIndex("api_keys_key_hash_unique").on(table.keyHash),
+		index("api_keys_user_id_idx").on(table.userId),
+	],
+);
+
+export type ApiKeyRow = typeof apiKeys.$inferSelect;
+
 /** Fixed-window attempt counters, shared by every API instance. `key` is a SHA-256, never raw PII. */
 export const authRateLimits = pgTable("auth_rate_limits", {
 	key: text("key").primaryKey(),

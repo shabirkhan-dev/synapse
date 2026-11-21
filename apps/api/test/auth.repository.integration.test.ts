@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createDatabase, runMigrations, sourceMigrationsFolder } from "@synapse/database";
 import { sql } from "drizzle-orm";
 
-import { DrizzleAuthRepository, DrizzleRateLimiter } from "@/modules/auth";
+import { DrizzleApiKeyRepository, DrizzleAuthRepository, DrizzleRateLimiter } from "@/modules/auth";
 
 /** Real Postgres. Opt-in: set API_TEST_DATABASE_URL to a throwaway database. */
 const url = process.env.API_TEST_DATABASE_URL;
@@ -203,5 +203,41 @@ describe.skipIf(!url)("DrizzleAuthRepository (postgres)", () => {
 			hashes.map((h) => repository.findSessionByRefreshTokenHash(h)),
 		);
 		expect(sessions.every((session) => session?.revokedAt instanceof Date)).toBe(true);
+	});
+
+	test("api keys: stored by hash, listed newest first, touched, removed only by their user", async () => {
+		const keys = new DrizzleApiKeyRepository(database.db);
+		const user = await repository.createUser({ email: email("keys"), passwordHash: "$argon2id$x" });
+		const other = await repository.createUser({
+			email: email("other"),
+			passwordHash: "$argon2id$x",
+		});
+		const userId = user?.id ?? "";
+		const hash = `hash-${crypto.randomUUID()}`;
+		const first = await keys.create({
+			userId,
+			organizationId: userId,
+			name: "first",
+			prefix: "syn_aaaaaaaa",
+			keyHash: hash,
+			expiresAt: null,
+		});
+		const second = await keys.create({
+			userId,
+			organizationId: userId,
+			name: "second",
+			prefix: "syn_bbbbbbbb",
+			keyHash: `hash-${crypto.randomUUID()}`,
+			expiresAt: inAMonth(),
+		});
+		expect((await keys.list(userId)).map((key) => key.id)).toEqual([second.id, first.id]);
+		expect(await keys.count(userId)).toBe(2);
+		expect(await keys.findByHash(hash)).toMatchObject({ id: first.id, userId, lastUsedAt: null });
+		const at = new Date("2026-11-21T10:00:00Z");
+		await keys.touch(first.id, at);
+		expect((await keys.findByHash(hash))?.lastUsedAt).toBe(at.toISOString());
+		expect(await keys.remove(other?.id ?? "", first.id)).toBe(false);
+		expect(await keys.remove(userId, first.id)).toBe(true);
+		expect(await keys.findByHash(hash)).toBeNull();
 	});
 });

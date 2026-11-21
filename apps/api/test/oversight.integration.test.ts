@@ -71,7 +71,13 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 
 	test("a request made before a restart is approved after it, and the action runs once", async () => {
 		const executed: string[] = [];
-		const user = { sub: owner, sid: "s1", orgId: owner, role: "owner" as const };
+		const user = {
+			sub: owner,
+			sid: "s1",
+			orgId: owner,
+			role: "owner" as const,
+			via: "session" as const,
+		};
 		const before = await startProcess(executed, "before");
 		const approval = await before.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
 			ownerId: owner,
@@ -100,7 +106,13 @@ describe.skipIf(!url)("oversight (postgres)", () => {
 
 	test("a request nobody decided in time expires: out of the queue, refused, nothing runs", async () => {
 		const executed: string[] = [];
-		const user = { sub: owner, sid: "s1", orgId: owner, role: "owner" as const };
+		const user = {
+			sub: owner,
+			sid: "s1",
+			orgId: owner,
+			role: "owner" as const,
+			via: "session" as const,
+		};
 		const service = await startProcess(executed, "expiry");
 		const approval = await service.request(OVERSIGHT_ACTIONS.PURGE_DOCUMENTS, {
 			ownerId: owner,

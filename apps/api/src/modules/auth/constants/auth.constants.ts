@@ -11,6 +11,10 @@ export const AUTH_ERROR_CODES = {
 	NOT_A_MEMBER: "AUTH_NOT_A_MEMBER",
 	ORGANIZATION_NOT_FOUND: "AUTH_ORGANIZATION_NOT_FOUND",
 	SESSION_NOT_FOUND: "AUTH_SESSION_NOT_FOUND",
+	API_KEY_INVALID: "AUTH_API_KEY_INVALID",
+	API_KEY_NOT_FOUND: "AUTH_API_KEY_NOT_FOUND",
+	TOO_MANY_API_KEYS: "AUTH_TOO_MANY_API_KEYS",
+	SESSION_REQUIRED: "AUTH_SESSION_REQUIRED",
 } as const;
 
 export const AUTH_MESSAGES = {
@@ -38,6 +42,13 @@ export const AUTH_MESSAGES = {
 	PASSWORD_RESET: "Password changed; sign in again",
 	NOT_A_MEMBER: "You are no longer a member of this organization; switch organization",
 	ORGANIZATION_NOT_FOUND: "Organization not found",
+	API_KEY_INVALID: "Invalid, expired or revoked API key",
+	API_KEY_NOT_FOUND: "No such API key",
+	TOO_MANY_API_KEYS: "You have too many API keys; revoke one first",
+	SESSION_REQUIRED: "Sign in to do this; an API key cannot manage keys or sessions",
+	API_KEY_CREATED: "API key created; copy it now, it is not shown again",
+	API_KEYS_FETCHED: "API keys retrieved",
+	API_KEY_REVOKED: "API key revoked",
 	ORGANIZATION_SWITCHED: "Organization switched",
 	SESSIONS_FETCHED: "Sessions retrieved",
 	SESSION_REVOKED: "Session signed out",
@@ -81,3 +92,12 @@ export const TOKEN_TYPE = "Bearer";
 
 /** Auth bodies are tiny (email, password, token). */
 export const AUTH_MAX_BODY_BYTES = 4 * 1024;
+
+/** Personal API keys start with this, so the auth middleware can tell them from access tokens. */
+export const API_KEY_PREFIX = "syn_";
+/** Characters of a key kept in clear to tell keys apart (`syn_` + 8). */
+export const API_KEY_VISIBLE_CHARS = 12;
+/** Keys one user may hold. */
+export const MAX_API_KEYS = 20;
+/** `last_used_at` is written at most this often per key. */
+export const API_KEY_TOUCH_INTERVAL_MS = 60_000;

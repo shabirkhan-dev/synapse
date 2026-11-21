@@ -15,7 +15,13 @@ import { loadConfiguration } from "./config";
 import { createEmailSender } from "./infrastructure/email/create-email-sender";
 import { createModelGateway, createReranker } from "./infrastructure/models/create-model-gateway";
 import { createCircuitStatus } from "./infrastructure/reliability/circuit-status";
-import { AuthService, DrizzleAuthRepository, DrizzleRateLimiter } from "./modules/auth";
+import {
+	ApiKeysService,
+	AuthService,
+	DrizzleApiKeyRepository,
+	DrizzleAuthRepository,
+	DrizzleRateLimiter,
+} from "./modules/auth";
 import { ChatService } from "./modules/chat";
 import { DrizzleEvaluationRepository, EvaluationsService } from "./modules/evaluations";
 import { DrizzleSystemRepository, SystemService } from "./modules/system";
@@ -97,6 +103,11 @@ const auth = new AuthService({
 	audit,
 	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 });
+const apiKeys = new ApiKeysService({
+	store: new DrizzleApiKeyRepository(database.db),
+	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
+	audit,
+});
 const gateway = createModelGateway(config, logger, circuits);
 // Rust BPE tokenizer when its binding is built for this platform, else the ~4 chars/token estimate.
 const tokens = createTokenCounter();
@@ -176,6 +187,7 @@ const app = createApp({
 	config,
 	logger,
 	auth,
+	apiKeys,
 	rag,
 	oversight,
 	audit,

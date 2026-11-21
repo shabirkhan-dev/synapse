@@ -29,6 +29,8 @@ export const AUDIT_ACTIONS = {
 	ORGANIZATION_INVITATION_REVOKED: "organization.invitation.revoked",
 	ORGANIZATION_INVITATION_ACCEPTED: "organization.invitation.accepted",
 	AUTH_ORGANIZATION_SWITCHED: "auth.session.organization_switched",
+	AUTH_API_KEY_CREATED: "auth.api_key.created",
+	AUTH_API_KEY_REVOKED: "auth.api_key.revoked",
 } as const;
 
 /** Actor for work no user did directly (approved actions, jobs). */

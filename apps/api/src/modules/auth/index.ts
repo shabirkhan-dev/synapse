@@ -1,5 +1,9 @@
 export { AUTH_ERROR_CODES } from "./constants/auth.constants";
-export { createAuthMiddleware } from "./middleware/auth.middleware";
+export { createAuthMiddleware, createSessionOnlyMiddleware } from "./middleware/auth.middleware";
+export { DrizzleApiKeyRepository } from "./repositories/api-key.repository";
+export { createApiKeyRoutes } from "./routes/api-keys.routes";
+export { ApiKeysService } from "./services/api-keys.service";
+export type { ApiKey, ApiKeyStore } from "./types/api-key.types";
 export { DrizzleAuthRepository } from "./repositories/auth.repository";
 export { DrizzleRateLimiter } from "./repositories/rate-limit.repository";
 export { createAuthRoutes } from "./routes/auth.routes";

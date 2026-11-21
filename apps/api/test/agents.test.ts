@@ -78,12 +78,24 @@ describe("agents", () => {
 			provenance: null,
 		});
 
-		const owner = await agents.runs({ sub: "u1", sid: "s", orgId: "org-1", role: "owner" });
+		const owner = await agents.runs({
+			sub: "u1",
+			sid: "s",
+			orgId: "org-1",
+			role: "owner",
+			via: "session",
+		});
 		expect(owner.map((run) => run.agent)).toEqual(["chat", "answer"]);
 		expect(owner[0]).toMatchObject({ tools: ["searchDocuments"], steps: 2, inputTokens: 20 });
 		expect(owner[1]).toMatchObject({ question: "Refunds?", citations: 2, tools: [] });
 
-		const member = await agents.runs({ sub: "u2", sid: "s", orgId: "org-1", role: "member" });
+		const member = await agents.runs({
+			sub: "u2",
+			sid: "s",
+			orgId: "org-1",
+			role: "member",
+			via: "session",
+		});
 		expect(member.map((run) => run.actorId)).toEqual(["u2"]);
 	});
 

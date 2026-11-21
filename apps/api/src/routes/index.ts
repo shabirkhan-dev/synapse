@@ -5,7 +5,14 @@ import type { AuditLog } from "@synapse/audit";
 
 import { AgentsService, createAgentRoutes } from "@/modules/agents";
 import { createAuditRoutes, UsageService } from "@/modules/audit";
-import { type AuthService, createAuthMiddleware, createAuthRoutes } from "@/modules/auth";
+import {
+	type ApiKeysService,
+	type AuthService,
+	createApiKeyRoutes,
+	createAuthMiddleware,
+	createAuthRoutes,
+	createSessionOnlyMiddleware,
+} from "@/modules/auth";
 import { createMemoryRoutes, type MemoryService } from "@/modules/memory";
 import { createOrganizationRoutes, type OrganizationsService } from "@/modules/organizations";
 import { type ChatService, createChatRoutes } from "@/modules/chat";
@@ -20,6 +27,8 @@ import type { AppBindings } from "@/shared/types/app-types";
 export type RouteDependencies = {
 	config: Configuration;
 	auth: AuthService;
+	/** Personal API keys, accepted as bearer tokens next to access tokens. */
+	apiKeys: ApiKeysService;
 	rag: RagService;
 	oversight: OversightService;
 	audit: AuditLog;
@@ -39,6 +48,7 @@ export function registerRoutes(
 	{
 		config,
 		auth,
+		apiKeys,
 		rag,
 		oversight,
 		audit,
@@ -52,7 +62,8 @@ export function registerRoutes(
 	}: RouteDependencies,
 ) {
 	const { basePath, serviceName } = config.app;
-	const authenticate = createAuthMiddleware(auth);
+	const authenticate = createAuthMiddleware(auth, apiKeys);
+	const sessionOnly = createSessionOnlyMiddleware();
 
 	app.use(`${basePath}/auth/sign-out`, authenticate);
 	app.use(`${basePath}/auth/me`, authenticate);
@@ -60,6 +71,19 @@ export function registerRoutes(
 	app.use(`${basePath}/auth/sessions/*`, authenticate);
 	app.use(`${basePath}/auth/verify-email/resend`, authenticate);
 	app.use(`${basePath}/auth/switch-organization`, authenticate);
+	app.use(`${basePath}/auth/api-keys`, authenticate);
+	app.use(`${basePath}/auth/api-keys/*`, authenticate);
+	// A leaked key must not mint keys, end sessions or switch organizations.
+	for (const path of [
+		"auth/sign-out",
+		"auth/sessions",
+		"auth/sessions/*",
+		"auth/switch-organization",
+		"auth/api-keys",
+		"auth/api-keys/*",
+	]) {
+		app.use(`${basePath}/${path}`, sessionOnly);
+	}
 	app.use(`${basePath}/organizations`, authenticate);
 	app.use(`${basePath}/organizations/*`, authenticate);
 	app.use(`${basePath}/rag/*`, authenticate);
@@ -97,6 +121,7 @@ export function registerRoutes(
 	);
 
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
+	app.route(`${basePath}/auth/api-keys`, createApiKeyRoutes(apiKeys));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
 	app.route(`${basePath}/rag`, createRagRoutes(rag, oversight));
 	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));

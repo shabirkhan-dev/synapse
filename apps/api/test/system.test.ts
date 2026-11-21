@@ -6,7 +6,13 @@ import { SystemService } from "@/modules/system";
 import { authHeaders, buildTestApp, InMemorySystemRepository, testConfig } from "./helpers";
 
 const versions = { embeddingModel: "mock:embed", chunkerVersion: "text-v1" };
-const owner = { sub: "u1", sid: "s", orgId: "org-1", role: "owner" as const };
+const owner = {
+	sub: "u1",
+	sid: "s",
+	orgId: "org-1",
+	role: "owner" as const,
+	via: "session" as const,
+};
 
 describe("system status", () => {
 	test("owners see the database, circuits, jobs, index and traces", async () => {
@@ -48,9 +54,11 @@ describe("system status", () => {
 			config: testConfig,
 			rag: { versions },
 		});
-		await expect(system.status({ ...owner, role: "member" })).rejects.toMatchObject({
-			statusCode: 403,
-		});
+		await expect(system.status({ ...owner, role: "member", via: "session" })).rejects.toMatchObject(
+			{
+				statusCode: 403,
+			},
+		);
 	});
 
 	test("an open circuit and an unreachable database are reported, not thrown", async () => {

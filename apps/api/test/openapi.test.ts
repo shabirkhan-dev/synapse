@@ -17,6 +17,8 @@ describe("openapi", () => {
 			"/api/v1/agents/runs",
 			"/api/v1/audit/events",
 			"/api/v1/audit/usage",
+			"/api/v1/auth/api-keys",
+			"/api/v1/auth/api-keys/{id}",
 			"/api/v1/auth/me",
 			"/api/v1/auth/password/forgot",
 			"/api/v1/auth/password/reset",

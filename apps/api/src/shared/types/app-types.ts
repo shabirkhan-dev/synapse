@@ -10,6 +10,8 @@ export type AuthUser = {
 	orgId: string;
 	/** The caller's role in `orgId`, read from the database on every request. */
 	role: OrganizationRole;
+	/** How the caller signed this request: a console session, or a personal API key (syn-083). */
+	via: "session" | "api_key";
 };
 
 /** Per-request facts services record (e.g. in the audit trail). */
