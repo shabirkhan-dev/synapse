@@ -125,6 +125,11 @@ export class GuardrailsService {
 		return checked.text;
 	}
 
+	/** Replaces secrets in text the caller audits itself (one event per reply, not per call). */
+	redactSecrets(text: string): { text: string; redacted: boolean } {
+		return this.output.check(text);
+	}
+
 	/** Replaces secrets in one streamed reply, delta by delta (`recordRedaction` when it did). */
 	streamRedactor(): StreamRedactor {
 		return this.output.streamRedactor();

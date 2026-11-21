@@ -95,6 +95,17 @@ export class ChatService {
 			await guardrails.checkInput(ownerId, lastUserText(validated), "chat.message", context);
 		}
 		const recalled = await memory.recallContext(ownerId, lastUserText(validated));
+		// One audit event per reply, however many tool results had a secret removed.
+		let toolRedactionRecorded = false;
+		const onToolRedacted = () => {
+			if (toolRedactionRecorded) return;
+			toolRedactionRecorded = true;
+			guardrails
+				.recordRedaction(ownerId, "chat.tool", context)
+				.catch((error: unknown) =>
+					this.options.logger.error("chat tool redaction not audited", { error }),
+				);
+		};
 		const tools = guardrails.allowedTools(
 			createChatTools({
 				rag,
@@ -106,6 +117,7 @@ export class ChatService {
 				topK,
 				context,
 				...(body.documentIds ? { documentIds: body.documentIds } : {}),
+				onRedacted: onToolRedacted,
 			}),
 		);
 		const result = streamText({

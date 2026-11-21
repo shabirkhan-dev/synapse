@@ -10,6 +10,7 @@
 | Authorization / tenancy | Organizations are tenants (ADR-0006): shared rows scoped to the token's `org` (personal = `sub`), per-user rows to `sub`; roles owner/admin/member checked from the database on every request; documents can be restricted to chosen members, filtered inside every search and read (ADR-0008) | `security/permissions` (live) + API `organizations` |
 | Secrets | Env vars, Zod-validated; production rejects dev defaults | `security/secrets` |
 | Input limits | Zod validation, 2 MB ingest limit, 200-message chat limit, guardrails input policy (length, blocked terms) | `guardrails/input` (live) |
+| Leaked secrets | Removed from RAG answers, streamed chat replies and chat tool results; audited without the text | `guardrails` + `security` (live) |
 | Prompt injection | Instruction-like text removed from passages and tool results; prompts frame them as data; facts with instructions refused | `guardrails` (live) |
 | Tool safety | Allowlist (`searchDocuments`, `rememberFact`, `currentTime`); privileged actions go through approvals | `guardrails/tools` (live) |
 | PII | Pattern redaction (emails, phones, cards, tokens, keys) before audit writes | `security/pii` (live) |

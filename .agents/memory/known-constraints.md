@@ -136,7 +136,7 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   A model-called `rememberFact` writes without approval (owner's own memory); facts with instructions are refused.
 - **Guardrails are pattern-based:** paraphrased injections can slip through (prompts v2 are the second
   line). Secrets are removed from RAG answers and, since syn-063, from streamed chat text and
-  reasoning (per delta, one word late; tool results are not redacted). Returned `matches` show
+  reasoning (per delta, one word late) and, since syn-085, from chat tool results (passage text and heading path, remembered facts; titles and sources are not checked). The RAG `/rag/query` passages and the retrieval inspector still show a document's text as stored. Returned `matches` show
   sanitized passage text. Blocked-term matching is whole-word, English-centric.
 - **Reliability** (syn-033): circuit breakers are per process (replicas do not share state); streaming
   chat (syn-059) shares the `chat` policy to start a stream (timeout, retries, breaker) and has an

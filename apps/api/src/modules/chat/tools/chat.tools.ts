@@ -20,6 +20,7 @@ export function createChatTools({
 	documentIds,
 	context = { requestId: null },
 	now = () => new Date(),
+	onRedacted = () => {},
 }: {
 	rag: RagService;
 	memory: MemoryService;
@@ -35,9 +36,18 @@ export function createChatTools({
 	documentIds?: readonly string[];
 	context?: RequestContext;
 	now?: () => Date;
+	/** Called each time a secret was removed from a tool result (the caller audits once). */
+	onRedacted?: () => void;
 }) {
 	// Citation numbers run across every search in one reply, so `[n]` names one passage.
 	let nextCitation = 1;
+	// Tool results reach the model, the browser and the stored reply: secrets go first.
+	const clean = <T extends string | null>(text: T): T => {
+		if (text === null) return text;
+		const checked = guardrails.redactSecrets(text);
+		if (checked.redacted) onRedacted();
+		return checked.text as T;
+	};
 	return {
 		searchDocuments: tool({
 			description: CHAT_TOOLS.searchDocuments.description,
@@ -59,10 +69,10 @@ export function createChatTools({
 					documentId: match.documentId,
 					title: match.documentTitle,
 					/** `Title › headings` the passage sits under (null before chunker text-v2). */
-					context: match.context,
+					context: clean(match.context),
 					source: match.source,
 					score: Number(match.score.toFixed(4)),
-					content: match.content,
+					content: clean(match.content),
 				}));
 			},
 		}),
@@ -77,7 +87,7 @@ export function createChatTools({
 			}),
 			async execute({ fact }) {
 				const saved = await memory.rememberFact(ownerId, fact, context);
-				return { remembered: saved.content };
+				return { remembered: clean(saved.content) };
 			},
 		}),
 		currentTime: tool({

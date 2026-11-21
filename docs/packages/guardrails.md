@@ -45,6 +45,7 @@ results and facts are data (`rag-answer@2`, `rag-answer-cited@2`, `chat-assistan
 | Facts (`rememberFact`, `POST /memory/facts`) | input policy + instruction check | `422`, audited (memory poisoning) |
 | `/rag/query` answers | secrets removed | audited (`guardrails.output.redacted`) |
 | Streamed chat replies (text and reasoning) | secrets removed per delta before the client or the stored conversation sees them | audited once per reply (`guardrails.output.redacted`, `surface: "chat.message"`) |
+| Chat tool results (searched passages and their heading path, a remembered fact) | secrets removed before the model, the stream or the stored conversation sees them | audited once per reply, however many results had one (`guardrails.output.redacted`, `surface: "chat.tool"`) |
 | Chat tools | allowlist `searchDocuments`, `rememberFact`, `currentTime` | others dropped |
 
 Streamed text arrives a word late (each word is sent once the whitespace after it arrives). Tool

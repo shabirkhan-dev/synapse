@@ -199,4 +199,40 @@ describe("memory poisoning and output", () => {
 		const redaction = auditEvents.events.find((e) => e.action === "guardrails.output.redacted");
 		expect(redaction?.data).toEqual({ surface: "chat.message" });
 	});
+
+	test("a secret in a searched passage never reaches the model, the stream or the stored reply", async () => {
+		const leaked = ["sk-", "w".repeat(30)].join("");
+		const chatModel = new MockLanguageModelV4({
+			doStream: [
+				streamResult(toolCallStreamParts("searchDocuments", { query: "deploy key" })),
+				streamResult(toolCallStreamParts("searchDocuments", { query: "deploy key again" })),
+				streamResult(textStreamParts("The runbook names a key.")),
+			],
+		});
+		const { app, auditEvents, conversations } = buildTestApp({ chatModel });
+		await call(app, "POST", "/rag/documents", {
+			title: "Runbook",
+			content: `Deploy runbook: the deploy key is ${leaked} and lives in the vault.`,
+		});
+		const response = await app.request(`${base}/chat`, {
+			method: "POST",
+			headers: await authHeaders(),
+			body: JSON.stringify({
+				message: { id: "m1", role: "user", parts: [{ type: "text", text: "deploy key?" }] },
+			}),
+		});
+		const streamed = await response.text();
+		expect(streamed).toContain("tool-output-available");
+		expect(streamed).toContain("[secret]");
+		expect(streamed).not.toContain(leaked);
+		// What the model was given on the next step.
+		expect(JSON.stringify(chatModel.doStreamCalls[1]?.prompt)).not.toContain(leaked);
+		expect(JSON.stringify(chatModel.doStreamCalls[1]?.prompt)).toContain("[secret]");
+
+		await Bun.sleep(10);
+		expect(JSON.stringify(conversations.stored)).not.toContain(leaked);
+		// Two searches found it; one event for the reply.
+		const redactions = auditEvents.events.filter((e) => e.action === "guardrails.output.redacted");
+		expect(redactions.map((e) => e.data)).toEqual([{ surface: "chat.tool" }]);
+	});
 });

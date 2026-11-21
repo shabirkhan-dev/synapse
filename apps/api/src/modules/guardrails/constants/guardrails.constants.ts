@@ -12,4 +12,9 @@ export const GUARDRAILS_MESSAGES = {
 export const CHAT_ALLOWED_TOOLS = ["searchDocuments", "rememberFact", "currentTime"] as const;
 
 /** Where a check ran, recorded on its audit event. */
-export type GuardedSurface = "rag.query" | "chat.message" | "chat.search" | "memory.fact";
+export type GuardedSurface =
+	| "rag.query"
+	| "chat.message"
+	| "chat.search"
+	| "chat.tool"
+	| "memory.fact";

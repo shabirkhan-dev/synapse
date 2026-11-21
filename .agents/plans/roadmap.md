@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-20. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-21. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -128,9 +128,9 @@ contextual retrieval and Ragas.
 | Invite people by email | ✅ | syn-082 |
 | Personal API keys | ✅ | syn-083 |
 | Two-step sign-in (TOTP) | ✅ | syn-084 |
-| Secrets removed from chat tool results | 🔄 | syn-085 |
-| Chat: rename, keep stopped answers, versions on regenerate | ⏭️ | syn-086 |
-| Palette searches everything; shell shows while the session loads | ⬜ | syn-087 |
+| Secrets removed from chat tool results | ✅ | syn-085 |
+| Chat: rename, keep stopped answers, versions on regenerate | 🔄 | syn-086 |
+| Palette searches everything; shell shows while the session loads | ⏭️ | syn-087 |
 | First-run onboarding with sample documents | ⬜ | syn-088 |
 | Automated accessibility checks (axe) on every page | ⬜ | syn-089 |
 | Company SSO (SAML/OIDC) — parked: needs an identity provider to test against | ⬜ | — |
