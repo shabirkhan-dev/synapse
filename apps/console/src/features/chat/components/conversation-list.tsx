@@ -13,11 +13,14 @@ import {
 	AlertDialogTitle,
 } from "@synapse/ui/components/alert-dialog";
 import { Button, buttonVariants } from "@synapse/ui/components/button";
+import { Input } from "@synapse/ui/components/input";
+import { cn } from "@synapse/ui/lib/utils";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CHAT_ROUTE, CONVERSATION_PARAM } from "../constants/chat.constants";
 import type { Conversation } from "../types/chat.types";
+import { groupConversations } from "../utils/group-conversations";
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
 
@@ -31,7 +34,10 @@ export type ConversationListProps = {
 	onDelete: (conversation: Conversation) => void;
 };
 
-/** Stored conversations, most recent first, each a real link; deleting asks first. */
+/**
+ * Stored conversations by last activity (Today, Yesterday, Previous 7 days, Older), each a real
+ * link; a filter narrows them by title; deleting asks first.
+ */
 export function ConversationList({
 	conversations,
 	activeId,
@@ -41,60 +47,86 @@ export function ConversationList({
 	onDelete,
 }: ConversationListProps) {
 	const [confirming, setConfirming] = useState<Conversation | null>(null);
+	const [filter, setFilter] = useState("");
+	const needle = filter.trim().toLowerCase();
+	const groups = groupConversations(
+		needle
+			? conversations.filter((conversation) => conversation.title.toLowerCase().includes(needle))
+			: conversations,
+	);
 
 	return (
 		<nav aria-label="Conversations" className="flex flex-col gap-3">
 			<Link
 				href={CHAT_ROUTE}
 				onClick={onNewChat}
-				className={buttonVariants({ variant: "outline", className: "justify-start gap-1.5" })}
+				className={buttonVariants({ variant: "outline", className: "justify-start" })}
 			>
-				<HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={1.5} aria-hidden="true" />
+				<HugeiconsIcon icon={PlusSignIcon} strokeWidth={1.75} aria-hidden="true" />
 				New chat
 			</Link>
+			{conversations.length > 0 ? (
+				<Input
+					type="search"
+					value={filter}
+					onChange={(event) => setFilter(event.target.value)}
+					placeholder="Filter conversations"
+					aria-label="Filter conversations"
+					className="h-8 text-[0.8125rem]"
+				/>
+			) : null}
 			{conversations.length === 0 ? (
 				<p className="px-2 text-xs text-muted-foreground">Your conversations appear here.</p>
+			) : groups.length === 0 ? (
+				<p className="px-2 text-xs text-muted-foreground">No conversation is called that.</p>
 			) : (
-				<ul className="flex flex-col gap-0.5">
-					{conversations.map((conversation) => {
-						const active = conversation.id === activeId;
-						return (
-							<li key={conversation.id} className="group relative flex items-center">
-								<Link
-									href={`${CHAT_ROUTE}?${CONVERSATION_PARAM}=${encodeURIComponent(conversation.id)}`}
-									aria-current={active ? "page" : undefined}
-									onClick={onOpen}
-									title={conversation.title}
-									className={`flex min-w-0 flex-1 flex-col rounded-md py-1.5 ps-2 pe-9 text-sm hover:bg-muted ${active ? "bg-muted font-medium" : ""}`}
-								>
-									<span className="truncate">{conversation.title}</span>
-									<span className="text-xs font-normal text-muted-foreground">
-										<time dateTime={conversation.updatedAt}>
-											{dateFormat.format(new Date(conversation.updatedAt))}
-										</time>
-									</span>
-								</Link>
-								{/* Shown on hover or focus where there is a pointer; always on touch screens. */}
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon"
-									className={`absolute end-1 size-8 text-muted-foreground transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100 ${active ? "" : "[@media(hover:hover)]:opacity-0"}`}
-									disabled={deletingId === conversation.id}
-									aria-label={`Delete conversation “${conversation.title}”`}
-									onClick={() => setConfirming(conversation)}
-								>
-									<HugeiconsIcon
-										icon={Delete02Icon}
-										size={14}
-										strokeWidth={1.5}
-										aria-hidden="true"
-									/>
-								</Button>
-							</li>
-						);
-					})}
-				</ul>
+				groups.map((group) => (
+					// A labelled group, not a heading: the page's own heading comes after this list.
+					<section key={group.label} aria-label={group.label} className="flex flex-col gap-0.5">
+						<p
+							aria-hidden="true"
+							className="px-2.5 pt-2 pb-1 font-mono text-[0.6875rem] tracking-[0.08em] text-muted-foreground uppercase"
+						>
+							{group.label}
+						</p>
+						<ul className="flex flex-col gap-0.5">
+							{group.conversations.map((conversation) => {
+								const active = conversation.id === activeId;
+								return (
+									<li key={conversation.id} className="group relative flex items-center">
+										<Link
+											href={`${CHAT_ROUTE}?${CONVERSATION_PARAM}=${encodeURIComponent(conversation.id)}`}
+											aria-current={active ? "page" : undefined}
+											onClick={onOpen}
+											title={`${conversation.title} · ${dateFormat.format(new Date(conversation.updatedAt))}`}
+											className={cn(
+												"flex h-9 min-w-0 flex-1 items-center rounded-lg ps-2.5 pe-9 text-sm transition-colors duration-150 hover:bg-muted",
+												active ? "bg-muted font-medium text-foreground" : "text-foreground/85",
+											)}
+										>
+											<span className="truncate">{conversation.title}</span>
+										</Link>
+										{/* Shown on hover or focus where there is a pointer; always on touch screens. */}
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon-sm"
+											className={cn(
+												"absolute end-0.5 size-8 text-muted-foreground transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100",
+												active ? "" : "[@media(hover:hover)]:opacity-0",
+											)}
+											disabled={deletingId === conversation.id}
+											aria-label={`Delete conversation “${conversation.title}”`}
+											onClick={() => setConfirming(conversation)}
+										>
+											<HugeiconsIcon icon={Delete02Icon} strokeWidth={1.5} aria-hidden="true" />
+										</Button>
+									</li>
+								);
+							})}
+						</ul>
+					</section>
+				))
 			)}
 			<AlertDialog
 				open={confirming !== null}

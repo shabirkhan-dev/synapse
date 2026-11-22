@@ -43,7 +43,7 @@ export function MessageList({
 			{shown.map((message, position) =>
 				message.role === "user" ? (
 					<li key={message.id} className="flex justify-end">
-						<div className="max-w-[min(85%,42rem)] rounded-2xl border bg-card px-4 py-3 text-[0.95rem] leading-relaxed shadow-xs">
+						<div className="max-w-[min(85%,36rem)] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[0.9375rem] leading-relaxed">
 							<span className="sr-only">You: </span>
 							<p className="break-words whitespace-pre-wrap">{textOf(message)}</p>
 						</div>
@@ -62,7 +62,18 @@ export function MessageList({
 			{waiting ? (
 				<li className="flex flex-col gap-2">
 					<AssistantLabel />
-					<p className="text-sm text-muted-foreground">Thinking…</p>
+					<p className="flex items-center gap-2 text-sm text-muted-foreground">
+						<span aria-hidden="true" className="flex gap-1">
+							{[0, 150, 300].map((delay) => (
+								<span
+									key={delay}
+									className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-pulse"
+									style={{ animationDelay: `${delay}ms` }}
+								/>
+							))}
+						</span>
+						Thinking…
+					</p>
 				</li>
 			) : null}
 		</ol>
@@ -93,7 +104,7 @@ function AssistantMessage({
 		return passage ? <CitationPopover passage={passage} /> : `[${citation}]`;
 	};
 	return (
-		<li className="flex max-w-2xl flex-col gap-2">
+		<li className="flex flex-col gap-2.5">
 			<AssistantLabel />
 			{message.parts.map((part, index) =>
 				isTextUIPart(part) ? (

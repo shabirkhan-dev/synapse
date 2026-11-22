@@ -1,9 +1,12 @@
 "use client";
 
+import { ArrowDown02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Button } from "@synapse/ui/components/button";
 import { useEffect, useRef, useState } from "react";
 
-import { DocumentScope } from "@/components/shared/document-scope";
+import { DocumentScopeMenu } from "@/components/shared/document-scope";
 import { useDocumentsQuery } from "@/features/documents";
 
 import { FollowUpsContainer } from "@/features/follow-ups";
@@ -76,19 +79,68 @@ export function ChatThreadContainer({
 		if (distance < 160) marker.scrollIntoView({ block: "end" });
 	}, [messages]);
 
-	return (
-		<div className="flex flex-1 flex-col gap-6">
-			<DocumentScope documents={documents.data ?? []} selected={scope} onChange={setScope} />
-			{messages.length === 0 ? (
+	// Scrolled up while the thread goes on below: offer a way back to the latest message.
+	const [awayFromEnd, setAwayFromEnd] = useState(false);
+	useEffect(() => {
+		function measure() {
+			const marker = end.current;
+			if (!marker) return;
+			setAwayFromEnd(marker.getBoundingClientRect().top - window.innerHeight > 240);
+		}
+		measure();
+		window.addEventListener("scroll", measure, { passive: true });
+		window.addEventListener("resize", measure);
+		return () => {
+			window.removeEventListener("scroll", measure);
+			window.removeEventListener("resize", measure);
+		};
+	}, [messages.length]);
+
+	const composer = (
+		<ChatComposer
+			streaming={streaming}
+			draft={status.kind === "failed" ? status.draft : ""}
+			onSend={send}
+			onStop={stop}
+			autoFocus={messages.length === 0}
+			toolbar={
+				<DocumentScopeMenu documents={documents.data ?? []} selected={scope} onChange={setScope} />
+			}
+		/>
+	);
+
+	const failure =
+		status.kind === "failed" ? (
+			<Alert variant="destructive">
+				<AlertTitle>Synapse could not answer</AlertTitle>
+				<AlertDescription>
+					{status.message}{" "}
+					{status.draft
+						? "Your message is back in the box below; send it again."
+						: "Send your message again."}
+				</AlertDescription>
+			</Alert>
+		) : null;
+
+	if (messages.length === 0) {
+		// A new chat: the greeting and the box together, in the middle of the page.
+		return (
+			<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 py-6">
 				<ChatEmptyState onPick={send} />
-			) : (
-				<MessageList
-					messages={messages}
-					streaming={streaming}
-					{...(canRegenerate ? { onRegenerate: () => void regenerate() } : {})}
-					lastReplyActions={last?.role === "assistant" ? switcher : null}
-				/>
-			)}
+				{failure}
+				{composer}
+			</div>
+		);
+	}
+
+	return (
+		<div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
+			<MessageList
+				messages={messages}
+				streaming={streaming}
+				{...(canRegenerate ? { onRegenerate: () => void regenerate() } : {})}
+				lastReplyActions={last?.role === "assistant" ? switcher : null}
+			/>
 			{last?.role !== "assistant" && !streaming && switcher ? (
 				<div className="-ms-3 flex items-center gap-2 text-sm text-muted-foreground">
 					{switcher}
@@ -98,30 +150,27 @@ export function ChatThreadContainer({
 			{answered && answered.answer ? (
 				<FollowUpsContainer answered={answered} onPick={(next) => void send(next)} />
 			) : null}
-			{status.kind === "failed" ? (
-				<Alert variant="destructive">
-					<AlertTitle>Synapse could not answer</AlertTitle>
-					<AlertDescription>
-						{status.message}{" "}
-						{status.draft
-							? "Your message is back in the box below; send it again."
-							: "Send your message again."}
-					</AlertDescription>
-				</Alert>
-			) : null}
+			{failure}
 			<p role="status" className="sr-only">
 				{streaming ? "Synapse is answering…" : ""}
 			</p>
 			<div
 				ref={end}
-				className="sticky bottom-0 mt-auto bg-linear-to-t from-background from-60% to-transparent pt-6 pb-4"
+				className="sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-8 pb-4"
 			>
-				<ChatComposer
-					streaming={streaming}
-					draft={status.kind === "failed" ? status.draft : ""}
-					onSend={send}
-					onStop={stop}
-				/>
+				{awayFromEnd ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full shadow-pop"
+						onClick={() => end.current?.scrollIntoView({ block: "end" })}
+					>
+						<HugeiconsIcon icon={ArrowDown02Icon} strokeWidth={1.75} aria-hidden="true" />
+						Jump to latest
+					</Button>
+				) : null}
+				{composer}
 			</div>
 		</div>
 	);

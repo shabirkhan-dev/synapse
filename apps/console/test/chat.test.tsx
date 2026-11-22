@@ -387,7 +387,8 @@ describe("Copy, regenerate and follow-ups", () => {
 		renderWithQuery(
 			<ChatThreadContainer conversationId={null} initialMessages={[]} onStarted={mock()} />,
 		);
-		expect(screen.getByText("All documents")).toBeDefined();
+		// The composer's chip opens the list of documents.
+		fireEvent.click(screen.getByRole("button", { name: /All documents.*documents to search in/ }));
 		// The label, as a user clicks it (happy-dom does not toggle Base UI's span on click).
 		fireEvent.click(await screen.findByText("Shipping", { selector: "li span" }));
 		await screen.findByText("Shipping", { selector: "span.truncate" });

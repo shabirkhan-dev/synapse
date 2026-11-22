@@ -135,6 +135,7 @@ contextual retrieval and Ragas.
 | Palette searches everything; shell shows while the session loads | ✅ | syn-087 |
 | First-run onboarding with sample documents | ✅ | syn-088 |
 | Automated accessibility checks (axe) on every page | ✅ | syn-089 |
+| Chat UI: centred thread, new-chat greeting, documents chip in the composer, grouped conversations | ✅ | syn-092 |
 | Company SSO (SAML/OIDC) — parked: needs an identity provider to test against | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

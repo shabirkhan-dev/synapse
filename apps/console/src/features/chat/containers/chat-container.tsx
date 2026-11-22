@@ -107,21 +107,24 @@ export function ChatContainer() {
 				aria-labelledby="chat-title"
 				className="flex min-h-[calc(100dvh-11rem)] min-w-0 flex-col gap-4"
 			>
-				<ConversationTitle
-					// A fresh form per conversation (and after its name changes).
-					key={`${opened ?? "new"}:${title}`}
-					title={title}
-					pending={rename.isPending}
-					{...(opened
-						? { onRename: (next: string) => rename.mutateAsync({ id: opened, title: next }) }
-						: {})}
-				/>
-				{remove.isError ? (
-					<Alert variant="destructive">
-						<AlertTitle>The conversation was not deleted</AlertTitle>
-						<AlertDescription>{remove.error.message}</AlertDescription>
-					</Alert>
-				) : null}
+				{/* The heading lines up with the thread's centred column. */}
+				<div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+					<ConversationTitle
+						// A fresh form per conversation (and after its name changes).
+						key={`${opened ?? "new"}:${title}`}
+						title={title}
+						pending={rename.isPending}
+						{...(opened
+							? { onRename: (next: string) => rename.mutateAsync({ id: opened, title: next }) }
+							: {})}
+					/>
+					{remove.isError ? (
+						<Alert variant="destructive">
+							<AlertTitle>The conversation was not deleted</AlertTitle>
+							<AlertDescription>{remove.error.message}</AlertDescription>
+						</Alert>
+					) : null}
+				</div>
 				{stored && history.isPending ? (
 					<p role="status" className="text-xs text-muted-foreground">
 						Loading the conversation…

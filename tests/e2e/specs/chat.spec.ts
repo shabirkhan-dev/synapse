@@ -23,7 +23,7 @@ test("chat streams an answer that searched the documents; the conversation is ke
 
 	await page.getByRole("link", { name: "Chat", exact: true }).click();
 	await expect(page.getByRole("heading", { name: "New chat" })).toBeVisible();
-	await expect(page.getByText("Ask about your documents")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
 
 	// Enter sends; Stop is offered while the answer streams.
 	await page.getByLabel("Message", { exact: true }).fill(QUESTION);
@@ -56,7 +56,7 @@ test("chat streams an answer that searched the documents; the conversation is ke
 
 	// A new chat starts empty; the stored one opens again from the list.
 	await conversations.getByRole("link", { name: "New chat" }).click();
-	await expect(page.getByText("Ask about your documents")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
 	await conversations.getByRole("link", { name: new RegExp(QUESTION.slice(0, 20)) }).click();
 	await expect(messages.getByText(ANSWER)).toBeVisible();
 
@@ -100,7 +100,7 @@ test("a chat turn narrowed to one document cites only that document", async ({ p
 
 	await page.getByRole("link", { name: "Chat", exact: true }).click();
 	await expect(page.getByRole("heading", { name: "New chat" })).toBeVisible();
-	await page.getByText("Search in").click();
+	await page.getByRole("button", { name: /documents to search in/ }).click();
 	await page.getByRole("checkbox", { name: "Shipping policy" }).click();
 	await expect(page.getByText("Shipping policy", { exact: true }).first()).toBeVisible();
 	await page.getByLabel("Message", { exact: true }).fill(QUESTION);

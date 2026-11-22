@@ -238,6 +238,13 @@ Don't create a container for a component that needs no data.
 | Icons | HugeIcons only |
 | Mono | JetBrains Mono (self-hosted, `@fontsource-variable/jetbrains-mono`) for ids, model names and versions, and since v4 for figures, counts, number cells, table headers and small labels (uppercase, `tracking-[0.06em]`, 11px) |
 
+**Chat (syn-092).** Heading and thread share one centred column (`max-w-3xl`). An empty thread
+shows `ChatEmptyState` (greeting, suggestion cards) with the composer under it; with messages the
+composer docks at the bottom and "Jump to latest" appears when scrolled up. The composer takes a
+`toolbar` slot: chat puts `DocumentScopeMenu` there (a chip and a popover); the Playground uses
+`DocumentScope` (an expandable box); both share the option list. The conversation list groups by
+day (`groupConversations`) and filters by title in the page.
+
 **Onboarding (syn-088).** `features/onboarding` renders the Get started card into the Documents
 page through `DocumentsContainer`'s `intro` slot (set in `app/(workspace)/documents/page.tsx`), so the
 two features never import each other. Sample documents are fixtures in
