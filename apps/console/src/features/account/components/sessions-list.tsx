@@ -55,7 +55,7 @@ export function SessionsList({
 							<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 								<p className="flex flex-wrap items-center gap-2 text-sm font-medium">
 									{device}
-									{session.current ? <Badge variant="outline">This device</Badge> : null}
+									{session.current ? <Badge variant="info">This device</Badge> : null}
 								</p>
 								<p className="text-xs text-muted-foreground">
 									Signed in <time dateTime={session.createdAt}>{signedIn}</time> · active{" "}

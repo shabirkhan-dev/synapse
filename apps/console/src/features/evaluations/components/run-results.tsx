@@ -36,7 +36,7 @@ export function RunResults({ run }: { run: EvalRun }) {
 						].map((score) => (
 							<div
 								key={score.label}
-								className="flex flex-col gap-2 rounded-xl border bg-card p-4 shadow-[0_1px_2px_0_rgb(0_0_0/0.03)] dark:shadow-none"
+								className="flex flex-col gap-2 rounded-xl border bg-card p-4 shadow-card"
 							>
 								<dt className="text-sm text-muted-foreground">{score.label}</dt>
 								<dd className="font-mono text-2xl leading-none font-medium tabular-nums">

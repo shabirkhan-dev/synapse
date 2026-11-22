@@ -2,14 +2,19 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
+/** Callouts: a bordered card row with a 16px icon; tinted for problems, success and caution. */
 const alertVariants = cva(
-	"group/alert relative grid w-full gap-0.5 rounded-lg border px-2 py-1.5 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-1.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-3.5",
+	"group/alert relative grid w-full gap-1 rounded-xl border px-4 py-3 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-3 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
 	{
 		variants: {
 			variant: {
-				default: "bg-card text-card-foreground",
+				default: "bg-card text-card-foreground shadow-card",
 				destructive:
-					"bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+					"border-tone-red/25 bg-tone-red/6 text-tone-red *:data-[slot=alert-description]:text-tone-red *:[svg]:text-current",
+				success:
+					"border-tone-green/25 bg-tone-green/6 text-tone-green *:data-[slot=alert-description]:text-tone-green",
+				warning:
+					"border-tone-amber/25 bg-tone-amber/6 text-tone-amber *:data-[slot=alert-description]:text-tone-amber",
 			},
 		},
 		defaultVariants: {

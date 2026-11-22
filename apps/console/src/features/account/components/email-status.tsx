@@ -31,12 +31,12 @@ export function EmailStatus({
 			<div className="flex flex-wrap items-center gap-2">
 				<span className="text-sm font-medium break-all">{email}</span>
 				{verifiedAt ? (
-					<Badge variant="outline">
+					<Badge variant="success">
 						<HugeiconsIcon icon={Tick02Icon} strokeWidth={2} aria-hidden="true" />
 						Verified
 					</Badge>
 				) : (
-					<Badge variant="secondary">
+					<Badge variant="warning">
 						<HugeiconsIcon icon={Alert02Icon} strokeWidth={2} aria-hidden="true" />
 						Not verified
 					</Badge>

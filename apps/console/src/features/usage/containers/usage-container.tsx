@@ -1,5 +1,8 @@
 "use client";
 
+import { ChartColumnIcon, PieChartIcon, Table01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
 import {
@@ -74,7 +77,10 @@ export function UsageContainer() {
 							<div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 								<Card>
 									<CardHeader>
-										<CardTitle>Answers per day</CardTitle>
+										<CardTitle>
+											<HugeiconsIcon icon={ChartColumnIcon} strokeWidth={1.75} aria-hidden="true" />
+											Answers per day
+										</CardTitle>
 									</CardHeader>
 									<CardContent>
 										<DailyChart days={usage.data.daily} />
@@ -82,7 +88,10 @@ export function UsageContainer() {
 								</Card>
 								<Card>
 									<CardHeader>
-										<CardTitle>Answers by source</CardTitle>
+										<CardTitle>
+											<HugeiconsIcon icon={PieChartIcon} strokeWidth={1.75} aria-hidden="true" />
+											Answers by source
+										</CardTitle>
 										<CardDescription>Chat replies and Playground answers.</CardDescription>
 									</CardHeader>
 									<CardContent className="flex flex-col gap-6">
@@ -100,7 +109,10 @@ export function UsageContainer() {
 							</div>
 							<Card>
 								<CardHeader>
-									<CardTitle>By source, model and prompt</CardTitle>
+									<CardTitle>
+										<HugeiconsIcon icon={Table01Icon} strokeWidth={1.75} aria-hidden="true" />
+										By source, model and prompt
+									</CardTitle>
 									<CardDescription>
 										Playground answers and chat replies. Cost is estimated from the prices in
 										AI_MODEL_PRICES; models without one show “No price”.

@@ -21,7 +21,7 @@ export function EmptyState({ icon, title, children }: EmptyStateProps) {
 	return (
 		<Empty className="py-8">
 			<EmptyHeader>
-				<EmptyMedia variant="icon" className="bg-primary/10 text-link">
+				<EmptyMedia variant="icon">
 					<HugeiconsIcon icon={icon} strokeWidth={1.75} aria-hidden="true" />
 				</EmptyMedia>
 				<EmptyTitle>{title}</EmptyTitle>

@@ -1,3 +1,10 @@
+import {
+	DatabaseIcon,
+	FlashIcon,
+	Route01Icon,
+	WorkflowSquare03Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@synapse/ui/components/badge";
 import {
 	Card,
@@ -101,7 +108,10 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Circuit breakers</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={FlashIcon} strokeWidth={1.75} aria-hidden="true" />
+						Circuit breakers
+					</CardTitle>
 					<CardDescription>
 						After repeated failures a dependency fails fast instead of making people wait. These are
 						this API process's own; other replicas keep their own state.
@@ -142,7 +152,10 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 			<div className="grid gap-6 lg:grid-cols-2">
 				<Card>
 					<CardHeader>
-						<CardTitle>Background jobs</CardTitle>
+						<CardTitle>
+							<HugeiconsIcon icon={WorkflowSquare03Icon} strokeWidth={1.75} aria-hidden="true" />
+							Background jobs
+						</CardTitle>
 						<CardDescription>Queues the worker runs (pg-boss), by state.</CardDescription>
 					</CardHeader>
 					<CardContent className="flex flex-col gap-4">
@@ -207,7 +220,10 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 				<div className="flex flex-col gap-6">
 					<Card>
 						<CardHeader>
-							<CardTitle>Index</CardTitle>
+							<CardTitle>
+								<HugeiconsIcon icon={DatabaseIcon} strokeWidth={1.75} aria-hidden="true" />
+								Index
+							</CardTitle>
 							<CardDescription>
 								{outOfDate === 0
 									? "Every chunk in this workspace uses the current embedding model."
@@ -239,7 +255,7 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 														<span className="font-mono text-xs">
 															{row.embeddingModel ?? "Unknown (older chunks)"}
 														</span>
-														{row.current ? <Badge variant="secondary">Current</Badge> : null}
+														{row.current ? <Badge variant="info">Current</Badge> : null}
 													</span>
 												</TableCell>
 												<TableCell className="text-right">{count.format(row.chunks)}</TableCell>
@@ -252,7 +268,10 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 					</Card>
 					<Card>
 						<CardHeader>
-							<CardTitle>Traces</CardTitle>
+							<CardTitle>
+								<HugeiconsIcon icon={Route01Icon} strokeWidth={1.75} aria-hidden="true" />
+								Traces
+							</CardTitle>
 						</CardHeader>
 						<CardContent className="text-xs">
 							{status.traces.destination === "none" ? (

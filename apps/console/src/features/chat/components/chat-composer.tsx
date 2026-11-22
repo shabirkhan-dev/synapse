@@ -60,7 +60,7 @@ export function ChatComposer({ streaming, draft, onSend, onStop }: ChatComposerP
 					aria-invalid={error ? true : undefined}
 					aria-describedby={error ? "chat-message-error chat-message-hint" : "chat-message-hint"}
 					onKeyDown={handleKeyDown}
-					className="max-h-48 min-h-11 resize-none border-0 bg-transparent px-2 text-base shadow-none focus-visible:ring-0 md:text-sm dark:bg-transparent"
+					className="max-h-48 min-h-11 resize-none border-0 bg-transparent px-2 text-base shadow-none focus-visible:ring-0 md:text-sm"
 				/>
 				<div className="flex items-center justify-between gap-3 ps-2">
 					<p id="chat-message-hint" className="text-xs text-pretty text-muted-foreground">

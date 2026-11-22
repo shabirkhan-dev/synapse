@@ -1,5 +1,8 @@
 "use client";
 
+import { LaptopIcon, Mail01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
 import {
@@ -42,7 +45,10 @@ export function AccountContainer() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Email</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={Mail01Icon} strokeWidth={1.75} aria-hidden="true" />
+						Email
+					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{me.data ? (
@@ -64,7 +70,10 @@ export function AccountContainer() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Signed-in devices</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={LaptopIcon} strokeWidth={1.75} aria-hidden="true" />
+						Signed-in devices
+					</CardTitle>
 					<CardDescription>
 						Sign out a device you no longer use or do not recognize.
 					</CardDescription>

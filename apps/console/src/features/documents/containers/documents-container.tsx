@@ -1,7 +1,9 @@
 "use client";
 
-import { Files01Icon } from "@hugeicons/core-free-icons";
+import { CloudUploadIcon, Files01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Badge } from "@synapse/ui/components/badge";
 import { Button } from "@synapse/ui/components/button";
 import {
 	Card,
@@ -56,7 +58,10 @@ export function DocumentsContainer() {
 			</PageHeader>
 			<Card>
 				<CardHeader>
-					<CardTitle>Add documents</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={CloudUploadIcon} strokeWidth={1.75} aria-hidden="true" />
+						Add documents
+					</CardTitle>
 					<CardDescription>
 						Upload files, paste text or add a web page; the same text twice is stored once.
 					</CardDescription>
@@ -111,7 +116,11 @@ export function DocumentsContainer() {
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardTitle>Your documents</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={Files01Icon} strokeWidth={1.75} aria-hidden="true" />
+						Your documents
+						{documents.data ? <Badge variant="count">{documents.data.length}</Badge> : null}
+					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{documents.isPending ? (

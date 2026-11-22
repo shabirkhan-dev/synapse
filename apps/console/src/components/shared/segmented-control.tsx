@@ -23,7 +23,7 @@ export function SegmentedControl<T extends string | number>({
 	onChange,
 }: SegmentedControlProps<T>) {
 	return (
-		<div role="group" aria-label={label} className="inline-flex rounded-lg bg-muted p-0.5">
+		<div role="group" aria-label={label} className="inline-flex h-9 rounded-[10px] bg-muted p-0.5">
 			{options.map((option) => (
 				<button
 					key={option.value}
@@ -31,9 +31,9 @@ export function SegmentedControl<T extends string | number>({
 					aria-pressed={option.value === value}
 					onClick={() => onChange(option.value)}
 					className={cn(
-						"h-8 rounded-sm px-2 text-[0.8125rem] font-medium whitespace-nowrap sm:px-3 sm:text-sm text-muted-foreground transition-colors outline-none",
-						"hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60",
-						"aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs dark:aria-pressed:bg-white/10",
+						"h-full rounded-lg px-2.5 text-[0.8125rem] font-medium whitespace-nowrap text-muted-foreground transition-[color,background-color,box-shadow] duration-150 outline-none sm:px-3 sm:text-sm",
+						"hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/25",
+						"aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-control",
 					)}
 				>
 					{option.label}

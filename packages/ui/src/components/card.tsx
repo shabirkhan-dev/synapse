@@ -13,7 +13,7 @@ function Card({
 			data-slot="card"
 			data-size={size}
 			className={cn(
-				"group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl border bg-card py-(--card-spacing) text-sm text-card-foreground shadow-[0_1px_2px_0_rgb(0_0_0/0.03)] [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:rounded-xl data-[size=sm]:[--card-spacing:--spacing(4)] dark:shadow-none *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl",
+				"group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl border bg-card py-(--card-spacing) text-sm text-card-foreground shadow-card [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:rounded-xl data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl",
 				className,
 			)}
 			{...props}
@@ -39,7 +39,12 @@ function CardTitle({ className, render, ...props }: useRender.ComponentProps<"h2
 	return useRender({
 		defaultTagName: "h2",
 		props: mergeProps<"h2">(
-			{ className: cn("font-heading text-base font-medium tracking-tight", className) },
+			{
+				className: cn(
+					"flex items-center gap-2 font-heading text-base font-medium tracking-tight [&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:text-muted-foreground",
+					className,
+				),
+			},
 			props,
 		),
 		render,
@@ -78,7 +83,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
 		<div
 			data-slot="card-footer"
 			className={cn(
-				"flex items-center rounded-b-lg px-(--card-spacing) [.border-t]:pt-(--card-spacing)",
+				"flex items-center gap-2 rounded-b-2xl px-(--card-spacing) text-xs text-muted-foreground [.border-t]:pt-4 [&_svg:not([class*='size-'])]:size-4",
 				className,
 			)}
 			{...props}

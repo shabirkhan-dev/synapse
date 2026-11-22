@@ -65,6 +65,22 @@ describe("CommandPaletteContainer", () => {
 		]);
 	});
 
+	test("/ opens it too, but not while typing in a field", async () => {
+		signedIn();
+		api();
+		renderWithQuery(
+			<>
+				<input aria-label="Somewhere to type" />
+				<CommandPaletteContainer />
+			</>,
+		);
+		const field = screen.getByLabelText("Somewhere to type");
+		fireEvent.keyDown(field, { key: "/" });
+		expect(screen.queryByRole("dialog", { name: "Search Synapse" })).toBeNull();
+		fireEvent.keyDown(window, { key: "/" });
+		await screen.findByRole("dialog", { name: "Search Synapse" });
+	});
+
 	test("typing narrows the list; choosing an entry goes there and closes the palette", async () => {
 		signedIn();
 		api();

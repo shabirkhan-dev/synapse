@@ -138,7 +138,7 @@ function AssistantLabel() {
 		<p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
 			<span
 				aria-hidden="true"
-				className="flex size-5 items-center justify-center rounded-md bg-primary text-primary-foreground"
+				className="flex size-5 items-center justify-center rounded-md bg-foreground text-background"
 			>
 				<HugeiconsIcon icon={AiNetworkIcon} size={12} strokeWidth={2} />
 			</span>

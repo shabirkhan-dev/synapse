@@ -26,7 +26,7 @@ export function StatStrip({
 	return (
 		<dl
 			className={cn(
-				"grid grid-cols-2 overflow-hidden rounded-2xl border bg-card shadow-[0_1px_2px_0_rgb(0_0_0/0.03)] dark:shadow-none",
+				"grid grid-cols-2 overflow-hidden rounded-2xl border bg-card shadow-card",
 				stats.length >= 4 ? "lg:grid-cols-4" : stats.length === 3 ? "lg:grid-cols-3" : "",
 				className,
 			)}

@@ -56,7 +56,7 @@ export function AccountMenu({
 
 	return (
 		// A bordered card: you (name and address) and a way to settings, as in the references.
-		<div className="flex items-center gap-1 rounded-xl border bg-background p-1.5 dark:bg-card">
+		<div className="flex items-center gap-1 rounded-xl border bg-card p-1.5 shadow-card">
 			<DropdownMenu>
 				<DropdownMenuTrigger
 					aria-label="Account menu"
@@ -76,11 +76,10 @@ export function AccountMenu({
 					</span>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent side="top" align="start" className="w-60">
-					<DropdownMenuGroup>
-						<DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-							{email ?? "Signed in"}
-						</DropdownMenuLabel>
-					</DropdownMenuGroup>
+					{/* Who is signed in: the address as written (not a mono group label). */}
+					<p className="truncate px-2 pt-1.5 pb-1 text-xs text-muted-foreground">
+						{email ?? "Signed in"}
+					</p>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem render={<Link href="/account" onClick={onNavigate} />}>
 						<HugeiconsIcon icon={UserCircleIcon} strokeWidth={1.75} aria-hidden="true" />

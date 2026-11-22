@@ -1,6 +1,6 @@
 "use client";
 
-import { RepeatIcon } from "@hugeicons/core-free-icons";
+import { FileSearchIcon, RepeatIcon, SparklesIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
@@ -85,7 +85,10 @@ export function PlaygroundContainer() {
 				<>
 					<Card>
 						<CardHeader>
-							<CardTitle>Answer</CardTitle>
+							<CardTitle>
+								<HugeiconsIcon icon={SparklesIcon} strokeWidth={1.75} aria-hidden="true" />
+								Answer
+							</CardTitle>
 							{result.scopedTo.length > 0 ? (
 								<CardDescription>
 									{result.scopedTo.length === 1
@@ -143,7 +146,10 @@ export function PlaygroundContainer() {
 					</Card>
 					<Card>
 						<CardHeader>
-							<CardTitle>Retrieved passages</CardTitle>
+							<CardTitle>
+								<HugeiconsIcon icon={FileSearchIcon} strokeWidth={1.75} aria-hidden="true" />
+								Retrieved passages
+							</CardTitle>
 							<CardDescription>What the answer could draw on, best first.</CardDescription>
 						</CardHeader>
 						<CardContent>

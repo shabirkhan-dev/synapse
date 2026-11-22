@@ -1,5 +1,8 @@
 "use client";
 
+import { LockIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
 import {
@@ -65,7 +68,10 @@ export function DocumentAccessCard({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Who can see it</CardTitle>
+				<CardTitle>
+					<HugeiconsIcon icon={LockIcon} strokeWidth={1.75} aria-hidden="true" />
+					Who can see it
+				</CardTitle>
 				<CardDescription>
 					{summary} Search, answers and chat leave it out for everyone else.
 				</CardDescription>

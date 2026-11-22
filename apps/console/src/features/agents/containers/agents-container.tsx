@@ -1,5 +1,8 @@
 "use client";
 
+import { Activity01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
 import {
@@ -52,7 +55,10 @@ export function AgentsContainer() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Recent runs</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={Activity01Icon} strokeWidth={1.75} aria-hidden="true" />
+						Recent runs
+					</CardTitle>
 					<CardDescription>
 						The latest 25 answers. Admins and owners see everyone's; members see their own.
 					</CardDescription>

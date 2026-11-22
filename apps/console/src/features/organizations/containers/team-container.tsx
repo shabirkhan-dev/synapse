@@ -1,5 +1,8 @@
 "use client";
 
+import { UserAdd01Icon, UserGroupIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Badge } from "@synapse/ui/components/badge";
 import { Button } from "@synapse/ui/components/button";
@@ -105,7 +108,11 @@ export function TeamContainer() {
 			) : (
 				<Card>
 					<CardHeader>
-						<CardTitle>Members</CardTitle>
+						<CardTitle>
+							<HugeiconsIcon icon={UserGroupIcon} strokeWidth={1.75} aria-hidden="true" />
+							Members
+							{members.data ? <Badge variant="count">{members.data.length}</Badge> : null}
+						</CardTitle>
 						<CardDescription>
 							{roles.length > 0
 								? "Add people by email; anyone without an account yet gets an invitation. Members ask; admins and owners decide."
@@ -189,7 +196,10 @@ export function TeamContainer() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>New team</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={UserAdd01Icon} strokeWidth={1.75} aria-hidden="true" />
+						New team
+					</CardTitle>
 					<CardDescription>You become its owner, and the console switches to it.</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-col gap-4">

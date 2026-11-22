@@ -1,3 +1,5 @@
+import { BubbleChatIcon, QuoteUpIcon, Settings02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@synapse/ui/components/badge";
 import {
 	Card,
@@ -43,7 +45,10 @@ export function AgentOverview({ overview }: { overview: AgentsOverview }) {
 		<div className="grid gap-6 lg:grid-cols-2">
 			<Card>
 				<CardHeader>
-					<CardTitle>Chat assistant</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={BubbleChatIcon} strokeWidth={1.75} aria-hidden="true" />
+						Chat assistant
+					</CardTitle>
 					<CardDescription>
 						Streams replies on the Chat page and calls tools as it goes.
 					</CardDescription>
@@ -68,7 +73,7 @@ export function AgentOverview({ overview }: { overview: AgentsOverview }) {
 									<span className="flex flex-wrap items-center gap-2">
 										<code className="font-mono text-xs">{tool.name}</code>
 										{allowed.has(tool.name) ? (
-											<Badge variant="secondary">Allowed</Badge>
+											<Badge variant="success">Allowed</Badge>
 										) : (
 											<Badge variant="destructive">Blocked by guardrails</Badge>
 										)}
@@ -83,7 +88,10 @@ export function AgentOverview({ overview }: { overview: AgentsOverview }) {
 			<div className="flex flex-col gap-6">
 				<Card>
 					<CardHeader>
-						<CardTitle>Cited answers</CardTitle>
+						<CardTitle>
+							<HugeiconsIcon icon={QuoteUpIcon} strokeWidth={1.75} aria-hidden="true" />
+							Cited answers
+						</CardTitle>
 						<CardDescription>
 							Answers in the Playground: search, answer with citations, and retry once with a
 							stricter prompt when nothing was cited.
@@ -108,7 +116,10 @@ export function AgentOverview({ overview }: { overview: AgentsOverview }) {
 				</Card>
 				<Card>
 					<CardHeader>
-						<CardTitle>Shared by both</CardTitle>
+						<CardTitle>
+							<HugeiconsIcon icon={Settings02Icon} strokeWidth={1.75} aria-hidden="true" />
+							Shared by both
+						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<Facts

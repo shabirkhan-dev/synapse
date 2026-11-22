@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { ArrowLeft01Icon, Layers01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
@@ -167,7 +167,10 @@ export function DocumentContainer({ id }: { id: string }) {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Chunks</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={Layers01Icon} strokeWidth={1.75} aria-hidden="true" />
+						Chunks
+					</CardTitle>
 					<CardDescription>
 						The pieces search and answers read. New chunks are split by{" "}
 						<code className="font-mono">{detail.current.chunkerVersion}</code> and embedded with{" "}

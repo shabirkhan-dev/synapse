@@ -1,5 +1,8 @@
 "use client";
 
+import { Key01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
 import {
@@ -70,7 +73,10 @@ export function ApiKeysCard({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>API keys</CardTitle>
+				<CardTitle>
+					<HugeiconsIcon icon={Key01Icon} strokeWidth={1.75} aria-hidden="true" />
+					API keys
+				</CardTitle>
 				<CardDescription>
 					Call the Synapse API from scripts as yourself: send{" "}
 					<code className="font-mono text-xs">Authorization: Bearer syn_…</code>. A key works in one

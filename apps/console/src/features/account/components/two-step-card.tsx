@@ -1,5 +1,7 @@
 "use client";
 
+import { SecurityCheckIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Badge } from "@synapse/ui/components/badge";
 import { Button } from "@synapse/ui/components/button";
@@ -123,9 +125,10 @@ export function TwoStepCard({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
+				<CardTitle>
+					<HugeiconsIcon icon={SecurityCheckIcon} strokeWidth={1.75} aria-hidden="true" />
 					Two-step sign-in
-					{status?.enabled ? <Badge variant="secondary">On</Badge> : null}
+					{status?.enabled ? <Badge variant="success">On</Badge> : null}
 				</CardTitle>
 				<CardDescription>
 					After your password, sign-in asks for a code from an authenticator app (1Password, Google

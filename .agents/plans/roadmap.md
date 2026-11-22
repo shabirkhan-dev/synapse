@@ -131,6 +131,7 @@ contextual retrieval and Ragas.
 | Secrets removed from chat tool results | ✅ | syn-085 |
 | Chat: rename, keep stopped answers, versions on regenerate | ✅ | syn-086 |
 | Console look v4 from the human's three references (calm widgets, mono numbers, workspace sidebar) | ✅ | syn-090 |
+| One design system across the shadcn primitives (buttons, fields, tabs, badges, popups, cards) | ✅ | syn-091 |
 | Palette searches everything; shell shows while the session loads | ⏭️ | syn-087 |
 | First-run onboarding with sample documents | ⬜ | syn-088 |
 | Automated accessibility checks (axe) on every page | ⬜ | syn-089 |

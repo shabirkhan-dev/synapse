@@ -194,7 +194,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   `globals.css`) when changing a token. Since syn-090 the look follows the human's three references
   (Acme widgets light, Acme leads dark, fintrack): grey frame + near-white panel, 16px cards, mono
   figures/labels, workspace row + "Search /" + Recent group + account card in the sidebar; keep new
-  UI on those tokens and `StatStrip` / `BarRows` / `TickMeter` / `StatusDot`. The sidebar's Recent
+  UI on those tokens, the primitives' variants (syn-091: tone badges, chip tabs, outline/ghost buttons,
+  card titles with icon + count) and `StatStrip` / `BarRows` / `TickMeter` / `StatusDot`. The sidebar's Recent
   group repeats document and conversation titles as links, so e2e tests find those links inside
   `getByRole("main")`; it also keeps the documents list cached, so the Documents page refetches on
   open (`useDocumentsQuery({ fresh: true })`).

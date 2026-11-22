@@ -1,6 +1,10 @@
 "use client";
 
+import { HelpCircleIcon, PlayCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
+import { Badge } from "@synapse/ui/components/badge";
 import { Button } from "@synapse/ui/components/button";
 import { Checkbox } from "@synapse/ui/components/checkbox";
 import {
@@ -58,7 +62,11 @@ export function EvaluationsContainer() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Questions</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={HelpCircleIcon} strokeWidth={1.75} aria-hidden="true" />
+						Questions
+						<Badge variant="count">{questionCount}</Badge>
+					</CardTitle>
 					<CardDescription>
 						{questionCount} of {EVAL_LIMITS.QUESTIONS_MAX}. Shared with everyone in this workspace.
 					</CardDescription>
@@ -106,7 +114,10 @@ export function EvaluationsContainer() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Runs</CardTitle>
+					<CardTitle>
+						<HugeiconsIcon icon={PlayCircleIcon} strokeWidth={1.75} aria-hidden="true" />
+						Runs
+					</CardTitle>
 					<CardDescription>
 						Each run asks every question in all three modes. “Found in top k” is the share of
 						expected documents among the first k results; MRR rewards finding them first. Scoring

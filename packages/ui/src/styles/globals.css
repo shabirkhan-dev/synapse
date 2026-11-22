@@ -30,6 +30,17 @@
     --color-border: var(--border);
     --color-destructive: var(--destructive);
     --color-link: var(--link);
+    --color-field: var(--field);
+    --color-tone-green: var(--tone-green);
+    --color-tone-amber: var(--tone-amber);
+    --color-tone-red: var(--tone-red);
+    --color-tone-blue: var(--tone-blue);
+    --color-tone-violet: var(--tone-violet);
+    --color-tone-orange: var(--tone-orange);
+    /* Elevation (v4): a hairline lift for cards and controls, a soft deep shadow for popups. */
+    --shadow-card: var(--elevation-card);
+    --shadow-control: var(--elevation-control);
+    --shadow-pop: var(--elevation-pop);
     --color-success: var(--success);
     --color-warning: var(--warning);
     --color-chart-muted: var(--chart-muted);
@@ -90,9 +101,23 @@
     --ring: #3556f5;
     /* Blue as text (links, citation numbers): the primary in light, lighter in dark. */
     --link: #3556f5;
-    /* Good and caution (deltas, badges): 6.1:1+ on their 10% tints, 7:1+ on white. */
-    --success: #166534;
-    --warning: #92400e;
+    /* Form fields sit on white in light and a step below the card in dark. */
+    --field: #ffffff;
+    /*
+     * Tones for badges and deltas (fintrack's Paid / Pending / Overdue / On Track): each is text at
+     * 4.5:1+ on its own 10% tint and on white. Status: green good, amber waiting, red failing.
+     */
+    --tone-green: #166534;
+    --tone-amber: #92400e;
+    --tone-red: #b91c1c;
+    --tone-blue: #1d4ed8;
+    --tone-violet: #6d28d9;
+    --tone-orange: #9a3412;
+    --success: var(--tone-green);
+    --warning: var(--tone-amber);
+    --elevation-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 1px 0 rgb(0 0 0 / 0.02);
+    --elevation-control: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --elevation-pop: 0 16px 40px -12px rgb(0 0 0 / 0.18), 0 4px 12px -4px rgb(0 0 0 / 0.08);
     /* Data, in this fixed order: orange (the highlight), sky blue, amber, teal, then grey. Validated
        (dataviz validate_palette.js, light): band, chroma, CVD ΔE ≥ 12.5, 3:1+ on white. */
     --chart-1: #e8590c;
@@ -139,8 +164,19 @@
     --input: #333333;
     --ring: #5b77ff;
     --link: #7d93ff;
-    --success: #3dd68c;
-    --warning: #f5a524;
+    --field: #1a1a1a;
+    /* Tones: 4.8:1+ on their 14% tints over #1E1E1E. */
+    --tone-green: #3dd68c;
+    --tone-amber: #f5b23d;
+    --tone-red: #f87171;
+    --tone-blue: #8da2ff;
+    --tone-violet: #b49cfb;
+    --tone-orange: #fb923c;
+    --success: var(--tone-green);
+    --warning: var(--tone-amber);
+    --elevation-card: none;
+    --elevation-control: none;
+    --elevation-pop: 0 20px 48px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.02);
     /* Validated (dataviz validate_palette.js, dark on #1E1E1E): band, chroma, CVD ΔE ≥ 11.7, 3:1+. */
     --chart-1: #ec5f08;
     --chart-2: #0b98d6;

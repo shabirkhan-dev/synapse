@@ -238,6 +238,25 @@ Don't create a container for a component that needs no data.
 | Icons | HugeIcons only |
 | Mono | JetBrains Mono (self-hosted, `@fontsource-variable/jetbrains-mono`) for ids, model names and versions, and since v4 for figures, counts, number cells, table headers and small labels (uppercase, `tracking-[0.06em]`, 11px) |
 
+**Primitives (syn-091).** The shadcn components in `@synapse/ui` carry the design system; pages use
+their variants and only add layout classes:
+
+| Primitive | Look |
+| --- | --- |
+| Button | 8px, 36px, medium 14px, 16px icons; `default` blue with a top highlight, `outline` bordered on the card colour, `ghost`, `secondary` grey chip, `destructive` tinted red |
+| Input, Textarea, Select, InputGroup | bordered field on `--field`, `shadow-control`, blue focus ring at 15% |
+| Badge | neutral chip, `outline`, mono `count`, tinted `success` / `warning` / `destructive` / `info` / `violet` / `orange` (text 4.5:1+ on its tint) |
+| Tabs | icon + label, current tab in a grey chip; `segmented` (tray) and `line` variants |
+| Select, DropdownMenu, Popover, Command | 12px, border, `shadow-pop`, 8px item rows, mono uppercase group labels and shortcuts |
+| Dialog, AlertDialog | 16px, `p-6`, 16px titles, light overlay |
+| Card | 16px, `shadow-card`, 24px padding; `CardTitle` takes a leading 18px muted icon and a count `Badge`; `CardFooter` is a muted meta row |
+| Alert | 12px, 16px icon; `destructive` / `success` / `warning` tints |
+| Empty | bordered icon tile |
+
+Tokens: `--field`, `--tone-{green,amber,red,blue,violet,orange}`, `shadow-card` / `shadow-control` /
+`shadow-pop` (none in dark except popups). No hand-written `dark:` colours in features: use a token or
+a variant.
+
 The shell (v4, after the human's three references, 2026-11-22): the sidebar opens with a workspace
 row (product mark, team name with ⇕, collapse button) and a "Search /" row (`/`, ⌘K or Ctrl+K open
 the palette), then the pages under mono uppercase group labels, a "Recent" group (latest three
