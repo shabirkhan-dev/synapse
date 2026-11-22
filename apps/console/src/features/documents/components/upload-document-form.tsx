@@ -235,7 +235,7 @@ export function UploadDocumentForm({
 								strokeWidth={1.75}
 								className={cn(
 									"mt-px size-4 shrink-0",
-									result.ok ? "text-primary" : "text-destructive",
+									result.ok ? "text-success" : "text-destructive",
 								)}
 								aria-hidden="true"
 							/>

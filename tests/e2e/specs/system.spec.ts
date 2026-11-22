@@ -11,7 +11,7 @@ test("an owner sees the database, circuits, jobs, index and traces on System", a
 	await page.getByLabel("Title", { exact: true }).fill("Refund policy");
 	await page.getByLabel("Text", { exact: true }).fill("Refunds are accepted within 30 days.");
 	await page.getByRole("button", { name: "Add document" }).click();
-	await expect(page.getByRole("link", { name: "Refund policy" })).toBeVisible();
+	await expect(page.getByRole("main").getByRole("link", { name: "Refund policy" })).toBeVisible();
 
 	await page.getByRole("link", { name: "System", exact: true }).click();
 	await expect(page.getByRole("heading", { level: 1, name: "System" })).toBeVisible();

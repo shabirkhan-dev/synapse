@@ -33,7 +33,7 @@ export function SourceCards({
 						icon={File01Icon}
 						size={14}
 						strokeWidth={1.75}
-						className="shrink-0 text-primary"
+						className="shrink-0 text-link"
 						aria-hidden="true"
 					/>
 					<span className="truncate font-medium" title={source.title}>

@@ -55,20 +55,24 @@ export function AccountMenu({
 	const name = email?.split("@")[0] ?? "Account";
 
 	return (
-		<div className="flex items-center gap-1">
+		// A bordered card: you (name and address) and a way to settings, as in the references.
+		<div className="flex items-center gap-1 rounded-xl border bg-background p-1.5 dark:bg-card">
 			<DropdownMenu>
 				<DropdownMenuTrigger
 					aria-label="Account menu"
-					className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1.5 text-start text-sm outline-hidden hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent"
+					className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 text-start outline-hidden transition-colors duration-150 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent"
 				>
 					<span
 						aria-hidden="true"
-						className="flex size-7 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground uppercase"
+						className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sm font-semibold text-sidebar-foreground uppercase"
 					>
 						{email?.slice(0, 1) ?? "?"}
 					</span>
-					<span className="truncate font-medium" title={email ?? undefined}>
-						{name}
+					<span className="flex min-w-0 flex-col leading-tight">
+						<span className="truncate text-sm font-medium" title={email ?? undefined}>
+							{name}
+						</span>
+						<span className="truncate text-xs text-muted-foreground">{email ?? ""}</span>
 					</span>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent side="top" align="start" className="w-60">
@@ -110,7 +114,7 @@ export function AccountMenu({
 				aria-label="Account settings"
 				aria-current={active ? "page" : undefined}
 				onClick={onNavigate}
-				className={`flex size-8 shrink-0 items-center justify-center rounded-lg outline-hidden hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring ${active ? "bg-sidebar-accent text-sidebar-primary" : "text-muted-foreground"}`}
+				className={`flex size-8 shrink-0 items-center justify-center rounded-lg outline-hidden hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring ${active ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground"}`}
 			>
 				<HugeiconsIcon icon={Settings02Icon} size={17} strokeWidth={1.75} aria-hidden="true" />
 			</Link>

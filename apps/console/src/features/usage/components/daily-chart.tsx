@@ -8,71 +8,80 @@ import type { UsageDay } from "../types/usage.types";
 import { formatCount, formatDay } from "../utils/format";
 
 /**
- * Answers per day as columns (≤ 24px, 4px rounded top, 2px apart) from one baseline. Hovering a
- * day's full-height slot shows its numbers; the table below the chart holds the same data.
+ * Answers per day as rounded columns from one baseline, 2px apart (the references' revenue chart):
+ * quiet bars, the busiest day (or the hovered one) in orange. Hovering a day's full-height slot
+ * shows its numbers; the table below holds the same data.
  */
 export function DailyChart({ days }: { days: UsageDay[] }) {
 	const [hovered, setHovered] = useState<number | null>(null);
 	const max = Math.max(1, ...days.map((day) => day.answers));
 	const shown = hovered === null ? null : days[hovered];
-	const busiest = days.reduce<UsageDay | null>(
-		(best, day) => (day.answers > (best?.answers ?? 0) ? day : best),
+	const busiest = days.reduce<number | null>(
+		(best, day, index) =>
+			day.answers > (best === null ? 0 : (days[best]?.answers ?? 0)) ? index : best,
 		null,
 	);
-	const first = days[0];
-	const last = days.at(-1);
+	const highlighted = hovered ?? busiest;
+	const busiestDay = busiest === null ? null : days[busiest];
+	// Every day is labelled when they fit; otherwise about six evenly spaced ones.
+	const every = days.length <= 14 ? 1 : Math.ceil(days.length / 6);
 
 	return (
-		<figure className="flex flex-col gap-2">
-			<figcaption className="text-xs text-muted-foreground">
-				{busiest
-					? `Busiest: ${formatDay(busiest.day)} with ${formatCount(busiest.answers)} ${busiest.answers === 1 ? "answer" : "answers"}.`
-					: "No answers in this window."}
+		<figure className="flex flex-col gap-4">
+			<figcaption className="font-mono text-xs tracking-[0.04em] text-muted-foreground uppercase">
+				{busiestDay
+					? `Busiest ${formatDay(busiestDay.day)} · ${formatCount(busiestDay.answers)} ${busiestDay.answers === 1 ? "answer" : "answers"}`
+					: "No answers in this window"}
 			</figcaption>
 			<div className="relative" aria-hidden="true">
 				<div
-					className="relative mt-5 flex h-40 items-end gap-0.5 border-b border-border"
+					className="relative flex h-48 items-end gap-0.5 sm:gap-1"
 					onPointerLeave={() => setHovered(null)}
 				>
-					{/* Guide lines at the busiest day and halfway; the top one is labelled. */}
-					<div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-border">
-						<span className="absolute start-0 -translate-y-full pb-0.5 text-[0.6875rem] text-muted-foreground tabular-nums">
-							{formatCount(max)}
-						</span>
-					</div>
-					<div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-border/60" />
 					{days.map((day, index) => (
 						<div
 							key={day.day}
+							data-day={day.day}
 							className="relative flex h-full min-w-0 flex-1 items-end justify-center"
 							onPointerEnter={() => setHovered(index)}
 						>
-							{day.answers > 0 ? (
-								<div
-									className={`w-full max-w-6 rounded-t-[4px] transition-colors duration-100 ${hovered === null || hovered === index ? "bg-primary" : "bg-primary/40"}`}
-									style={{ height: `${(day.answers / max) * 100}%` }}
-								/>
-							) : null}
+							<div
+								className={`w-full max-w-10 rounded-[8px] border transition-colors duration-100 ${
+									index === highlighted && day.answers > 0
+										? "border-transparent bg-linear-to-b from-chart-1/75 to-chart-1"
+										: "border-border/70 bg-chart-muted"
+								}`}
+								// Empty days keep a low stub so the rhythm of the days stays visible.
+								style={{
+									height: day.answers > 0 ? `${Math.max(6, (day.answers / max) * 100)}%` : "6%",
+								}}
+							/>
 						</div>
 					))}
 				</div>
-				<div className="mt-1.5 flex justify-between text-[0.6875rem] text-muted-foreground">
-					<span>{first ? formatDay(first.day) : ""}</span>
-					<span>{last ? formatDay(last.day) : ""}</span>
+				<div className="mt-3 flex gap-0.5 sm:gap-1">
+					{days.map((day, index) => (
+						<span
+							key={day.day}
+							className="min-w-0 flex-1 text-center font-mono text-[0.6875rem] whitespace-nowrap text-muted-foreground uppercase"
+						>
+							{index % every === 0 ? formatDay(day.day) : ""}
+						</span>
+					))}
 				</div>
 				{shown && hovered !== null ? (
 					<div
-						className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md"
+						className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
 						style={{
 							left: `clamp(4rem, ${((hovered + 0.5) / days.length) * 100}%, calc(100% - 4rem))`,
 						}}
 					>
 						<p className="font-medium">{formatDay(shown.day)}</p>
-						<p className="tabular-nums">
+						<p className="font-mono tabular-nums">
 							{formatCount(shown.answers)} {shown.answers === 1 ? "answer" : "answers"}
 						</p>
-						<p className="text-muted-foreground tabular-nums">
-							{formatCount(shown.inputTokens)} in · {formatCount(shown.outputTokens)} out tokens
+						<p className="font-mono text-muted-foreground tabular-nums">
+							{formatCount(shown.inputTokens)} in · {formatCount(shown.outputTokens)} out
 						</p>
 					</div>
 				) : null}
@@ -96,7 +105,7 @@ export function DailyChart({ days }: { days: UsageDay[] }) {
 							</th>
 						</tr>
 					</thead>
-					<tbody className="tabular-nums">
+					<tbody className="font-mono tabular-nums">
 						{days.map((day) => (
 							<tr key={day.day} className="border-t">
 								<th scope="row" className="py-1 font-normal">

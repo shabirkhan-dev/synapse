@@ -19,7 +19,7 @@ test("a question with its document is run through every mode and scored", async 
 		// oxlint-disable-next-line no-await-in-loop
 		await page.getByRole("button", { name: "Add document" }).click();
 		// oxlint-disable-next-line no-await-in-loop
-		await expect(page.getByRole("link", { name: title })).toBeVisible();
+		await expect(page.getByRole("main").getByRole("link", { name: title })).toBeVisible();
 	}
 
 	await page.getByRole("link", { name: "Evaluations" }).first().click();

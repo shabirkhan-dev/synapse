@@ -60,6 +60,7 @@ describe("UsageTiles", () => {
 					costUsd: null,
 					unpricedAnswers: 3,
 				}}
+				days={30}
 			/>,
 		);
 		expect(screen.getByText("No prices set (AI_MODEL_PRICES)")).toBeDefined();
@@ -74,6 +75,7 @@ describe("UsageTiles", () => {
 					costUsd: 0.0123,
 					unpricedAnswers: 1,
 				}}
+				days={30}
 			/>,
 		);
 		expect(screen.getByText("$0.0123")).toBeDefined();
@@ -86,13 +88,15 @@ describe("DailyChart", () => {
 		const { container } = render(
 			<DailyChart days={[day("2026-11-10", 0), day("2026-11-11", 3), day("2026-11-12", 1)]} />,
 		);
-		expect(screen.getByText("Busiest: Nov 11 with 3 answers.")).toBeDefined();
-		const slots = container.querySelectorAll(".h-40 > div.flex-1");
+		expect(screen.getByText("Busiest Nov 11 · 3 answers")).toBeDefined();
+		const slots = container.querySelectorAll("[data-day]");
 		expect(slots).toHaveLength(3);
-		expect(slots[0]?.children).toHaveLength(0);
+		// An empty day keeps a low stub; the busiest day is the highlighted one.
+		expect((slots[0]?.firstElementChild as HTMLElement).style.height).toBe("6%");
+		expect(slots[1]?.firstElementChild?.className).toContain("to-chart-1");
 		fireEvent.pointerEnter(slots[1] as Element);
 		expect(screen.getByText("3 answers")).toBeDefined();
-		expect(screen.getByText("30 in · 15 out tokens")).toBeDefined();
+		expect(screen.getByText("30 in · 15 out")).toBeDefined();
 		const table = screen.getByRole("table");
 		expect(within(table).getAllByRole("row")).toHaveLength(4);
 	});

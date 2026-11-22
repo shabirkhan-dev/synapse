@@ -223,20 +223,31 @@ export function UsersContainer() {
 
 Don't create a container for a component that needs no data.
 
-## Look and feel (syn-078)
+## Look and feel (syn-078, v4 since syn-090)
 
 | Token | Value |
 | --- | --- |
 | Font | Inter (self-hosted, `@fontsource-variable/inter` imported by `@synapse/ui` `globals.css`), then Apple's system font; `letter-spacing: -0.15px` on `body` |
-| Dark surfaces | one flat `#1C1C1C` for sidebar, page and cards, separated by `#2B2B2B` borders; popovers `#222222`; hover and muted `#262626` |
-| Text | `#E5E5E5`, secondary `#A1A1A1` (13.5:1 and 6.6:1 on `#1C1C1C`); light theme text `#1C1C1C` |
-| Radius | `rounded-sm` 6px, `rounded-md`/`lg` 8px, `rounded-xl`+ 12px, or `rounded-full`; nothing else |
+| Light surfaces (v4) | sidebar `#F5F5F5`, page `#FBFBFB`, cards white with `#ECECEC` borders and a faint shadow; current page a grey pill `#EBEBEB`; text `#1C1C1C`, secondary `#6B6B6B` |
+| Dark surfaces (v4) | sidebar and page `#1A1A1A`, cards `#1E1E1E`, chips and hover `#262626`, borders `#2A2A2A`, popovers `#222222` |
+| Text | dark `#E5E5E5`, secondary `#A1A1A1` (13.8:1 and 6.7:1 on `#1A1A1A`) |
+| Accent (v4) | one blue `#3556F5` for actions (white text 5.5:1, both themes); blue text uses `--link` (`#3556F5` light, `#7D93FF` dark); `--success` / `--warning` for good and caution |
+| Data (v4) | `--chart-1…5` in a fixed order: orange (the highlight), sky blue, amber, teal, grey; checked with the dataviz `validate_palette.js` in both themes; quiet bars `--chart-muted` |
+| Radius | `rounded-sm` 6px, `rounded-md`/`lg` 8px, `rounded-xl` 12px (inner widgets, dialogs), `rounded-2xl` 16px (cards), or `rounded-full` |
 | Size | 14px for body, controls, labels, tables and menus (`text-sm`); 12px only for hints and metadata; controls 36px (inputs and default buttons), 32px small |
 | Icons | HugeIcons only |
-| Mono | JetBrains Mono (self-hosted, `@fontsource-variable/jetbrains-mono`) for ids, model names and versions, at 12px, with normal tracking |
+| Mono | JetBrains Mono (self-hosted, `@fontsource-variable/jetbrains-mono`) for ids, model names and versions, and since v4 for figures, counts, number cells, table headers and small labels (uppercase, `tracking-[0.06em]`, 11px) |
 
-The shell is a plain sidebar with a border (no inset panel) and a sticky header with a breadcrumb
-(`Section / Page`, the parent muted). Pick-one controls use `components/shared/segmented-control`;
+The shell (v4, after the human's three references, 2026-11-22): the sidebar opens with a workspace
+row (product mark, team name with ⇕, collapse button) and a "Search /" row (`/`, ⌘K or Ctrl+K open
+the palette), then the pages under mono uppercase group labels, a "Recent" group (latest three
+conversations and two documents, mono `CHAT` / `DOC` tags, its own `Recent` landmark) and an account
+card (avatar, name, address, settings). The header is a breadcrumb `Section › [icon] Page`; its
+sidebar button shows only on phones or with the sidebar collapsed. `PageHeader` takes a `meta`
+count in mono capitals (Documents: "2 documents"). Data widgets live in `components/shared`:
+`StatStrip` (KPI row split by rules), `BarRows` (parts of a whole as horizontal bars), `TickMeter`
+(a share as ticks) and the pill bar chart on Usage (quiet bars, the busiest or hovered day in
+orange, its table kept). `StatusDot` is a tinted pill (4.5:1+ text on its tint). Pick-one controls use `components/shared/segmented-control`;
 states use `components/shared/status-dot` (a dot plus the label, never colour alone). `SidebarInset`
 is a `div`: the page's own `<main>` is the only main landmark.
 

@@ -15,6 +15,7 @@ import {
 	TableRow,
 } from "@synapse/ui/components/table";
 
+import { StatStrip } from "@/components/shared/stat-strip";
 import { StatusDot } from "@/components/shared/status-dot";
 
 import { CIRCUIT_LABELS, JOB_STATES } from "../constants/system.constants";
@@ -50,18 +51,6 @@ function circuitText(circuit: Circuit): {
 	};
 }
 
-function Tile({ label, value, detail }: { label: string; value: string; detail: string }) {
-	return (
-		<Card>
-			<CardContent className="flex flex-col gap-1">
-				<span className="text-xs text-muted-foreground">{label}</span>
-				<span className="text-lg font-semibold tabular-nums">{value}</span>
-				<span className="text-xs text-muted-foreground">{detail}</span>
-			</CardContent>
-		</Card>
-	);
-}
-
 /** One status reading: summary tiles, then dependencies, jobs, the index and tracing. */
 export function SystemStatusView({ status }: { status: SystemStatus }) {
 	const failing = status.circuits.filter((circuit) => circuit.state !== "closed").length;
@@ -77,36 +66,38 @@ export function SystemStatusView({ status }: { status: SystemStatus }) {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-				<Tile
-					label="Database"
-					value={status.database.ok ? "Reachable" : "Unreachable"}
-					detail={
-						status.database.latencyMs === null
-							? "Readiness checks fail until it is back"
-							: `Answered in ${status.database.latencyMs} ms`
-					}
-				/>
-				<Tile
-					label="Model and email providers"
-					value={failing === 0 ? "All working" : `${failing} failing`}
-					detail={`${status.circuits.length} circuit breakers in this API process`}
-				/>
-				<Tile
-					label="Background jobs"
-					value={status.jobs.counts === null ? "Not started" : `${count.format(failedJobs)} failed`}
-					detail={
-						status.jobs.counts === null
-							? "The worker creates its queues when it first starts"
-							: `${queues.length} ${queues.length === 1 ? "queue" : "queues"}`
-					}
-				/>
-				<Tile
-					label="API process"
-					value={`Up ${uptime(status.uptimeSeconds)}`}
-					detail={`Checked ${when.format(new Date(status.checkedAt))}`}
-				/>
-			</div>
+			<StatStrip
+				stats={[
+					{
+						label: "Database",
+						value: status.database.ok ? "Reachable" : "Unreachable",
+						note:
+							status.database.latencyMs === null
+								? "Readiness checks fail until it is back"
+								: `Answered in ${status.database.latencyMs} ms`,
+					},
+					{
+						label: "Model and email providers",
+						value: failing === 0 ? "All working" : `${failing} failing`,
+						note: `${status.circuits.length} circuit breakers in this API process`,
+					},
+					{
+						label: "Background jobs",
+						value:
+							status.jobs.counts === null ? "Not started" : `${count.format(failedJobs)} failed`,
+						note:
+							status.jobs.counts === null
+								? "The worker creates its queues when it first starts"
+								: `${queues.length} ${queues.length === 1 ? "queue" : "queues"}`,
+					},
+					{
+						label: "API process",
+						value: `Up ${uptime(status.uptimeSeconds)}`,
+						note: `Checked ${when.format(new Date(status.checkedAt))}`,
+					},
+				]}
+				words
+			/>
 
 			<Card>
 				<CardHeader>

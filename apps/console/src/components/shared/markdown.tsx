@@ -88,7 +88,7 @@ function components(renderCitation: (index: number) => ReactNode): Components {
 					href={href}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="font-medium text-primary underline underline-offset-2"
+					className="font-medium text-link underline underline-offset-2"
 				>
 					{children}
 				</a>

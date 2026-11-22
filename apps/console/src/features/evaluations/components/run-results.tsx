@@ -8,6 +8,8 @@ import {
 	TableRow,
 } from "@synapse/ui/components/table";
 
+import { TickMeter } from "@/components/shared/tick-meter";
+
 import { EVAL_MODES } from "../constants/evaluations.constants";
 import type { EvalRun } from "../types/evaluation.types";
 import { formatMrr, formatRecall, formatScore, formatWhen } from "../utils/format";
@@ -16,7 +18,7 @@ import { formatMrr, formatRecall, formatScore, formatWhen } from "../utils/forma
 export function RunResults({ run }: { run: EvalRun }) {
 	return (
 		<div className="flex flex-col gap-6">
-			<p className="text-xs text-muted-foreground">
+			<p className="font-mono text-xs text-muted-foreground">
 				{formatWhen(run.createdAt)} · {run.questionCount}{" "}
 				{run.questionCount === 1 ? "question" : "questions"} · top {run.k} ·{" "}
 				<span className="font-mono">{run.embeddingModel}</span> ·{" "}
@@ -27,19 +29,22 @@ export function RunResults({ run }: { run: EvalRun }) {
 					<h3 id="answer-quality" className="text-sm font-medium">
 						Answer quality
 					</h3>
-					<dl className="grid grid-cols-2 gap-3 sm:max-w-md">
-						<div className="rounded-lg border px-3 py-2">
-							<dt className="text-xs text-muted-foreground">Faithful to the passages</dt>
-							<dd className="text-lg font-semibold tabular-nums">
-								{formatScore(run.answers.faithfulness)}
-							</dd>
-						</div>
-						<div className="rounded-lg border px-3 py-2">
-							<dt className="text-xs text-muted-foreground">Answers the question</dt>
-							<dd className="text-lg font-semibold tabular-nums">
-								{formatScore(run.answers.relevance)}
-							</dd>
-						</div>
+					<dl className="grid gap-3 sm:grid-cols-2">
+						{[
+							{ label: "Faithful to the passages", value: run.answers.faithfulness },
+							{ label: "Answers the question", value: run.answers.relevance },
+						].map((score) => (
+							<div
+								key={score.label}
+								className="flex flex-col gap-2 rounded-xl border bg-card p-4 shadow-[0_1px_2px_0_rgb(0_0_0/0.03)] dark:shadow-none"
+							>
+								<dt className="text-sm text-muted-foreground">{score.label}</dt>
+								<dd className="font-mono text-2xl leading-none font-medium tabular-nums">
+									{formatScore(score.value)}
+								</dd>
+								{score.value === null ? null : <TickMeter value={score.value} className="mt-1" />}
+							</div>
+						))}
 					</dl>
 					<p className="text-xs text-muted-foreground">
 						{run.answers.judged} of {run.questionCount} answers judged by{" "}
@@ -65,7 +70,14 @@ export function RunResults({ run }: { run: EvalRun }) {
 						<TableRow key={mode}>
 							<TableCell>{label}</TableCell>
 							<TableCell className="text-right">
-								{formatRecall(run.modes[mode].recallAtK)}
+								<span className="inline-flex items-center gap-3">
+									<TickMeter
+										value={run.modes[mode].recallAtK}
+										ticks={16}
+										className="hidden h-4 sm:flex"
+									/>
+									{formatRecall(run.modes[mode].recallAtK)}
+								</span>
 							</TableCell>
 							<TableCell className="text-right">{formatMrr(run.modes[mode].mrr)}</TableCell>
 						</TableRow>

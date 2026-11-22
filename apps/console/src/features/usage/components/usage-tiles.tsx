@@ -1,3 +1,5 @@
+import { StatStrip } from "@/components/shared/stat-strip";
+
 import type { Usage } from "../types/usage.types";
 import { formatCompact, formatCount, formatUsd } from "../utils/format";
 
@@ -12,9 +14,9 @@ const exactIfRounded = (count: number) =>
 	formatCompact(count) === formatCount(count) ? null : formatCount(count);
 
 /** The headline numbers for the window. */
-export function UsageTiles({ totals }: { totals: Usage["totals"] }) {
+export function UsageTiles({ totals, days }: { totals: Usage["totals"]; days: number }) {
 	const tiles = [
-		{ label: "Answers", value: formatCount(totals.answers), note: null },
+		{ label: "Answers", value: formatCount(totals.answers), note: `${days} days, UTC` },
 		{
 			label: "Input tokens",
 			value: formatCompact(totals.inputTokens),
@@ -36,17 +38,5 @@ export function UsageTiles({ totals }: { totals: Usage["totals"] }) {
 						: null,
 		},
 	];
-	return (
-		<dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-			{tiles.map((tile) => (
-				<div key={tile.label} className="flex flex-col gap-1 rounded-xl border bg-card p-4">
-					<dt className="text-sm text-muted-foreground">{tile.label}</dt>
-					<dd className="text-2xl font-semibold tracking-tight tabular-nums">{tile.value}</dd>
-					{tile.note ? (
-						<dd className="text-xs text-muted-foreground tabular-nums">{tile.note}</dd>
-					) : null}
-				</div>
-			))}
-		</dl>
-	);
+	return <StatStrip stats={tiles} />;
 }

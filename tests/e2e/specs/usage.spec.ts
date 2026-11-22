@@ -31,7 +31,7 @@ test("an answered question shows up in usage with its tokens and the models behi
 	await expect(page.getByText(/Every answer in this organization/)).toBeVisible();
 	const answers = page.getByRole("definition").first();
 	await expect(answers).toHaveText("1");
-	await expect(page.getByRole("figure")).toContainText("Busiest:");
+	await expect(page.getByRole("figure")).toContainText("Busiest");
 	const model = page.getByRole("row").filter({ hasText: "fake:openai/gpt-4o-mini" });
 	await expect(model).toContainText(/rag-answer@\d/);
 	await expect(page.getByText("No prices set (AI_MODEL_PRICES)")).toBeVisible();

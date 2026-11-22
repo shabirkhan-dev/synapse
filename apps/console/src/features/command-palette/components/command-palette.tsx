@@ -3,7 +3,6 @@
 import type { IconSvgElement } from "@hugeicons/react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01Icon } from "@hugeicons/core-free-icons";
-import { Button } from "@synapse/ui/components/button";
 import {
 	Command,
 	CommandEmpty,
@@ -41,7 +40,7 @@ export type CommandPaletteProps = {
 	shortcut: string;
 };
 
-/** A search button for the top bar and the palette it opens: pages, conversations, documents. */
+/** A search row for the sidebar and the palette it opens: pages, conversations, documents. */
 export function CommandPalette({
 	open,
 	onOpenChange,
@@ -52,20 +51,29 @@ export function CommandPalette({
 }: CommandPaletteProps) {
 	return (
 		<>
-			<Button
-				variant="outline"
-				size="sm"
+			{/* A sidebar row: "Search" with its key, as in the references. */}
+			<button
+				type="button"
 				onClick={() => onOpenChange(true)}
 				aria-label="Search"
-				aria-keyshortcuts="Meta+K Control+K"
-				className="gap-2 rounded-full text-muted-foreground"
+				aria-keyshortcuts="/ Meta+K Control+K"
+				title={`Search (/ or ${shortcut})`}
+				className="flex h-9 w-full items-center gap-3 rounded-lg px-2.5 text-sm text-sidebar-foreground/90 outline-hidden transition-colors duration-150 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring"
 			>
-				<HugeiconsIcon icon={Search01Icon} strokeWidth={1.75} aria-hidden="true" />
-				<span className="hidden sm:inline">Search</span>
-				<kbd className="hidden rounded border bg-muted px-1.5 font-sans text-[0.7rem] sm:inline">
-					{shortcut}
-				</kbd>
-			</Button>
+				<HugeiconsIcon
+					icon={Search01Icon}
+					size={18}
+					strokeWidth={1.75}
+					aria-hidden="true"
+					className="text-sidebar-foreground/70"
+				/>
+				Search
+				<span className="ms-auto" aria-hidden="true">
+					<kbd className="flex h-5 min-w-5 items-center justify-center rounded-md border bg-background px-1 font-mono text-[0.6875rem] text-muted-foreground">
+						/
+					</kbd>
+				</span>
+			</button>
 			<Dialog open={open} onOpenChange={onOpenChange}>
 				<DialogContent
 					showCloseButton={false}

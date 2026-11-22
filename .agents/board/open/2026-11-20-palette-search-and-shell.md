@@ -5,8 +5,8 @@ type: feature
 from: human
 to: all
 priority: normal
-status: doing
-assignee: claude
+status: open
+assignee: none
 reviewer: none
 parent: syn-roadmap
 depends_on: []

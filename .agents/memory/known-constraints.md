@@ -190,9 +190,14 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   the sidebar; Sign out lives there too, so tests open "Account menu" first), stored by `next-themes` in
   `localStorage` (`theme`), applied as a class on `<html>`; the sidebar keeps its open state in a `sidebar_state` cookie.
   Pages use `PageHeader` / `EmptyState` / `BrandMark` from `components/shared` (syn-065); the accent is
-  indigo `--primary`, re-measure contrast (comments in `globals.css`) when changing a token. Since
-  syn-078 the tokens follow the human's spec (Inter, #1C1C1C / #E5E5E5 / #A1A1A1 dark, 6/8/12px radii,
-  14px controls): keep new UI on them; the header shows a breadcrumb (no page pill).
+  blue `--primary` (#3556F5, syn-090; blue text is `--link`), re-measure contrast (comments in
+  `globals.css`) when changing a token. Since syn-090 the look follows the human's three references
+  (Acme widgets light, Acme leads dark, fintrack): grey frame + near-white panel, 16px cards, mono
+  figures/labels, workspace row + "Search /" + Recent group + account card in the sidebar; keep new
+  UI on those tokens and `StatStrip` / `BarRows` / `TickMeter` / `StatusDot`. The sidebar's Recent
+  group repeats document and conversation titles as links, so e2e tests find those links inside
+  `getByRole("main")`; it also keeps the documents list cached, so the Documents page refetches on
+  open (`useDocumentsQuery({ fresh: true })`).
   Since syn-079 the Documents add forms are tabs (Upload files first): tests click the "Paste text"
   or "Web page" tab first, and `getByLabel("Text")` needs `{ exact: true }` (the "Paste text" panel
   is labelled by its tab). The web page field is labelled "Page address".

@@ -17,11 +17,13 @@ const model = (ref: { provider: string; model: string } | null) =>
 /** Label/value rows; values that are identifiers use the monospace face. */
 function Facts({ rows }: { rows: [label: string, value: ReactNode, mono?: boolean][] }) {
 	return (
-		<dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-y-2.5">
+		<dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-y-2.5">
 			{rows.map(([label, value, mono]) => (
 				// On phones each label sits right above its value; from `sm` they share a grid row.
 				<div key={label} className="flex flex-col gap-0.5 sm:contents">
-					<dt className="text-muted-foreground">{label}</dt>
+					<dt className="pt-0.5 font-mono text-[0.6875rem] tracking-[0.06em] text-muted-foreground uppercase">
+						{label}
+					</dt>
 					<dd
 						className={`min-w-0 break-words ${mono ? "font-mono text-xs leading-5 [overflow-wrap:anywhere]" : ""}`}
 					>

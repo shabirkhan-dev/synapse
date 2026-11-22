@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
 	Sidebar,
@@ -33,8 +34,10 @@ export type AppShellProps = {
 	email: string | null;
 	/** The organization picker, at the top of the sidebar. */
 	switcher?: ReactNode;
-	/** Search / command palette trigger, at the end of the top bar. */
+	/** Search / command palette trigger, under the workspace row in the sidebar. */
 	search?: ReactNode;
+	/** Recent conversations and documents, under the pages. */
+	recent?: ReactNode;
 	/** A one-line notice above the page (e.g. verify your email). */
 	notice?: ReactNode;
 	/** Counts next to sidebar links, by href (e.g. pending approvals). */
@@ -54,6 +57,7 @@ export function AppShell({
 	email,
 	switcher,
 	search,
+	recent,
 	notice,
 	navBadges,
 	onSignOut,
@@ -69,13 +73,25 @@ export function AppShell({
 	return (
 		<SidebarProvider>
 			<Sidebar>
-				<SidebarHeader className="gap-3">
-					<Link href="/documents" className="w-fit rounded-md px-1 pt-1">
-						<BrandMark />
-					</Link>
-					{switcher}
+				{/* The workspace row (mark, team, collapse), then search: as in the references. */}
+				<SidebarHeader className="gap-2 px-3 pt-3">
+					<div className="flex items-center gap-1.5">
+						<Link
+							href="/documents"
+							aria-label="Synapse home"
+							className="shrink-0 rounded-lg outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+						>
+							<BrandMark compact />
+						</Link>
+						<div className="min-w-0 flex-1">{switcher}</div>
+						<SidebarTrigger
+							aria-label="Show or hide the sidebar"
+							className="shrink-0 text-muted-foreground max-md:hidden"
+						/>
+					</div>
+					{search}
 				</SidebarHeader>
-				<SidebarContent>
+				<SidebarContent className="px-1">
 					<nav aria-label="Main">
 						{NAV.map((group) => (
 							<SidebarGroup key={group.label}>
@@ -83,7 +99,7 @@ export function AppShell({
 								{group.label === MAIN_GROUP ? (
 									<h2 className="sr-only">{group.label}</h2>
 								) : (
-									<SidebarGroupLabel className="text-xs font-normal">
+									<SidebarGroupLabel className="font-mono text-[0.6875rem] font-normal tracking-[0.08em] uppercase">
 										{group.label}
 									</SidebarGroupLabel>
 								)}
@@ -103,8 +119,9 @@ export function AppShell({
 							</SidebarGroup>
 						))}
 					</nav>
+					{recent}
 				</SidebarContent>
-				<SidebarFooter>
+				<SidebarFooter className="p-3">
 					<AccountFooter
 						email={email}
 						signingOut={signingOut}
@@ -114,17 +131,22 @@ export function AppShell({
 				</SidebarFooter>
 			</Sidebar>
 			<SidebarInset className="min-w-0">
-				<header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 md:px-6">
-					<SidebarTrigger aria-label="Show or hide the sidebar" className="-ms-1.5" />
+				<header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur-sm md:px-8">
+					<TopBarSidebarTrigger />
 					{/* Section, muted, then the page; inside a page (one document) the page links back. */}
 					<nav aria-label="Breadcrumb" className="min-w-0">
-						<ol className="flex min-w-0 items-center gap-2 text-[0.9375rem]">
+						<ol className="flex min-w-0 items-center gap-2 text-sm">
 							<li className="hidden shrink-0 text-muted-foreground sm:block">
 								{section ?? "Synapse"}
 							</li>
 							<li aria-hidden="true" className="hidden text-muted-foreground/60 sm:block">
-								/
+								<HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={1.5} />
 							</li>
+							{current ? (
+								<li aria-hidden="true" className="shrink-0 text-muted-foreground">
+									<HugeiconsIcon icon={current.icon} size={16} strokeWidth={1.5} />
+								</li>
+							) : null}
 							{current && pathname !== current.href ? (
 								<>
 									<li className="shrink-0">
@@ -136,7 +158,7 @@ export function AppShell({
 										</Link>
 									</li>
 									<li aria-hidden="true" className="text-muted-foreground/60">
-										/
+										<HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={1.5} />
 									</li>
 									<li className="truncate font-medium" aria-current="page">
 										Details
@@ -149,12 +171,13 @@ export function AppShell({
 							)}
 						</ol>
 					</nav>
-					{search ? <div className="ms-auto">{search}</div> : null}
 				</header>
 				{notice ? (
 					<div className="border-b bg-muted/40 px-4 py-2.5 text-sm md:px-6">{notice}</div>
 				) : null}
-				<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-6">{children}</main>
+				<main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-8 md:py-10">
+					{children}
+				</main>
 			</SidebarInset>
 		</SidebarProvider>
 	);
@@ -180,7 +203,7 @@ function NavLink({
 		<SidebarMenuItem>
 			<SidebarMenuButton
 				isActive={active}
-				className="h-9 gap-3 rounded-md px-2.5 text-sm [&_svg]:size-[18px]! [&_svg]:text-muted-foreground data-active:font-medium data-active:[&_svg]:text-sidebar-primary"
+				className="h-9 gap-3 rounded-lg px-2.5 text-sm text-sidebar-foreground/90 [&_svg]:size-[18px]! [&_svg]:text-sidebar-foreground/70 data-active:font-medium data-active:text-sidebar-foreground data-active:[&_svg]:text-sidebar-foreground"
 				render={
 					<Link
 						href={item.href}
@@ -193,7 +216,7 @@ function NavLink({
 				<span className="truncate">{item.label}</span>
 			</SidebarMenuButton>
 			{badge ? (
-				<SidebarMenuBadge className="top-2.5! rounded-md bg-sidebar-accent text-[0.7rem] text-muted-foreground empty:hidden">
+				<SidebarMenuBadge className="top-2.5! rounded-md bg-sidebar-accent font-mono text-[0.6875rem] text-muted-foreground empty:hidden">
 					{badge}
 				</SidebarMenuBadge>
 			) : null}
@@ -223,4 +246,11 @@ function AccountFooter({
 			active={active}
 		/>
 	);
+}
+
+/** The top bar's sidebar button: on phones (the drawer), or once the sidebar is collapsed. */
+function TopBarSidebarTrigger() {
+	const { isMobile, state } = useSidebar();
+	if (!isMobile && state === "expanded") return null;
+	return <SidebarTrigger aria-label="Show or hide the sidebar" className="-ms-1.5" />;
 }

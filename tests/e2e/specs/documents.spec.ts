@@ -15,7 +15,7 @@ test("a document opens from the list with its chunks, and deleting it asks first
 	await page.getByLabel("Text", { exact: true }).fill("Orders ship within two business days.");
 	await page.getByRole("button", { name: "Add document" }).click();
 
-	await page.getByRole("link", { name: "Shipping policy" }).click();
+	await page.getByRole("main").getByRole("link", { name: "Shipping policy" }).click();
 	await expect(page).toHaveURL(/\/documents\/[0-9a-f-]{36}$/);
 	const address = page.url();
 	await expect(page.getByRole("heading", { level: 1, name: "Shipping policy" })).toBeVisible();
@@ -67,7 +67,7 @@ test("a Markdown file is uploaded under its name and its text is searchable", as
 	await expect(row.getByRole("cell", { name: "Returns guide.md" })).toBeVisible();
 	await expect(page.getByText("Choose a file or drop it here")).toBeVisible();
 
-	await page.getByRole("link", { name: "Returns guide" }).click();
+	await page.getByRole("main").getByRole("link", { name: "Returns guide" }).click();
 	await expect(page.getByRole("heading", { level: 1, name: "Returns guide" })).toBeVisible();
 	await expect(
 		page.getByRole("list", { name: "Chunks" }).getByText(/returned within \*\*14 days\*\*/),
@@ -86,10 +86,10 @@ test("asking about one document searches only that document", async ({ page }) =
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		await page.getByLabel("Text", { exact: true }).fill(text);
 		await page.getByRole("button", { name: "Add document" }).click();
-		await expect(page.getByRole("link", { name: title })).toBeVisible();
+		await expect(page.getByRole("main").getByRole("link", { name: title })).toBeVisible();
 	}
 
-	await page.getByRole("link", { name: "Shipping policy" }).click();
+	await page.getByRole("main").getByRole("link", { name: "Shipping policy" }).click();
 	await page.getByRole("link", { name: "Ask about this document" }).click();
 	await expect(page).toHaveURL(/\/playground\?d=[0-9a-f-]{36}$/);
 	await expect(page.getByText("Search in")).toBeVisible();
@@ -133,8 +133,8 @@ test("several files are uploaded at once, and a web page is added by its address
 	const results = page.getByRole("list", { name: "Upload results" });
 	await expect(results).toContainText("Returns.md — Added");
 	await expect(results).toContainText("Shipping.txt — Added");
-	await expect(page.getByRole("link", { name: "Returns" })).toBeVisible();
-	await expect(page.getByRole("link", { name: "Shipping" })).toBeVisible();
+	await expect(page.getByRole("main").getByRole("link", { name: "Returns" })).toBeVisible();
+	await expect(page.getByRole("main").getByRole("link", { name: "Shipping" })).toBeVisible();
 
 	// Internal addresses are refused unless the deployment allows them (only this test stack does).
 	await page.getByRole("tab", { name: "Web page" }).click();
@@ -143,7 +143,7 @@ test("several files are uploaded at once, and a web page is added by its address
 		.fill(`http://127.0.0.1:${E2E.modelPort}/pages/warranty.html`);
 	await page.getByRole("button", { name: "Add page" }).click();
 	await expect(page.getByText("Added “Warranty | Example shop”.")).toBeVisible();
-	await page.getByRole("link", { name: "Warranty | Example shop" }).click();
+	await page.getByRole("main").getByRole("link", { name: "Warranty | Example shop" }).click();
 	const chunks = page.getByRole("list", { name: "Chunks" });
 	await expect(chunks.getByText(/two-year warranty/)).toBeVisible();
 	await expect(chunks.getByText(/Water damage/)).toBeVisible();

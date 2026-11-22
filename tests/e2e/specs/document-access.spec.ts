@@ -64,10 +64,12 @@ test("a restricted document stays hidden from teammates until it is shared with 
 
 	// The owner sees it (owners and admins read everything).
 	await ownerPage.getByRole("link", { name: "Documents", exact: true }).click();
-	await expect(ownerPage.getByRole("link", { name: "Salary bands" })).toBeVisible();
+	await expect(
+		ownerPage.getByRole("main").getByRole("link", { name: "Salary bands" }),
+	).toBeVisible();
 
 	// The writer shares it with the other member from its page.
-	await writerPage.getByRole("link", { name: "Salary bands" }).click();
+	await writerPage.getByRole("main").getByRole("link", { name: "Salary bands" }).click();
 	await expect(writerPage.getByRole("heading", { name: "Who can see it" })).toBeVisible();
 	await writerPage.getByText(reader).click();
 	await writerPage.getByRole("button", { name: "Save who can see it" }).click();
@@ -76,5 +78,7 @@ test("a restricted document stays hidden from teammates until it is shared with 
 	// Now the member finds it.
 	// A fresh load (the list it saw a moment ago is cached in the page).
 	await readerPage.goto("/documents");
-	await expect(readerPage.getByRole("link", { name: "Salary bands" })).toBeVisible();
+	await expect(
+		readerPage.getByRole("main").getByRole("link", { name: "Salary bands" }),
+	).toBeVisible();
 });

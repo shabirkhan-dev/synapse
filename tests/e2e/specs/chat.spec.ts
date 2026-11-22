@@ -95,7 +95,7 @@ test("a chat turn narrowed to one document cites only that document", async ({ p
 		await page.getByLabel("Title", { exact: true }).fill(title);
 		await page.getByLabel("Text", { exact: true }).fill(text);
 		await page.getByRole("button", { name: "Add document" }).click();
-		await expect(page.getByRole("link", { name: title })).toBeVisible();
+		await expect(page.getByRole("main").getByRole("link", { name: title })).toBeVisible();
 	}
 
 	await page.getByRole("link", { name: "Chat", exact: true }).click();

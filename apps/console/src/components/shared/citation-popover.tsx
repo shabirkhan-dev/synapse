@@ -27,7 +27,7 @@ export function CitationPopover({ passage }: { passage: CitedPassage }) {
 			</PopoverTrigger>
 			<PopoverContent className="w-80 gap-2" side="top">
 				<p className="flex items-baseline gap-2">
-					<span className="font-semibold text-primary tabular-nums">[{passage.citation}]</span>
+					<span className="font-semibold text-link tabular-nums">[{passage.citation}]</span>
 					<span className="font-medium text-foreground">{passage.context || passage.title}</span>
 				</p>
 				{passage.source ? (

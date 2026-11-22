@@ -31,7 +31,7 @@ import { useDocumentsQuery } from "../hooks/queries/use-documents-query";
 
 /** Documents page: the add form and the list, with loading, error and empty states. */
 export function DocumentsContainer() {
-	const documents = useDocumentsQuery();
+	const documents = useDocumentsQuery({ fresh: true });
 	const ingest = useIngestDocumentMutation();
 	const upload = useUploadDocumentMutation();
 	const webPage = useAddWebPageMutation();
@@ -44,7 +44,14 @@ export function DocumentsContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<PageHeader title="Documents">
+			<PageHeader
+				title="Documents"
+				{...(documents.data
+					? {
+							meta: `${documents.data.length} ${documents.data.length === 1 ? "document" : "documents"}`,
+						}
+					: {})}
+			>
 				What answers and chat search draw on. Adding text chunks and embeds it.
 			</PageHeader>
 			<Card>
