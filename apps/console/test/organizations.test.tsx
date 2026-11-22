@@ -212,7 +212,7 @@ describe("OrganizationSwitcherContainer (mocked API)", () => {
 			call.url.endsWith("/auth/me") ? ok(me("t1", "member")) : ok([personal, team("member")]),
 		);
 		renderWithQuery(<OrganizationSwitcherContainer />);
-		const picker = await screen.findByRole("combobox", { name: "Organization" });
+		const picker = await screen.findByRole("combobox", { name: /organization/i });
 		await waitFor(() => expect(picker.textContent).toContain("Support"));
 	});
 });

@@ -10,6 +10,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "4.14.0",
 		"@playwright/test": "1.63.0",
 		"@synapse/typescript-config": "workspace:*",
 		"@types/node": "^26.6.6",

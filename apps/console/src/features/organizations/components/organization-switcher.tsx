@@ -37,7 +37,8 @@ export function OrganizationSwitcher({
 		>
 			{/* The workspace name beside the product mark, with ⇕ to switch (as in the references). */}
 			<SelectTrigger
-				aria-label="Organization"
+				// The visible name first (WCAG 2.5.3), then what the control is.
+				aria-label={active ? `${active.name} (organization)` : "Organization"}
 				title={active?.name}
 				className="h-9 w-fit max-w-full gap-1.5 border-transparent bg-transparent px-1.5 text-[0.9375rem] shadow-none hover:bg-sidebar-accent dark:bg-transparent dark:hover:bg-sidebar-accent"
 			>

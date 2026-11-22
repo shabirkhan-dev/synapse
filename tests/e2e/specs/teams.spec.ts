@@ -60,7 +60,7 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 	await memberPage.getByRole("link", { name: "see Approvals" }).click();
 	await expect(memberPage.getByText(/Requested by you/)).toBeVisible();
 	await expect(memberPage.getByText("Waiting for an admin or owner to decide.")).toBeVisible();
-	await expect(memberPage.getByRole("button", { name: "Approve" })).toHaveCount(0);
+	await expect(memberPage.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
 
 	// A member sees the team but cannot change it.
 	await memberPage.getByRole("link", { name: "Team", exact: true }).click();
@@ -72,7 +72,7 @@ test("a member asks, an admin decides, in a shared team", async ({ browser }) =>
 	// The owner sees the member's request in the team and approves it.
 	await ownerPage.getByRole("link", { name: "Approvals", exact: true }).click();
 	await expect(ownerPage.getByText(/Requested by a member/)).toBeVisible();
-	await ownerPage.getByRole("button", { name: "Approve" }).click();
+	await ownerPage.getByRole("button", { name: "Approve", exact: true }).click();
 	await expect(ownerPage.getByText("Approved. 1 document deleted.")).toBeVisible();
 
 	// The owner's personal workspace was never touched; switching back shows it.

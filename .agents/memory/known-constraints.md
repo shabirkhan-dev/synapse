@@ -220,7 +220,13 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   for "Title" (the upload form has "Title (optional)"). Wait for a page by its heading role, not `getByText`: Next's route
   announcer repeats the page title (strict-mode clash). Needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears
   `auth_rate_limits` before each run. Locally a running console on `:3100` is reused, so stop it
-  after changing console code. Only Chromium is tested. The upload step uses
+  after changing console code. Only Chromium is tested. `accessibility.spec.ts` (syn-089) runs axe on
+  every page in light and dark and fails on serious or critical WCAG 2.2 AA findings: a new page or
+  overlay should be added to its list. Names must start with their visible text (2.5.3): the team
+  picker is "<name> (organization)" and the account button "<name> <email>, account menu", so
+  tests match those by substring or regex; because the account button now contains the test email
+  (e.g. "reject-…@example.com"), a short button name that could be in an email prefix needs
+  `exact: true`. axe does not replace a screen-reader pass. The upload step uses
   `actions/upload-artifact@v4` (newest release not checked from the agent sandbox).
 - Integration tests need Postgres with pgvector; they are skipped unless `API_TEST_DATABASE_URL` is set.
 - **System suites** (`tests/system`, syn-051): security and chaos run in CI (`system` job); load is

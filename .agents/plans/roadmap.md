@@ -134,7 +134,7 @@ contextual retrieval and Ragas.
 | One design system across the shadcn primitives (buttons, fields, tabs, badges, popups, cards) | ✅ | syn-091 |
 | Palette searches everything; shell shows while the session loads | ✅ | syn-087 |
 | First-run onboarding with sample documents | ✅ | syn-088 |
-| Automated accessibility checks (axe) on every page | 🔄 | syn-089 |
+| Automated accessibility checks (axe) on every page | ✅ | syn-089 |
 | Company SSO (SAML/OIDC) — parked: needs an identity provider to test against | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

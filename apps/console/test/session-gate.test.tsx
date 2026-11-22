@@ -21,6 +21,6 @@ describe("AppShell while the session is restored", () => {
 		expect(screen.getByRole("link", { name: "Chat" })).toBeDefined();
 		expect(screen.getByRole("status").textContent).toBe("Loading your workspace…");
 		expect(screen.queryByText("Documents page")).toBeNull();
-		expect(screen.queryByRole("button", { name: "Account menu" })).toBeNull();
+		expect(screen.queryByRole("button", { name: /account menu/i })).toBeNull();
 	});
 });

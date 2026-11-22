@@ -58,10 +58,7 @@ export function AccountMenu({
 		// A bordered card: you (name and address) and a way to settings, as in the references.
 		<div className="flex items-center gap-1 rounded-xl border bg-card p-1.5 shadow-card">
 			<DropdownMenu>
-				<DropdownMenuTrigger
-					aria-label="Account menu"
-					className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 text-start outline-hidden transition-colors duration-150 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent"
-				>
+				<DropdownMenuTrigger className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 text-start outline-hidden transition-colors duration-150 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent">
 					<span
 						aria-hidden="true"
 						className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sm font-semibold text-sidebar-foreground uppercase"
@@ -74,6 +71,8 @@ export function AccountMenu({
 						</span>
 						<span className="truncate text-xs text-muted-foreground">{email ?? ""}</span>
 					</span>
+					{/* Named by what it shows, then what it is (WCAG 2.5.3: the visible text is in the name). */}
+					<span className="sr-only">, account menu</span>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent side="top" align="start" className="w-60">
 					{/* Who is signed in: the address as written (not a mono group label). */}

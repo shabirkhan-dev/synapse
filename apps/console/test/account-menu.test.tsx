@@ -37,11 +37,11 @@ describe("AccountMenu", () => {
 			"/account",
 		);
 
-		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+		fireEvent.click(screen.getByRole("button", { name: /account menu/i }));
 		press(await screen.findByRole("menuitem", { name: "Sign out" }));
 		expect(onSignOut).toHaveBeenCalledTimes(1);
 
-		fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
+		fireEvent.click(screen.getByRole("button", { name: /account menu/i }));
 		press(await screen.findByRole("menuitemradio", { name: "Dark" }));
 		await waitFor(() => expect(document.documentElement.classList.contains("dark")).toBe(true));
 		expect(localStorage.getItem("theme")).toBe("dark");
