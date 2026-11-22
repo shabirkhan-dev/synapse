@@ -217,6 +217,8 @@ export const documentIdParamsSchema = z.object({
 
 export const listDocumentsQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(200).default(RAG_DEFAULT_LIST_LIMIT),
+	/** Only documents whose title contains this (case-insensitive). */
+	q: z.string().trim().max(200).optional().openapi({ example: "refund" }),
 });
 
 export const documentChunksQuerySchema = z.object({

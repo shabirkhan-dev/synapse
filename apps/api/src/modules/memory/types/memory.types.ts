@@ -16,7 +16,8 @@ export type ReplyVersions = { current: number; total: number };
 export interface ConversationStore {
 	create(ownerId: string, title: string): Promise<Conversation>;
 	find(ownerId: string, id: string): Promise<Conversation | null>;
-	list(ownerId: string, limit: number): Promise<Conversation[]>;
+	/** Most recently active first; with `titleContains`, only titles containing it. */
+	list(ownerId: string, limit: number, titleContains?: string): Promise<Conversation[]>;
 	/** Oldest first; with `latest`, only the last that many (still oldest first). */
 	messages(
 		ownerId: string,

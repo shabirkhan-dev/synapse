@@ -1,7 +1,9 @@
-import { and, asc, desc, eq, gt, isNull, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, isNull, type SQL, sql } from "drizzle-orm";
 
 import { chatConversations, chatMessages, type Database } from "@synapse/database";
 import type { StoredMessage } from "@synapse/memory";
+
+import { containsPattern } from "@/shared/utils/like-pattern";
 
 import { toConversation, toStoredMessage } from "../mappers/memory.mapper";
 import type {
@@ -33,11 +35,18 @@ export class DrizzleConversationRepository implements ConversationStore {
 		return row ? toConversation(row) : null;
 	}
 
-	async list(ownerId: string, limit: number): Promise<Conversation[]> {
+	async list(ownerId: string, limit: number, titleContains?: string): Promise<Conversation[]> {
 		const rows = await this.db
 			.select()
 			.from(chatConversations)
-			.where(eq(chatConversations.ownerId, ownerId))
+			.where(
+				and(
+					eq(chatConversations.ownerId, ownerId),
+					titleContains
+						? ilike(chatConversations.title, containsPattern(titleContains))
+						: undefined,
+				),
+			)
 			.orderBy(desc(chatConversations.updatedAt))
 			.limit(limit);
 		return rows.map(toConversation);

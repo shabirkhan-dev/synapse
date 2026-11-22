@@ -41,6 +41,11 @@ function api() {
 	return mockFetch((call: Call) => {
 		if (call.url.endsWith("/rag/documents")) return ok(documents);
 		if (call.url.endsWith("/memory/conversations")) return ok(conversations);
+		// Server search: an older document the recent list does not hold.
+		if (call.url.includes("/rag/documents?q=")) {
+			return ok([{ ...documents[0], id: "d9", title: "Warranty terms (2019)" }]);
+		}
+		if (call.url.includes("/memory/conversations?q=")) return ok([]);
 		throw new Error(`unexpected ${call.url}`);
 	});
 }
@@ -63,6 +68,25 @@ describe("CommandPaletteContainer", () => {
 			"/api/v1/memory/conversations",
 			"/api/v1/rag/documents",
 		]);
+	});
+
+	test("typing two letters or more searches every document and conversation on the server", async () => {
+		signedIn();
+		const calls = api();
+		renderWithQuery(<CommandPaletteContainer />);
+		fireEvent.click(screen.getByRole("button", { name: "Search" }));
+		const dialog = await screen.findByRole("dialog", { name: "Search Synapse" });
+		await within(dialog).findByText("Refund policy");
+
+		fireEvent.change(within(dialog).getByRole("combobox"), { target: { value: "warr" } });
+		await within(dialog).findByText("Warranty terms (2019)");
+		const searched = calls
+			.map((call) => decodeURIComponent(call.url))
+			.filter((url) => url.includes("q="));
+		expect(searched.some((url) => url.includes("/rag/documents?q=warr"))).toBe(true);
+		expect(searched.some((url) => url.includes("/memory/conversations?q=warr"))).toBe(true);
+		fireEvent.click(within(dialog).getByText("Warranty terms (2019)"));
+		expect(push).toHaveBeenCalledWith("/documents/d9");
 	});
 
 	test("/ opens it too, but not while typing in a field", async () => {

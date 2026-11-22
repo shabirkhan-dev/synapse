@@ -49,6 +49,12 @@ export const chatService = {
 	list: (): Promise<Conversation[]> =>
 		api(endpoints.memory.conversations, { schema: conversationListSchema }),
 
+	/** Conversations whose title contains `q`, most recently active first. */
+	search: (q: string): Promise<Conversation[]> =>
+		api(`${endpoints.memory.conversations}?${new URLSearchParams({ q })}`, {
+			schema: conversationListSchema,
+		}),
+
 	/** A stored conversation's messages, oldest first, and the versions of its last reply. */
 	async conversation(id: string): Promise<StoredConversation> {
 		const conversation = await api(endpoints.memory.conversation(id), {

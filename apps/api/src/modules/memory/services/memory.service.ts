@@ -101,8 +101,9 @@ export class MemoryService {
 		return this.options.conversations.append(ownerId, conversationId, messages);
 	}
 
-	listConversations(ownerId: string): Promise<Conversation[]> {
-		return this.options.conversations.list(ownerId, MEMORY_LIST_LIMIT);
+	/** With `titleContains`, only conversations whose title contains it. */
+	listConversations(ownerId: string, titleContains?: string): Promise<Conversation[]> {
+		return this.options.conversations.list(ownerId, MEMORY_LIST_LIMIT, titleContains);
 	}
 
 	async getConversation(

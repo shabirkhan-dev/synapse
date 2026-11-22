@@ -23,7 +23,11 @@ export type SessionGateProps = {
 	navBadges?: Partial<Record<string, ReactNode>>;
 };
 
-/** Workspace pages: signed-out visitors go to `/sign-in`; signed-in ones get the app shell. */
+/**
+ * Workspace pages: signed-out visitors go to `/sign-in`; signed-in ones get the app shell. While the
+ * session is restored the frame already shows (sidebar, header, a page skeleton), without anything
+ * that would call the API yet.
+ */
 export function SessionGate({ children, switcher, search, recent, navBadges }: SessionGateProps) {
 	const router = useRouter();
 	const status = useSessionStatus();
@@ -34,7 +38,14 @@ export function SessionGate({ children, switcher, search, recent, navBadges }: S
 		if (status === "signed-out") router.replace(AUTH_ROUTES.SIGN_IN);
 	}, [status, router]);
 
-	if (status !== "signed-in") return null;
+	if (status === "signed-out") return null;
+	if (status === "unknown") {
+		return (
+			<AppShell email={null} pending signingOut={false} onSignOut={() => {}}>
+				{children}
+			</AppShell>
+		);
+	}
 	return (
 		<AppShell
 			email={me.data?.email ?? null}

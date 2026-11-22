@@ -4,11 +4,12 @@ import {
 	cosineDistance,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	isNull,
 	or,
-	type SQL,
 	sql,
+	type SQL,
 } from "drizzle-orm";
 
 import {
@@ -22,6 +23,8 @@ import {
 	searchVector,
 } from "@synapse/database";
 import type { DocumentReader, KeywordSearchRequest, VectorSearchRequest } from "@synapse/retrieval";
+
+import { containsPattern } from "@/shared/utils/like-pattern";
 
 import { toRagDocument } from "../mappers/rag.mapper";
 import type {
@@ -98,11 +101,21 @@ export class DrizzleRagRepository implements RagRepository {
 		});
 	}
 
-	async listDocuments(reader: RagReader, limit: number): Promise<RagDocument[]> {
+	async listDocuments(
+		reader: RagReader,
+		limit: number,
+		titleContains?: string,
+	): Promise<RagDocument[]> {
 		const rows = await this.db
 			.select()
 			.from(ragDocuments)
-			.where(and(eq(ragDocuments.ownerId, reader.ownerId), readableBy(reader)))
+			.where(
+				and(
+					eq(ragDocuments.ownerId, reader.ownerId),
+					readableBy(reader),
+					titleContains ? ilike(ragDocuments.title, containsPattern(titleContains)) : undefined,
+				),
+			)
 			.orderBy(desc(ragDocuments.createdAt))
 			.limit(limit);
 		return rows.map(toRagDocument);

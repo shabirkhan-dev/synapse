@@ -5,8 +5,8 @@ type: feature
 from: human
 to: all
 priority: low
-status: open
-assignee: none
+status: doing
+assignee: claude
 reviewer: none
 parent: syn-roadmap
 depends_on: []
@@ -15,7 +15,7 @@ worktree: none
 scope: [apps/console documents, tests/e2e]
 allowed_shared: []
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-22
 ---
 
 ## What

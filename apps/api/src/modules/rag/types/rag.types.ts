@@ -92,7 +92,7 @@ export type RagMatch = {
 export interface RagRepository {
 	createDocument(document: NewRagDocument, chunks: NewRagChunk[]): Promise<RagDocument>;
 	/** Newest first, only the documents the reader may read. */
-	listDocuments(reader: RagReader, limit: number): Promise<RagDocument[]>;
+	listDocuments(reader: RagReader, limit: number, titleContains?: string): Promise<RagDocument[]>;
 	/** Any document of the owner with this content, readable or not (dedup). */
 	findByContentHash(ownerId: string, contentHash: string): Promise<RagDocument | null>;
 	/** The document if it belongs to the reader's owner and the reader may read it. */

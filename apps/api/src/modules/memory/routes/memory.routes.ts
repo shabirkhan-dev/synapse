@@ -12,6 +12,7 @@ import {
 	conversationWithMessagesSchema,
 	forgottenSchema,
 	memoryFactSchema,
+	listConversationsQuerySchema,
 	memoryIdParamsSchema,
 	rememberBodySchema,
 	renameConversationBodySchema,
@@ -38,8 +39,9 @@ const listConversationsRoute = createRoute({
 	method: "get",
 	path: "/conversations",
 	tags,
-	summary: "Your conversations, most recently active first",
+	summary: "Your conversations, most recently active first (optionally by title)",
 	security,
+	request: { query: listConversationsQuerySchema },
 	responses: { 200: json(z.array(conversationSchema), "Conversations"), ...errorResponses },
 });
 
@@ -141,7 +143,8 @@ export function createMemoryRoutes(memory: MemoryService) {
 	const app = new OpenAPIHono<AppBindings>();
 
 	app.openapi(listConversationsRoute, async (c) => {
-		const conversations = await memory.listConversations(c.get("user").sub);
+		const { q } = c.req.valid("query");
+		const conversations = await memory.listConversations(c.get("user").sub, q || undefined);
 		return success(c, conversations, MEMORY_MESSAGES.CONVERSATIONS_FETCHED);
 	});
 

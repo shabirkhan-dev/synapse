@@ -26,6 +26,12 @@ export const documentsService = {
 	list: (): Promise<DocumentSummary[]> =>
 		api(endpoints.documents.list, { schema: documentListSchema }),
 
+	/** Documents whose title contains `q`, newest first. */
+	search: (q: string): Promise<DocumentSummary[]> =>
+		api(`${endpoints.documents.list}?${new URLSearchParams({ q, limit: "20" })}`, {
+			schema: documentListSchema,
+		}),
+
 	/** Chunks, embeds and stores it; the same content again returns the existing document. */
 	ingest: (input: WithAccess<IngestDocumentInput>): Promise<DocumentSummary> =>
 		api(endpoints.documents.ingest, { method: "POST", body: input, schema: documentSchema }),

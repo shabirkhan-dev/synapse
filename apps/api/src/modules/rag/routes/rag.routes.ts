@@ -299,10 +299,10 @@ export function createRagRoutes(rag: RagService, oversight: OversightService) {
 	});
 
 	app.openapi(listRoute, async (c) => {
-		const { limit } = c.req.valid("query");
+		const { limit, q } = c.req.valid("query");
 		return success(
 			c,
-			await rag.listDocuments(readerOf(c.get("user")), limit),
+			await rag.listDocuments(readerOf(c.get("user")), limit, q || undefined),
 			RAG_MESSAGES.DOCUMENTS_FETCHED,
 		);
 	});

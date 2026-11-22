@@ -186,6 +186,18 @@ describe.skipIf(!url)("memory (postgres)", () => {
 		expect((await repository.rename(ordering, conversation.id, "Renamed"))?.title).toBe("Renamed");
 	});
 
+	test("conversations are found by title, per owner, with % taken literally", async () => {
+		const repository = new DrizzleConversationRepository(database.db);
+		await repository.create(ordering, "Refund window?");
+		await repository.create(ordering, "Discount of 50% on shoes");
+		const titles = async (owner: string, query: string) =>
+			(await repository.list(owner, 10, query)).map((c) => c.title);
+		expect(await titles(ordering, "refund")).toEqual(["Refund window?"]);
+		expect(await titles(ordering, "50%")).toEqual(["Discount of 50% on shoes"]);
+		expect(await titles(ordering, "%")).toEqual(["Discount of 50% on shoes"]);
+		expect(await titles(other, "refund")).toEqual([]);
+	});
+
 	test("facts are recalled by similarity per owner, deduplicated, and forgotten", async () => {
 		const service = startService();
 		await service.rememberFact(owner, "prefers metric units for distances");

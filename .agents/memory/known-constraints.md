@@ -180,7 +180,8 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   logs one expected 401 in the browser console (the session-restore refresh). Refresh token in the API's
   httpOnly cookie, access token in memory (ADR-0007): console and API must share a site (same
   registrable domain, or localhost), and every page load costs one refresh. The gate is client-side,
-  so workspace pages render nothing until the session is restored. Browsers without Web Locks
+  so until the session is restored workspace pages show the frame (sidebar pages, header) and a page
+  outline, without the parts that call the API (syn-087). Browsers without Web Locks
   refresh without the cross-tab lock; the API's 10 s reuse grace window covers them (and the lock
   is not enough on its own under load). Submit buttons stay disabled until hydration. `NEXT_PUBLIC_API_URL` is inlined at
   build time (Docker build arg). Browser flows are covered by `tests/e2e` (CI job `e2e`).
@@ -208,8 +209,9 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   applies to the last reply only; since syn-086 the old reply is kept as a version (`‹ 1 / 2 ›` on the
   reply; after a failed regenerate the switcher shows on its own), and only the last reply's versions
   are offered: a new question leaves the earlier ones stored but unreachable (deleted with the
-  conversation). Versions are not capped (regenerate is on the questions budget). The palette lists the 8 latest conversations and documents (typing filters those, it does not
-  search the server). Copy needs the clipboard permission (secure context).
+  conversation). Versions are not capped (regenerate is on the questions budget). The palette lists the 8 latest conversations and documents; typing two
+  characters or more searches every title on the server (syn-087: `q` on both list endpoints, ILIKE on
+  the title only, not the text; 200 ms debounce; up to 8 shown per group). `/` opens it too. Copy needs the clipboard permission (secure context).
 - **e2e** (`tests/e2e`): Playwright's `getByLabel` matches substrings, so use `{ exact: true }`
   for "Title" (the upload form has "Title (optional)"). Wait for a page by its heading role, not `getByText`: Next's route
   announcer repeats the page title (strict-mode clash). Needs a throwaway Postgres (`E2E_DATABASE_URL`); it clears

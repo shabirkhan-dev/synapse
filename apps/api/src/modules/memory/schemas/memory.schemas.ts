@@ -6,6 +6,11 @@ export const memoryIdParamsSchema = z.object({
 	id: z.uuid().openapi({ param: { name: "id", in: "path" } }),
 });
 
+export const listConversationsQuerySchema = z.object({
+	/** Only conversations whose title contains this (case-insensitive). */
+	q: z.string().trim().max(200).optional().openapi({ example: "refund" }),
+});
+
 export const rememberBodySchema = z
 	.object({
 		content: z.string().trim().min(1).max(500).openapi({ example: "I prefer metric units" }),

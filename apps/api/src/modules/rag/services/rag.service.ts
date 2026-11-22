@@ -448,8 +448,13 @@ export class RagService {
 		};
 	}
 
-	listDocuments(reader: RagReader, limit = RAG_DEFAULT_LIST_LIMIT): Promise<RagDocument[]> {
-		return this.repository.listDocuments(reader, limit);
+	/** Newest first; with `titleContains`, only documents whose title contains it. */
+	listDocuments(
+		reader: RagReader,
+		limit = RAG_DEFAULT_LIST_LIMIT,
+		titleContains?: string,
+	): Promise<RagDocument[]> {
+		return this.repository.listDocuments(reader, limit, titleContains);
 	}
 
 	/** Runs only after an approval (`rag.purge-documents`, see the oversight module). */

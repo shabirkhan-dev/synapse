@@ -2,6 +2,8 @@
 export const queryKeys = {
 	documents: {
 		all: ["documents"] as const,
+		/** Documents whose title contains `q` (the palette's server search). */
+		search: (q: string) => ["documents", "search", q] as const,
 		detail: (id: string, offset: number) => ["documents", id, { offset }] as const,
 	},
 	currentUser: ["current-user"] as const,
@@ -12,6 +14,7 @@ export const queryKeys = {
 	followUps: (question: string, answer: string) => ["follow-ups", question, answer] as const,
 	conversations: {
 		all: ["conversations"] as const,
+		search: (q: string) => ["conversations", "search", q] as const,
 		detail: (id: string) => ["conversations", id] as const,
 	},
 	organizations: {

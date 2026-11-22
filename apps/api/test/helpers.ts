@@ -218,10 +218,17 @@ export class InMemoryRagRepository implements RagRepository {
 		return publicDocument;
 	}
 
-	async listDocuments(reader: RagReader, limit: number): Promise<RagDocument[]> {
+	async listDocuments(
+		reader: RagReader,
+		limit: number,
+		titleContains?: string,
+	): Promise<RagDocument[]> {
 		return this.documents
 			.filter(
-				(document) => document.ownerId === reader.ownerId && this.readable(document.id, reader),
+				(document) =>
+					document.ownerId === reader.ownerId &&
+					this.readable(document.id, reader) &&
+					(!titleContains || document.title.toLowerCase().includes(titleContains.toLowerCase())),
 			)
 			.slice(-limit)
 			.toReversed()
@@ -1065,9 +1072,13 @@ export class InMemoryConversationStore implements ConversationStore {
 		return this.conversations.find((c) => c.id === id && c.ownerId === ownerId) ?? null;
 	}
 
-	async list(ownerId: string, limit: number) {
+	async list(ownerId: string, limit: number, titleContains?: string) {
 		return this.conversations
-			.filter((c) => c.ownerId === ownerId)
+			.filter(
+				(c) =>
+					c.ownerId === ownerId &&
+					(!titleContains || c.title.toLowerCase().includes(titleContains.toLowerCase())),
+			)
 			.toReversed()
 			.slice(0, limit);
 	}

@@ -38,6 +38,11 @@ export type CommandPaletteProps = {
 	onSelect: (entry: PaletteEntry) => void;
 	/** "⌘K" or "Ctrl K", for the trigger. */
 	shortcut: string;
+	/** What is typed; documents and conversations are searched on the server for it. */
+	search: string;
+	onSearchChange: (search: string) => void;
+	/** The server search for the typed text is running. */
+	searching: boolean;
 };
 
 /** A search row for the sidebar and the palette it opens: pages, conversations, documents. */
@@ -48,6 +53,9 @@ export function CommandPalette({
 	loading,
 	onSelect,
 	shortcut,
+	search,
+	onSearchChange,
+	searching,
 }: CommandPaletteProps) {
 	return (
 		<>
@@ -84,9 +92,15 @@ export function CommandPalette({
 						Go to a page, a conversation or a document. Use the arrow keys and Enter.
 					</DialogDescription>
 					<Command loop className="rounded-none">
-						<CommandInput placeholder="Go to a page, conversation or document…" />
+						<CommandInput
+							placeholder="Go to a page, conversation or document…"
+							value={search}
+							onValueChange={onSearchChange}
+						/>
 						<CommandList className="max-h-80">
-							<CommandEmpty>{loading ? "Loading…" : "Nothing matches."}</CommandEmpty>
+							<CommandEmpty>
+								{loading || searching ? "Searching…" : "Nothing matches."}
+							</CommandEmpty>
 							{groups.map((group) =>
 								group.entries.length > 0 ? (
 									<CommandGroup key={group.heading} heading={group.heading}>

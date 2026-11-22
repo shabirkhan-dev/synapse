@@ -100,6 +100,25 @@ describe.skipIf(!url)("DrizzleRagRepository (pgvector)", () => {
 		).toEqual([]);
 	});
 
+	test("lists documents by title, case-insensitively, with % and _ taken literally", async () => {
+		const titled = `it-${crypto.randomUUID()}`;
+		for (const title of ["Refund policy", "Shipping 50% off", "Shipping 500 days", "Returns_v2"]) {
+			// oxlint-disable-next-line no-await-in-loop -- in order, so newest first is predictable
+			await repository.createDocument({ ownerId: titled, title }, []);
+		}
+		const titles = async (query?: string) =>
+			(await repository.listDocuments(everything(titled), 10, query)).map((d) => d.title);
+		expect(await titles("REFUND")).toEqual(["Refund policy"]);
+		expect(await titles("50%")).toEqual(["Shipping 50% off"]);
+		// Unescaped, "_" would match the "n" in "Returns".
+		expect(await titles("r_s")).toEqual([]);
+		expect(await titles("s_v2")).toEqual(["Returns_v2"]);
+		expect(await titles()).toHaveLength(4);
+		expect(
+			await repository.listDocuments(everything(`it-${crypto.randomUUID()}`), 10, "refund"),
+		).toEqual([]);
+	});
+
 	test("stores chunks and ranks them by cosine similarity", async () => {
 		const texts = ["refunds are accepted within 30 days", "the office cat sleeps on the printer"];
 		const document = await repository.createDocument(

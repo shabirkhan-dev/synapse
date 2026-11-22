@@ -19,11 +19,13 @@ import {
 	SidebarTrigger,
 	useSidebar,
 } from "@synapse/ui/components/sidebar";
+import { Skeleton } from "@synapse/ui/components/skeleton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 import { AccountMenu } from "./account-menu";
 import { MAIN_GROUP, NAV, type NavItem } from "./navigation";
@@ -44,6 +46,8 @@ export type AppShellProps = {
 	navBadges?: Partial<Record<string, ReactNode>>;
 	onSignOut: () => void;
 	signingOut: boolean;
+	/** The session is being restored: the frame shows with placeholders instead of the page. */
+	pending?: boolean;
 };
 
 const ALL = NAV.flatMap((group) => group.items);
@@ -62,6 +66,7 @@ export function AppShell({
 	navBadges,
 	onSignOut,
 	signingOut,
+	pending = false,
 }: AppShellProps) {
 	const pathname = usePathname();
 	const current = ALL.find(
@@ -122,12 +127,16 @@ export function AppShell({
 					{recent}
 				</SidebarContent>
 				<SidebarFooter className="p-3">
-					<AccountFooter
-						email={email}
-						signingOut={signingOut}
-						onSignOut={onSignOut}
-						active={pathname.startsWith("/account")}
-					/>
+					{pending ? (
+						<Skeleton className="h-14 rounded-xl" />
+					) : (
+						<AccountFooter
+							email={email}
+							signingOut={signingOut}
+							onSignOut={onSignOut}
+							active={pathname.startsWith("/account")}
+						/>
+					)}
 				</SidebarFooter>
 			</Sidebar>
 			<SidebarInset className="min-w-0">
@@ -176,7 +185,7 @@ export function AppShell({
 					<div className="border-b bg-muted/40 px-4 py-2.5 text-sm md:px-6">{notice}</div>
 				) : null}
 				<main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-8 md:py-10">
-					{children}
+					{pending ? <PageSkeleton /> : children}
 				</main>
 			</SidebarInset>
 		</SidebarProvider>
