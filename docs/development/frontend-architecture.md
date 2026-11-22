@@ -238,6 +238,11 @@ Don't create a container for a component that needs no data.
 | Icons | HugeIcons only |
 | Mono | JetBrains Mono (self-hosted, `@fontsource-variable/jetbrains-mono`) for ids, model names and versions, and since v4 for figures, counts, number cells, table headers and small labels (uppercase, `tracking-[0.06em]`, 11px) |
 
+**Onboarding (syn-088).** `features/onboarding` renders the Get started card into the Documents
+page through `DocumentsContainer`'s `intro` slot (set in `app/(workspace)/documents/page.tsx`), so the
+two features never import each other. Sample documents are fixtures in
+`features/onboarding/constants/sample-documents.ts`, posted through the normal ingest endpoint.
+
 **Primitives (syn-091).** The shadcn components in `@synapse/ui` carry the design system; pages use
 their variants and only add layout classes:
 

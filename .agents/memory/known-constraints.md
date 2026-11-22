@@ -200,6 +200,10 @@ Things that are true today and easy to trip over. Remove an entry when it stops 
   group repeats document and conversation titles as links, so e2e tests find those links inside
   `getByRole("main")`; it also keeps the documents list cached, so the Documents page refetches on
   open (`useDocumentsQuery({ fresh: true })`).
+  New workspaces see a Get started card on Documents (syn-088): three sample documents of a made-up
+  shop added through the normal ingest path (they cost three embedding calls and count as documents),
+  steps read from documents and conversations, the Playground step and "Hide" kept per workspace in
+  `localStorage` only (another browser shows the card again; there is no server-side state).
   Since syn-079 the Documents add forms are tabs (Upload files first): tests click the "Paste text"
   or "Web page" tab first, and `getByLabel("Text")` needs `{ exact: true }` (the "Paste text" panel
   is labelled by its tab). The web page field is labelled "Page address".

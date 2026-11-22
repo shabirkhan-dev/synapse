@@ -15,7 +15,7 @@ import {
 import { Checkbox } from "@synapse/ui/components/checkbox";
 import { Label } from "@synapse/ui/components/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@synapse/ui/components/tabs";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { useCurrentUserQuery } from "@/features/auth";
 import { PurgeRequestContainer } from "@/features/oversight";
@@ -32,7 +32,8 @@ import { useUploadDocumentMutation } from "../hooks/mutations/use-upload-documen
 import { useDocumentsQuery } from "../hooks/queries/use-documents-query";
 
 /** Documents page: the add form and the list, with loading, error and empty states. */
-export function DocumentsContainer() {
+/** `intro`: shown under the page title (the Get started card on a new workspace). */
+export function DocumentsContainer({ intro }: { intro?: ReactNode } = {}) {
 	const documents = useDocumentsQuery({ fresh: true });
 	const ingest = useIngestDocumentMutation();
 	const upload = useUploadDocumentMutation();
@@ -56,6 +57,7 @@ export function DocumentsContainer() {
 			>
 				What answers and chat search draw on. Adding text chunks and embeds it.
 			</PageHeader>
+			{intro}
 			<Card>
 				<CardHeader>
 					<CardTitle>

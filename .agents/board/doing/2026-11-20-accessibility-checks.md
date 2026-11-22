@@ -5,8 +5,8 @@ type: chore
 from: human
 to: all
 priority: normal
-status: open
-assignee: none
+status: doing
+assignee: claude
 reviewer: none
 parent: syn-roadmap
 depends_on: []
@@ -15,7 +15,7 @@ worktree: none
 scope: [tests/e2e, apps/console, packages/ui]
 allowed_shared: []
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-22
 ---
 
 ## What
