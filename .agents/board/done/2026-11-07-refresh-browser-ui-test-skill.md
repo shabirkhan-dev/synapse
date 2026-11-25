@@ -5,8 +5,8 @@ type: chore
 from: human
 to: ui-ux
 priority: low
-status: open
-assignee: none
+status: done
+assignee: claude
 reviewer: human
 parent: syn-roadmap
 depends_on: [syn-018]
@@ -15,7 +15,7 @@ worktree: none
 scope: [.agents/skills/browser-ui-test]
 allowed_shared: []
 created: 2026-11-07
-updated: 2026-11-07
+updated: 2026-11-25
 ---
 
 ## What
@@ -46,4 +46,6 @@ Update when the console gets its first e2e test (syn-018).
 
 ## Resolution
 
-_Open._
+Done. The skill's body already pointed at `tests/e2e` (updated with syn-039); its description still
+said "apps/console Playwright e2e". It now names the `tests/e2e` suite and its axe accessibility spec,
+and the body says how to take screenshots of real pages through the e2e harness.

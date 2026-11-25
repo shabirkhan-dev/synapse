@@ -3,8 +3,8 @@ name: browser-ui-test
 description: >-
   Use when verifying UI/UX or interactive logic in the browser after web changes
   (dropdowns, dialogs, theme toggles, forms, navigation, crash reports). Prefer
-  Playwright MCP for exploratory clicks; use apps/console Playwright e2e for
-  regressions. Keywords: browser test, UI bug, click crash, dropdown, playwright,
+  Playwright MCP for exploratory clicks; use the tests/e2e Playwright suite for
+  regressions and its axe accessibility spec for WCAG checks. Keywords: browser test, UI bug, click crash, dropdown, playwright,
   e2e, hydrate, overlay, Base UI menu
 ---
 
@@ -41,6 +41,11 @@ bun run test:e2e`; it starts the fake model provider, the API and the console it
 `docs/development/testing.md`). When you change a user-visible flow, extend `specs/` — assert on
 roles and text, read emailed links with `support/mail.ts`, create accounts with
 `support/accounts.ts`. For one-off exploration, the Playwright MCP path above still applies.
+
+`specs/accessibility.spec.ts` runs axe (WCAG 2.2 A/AA) on every page in light and dark: add a new
+page or overlay to its lists. To look at a change, a throwaway spec that calls `page.screenshot`
+(light and dark, desktop and 390px) under the same harness is the quickest way to get real pages
+with data; delete it before committing.
 
 ## Base UI / shadcn composition traps (common crash sources)
 
