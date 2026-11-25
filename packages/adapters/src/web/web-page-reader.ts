@@ -1,12 +1,10 @@
-import { isIP } from "node:net";
-
 import { WEB_PAGE_ERROR_CODES, type WebPage, type WebPageReader } from "@synapse/core/contracts";
 import { SynapseError } from "@synapse/core/errors";
 
-import { isPublicAddress } from "./address-policy";
 import { htmlToText } from "./html-to-text";
+import { createPublicRequest, type ResolveHost } from "./public-request";
 
-export type ResolveHost = (hostname: string) => Promise<string[]>;
+export type { ResolveHost };
 
 export type WebPageReaderOptions = {
 	/** Whole read, redirects included. */
@@ -28,14 +26,10 @@ export type WebPageReaderOptions = {
 const HTML_TYPES = new Set(["text/html", "application/xhtml+xml"]);
 const TEXT_TYPES = new Set(["text/plain", "text/markdown"]);
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
-const DEFAULT_PORTS: Record<string, string> = { "http:": "80", "https:": "443" };
 const USER_AGENT = "SynapseBot/1.0 (+document import)";
 
 const fail = (code: string, message: string, retryable = false) =>
 	new SynapseError(code, message, { retryable });
-
-const defaultResolve: ResolveHost = async (hostname) =>
-	(await Bun.dns.lookup(hostname)).map((entry) => entry.address);
 
 /**
  * Reads public web pages for ingestion, refusing anything that could reach inside the network
@@ -49,62 +43,18 @@ export function createWebPageReader({
 	maxBytes = 2 * 1024 * 1024,
 	maxRedirects = 5,
 	allowPrivateNetworks = false,
-	resolve = defaultResolve,
+	resolve,
 	fetch: fetchImpl = fetch,
 }: WebPageReaderOptions = {}): WebPageReader {
-	async function checkedTarget(url: URL): Promise<{ address: string }> {
-		if (url.protocol !== "http:" && url.protocol !== "https:") {
-			throw fail(WEB_PAGE_ERROR_CODES.NOT_ALLOWED, "Only http and https addresses can be read");
-		}
-		if (url.username || url.password) {
-			throw fail(
-				WEB_PAGE_ERROR_CODES.NOT_ALLOWED,
-				"Addresses with a user name or password are refused",
-			);
-		}
-		if (!allowPrivateNetworks && url.port && url.port !== DEFAULT_PORTS[url.protocol]) {
-			throw fail(
-				WEB_PAGE_ERROR_CODES.NOT_ALLOWED,
-				"Only the standard web ports (80, 443) are allowed",
-			);
-		}
-		const hostname = url.hostname.replace(/^\[|\]$/g, "");
-		let addresses: string[];
-		if (isIP(hostname)) {
-			addresses = [hostname];
-		} else {
-			try {
-				addresses = await resolve(hostname);
-			} catch {
-				throw fail(WEB_PAGE_ERROR_CODES.UNREACHABLE, `Could not find ${hostname}`, true);
-			}
-		}
-		if (addresses.length === 0) {
-			throw fail(WEB_PAGE_ERROR_CODES.UNREACHABLE, `Could not find ${hostname}`, true);
-		}
-		// Every address, not just the first: a host may mix public and internal records.
-		if (!allowPrivateNetworks && !addresses.every(isPublicAddress)) {
-			throw fail(WEB_PAGE_ERROR_CODES.NOT_ALLOWED, "That address points inside a private network");
-		}
-		return { address: addresses[0] as string };
-	}
-
-	/** One request to the checked address, with the original host name for `Host` and TLS. */
-	function pinnedRequest(url: URL, address: string, signal: AbortSignal): Promise<Response> {
-		const pinned = new URL(url);
-		pinned.hostname = isIP(address) === 6 ? `[${address}]` : address;
-		const hostname = url.hostname.replace(/^\[|\]$/g, "");
-		return fetchImpl(pinned, {
-			redirect: "manual",
-			signal,
-			headers: {
-				Host: url.host,
-				"User-Agent": USER_AGENT,
-				Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.9",
-			},
-			...(url.protocol === "https:" && !isIP(hostname) ? { tls: { serverName: hostname } } : {}),
-		} as RequestInit);
-	}
+	const request = createPublicRequest({
+		allowPrivateNetworks,
+		resolve,
+		fetch: fetchImpl,
+		codes: {
+			notAllowed: WEB_PAGE_ERROR_CODES.NOT_ALLOWED,
+			unreachable: WEB_PAGE_ERROR_CODES.UNREACHABLE,
+		},
+	});
 
 	async function readBody(response: Response): Promise<Uint8Array> {
 		const declared = Number(response.headers.get("content-length") ?? 0);
@@ -145,9 +95,13 @@ export function createWebPageReader({
 		try {
 			for (let hop = 0; hop <= maxRedirects; hop++) {
 				// oxlint-disable-next-line no-await-in-loop -- each redirect is checked before following it
-				const { address } = await checkedTarget(url);
-				// oxlint-disable-next-line no-await-in-loop
-				const response = await pinnedRequest(url, address, signal);
+				const response = await request(url, {
+					signal,
+					headers: {
+						"User-Agent": USER_AGENT,
+						Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.9",
+					},
+				});
 				if (REDIRECTS.has(response.status)) {
 					const location = response.headers.get("location");
 					await response.body?.cancel();

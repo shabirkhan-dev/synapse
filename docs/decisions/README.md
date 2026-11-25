@@ -13,6 +13,7 @@ reverse. Agents keep a short summary in `.agents/memory/decisions.md`.
 | [0006](adr/ADR-0006-organizations-as-tenants.md) | Organizations are the tenants (personal org id = user id) | Accepted |
 | [0007](adr/ADR-0007-console-session-cookie.md) | Console sessions: refresh token in an httpOnly cookie set by the API | Accepted |
 | [0008](adr/ADR-0008-document-access.md) | Documents can be restricted to chosen members of an organization | Accepted |
+| [0009](adr/ADR-0009-single-sign-on.md) | Single sign-on with OpenID Connect per team, domains proven by DNS | Accepted |
 
 ## Template
 

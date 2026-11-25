@@ -1,5 +1,4 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { bodyLimit } from "hono/body-limit";
 
 import { ERROR_CODES } from "@/shared/constants/error-codes";
 import { HTTP_STATUS } from "@/shared/constants/http-status";
@@ -10,7 +9,7 @@ import { success } from "@/shared/responses/success-response";
 import type { AuthConfig } from "@/config";
 import type { AppBindings } from "@/shared/types/app-types";
 
-import { AUTH_ERROR_CODES, AUTH_MAX_BODY_BYTES, AUTH_MESSAGES } from "../constants/auth.constants";
+import { AUTH_ERROR_CODES, AUTH_MESSAGES } from "../constants/auth.constants";
 import {
 	authTokensSchema,
 	forgotPasswordBodySchema,
@@ -32,21 +31,11 @@ import {
 } from "../schemas/auth.schemas";
 import type { AuthService } from "../services/auth.service";
 import { clientInfo, clientIp } from "./client-ip";
+import { smallBody } from "./small-body";
 import { clearRefreshCookie, moveRefreshTokenToCookie, readRefreshCookie } from "./session-cookie";
 
 const tags = ["Auth"];
 const security = [{ bearerAuth: [] }];
-
-const smallBody = bodyLimit({
-	maxSize: AUTH_MAX_BODY_BYTES,
-	onError: () => {
-		throw new AppError({
-			statusCode: HTTP_STATUS.PAYLOAD_TOO_LARGE,
-			code: ERROR_CODES.PAYLOAD_TOO_LARGE,
-			message: AUTH_MESSAGES.BODY_TOO_LARGE,
-		});
-	},
-});
 
 const jsonBody = <TSchema extends z.ZodType>(schema: TSchema) => ({
 	required: true,

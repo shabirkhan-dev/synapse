@@ -34,6 +34,8 @@ describe("openapi", () => {
 			"/api/v1/auth/sign-in/mfa",
 			"/api/v1/auth/sign-out",
 			"/api/v1/auth/sign-up",
+			"/api/v1/auth/sso/callback",
+			"/api/v1/auth/sso/start",
 			"/api/v1/auth/switch-organization",
 			"/api/v1/auth/verify-email",
 			"/api/v1/auth/verify-email/resend",
@@ -68,6 +70,8 @@ describe("openapi", () => {
 			"/api/v1/rag/documents/{id}/access",
 			"/api/v1/rag/follow-ups",
 			"/api/v1/rag/query",
+			"/api/v1/sso/connection",
+			"/api/v1/sso/connection/verify",
 			"/api/v1/system/status",
 		]);
 		expect(doc.components.securitySchemes.bearerAuth).toMatchObject({

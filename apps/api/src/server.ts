@@ -1,5 +1,8 @@
+import { resolveTxt } from "node:dns/promises";
+
 import { createPostgresCheckpointer } from "@synapse/adapters/checkpointer";
 import { createWorkerPdfTextExtractor } from "@synapse/adapters/pdf";
+import { createOidcClient } from "@synapse/adapters/oidc";
 import { createWebPageReader } from "@synapse/adapters/web";
 import { createAuditLog } from "@synapse/audit";
 import { createDatabase } from "@synapse/database";
@@ -29,6 +32,7 @@ import { DrizzleEvaluationRepository, EvaluationsService } from "./modules/evalu
 import { DrizzleSystemRepository, SystemService } from "./modules/system";
 import { GuardrailsService } from "./modules/guardrails";
 import { DrizzleOrganizationRepository, OrganizationsService } from "./modules/organizations";
+import { DrizzleSsoRepository, SsoService } from "./modules/sso";
 import {
 	DrizzleConversationRepository,
 	DrizzleFactRepository,
@@ -88,8 +92,9 @@ const authRepository = new DrizzleAuthRepository(database.db);
 // One limiter for the auth limits and the per-user budgets on model-calling routes.
 const rateLimiter = new DrizzleRateLimiter(database.db);
 const email = createEmailSender(config.email, config.reliability, logger, circuits);
+const organizationStore = new DrizzleOrganizationRepository(database.db);
 const organizations = new OrganizationsService({
-	store: new DrizzleOrganizationRepository(database.db),
+	store: organizationStore,
 	findUserIdByEmail: async (address) => (await authRepository.findUserByEmail(address))?.id ?? null,
 	emailOf: async (userId) => (await authRepository.findUserById(userId))?.email ?? null,
 	email,
@@ -112,6 +117,21 @@ const auth = new AuthService({
 	config: config.auth,
 	audit,
 	roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
+});
+const sso = new SsoService({
+	store: new DrizzleSsoRepository(database.db),
+	oidc: createOidcClient({ allowPrivateNetworks: config.sso.allowPrivateNetworks }),
+	accounts: auth,
+	organizations: {
+		kind: async (id) => (await organizationStore.find(id))?.kind ?? null,
+		addMemberIfAbsent: (organizationId, userId, role) =>
+			organizationStore.addMemberIfAbsent(organizationId, userId, role),
+	},
+	resolveTxt,
+	rateLimiter,
+	audit,
+	encryptionKey: config.auth.encryptionKey,
+	redirectUri: config.sso.redirectUri,
 });
 const apiKeys = new ApiKeysService({
 	store: new DrizzleApiKeyRepository(database.db),
@@ -199,6 +219,7 @@ const app = createApp({
 	auth,
 	apiKeys,
 	mfa,
+	sso,
 	rag,
 	oversight,
 	audit,

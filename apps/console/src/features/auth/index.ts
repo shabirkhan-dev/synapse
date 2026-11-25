@@ -4,6 +4,8 @@ export { ResetPasswordContainer } from "./containers/reset-password-container";
 export { SessionGate } from "./containers/session-gate";
 export { SignInContainer } from "./containers/sign-in-container";
 export { SignUpContainer } from "./containers/sign-up-container";
+export { SsoCallbackContainer } from "./containers/sso-callback-container";
+export { SsoContainer } from "./containers/sso-container";
 export { VerifyEmailContainer } from "./containers/verify-email-container";
 export { useCurrentUserQuery } from "./hooks/queries/use-current-user-query";
 export { useLinkToken } from "./hooks/use-link-token";

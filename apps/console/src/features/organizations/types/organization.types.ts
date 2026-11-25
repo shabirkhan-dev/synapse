@@ -6,6 +6,8 @@ import type {
 	memberSchema,
 	membershipSchema,
 	organizationSchema,
+	ssoConnectionSchema,
+	ssoFormSchema,
 	switchedOrganizationSchema,
 } from "../schemas/organization.schema";
 
@@ -18,3 +20,6 @@ export type SaveMemberInput = AddMemberInput & { organizationId: string };
 export type RemoveMemberInput = { organizationId: string; userId: string };
 export type Invitation = z.infer<typeof invitationSchema>;
 export type RevokeInvitationInput = { organizationId: string; invitationId: string };
+
+export type SsoConnection = z.infer<typeof ssoConnectionSchema>;
+export type SsoSettingsInput = z.infer<typeof ssoFormSchema>;

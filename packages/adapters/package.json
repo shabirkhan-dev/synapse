@@ -11,7 +11,8 @@
 		"./queue": "./src/queue/index.ts",
 		"./checkpointer": "./src/checkpointer/index.ts",
 		"./pdf": "./src/pdf/index.ts",
-		"./web": "./src/web/index.ts"
+		"./web": "./src/web/index.ts",
+		"./oidc": "./src/oidc/index.ts"
 	},
 	"scripts": {
 		"lint": "oxlint",

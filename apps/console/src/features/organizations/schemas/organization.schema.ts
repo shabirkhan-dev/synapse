@@ -50,3 +50,39 @@ export const invitationSchema = z.object({
 	createdAt: z.string(),
 });
 export const invitationListSchema = z.array(invitationSchema);
+
+/** `GET|PUT /sso/connection`: the active team's single sign-on settings. */
+export const ssoConnectionSchema = z.object({
+	issuer: z.string(),
+	clientId: z.string(),
+	hasClientSecret: z.boolean(),
+	defaultRole: role,
+	redirectUri: z.string(),
+	dnsRecord: z.object({ name: z.string(), value: z.string() }),
+	domains: z.array(z.object({ domain: z.string(), verifiedAt: z.string().nullable() })),
+	updatedAt: z.string(),
+});
+
+/** Domains typed as a list: commas, spaces or new lines. */
+const domainList = z
+	.string()
+	.transform((value) =>
+		value
+			.split(/[\s,]+/)
+			.map((item) => item.trim().toLowerCase())
+			.filter(Boolean),
+	)
+	.pipe(
+		z
+			.array(z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/, "Use domains such as example.com"))
+			.min(1, "Add at least one email domain")
+			.max(10, "At most 10 domains"),
+	);
+
+export const ssoFormSchema = z.object({
+	issuer: z.url("Enter the issuer URL from your identity provider"),
+	clientId: z.string().trim().min(1, "Enter the client ID"),
+	clientSecret: z.string().optional(),
+	domains: domainList,
+	defaultRole: z.enum(["member", "admin"]),
+});

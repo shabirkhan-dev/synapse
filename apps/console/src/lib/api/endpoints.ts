@@ -3,6 +3,8 @@ export const endpoints = {
 	auth: {
 		signIn: "/auth/sign-in",
 		signInMfa: "/auth/sign-in/mfa",
+		ssoStart: "/auth/sso/start",
+		ssoCallback: "/auth/sso/callback",
 		mfa: "/auth/mfa",
 		mfaSetup: "/auth/mfa/setup",
 		mfaEnable: "/auth/mfa/enable",
@@ -76,5 +78,9 @@ export const endpoints = {
 		url: "/rag/documents/url",
 		detail: (id: string) => `/rag/documents/${encodeURIComponent(id)}`,
 		access: (id: string) => `/rag/documents/${encodeURIComponent(id)}/access`,
+	},
+	sso: {
+		connection: "/sso/connection",
+		verify: "/sso/connection/verify",
 	},
 } as const;

@@ -137,6 +137,6 @@ contextual retrieval and Ragas.
 | Automated accessibility checks (axe) on every page | ✅ | syn-089 |
 | Chat UI: centred thread, new-chat greeting, documents chip in the composer, grouped conversations | ✅ | syn-092 |
 | UI/UX pass on every other screen (clipped and truncated content, phone tables, one passage card) | ✅ | syn-093 |
-| Company SSO (SAML/OIDC) — parked: needs an identity provider to test against | ⬜ | — |
+| Company SSO with OpenID Connect per team, domains proven by DNS (ADR-0009; SAML not done) | ✅ | syn-094 |
 
 Cards are raised for "—" rows when they become the next two or three steps.

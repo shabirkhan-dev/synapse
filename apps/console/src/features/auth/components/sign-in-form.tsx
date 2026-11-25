@@ -34,7 +34,7 @@ export function SignInForm({ onSubmit, pending, error }: SignInFormProps) {
 		<AuthCard
 			title="Sign in to Synapse"
 			description="Use the email and password of your Synapse account."
-			footer={<AuthLinks show={["signUp", "forgot"]} />}
+			footer={<AuthLinks show={["signUp", "forgot", "sso"]} />}
 		>
 			<form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
 				<FormField

@@ -192,6 +192,44 @@ export class AuthService {
 	}
 
 	/**
+	 * The account for an email an identity provider vouched for (single sign-on, syn-094): the
+	 * existing one, or a new one with an unusable random password (a reset link can set one). The
+	 * address counts as verified.
+	 */
+	async ssoAccount(email: string): Promise<User> {
+		const normalized = normalizeEmail(email);
+		let account = await this.repository.findUserByEmail(normalized);
+		if (!account) {
+			// `null` when a parallel sign-in created it first; read it back either way.
+			await this.repository.createUser({
+				email: normalized,
+				passwordHash: await hashPassword(createSecretToken()),
+			});
+			account = await this.repository.findUserByEmail(normalized);
+		}
+		if (!account) throw unauthorized(AUTH_ERROR_CODES.USER_NOT_FOUND, AUTH_MESSAGES.USER_NOT_FOUND);
+		const { passwordHash: _passwordHash, ...user } = account;
+		if (user.emailVerifiedAt) return user;
+		await this.repository.markEmailVerified(user.id);
+		return { ...user, emailVerifiedAt: new Date().toISOString() };
+	}
+
+	/** A session that starts in `organizationId` (the team whose provider signed the user in). */
+	async startSsoSession(
+		user: User,
+		organizationId: string,
+		{ userAgent }: ClientInfo,
+		context: RequestContext = NO_REQUEST,
+	): Promise<SignedIn> {
+		const tokens = await this.startSession(user.id, userAgent, organizationId);
+		await this.record(AUDIT_ACTIONS.AUTH_SIGNED_IN, user.id, context, {
+			sso: true,
+			organizationId,
+		});
+		return { user, tokens };
+	}
+
+	/**
 	 * Swap a refresh token for new tokens (rotation). Presenting the token that was just replaced
 	 * within `refreshReuseGraceSeconds` of its rotation (two tabs, a retried request) gets an access
 	 * token only — no new refresh token, so nothing forks; later it means the token was copied, and
@@ -499,7 +537,11 @@ export class AuthService {
 		return userId;
 	}
 
-	private async startSession(userId: string, userAgent: string | null): Promise<AuthTokens> {
+	private async startSession(
+		userId: string,
+		userAgent: string | null,
+		organizationId: string = userId,
+	): Promise<AuthTokens> {
 		const refreshToken = createSecretToken();
 		const expiresAt = new Date(Date.now() + this.config.sessionTtlSeconds * 1000);
 		const { id } = await this.repository.createSession({
@@ -508,7 +550,10 @@ export class AuthService {
 			expiresAt,
 			userAgent: userAgent?.slice(0, USER_AGENT_MAX_LENGTH) || null,
 		});
-		return this.tokens(userId, id, refreshToken, expiresAt);
+		if (organizationId !== userId) {
+			await this.repository.setSessionOrganization({ sessionId: id, userId, organizationId });
+		}
+		return this.tokens(userId, id, refreshToken, expiresAt, organizationId);
 	}
 
 	private async tokens(

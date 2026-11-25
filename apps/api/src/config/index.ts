@@ -10,6 +10,7 @@ import { createObservabilityConfig, type ObservabilityConfig } from "./observabi
 import { createOversightConfig, type OversightConfig } from "./oversight.config";
 import { createRagConfig, type RagConfig } from "./rag.config";
 import { createReliabilityConfig, type ReliabilityConfig } from "./reliability.config";
+import { createSsoConfig, type SsoConfig } from "./sso.config";
 
 export type {
 	AiConfig,
@@ -23,6 +24,7 @@ export type {
 	OversightConfig,
 	RagConfig,
 	ReliabilityConfig,
+	SsoConfig,
 };
 
 export type Configuration = {
@@ -37,6 +39,7 @@ export type Configuration = {
 	observability: ObservabilityConfig;
 	oversight: OversightConfig;
 	reliability: ReliabilityConfig;
+	sso: SsoConfig;
 };
 
 /** Build the typed domain configs from a parsed environment. */
@@ -53,6 +56,7 @@ export function createConfiguration(env: Env): Configuration {
 		observability: createObservabilityConfig(env),
 		oversight: createOversightConfig(env),
 		reliability: createReliabilityConfig(env),
+		sso: createSsoConfig(env),
 	};
 }
 

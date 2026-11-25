@@ -14,6 +14,8 @@ export const PERMISSIONS = {
 	"audit.read_all": "admin",
 	"members.manage": "admin",
 	"members.manage_admins": "owner",
+	/** Single sign-on for the team (syn-094): who can sign in and as what. */
+	"sso.manage": "owner",
 } as const satisfies Record<string, OrganizationRole>;
 
 export type Permission = keyof typeof PERMISSIONS;

@@ -93,6 +93,17 @@ export class DrizzleOrganizationRepository implements OrganizationStore {
 		}));
 	}
 
+	async addMemberIfAbsent(
+		organizationId: string,
+		userId: string,
+		role: OrganizationRole,
+	): Promise<void> {
+		await this.db
+			.insert(organizationMembers)
+			.values({ organizationId, userId, role })
+			.onConflictDoNothing();
+	}
+
 	async saveMember(organizationId: string, userId: string, role: OrganizationRole): Promise<void> {
 		await this.db
 			.insert(organizationMembers)

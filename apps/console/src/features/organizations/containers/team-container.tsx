@@ -30,6 +30,7 @@ import { useCreateTeamMutation } from "../hooks/mutations/use-create-team-mutati
 import { useInviteMutation } from "../hooks/mutations/use-invite-mutation";
 import { useRevokeInvitationMutation } from "../hooks/mutations/use-revoke-invitation-mutation";
 import { useRemoveMemberMutation } from "../hooks/mutations/use-remove-member-mutation";
+import { SsoSettingsContainer } from "./sso-settings-container";
 import { useSaveMemberMutation } from "../hooks/mutations/use-save-member-mutation";
 import { useInvitationsQuery } from "../hooks/queries/use-invitations-query";
 import { useMembersQuery } from "../hooks/queries/use-members-query";
@@ -189,6 +190,8 @@ export function TeamContainer() {
 					</CardContent>
 				</Card>
 			)}
+
+			{manages ? <SsoSettingsContainer organizationId={active.id} role={role} /> : null}
 
 			<Card>
 				<CardHeader>

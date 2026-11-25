@@ -11,4 +11,7 @@ export const AUTH_ROUTES = {
 	HOME: "/documents",
 	/** Accepting a team invitation (`?token=`), where sign-in and sign-up return to. */
 	INVITE: "/invite",
+	/** Single sign-on: ask for the email, then the identity provider sends people back here. */
+	SSO: "/sso",
+	SSO_CALLBACK: "/sso/callback",
 } as const;

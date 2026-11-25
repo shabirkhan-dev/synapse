@@ -29,6 +29,8 @@ export interface OrganizationStore {
 	find(id: string): Promise<Organization | null>;
 	listForUser(userId: string): Promise<Membership[]>;
 	role(organizationId: string, userId: string): Promise<OrganizationRole | null>;
+	/** Add with `role` unless already a member (never demotes). */
+	addMemberIfAbsent(organizationId: string, userId: string, role: OrganizationRole): Promise<void>;
 	members(organizationId: string): Promise<Member[]>;
 	/** Insert or change a member's role. */
 	saveMember(organizationId: string, userId: string, role: OrganizationRole): Promise<void>;

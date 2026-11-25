@@ -7,7 +7,7 @@ import { uniqueEmail } from "../support/env";
 /** Automated checks against WCAG 2.2 A and AA; a screen-reader pass stays manual. */
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-const SIGNED_OUT = ["/sign-in", "/sign-up", "/forgot-password"];
+const SIGNED_OUT = ["/sign-in", "/sign-up", "/forgot-password", "/sso"];
 const WORKSPACE = [
 	"/documents",
 	"/chat",

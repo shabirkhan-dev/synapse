@@ -144,6 +144,11 @@ export const envSchema = z
 		 * any port. Production refuses `true` (SSRF).
 		 */
 		RAG_WEB_ALLOW_PRIVATE_NETWORKS: z.enum(["true", "false"]).default("false"),
+		/**
+		 * Development and tests only: let single sign-on reach identity providers over http and on
+		 * private or loopback addresses. Production refuses `true` (SSRF).
+		 */
+		SSO_ALLOW_PRIVATE_NETWORKS: z.enum(["true", "false"]).default("false"),
 		RAG_CHUNK_SIZE: z.coerce.number().int().min(200).max(8000).default(1000),
 		RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2000).default(150),
 		RAG_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
@@ -213,6 +218,14 @@ export const envSchema = z
 				path: ["RAG_WEB_ALLOW_PRIVATE_NETWORKS"],
 				message:
 					"RAG_WEB_ALLOW_PRIVATE_NETWORKS must be false in production (server-side request forgery)",
+			});
+		}
+		if (env.SSO_ALLOW_PRIVATE_NETWORKS === "true") {
+			context.addIssue({
+				code: "custom",
+				path: ["SSO_ALLOW_PRIVATE_NETWORKS"],
+				message:
+					"SSO_ALLOW_PRIVATE_NETWORKS must be false in production (server-side request forgery)",
 			});
 		}
 		if (env.AUTH_ENCRYPTION_KEY === developmentEncryptionKey) {

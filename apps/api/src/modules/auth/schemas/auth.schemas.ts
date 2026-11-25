@@ -16,7 +16,7 @@ const linkToken = z.string().min(1).max(512);
  * Where the refresh token goes: in the response body (default), or — for the console — an
  * httpOnly cookie the page cannot read (ADR-0007); the body then omits it.
  */
-const sessionTransport = z
+export const sessionTransport = z
 	.enum(["body", "cookie"])
 	.default("body")
 	.openapi({ description: "`cookie`: refresh token in an httpOnly cookie, not the body" });

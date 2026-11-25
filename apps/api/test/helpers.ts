@@ -81,6 +81,7 @@ import {
 	type NewMessage,
 } from "@/modules/memory";
 import { OversightService } from "@/modules/oversight";
+import { SsoService } from "@/modules/sso";
 import { type SystemRepository, SystemService } from "@/modules/system";
 import {
 	type NewRagChunk,
@@ -92,6 +93,8 @@ import {
 	RagService,
 	registerRagActions,
 } from "@/modules/rag";
+
+import { FakeOidcClient, InMemorySsoStore } from "./fake-oidc";
 
 type DocumentAccess = RagDocument["access"];
 
@@ -895,6 +898,15 @@ export class InMemoryOrganizationStore implements OrganizationStore {
 
 	constructor(private readonly users: () => UserCredentials[]) {}
 
+	async addMemberIfAbsent(organizationId: string, userId: string, role: OrganizationRole) {
+		const member = this.memberships.some(
+			(item) => item.organizationId === organizationId && item.userId === userId,
+		);
+		if (!member) {
+			this.memberships.push({ organizationId, userId, role, createdAt: new Date().toISOString() });
+		}
+	}
+
 	async saveInvitation(input: {
 		organizationId: string;
 		email: string;
@@ -1385,7 +1397,10 @@ export function buildTestApp({
 	limits = testConfig.limits,
 	pdf = createPdfTextExtractor(),
 	web = createWebPageReader(),
+	dnsRecords = {},
 }: {
+	/** TXT records by name, for single sign-on domain checks. */
+	dnsRecords?: Record<string, string[]>;
 	/** Reads web pages by URL; tests pass a fake (the real one refuses local addresses). */
 	web?: WebPageReader;
 	/** Reads uploaded PDFs; in-process by default (the server uses a worker thread). */
@@ -1509,6 +1524,23 @@ export function buildTestApp({
 		audit,
 		roleOf: (organizationId, userId) => organizations.roleOf(organizationId, userId),
 	});
+	const ssoStore = new InMemorySsoStore();
+	const oidc = new FakeOidcClient();
+	const sso = new SsoService({
+		store: ssoStore,
+		oidc,
+		accounts: auth,
+		organizations: {
+			kind: async (id) => (await organizationStore.find(id))?.kind ?? null,
+			addMemberIfAbsent: (organizationId, userId, role) =>
+				organizationStore.addMemberIfAbsent(organizationId, userId, role),
+		},
+		resolveTxt: async (name) => (dnsRecords[name] ?? []).map((value) => [value]),
+		rateLimiter: new InMemoryRateLimiter(),
+		audit,
+		encryptionKey: testConfig.auth.encryptionKey,
+		redirectUri: testConfig.sso.redirectUri,
+	});
 	const approvals = new InMemoryApprovalStore();
 	const feedback = new InMemoryFeedbackStore();
 	const oversight = new OversightService(
@@ -1532,6 +1564,7 @@ export function buildTestApp({
 		auth,
 		apiKeys,
 		mfa,
+		sso,
 		rag,
 		oversight,
 		audit,
@@ -1563,6 +1596,8 @@ export function buildTestApp({
 		organizationStore,
 		apiKeyStore,
 		mfaStore,
+		ssoStore,
+		oidc,
 		chatModel,
 		embeddingModel,
 	};

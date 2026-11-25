@@ -21,6 +21,7 @@ export type {
 	AuthSession,
 	AuthTokenPurpose,
 	AuthTokens,
+	ClientInfo,
 	RateLimiter,
 	RateLimitResult,
 	RateLimitRule,
@@ -28,3 +29,7 @@ export type {
 	User,
 	UserCredentials,
 } from "./types/auth.types";
+export { sessionTransport, signedInSchema } from "./schemas/auth.schemas";
+export { clientInfo, clientIp } from "./routes/client-ip";
+export { moveRefreshTokenToCookie } from "./routes/session-cookie";
+export { smallBody } from "./routes/small-body";

@@ -12,7 +12,7 @@ Short, durable facts. The full picture is in `docs/architecture/`.
   `packages/ingestion` (normalize, content-hash dedup, pipeline, file text extraction), `packages/knowledge` (chunking,
   embedding preparation, chunk versions), `packages/retrieval` (vector, keyword, hybrid RRF; per-call mode), `packages/generation` (prompts, context,
   citations, provenance), `packages/observability` (logs, tracing, LLM usage/cost), `packages/evaluation` (retrieval evals,
-  baselines), `packages/security` (authentication, roles/permissions, PII redaction),
+  baselines), `packages/security` (authentication, OIDC single sign-on checks, roles/permissions, PII redaction),
   `packages/orchestration` (LangGraph RAG answer graph, approval-gated graph, Postgres checkpoints),
   `packages/human-oversight` (approvals, review queue, answer feedback),
   `packages/audit` (append-only events, answer provenance, usage aggregate; PII redacted by `security`),

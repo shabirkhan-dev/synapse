@@ -61,3 +61,10 @@ export const verifiedUserSchema = user;
 export const currentUserSchema = user.extend({
 	organization: z.object({ id: z.string(), role: z.enum(ORGANIZATION_ROLES) }),
 });
+
+/** `POST /auth/sso/start`: where to send the browser. */
+export const ssoStartSchema = z.object({ authorizationUrl: z.url() });
+
+export const ssoFormSchema = z.object({
+	email: z.string().trim().pipe(z.email("Enter your work email")),
+});

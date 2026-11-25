@@ -8,6 +8,7 @@ import {
 	currentUserSchema,
 	signedInSchema,
 	signInResultSchema,
+	ssoStartSchema,
 	verifiedUserSchema,
 } from "../schemas/auth.schema";
 import type {
@@ -48,6 +49,19 @@ export const authService = {
 	/** The second step: the challenge plus an authenticator or recovery code. */
 	completeSignIn: ({ challenge, code }: { challenge: string; code: string }) =>
 		startSession(endpoints.auth.signInMfa, { challenge, code }),
+
+	/** Where the identity provider of this email's domain signs people in (single sign-on). */
+	startSso: (email: string) =>
+		api(endpoints.auth.ssoStart, {
+			method: "POST",
+			body: { email },
+			auth: false,
+			schema: ssoStartSchema,
+		}),
+
+	/** Back from the identity provider with `code` and `state`: a session in the team. */
+	completeSso: ({ code, state }: { code: string; state: string }) =>
+		startSession(endpoints.auth.ssoCallback, { code, state }),
 
 	/** Creates the account and signs in; the API emails a verification link. */
 	signUp: ({ email, password }: SignUpInput) =>

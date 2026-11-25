@@ -6,3 +6,4 @@ export * from "./memory.schema";
 export * from "./organizations.schema";
 export * from "./oversight.schema";
 export * from "./rag.schema";
+export * from "./sso.schema";

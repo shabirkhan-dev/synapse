@@ -1,5 +1,7 @@
 import { createServer } from "node:http";
 
+import { handleIdentityProvider } from "./fake-identity-provider";
+
 /**
  * A stand-in OpenAI-compatible endpoint: fixed-size embeddings and one cited answer, so the suite
  * needs no model key and its answers are deterministic. Streaming chat (`stream: true`, the
@@ -75,6 +77,8 @@ async function streamChat(request: ChatRequest, response: import("node:http").Se
 createServer(async (request, response) => {
 	let raw = "";
 	for await (const chunk of request) raw += chunk;
+	// Single sign-on: a fake OpenID Connect provider under /oidc (form bodies, redirects).
+	if (handleIdentityProvider(request, raw, response, `http://127.0.0.1:${port}`)) return;
 	const body = raw ? (JSON.parse(raw) as { input?: string | string[] }) : {};
 	response.setHeader("content-type", "application/json");
 

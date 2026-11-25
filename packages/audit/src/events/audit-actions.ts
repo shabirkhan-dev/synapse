@@ -34,6 +34,9 @@ export const AUDIT_ACTIONS = {
 	AUTH_MFA_ENABLED: "auth.mfa.enabled",
 	AUTH_MFA_DISABLED: "auth.mfa.disabled",
 	AUTH_MFA_RECOVERY_CODE_USED: "auth.mfa.recovery_code_used",
+	SSO_CONNECTION_SAVED: "sso.connection.saved",
+	SSO_CONNECTION_DELETED: "sso.connection.deleted",
+	SSO_DOMAIN_VERIFIED: "sso.domain.verified",
 } as const;
 
 /** Actor for work no user did directly (approved actions, jobs). */

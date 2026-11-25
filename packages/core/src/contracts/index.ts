@@ -13,3 +13,10 @@ export type { RerankedDocument, Reranker, RerankRequest } from "./reranker";
 export type { JobHandler, JobQueue, QueueJob, QueueOptions } from "./job-queue";
 export { PDF_ERROR_CODES, type PdfTextExtractor } from "./pdf-text-extractor";
 export { WEB_PAGE_ERROR_CODES, type WebPage, type WebPageReader } from "./web-page-reader";
+export {
+	OIDC_ERROR_CODES,
+	type OidcClient,
+	type OidcCodeExchange,
+	type OidcProviderMetadata,
+	type OidcSigningKey,
+} from "./oidc-client";

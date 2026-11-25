@@ -16,6 +16,15 @@ export {
 	MFA_CHALLENGE_TTL_SECONDS,
 	type MfaChallenges,
 } from "./authentication/mfa-challenge";
+export {
+	type AuthorizationRequest,
+	authorizationUrl,
+	createOidcNonce,
+	createPkce,
+	type IdTokenExpectations,
+	type VerifiedIdentity,
+	verifyIdToken,
+} from "./authentication/oidc";
 export { openSecret, sealSecret } from "./authentication/secret-box";
 export { createSecretToken, hashSecretToken } from "./authentication/secret-token";
 export {

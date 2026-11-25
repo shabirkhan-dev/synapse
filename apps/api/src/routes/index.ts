@@ -22,6 +22,7 @@ import { createEvaluationRoutes, type EvaluationsService } from "@/modules/evalu
 import { createHealthRoutes } from "@/modules/health";
 import { createOversightRoutes, type OversightService } from "@/modules/oversight";
 import { createRagRoutes, type RagService } from "@/modules/rag";
+import { createSsoRoutes, createSsoSignInRoutes, type SsoService } from "@/modules/sso";
 import { createSystemRoutes, type SystemService } from "@/modules/system";
 import { createUsageLimit, type UsageLimiter } from "@/shared/middleware/usage-limit";
 import type { AppBindings } from "@/shared/types/app-types";
@@ -33,6 +34,8 @@ export type RouteDependencies = {
 	apiKeys: ApiKeysService;
 	/** Two-step sign-in management (`/auth/mfa`). */
 	mfa: MfaService;
+	/** Single sign-on: settings (`/sso`) and sign-in (`/auth/sso`). */
+	sso: SsoService;
 	rag: RagService;
 	oversight: OversightService;
 	audit: AuditLog;
@@ -54,6 +57,7 @@ export function registerRoutes(
 		auth,
 		apiKeys,
 		mfa,
+		sso,
 		rag,
 		oversight,
 		audit,
@@ -106,6 +110,8 @@ export function registerRoutes(
 	app.use(`${basePath}/agents`, authenticate);
 	app.use(`${basePath}/agents/*`, authenticate);
 	app.use(`${basePath}/system/*`, authenticate);
+	app.use(`${basePath}/sso/*`, authenticate);
+	app.use(`${basePath}/sso/*`, sessionOnly);
 
 	// After authentication: budgets are per user, and stop a request before any model call.
 	const { questions, ingests, evaluationRuns } = config.limits;
@@ -132,6 +138,7 @@ export function registerRoutes(
 	app.route(`${basePath}/health`, createHealthRoutes({ serviceName, pingDatabase }));
 	app.route(`${basePath}/auth/api-keys`, createApiKeyRoutes(apiKeys));
 	app.route(`${basePath}/auth/mfa`, createMfaRoutes(mfa));
+	app.route(`${basePath}/auth/sso`, createSsoSignInRoutes(sso, config.auth));
 	app.route(`${basePath}/auth`, createAuthRoutes(auth, config.auth));
 	app.route(`${basePath}/rag`, createRagRoutes(rag, oversight));
 	app.route(`${basePath}/oversight`, createOversightRoutes(oversight));
@@ -145,4 +152,5 @@ export function registerRoutes(
 	app.route(`${basePath}/evaluations`, createEvaluationRoutes(evaluations));
 	app.route(`${basePath}/agents`, createAgentRoutes(new AgentsService(config, rag, audit)));
 	app.route(`${basePath}/system`, createSystemRoutes(system));
+	app.route(`${basePath}/sso`, createSsoRoutes(sso));
 }

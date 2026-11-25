@@ -28,6 +28,8 @@ const apiEnv = {
 	AI_RERANK_PROVIDER: "",
 	// "Add a web page" reads pages the fake provider serves on 127.0.0.1 (refused in production).
 	RAG_WEB_ALLOW_PRIVATE_NETWORKS: "true",
+	// Single sign-on talks to the fake identity provider at http://127.0.0.1 (refused in production).
+	SSO_ALLOW_PRIVATE_NETWORKS: "true",
 };
 
 /**

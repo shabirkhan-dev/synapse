@@ -6,12 +6,17 @@ const LABELS = {
 	signIn: { href: AUTH_ROUTES.SIGN_IN, text: "Sign in" },
 	signUp: { href: AUTH_ROUTES.SIGN_UP, text: "Create an account" },
 	forgot: { href: AUTH_ROUTES.FORGOT_PASSWORD, text: "Forgot your password?" },
+	sso: { href: AUTH_ROUTES.SSO, text: "Use single sign-on" },
 } as const;
 
 /** Links between the signed-out pages. */
 export function AuthLinks({ show }: { show: ReadonlyArray<keyof typeof LABELS> }) {
 	return show.map((key) => (
-		<Link key={key} href={LABELS[key].href} className="underline-offset-4 hover:underline">
+		<Link
+			key={key}
+			href={LABELS[key].href}
+			className="inline-flex min-h-6 items-center underline-offset-4 hover:underline"
+		>
 			{LABELS[key].text}
 		</Link>
 	));

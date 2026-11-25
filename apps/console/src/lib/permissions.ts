@@ -11,6 +11,7 @@ const PERMISSIONS = {
 	"approvals.decide": "admin",
 	"members.manage": "admin",
 	"members.manage_admins": "owner",
+	"sso.manage": "owner",
 } as const satisfies Record<string, OrganizationRole>;
 
 export type Permission = keyof typeof PERMISSIONS;
