@@ -138,5 +138,6 @@ contextual retrieval and Ragas.
 | Chat UI: centred thread, new-chat greeting, documents chip in the composer, grouped conversations | ✅ | syn-092 |
 | UI/UX pass on every other screen (clipped and truncated content, phone tables, one passage card) | ✅ | syn-093 |
 | Company SSO with OpenID Connect per team, domains proven by DNS (ADR-0009; SAML not done) | ✅ | syn-094 |
+| Open-source release files: public README, contributing guide, security policy, code of conduct | ✅ | syn-095 |
 
 Cards are raised for "—" rows when they become the next two or three steps.
