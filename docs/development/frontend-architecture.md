@@ -228,7 +228,7 @@ Don't create a container for a component that needs no data.
 | Token | Value |
 | --- | --- |
 | Font | Inter (self-hosted, `@fontsource-variable/inter` imported by `@synapse/ui` `globals.css`), then Apple's system font; `letter-spacing: -0.15px` on `body` |
-| Light surfaces (v4) | sidebar `#F5F5F5`, page `#FBFBFB`, cards white with `#ECECEC` borders and a faint shadow; current page a grey pill `#EBEBEB`; text `#1C1C1C`, secondary `#6B6B6B` |
+| Light surfaces (v4) | sidebar `#F5F5F5`, page `#FBFBFB`, cards white with `#ECECEC` borders and a faint shadow; current page a grey pill `#EBEBEB`; text `#1C1C1C`, secondary `#666666` (was `#6B6B6B` until syn-093) |
 | Dark surfaces (v4) | sidebar and page `#1A1A1A`, cards `#1E1E1E`, chips and hover `#262626`, borders `#2A2A2A`, popovers `#222222` |
 | Text | dark `#E5E5E5`, secondary `#A1A1A1` (13.8:1 and 6.7:1 on `#1A1A1A`) |
 | Accent (v4) | one blue `#3556F5` for actions (white text 5.5:1, both themes); blue text uses `--link` (`#3556F5` light, `#7D93FF` dark); `--success` / `--warning` for good and caution |
