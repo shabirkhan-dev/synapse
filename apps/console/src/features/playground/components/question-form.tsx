@@ -60,8 +60,8 @@ export function QuestionForm({ onSubmit, pending }: QuestionFormProps) {
 					</p>
 				) : null}
 			</div>
-			<div className="flex items-end gap-3">
-				<div className="w-32">
+			<div className="flex flex-wrap items-end justify-between gap-3">
+				<div className="w-28">
 					<FormField
 						name="topK"
 						label="Passages"
@@ -72,7 +72,13 @@ export function QuestionForm({ onSubmit, pending }: QuestionFormProps) {
 						error={errors.topK}
 					/>
 				</div>
-				<SubmitButton disabled={pending}>{pending ? "Thinking…" : "Ask"}</SubmitButton>
+				<div className="flex items-center gap-3">
+					<span className="hidden text-xs text-muted-foreground sm:inline">
+						<kbd className="font-mono">Ctrl</kbd> or <kbd className="font-mono">⌘</kbd> +{" "}
+						<kbd className="font-mono">Enter</kbd>
+					</span>
+					<SubmitButton disabled={pending}>{pending ? "Thinking…" : "Ask"}</SubmitButton>
+				</div>
 			</div>
 		</form>
 	);

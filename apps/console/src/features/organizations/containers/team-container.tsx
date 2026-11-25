@@ -95,17 +95,13 @@ export function TeamContainer() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<PageHeader
-				title={active.name}
-				badge={<Badge variant="outline">{ROLE_LABELS[role]}</Badge>}
-			/>
+			<PageHeader title={active.name} badge={<Badge variant="outline">{ROLE_LABELS[role]}</Badge>}>
+				{active.kind === "personal"
+					? "This is your personal workspace: only you can see its documents. Create a team to share documents, approvals and activity with other people."
+					: "Everyone here shares the team's documents, approvals and activity."}
+			</PageHeader>
 
-			{active.kind === "personal" ? (
-				<p className="text-sm text-muted-foreground">
-					This is your personal workspace: only you can see its documents. Create a team to share
-					documents, approvals and activity with other people.
-				</p>
-			) : (
+			{active.kind === "personal" ? null : (
 				<Card>
 					<CardHeader>
 						<CardTitle>

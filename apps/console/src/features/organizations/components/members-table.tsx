@@ -81,7 +81,6 @@ export function MembersTable({
 									<Button
 										variant="ghost"
 										size="sm"
-										className="-me-3"
 										disabled={busy}
 										aria-label={`Remove ${member.email}`}
 										onClick={() => onRemove(member)}

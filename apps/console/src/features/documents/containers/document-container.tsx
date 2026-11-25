@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft01Icon, Layers01Icon } from "@hugeicons/core-free-icons";
+import { Layers01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert, AlertDescription, AlertTitle } from "@synapse/ui/components/alert";
 import { Button } from "@synapse/ui/components/button";
@@ -11,11 +11,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@synapse/ui/components/card";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { LinkButton } from "@/components/shared/link-button";
+import { PageHeader } from "@/components/shared/page-header";
 import { useCurrentUserQuery } from "@/features/auth";
 import { useMembersQuery } from "@/features/organizations";
 import { ApiError } from "@/lib/api/api-error";
@@ -47,20 +47,9 @@ export function DocumentContainer({ id }: { id: string }) {
 	const teamId = me.data && me.data.organization.id !== me.data.id ? me.data.organization.id : null;
 	const members = useMembersQuery(teamId);
 
-	const back = (
-		<Link
-			href={DOCUMENTS_ROUTE}
-			className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-		>
-			<HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} aria-hidden="true" />
-			Documents
-		</Link>
-	);
-
 	if (document.isPending) {
 		return (
 			<div className="flex flex-col gap-4">
-				{back}
 				<p role="status" className="text-xs text-muted-foreground">
 					Loading the document…
 				</p>
@@ -71,7 +60,6 @@ export function DocumentContainer({ id }: { id: string }) {
 		const missing = document.error instanceof ApiError && document.error.status === 404;
 		return (
 			<div className="flex flex-col gap-4">
-				{back}
 				<Alert variant="destructive">
 					<AlertTitle>
 						{missing ? "This document does not exist" : "The document could not be loaded"}
@@ -80,7 +68,11 @@ export function DocumentContainer({ id }: { id: string }) {
 						{missing
 							? "It was deleted, or it belongs to another organization than the one you are in."
 							: document.error.message}
-						{missing ? null : (
+						{missing ? (
+							<LinkButton variant="outline" href={DOCUMENTS_ROUTE}>
+								Back to Documents
+							</LinkButton>
+						) : (
 							<Button size="sm" variant="outline" onClick={() => document.refetch()}>
 								Try again
 							</Button>
@@ -98,50 +90,46 @@ export function DocumentContainer({ id }: { id: string }) {
 	return (
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-col gap-3">
-				{back}
-				<div className="flex flex-wrap items-start justify-between gap-3">
-					<div className="flex min-w-0 flex-col gap-1">
-						<h1 className="text-lg font-semibold text-balance break-words">{detail.title}</h1>
-						<p className="text-xs text-muted-foreground">
-							Added{" "}
-							<time dateTime={detail.createdAt}>
-								{dateFormat.format(new Date(detail.createdAt))}
-							</time>
-							{" · "}
-							{total === 1 ? "1 chunk" : `${total} chunks`}
-						</p>
-						{detail.source ? (
-							<p className="text-xs break-all text-muted-foreground">
-								Source:{" "}
-								{isLink(detail.source) ? (
-									<a
-										href={detail.source}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="underline underline-offset-2 hover:text-foreground"
-									>
-										{detail.source}
-									</a>
-								) : (
-									detail.source
-								)}
-							</p>
-						) : null}
-					</div>
-					<div className="flex flex-wrap items-center gap-2">
-						<LinkButton variant="outline" href={askAboutDocumentRoute(id)}>
-							Ask about this document
-						</LinkButton>
-						<DeleteDocument
-							title={detail.title}
-							chunkCount={total}
-							deleting={remove.isPending}
-							onDelete={() =>
-								remove.mutate(id, { onSuccess: () => router.replace(DOCUMENTS_ROUTE) })
-							}
-						/>
-					</div>
-				</div>
+				<PageHeader
+					title={detail.title}
+					meta={total === 1 ? "1 chunk" : `${total} chunks`}
+					actions={
+						<div className="flex flex-wrap items-center gap-2">
+							<LinkButton variant="outline" href={askAboutDocumentRoute(id)}>
+								Ask about this document
+							</LinkButton>
+							<DeleteDocument
+								title={detail.title}
+								chunkCount={total}
+								deleting={remove.isPending}
+								onDelete={() =>
+									remove.mutate(id, { onSuccess: () => router.replace(DOCUMENTS_ROUTE) })
+								}
+							/>
+						</div>
+					}
+				>
+					Added{" "}
+					<time dateTime={detail.createdAt}>{dateFormat.format(new Date(detail.createdAt))}</time>
+					{detail.source ? (
+						<>
+							{" from "}
+							{isLink(detail.source) ? (
+								<a
+									href={detail.source}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="break-all text-link underline underline-offset-2"
+								>
+									{detail.source}
+								</a>
+							) : (
+								<span className="break-all">{detail.source}</span>
+							)}
+						</>
+					) : null}
+					.
+				</PageHeader>
 				{remove.isError ? (
 					<Alert variant="destructive">
 						<AlertTitle>The document was not deleted</AlertTitle>

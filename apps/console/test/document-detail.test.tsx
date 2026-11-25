@@ -108,6 +108,8 @@ describe("DocumentContainer (mocked API)", () => {
 		mockFetch(() => failure(404, "RAG_DOCUMENT_NOT_FOUND", "Document not found"));
 		renderWithQuery(<DocumentContainer id="d1" />);
 		await screen.findByText("This document does not exist");
-		expect(screen.getByRole("link", { name: "Documents" }).getAttribute("href")).toBe("/documents");
+		expect(screen.getByRole("link", { name: "Back to Documents" }).getAttribute("href")).toBe(
+			"/documents",
+		);
 	});
 });

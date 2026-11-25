@@ -21,7 +21,7 @@ export function DocumentsTable({ documents }: { documents: DocumentSummary[] }) 
 			<TableHeader>
 				<TableRow>
 					<TableHead>Title</TableHead>
-					<TableHead>Source</TableHead>
+					<TableHead className="hidden sm:table-cell">Source</TableHead>
 					<TableHead className="text-right">Chunks</TableHead>
 					<TableHead className="text-right">Added</TableHead>
 				</TableRow>
@@ -46,7 +46,7 @@ export function DocumentsTable({ documents }: { documents: DocumentSummary[] }) 
 								</span>
 							) : null}
 						</TableCell>
-						<TableCell className="max-w-64 truncate text-muted-foreground">
+						<TableCell className="hidden max-w-64 min-w-40 whitespace-normal break-all text-muted-foreground sm:table-cell">
 							{document.source ?? "—"}
 						</TableCell>
 						<TableCell className="text-right tabular-nums">{document.chunkCount}</TableCell>

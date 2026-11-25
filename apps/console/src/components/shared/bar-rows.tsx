@@ -34,7 +34,7 @@ export function BarRows({
 					<span className="h-3 overflow-hidden rounded-full bg-chart-muted" aria-hidden="true">
 						<span
 							className={cn("block h-full rounded-full", TONES[Math.min(index, TONES.length - 1)])}
-							style={{ width: `${Math.max(2, (row.value / max) * 100)}%` }}
+							style={{ width: row.value === 0 ? 0 : `${Math.max(2, (row.value / max) * 100)}%` }}
 						/>
 					</span>
 					<span className="min-w-10 text-end font-mono text-sm tabular-nums">

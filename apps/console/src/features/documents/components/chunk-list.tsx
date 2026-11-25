@@ -33,15 +33,17 @@ export function ChunkList({ chunks, current }: ChunkListProps) {
 				const issues = notes(chunk, current);
 				return (
 					<li key={chunk.id} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
-						<div className="flex flex-wrap items-center gap-2">
-							<span className="text-xs font-medium text-muted-foreground tabular-nums">
+						<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+							<span className="font-mono text-xs text-muted-foreground tabular-nums">
 								Chunk {chunk.chunkIndex + 1}
 							</span>
 							{chunk.context ? (
-								<span className="text-xs text-muted-foreground">· {chunk.context}</span>
+								<span className="min-w-0 text-xs break-words text-muted-foreground">
+									{chunk.context}
+								</span>
 							) : null}
 							{issues.length > 0 ? (
-								<Badge variant="secondary">
+								<Badge variant="warning">
 									<HugeiconsIcon icon={Alert02Icon} strokeWidth={2} aria-hidden="true" />
 									Out of date
 								</Badge>

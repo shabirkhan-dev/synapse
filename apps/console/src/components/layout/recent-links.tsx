@@ -36,7 +36,9 @@ export function RecentLinks({ links }: { links: RecentLink[] }) {
 									render={<Link href={link.href} onClick={() => setOpenMobile(false)} />}
 								>
 									<HugeiconsIcon icon={link.icon} strokeWidth={1.75} aria-hidden="true" />
-									<span className="min-w-0 flex-1 truncate">{link.label}</span>
+									<span className="min-w-0 flex-1 truncate" title={link.label}>
+										{link.label}
+									</span>
 									<span className="shrink-0 font-mono text-[0.6875rem] tracking-[0.06em] text-muted-foreground uppercase">
 										{link.tag}
 									</span>

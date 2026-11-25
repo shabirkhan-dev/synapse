@@ -245,6 +245,15 @@ composer docks at the bottom and "Jump to latest" appears when scrolled up. The 
 `DocumentScope` (an expandable box); both share the option list. The conversation list groups by
 day (`groupConversations`) and filters by title in the page.
 
+**Tables and passages (syn-093).** Action cells hold their buttons inside the cell (no negative
+margins: they made the table scroll and clipped the button); right-aligned cells are mono unless
+they hold a button. Long values wrap (`whitespace-normal break-words`) instead of `truncate`, unless
+the full value is one click away and in `title`. On phones a table folds secondary columns into
+the main cell (`hidden sm:table-cell` + `sm:hidden` lines, as Activity does) before it relies on
+sideways scrolling. Retrieved passages look the same in the Playground and the retrieval inspector:
+linked heading path, chunk number, the text, then ranks ("Meaning #1") and score. Every page,
+including a document's, starts with `PageHeader`.
+
 **Onboarding (syn-088).** `features/onboarding` renders the Get started card into the Documents
 page through `DocumentsContainer`'s `intro` slot (set in `app/(workspace)/documents/page.tsx`), so the
 two features never import each other. Sample documents are fixtures in

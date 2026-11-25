@@ -1,6 +1,6 @@
 # Synapse roadmap
 
-> Updated: 2026-11-22. Source of truth for "where are we". Cards on `.agents/board/` track each step;
+> Updated: 2026-11-25. Source of truth for "where are we". Cards on `.agents/board/` track each step;
 > update this file in the same change that moves a card. Legend: ✅ done · 🔄 doing · ⏭️ next · ⬜ later.
 
 ## Phase 0 — Foundation ✅
@@ -136,6 +136,7 @@ contextual retrieval and Ragas.
 | First-run onboarding with sample documents | ✅ | syn-088 |
 | Automated accessibility checks (axe) on every page | ✅ | syn-089 |
 | Chat UI: centred thread, new-chat greeting, documents chip in the composer, grouped conversations | ✅ | syn-092 |
+| UI/UX pass on every other screen (clipped and truncated content, phone tables, one passage card) | ✅ | syn-093 |
 | Company SSO (SAML/OIDC) — parked: needs an identity provider to test against | ⬜ | — |
 
 Cards are raised for "—" rows when they become the next two or three steps.

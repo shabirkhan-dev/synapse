@@ -106,9 +106,9 @@ describe("SourceLink", () => {
 describe("MatchesList", () => {
 	test("shows each search's rank and the score", () => {
 		render(<MatchesList matches={answered.matches} />);
-		expect(screen.getByText("vector 1")).toBeDefined();
-		expect(screen.getByText("keyword 2")).toBeDefined();
-		expect(screen.getByText("rerank 1")).toBeDefined();
+		expect(screen.getByText("Meaning #1")).toBeDefined();
+		expect(screen.getByText("Keywords #2")).toBeDefined();
+		expect(screen.getByText("Reranker #1")).toBeDefined();
 		expect(screen.getAllByText("score 0.0328")).toHaveLength(2);
 	});
 });

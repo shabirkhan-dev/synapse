@@ -65,7 +65,7 @@ export function ModeResults({ results }: { results: ModeResult[] }) {
 													</span>
 													<Link
 														href={`/documents/${encodeURIComponent(match.documentId)}`}
-														className="min-w-0 truncate font-medium underline-offset-2 hover:underline"
+														className="min-w-0 font-medium break-words underline-offset-2 hover:underline"
 													>
 														{match.context || match.documentTitle}
 													</Link>

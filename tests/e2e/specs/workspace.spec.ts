@@ -47,5 +47,5 @@ test("add a document, ask about it, follow the citation, rate the answer", async
 	await expect(page.getByText("Thanks, noted.")).toBeVisible();
 
 	await expect(page.getByText("Retrieved passages")).toBeVisible();
-	await expect(page.getByText(/keyword 1/)).toBeVisible();
+	await expect(page.getByText("Keywords #1")).toBeVisible();
 });

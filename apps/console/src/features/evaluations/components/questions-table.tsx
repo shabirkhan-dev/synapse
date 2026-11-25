@@ -34,7 +34,7 @@ export function QuestionsTable({ questions, titles, onDelete, deletingId }: Ques
 			<TableBody>
 				{questions.map((item) => (
 					<TableRow key={item.id}>
-						<TableCell className="whitespace-normal">{item.question}</TableCell>
+						<TableCell className="min-w-40 whitespace-normal">{item.question}</TableCell>
 						<TableCell className="whitespace-normal">
 							{item.expectedDocumentIds
 								.map((id) => titles.get(id) ?? "Deleted document")
@@ -44,7 +44,6 @@ export function QuestionsTable({ questions, titles, onDelete, deletingId }: Ques
 							<Button
 								size="sm"
 								variant="ghost"
-								className="-me-3"
 								disabled={deletingId === item.id}
 								onClick={() => onDelete(item.id)}
 								aria-label={`Delete question “${item.question}”`}
